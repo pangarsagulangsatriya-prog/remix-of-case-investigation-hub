@@ -1,0 +1,122 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 220 20% 14%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 20% 14%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 20% 14%;
+
+    --primary: 214 82% 42%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 210 16% 96%;
+    --secondary-foreground: 220 20% 14%;
+
+    --muted: 210 14% 96%;
+    --muted-foreground: 215 14% 46%;
+
+    --accent: 210 14% 96%;
+    --accent-foreground: 220 20% 14%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214 20% 90%;
+    --input: 214 20% 90%;
+    --ring: 214 82% 42%;
+
+    --radius: 0.375rem;
+
+    /* Enterprise custom tokens */
+    --surface-raised: 210 14% 98%;
+    --surface-sunken: 210 14% 96%;
+    --row-hover: 214 82% 97%;
+    --row-active: 214 82% 95%;
+    --row-zebra: 210 14% 98.5%;
+
+    --severity-critical: 0 72% 51%;
+    --severity-high: 25 95% 53%;
+    --severity-medium: 45 93% 47%;
+    --severity-low: 142 71% 45%;
+
+    --status-draft: 215 14% 46%;
+    --status-inprogress: 214 82% 42%;
+    --status-review: 262 52% 47%;
+    --status-approved: 142 71% 35%;
+    --status-rejected: 0 72% 51%;
+
+    --confidence-high: 142 71% 40%;
+    --confidence-medium: 45 93% 47%;
+    --confidence-low: 0 72% 51%;
+
+    --sidebar-background: 220 20% 14%;
+    --sidebar-foreground: 210 14% 80%;
+    --sidebar-primary: 214 82% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 18% 20%;
+    --sidebar-accent-foreground: 210 14% 90%;
+    --sidebar-border: 220 16% 22%;
+    --sidebar-ring: 214 82% 55%;
+    --sidebar-muted: 220 16% 28%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+}
+
+@layer components {
+  .enterprise-table th {
+    @apply text-xs font-semibold uppercase tracking-wider text-muted-foreground px-3 py-2 text-left border-b bg-surface-sunken;
+  }
+  .enterprise-table td {
+    @apply px-3 py-2 text-sm border-b;
+  }
+  .enterprise-table tr:hover td {
+    @apply bg-row-hover;
+  }
+  .enterprise-table tr:nth-child(even) td {
+    @apply bg-row-zebra;
+  }
+  .enterprise-table tr.active td {
+    @apply bg-row-active;
+  }
+
+  .status-chip {
+    @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-medium;
+  }
+  .severity-chip {
+    @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold;
+  }
+
+  .side-panel {
+    @apply border-l bg-background overflow-y-auto;
+  }
+
+  .section-header {
+    @apply text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2;
+  }
+
+  .metric-card {
+    @apply bg-card border rounded-md p-4;
+  }
+
+  .filter-bar {
+    @apply flex items-center gap-2 px-4 py-2 border-b bg-surface-raised;
+  }
+}
