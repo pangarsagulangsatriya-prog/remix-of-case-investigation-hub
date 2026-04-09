@@ -660,20 +660,52 @@ function EvidenceTab() {
 function ExtractionTab() {
   const [selectedFile, setSelectedFile] = useState<typeof evidenceFiles[0]>(evidenceFiles[1]);
   const [activeFilter, setActiveFilter] = useState("All Files");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [expandedBatches, setExpandedBatches] = useState<string[]>(["B1", "B2", "B4", "B5"]);
 
-  const filteredFiles = activeFilter === "All Files" 
-    ? evidenceFiles.filter(f => f.extractionStatus !== "not_started")
-    : evidenceFiles.filter(f => f.type === activeFilter.replace(/s$/, ""));
+  const toggleBatch = (id: string) => {
+    setExpandedBatches(prev => prev.includes(id) ? prev.filter(b => b !== id) : [...prev, id]);
+  };
+
+  const filteredFiles = evidenceFiles.filter(f => {
+    const matchesFilter = activeFilter === "All Files" 
+      ? f.extractionStatus !== "not_started"
+      : f.type === activeFilter.replace(/s$/, "");
+    const matchesSearch = f.name.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesFilter && matchesSearch;
+  });
+
+  const groupedFiles = evidenceBatches.map(batch => ({
+    ...batch,
+    files: filteredFiles.filter(f => f.batchId === batch.id)
+  })).filter(b => b.files.length > 0);
 
   return (
     <div className="flex h-full bg-slate-50/10">
       <div className="w-[280px] border-r bg-white flex flex-col shrink-0 z-20 shadow-[1px_0_5px_rgba(0,0,0,0.02)]">
         <div className="h-12 border-b flex items-center px-4 shrink-0 justify-between bg-slate-50/50">
-           <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Evidence Feed</span>
-           <div className="flex items-center gap-2">
-              <button className="p-1 hover:bg-slate-200 rounded"><Search className="h-3.5 w-3.5 text-slate-400" /></button>
-              <button className="p-1 hover:bg-slate-200 rounded"><Settings className="h-3.5 w-3.5 text-slate-400" /></button>
-           </div>
+           {isSearchOpen ? (
+              <div className="flex-1 flex items-center bg-white border rounded px-2 h-8 animate-in slide-in-from-right-1 duration-200">
+                 <Search className="h-3.5 w-3.5 text-slate-400 mr-2" />
+                 <input 
+                   autoFocus
+                   placeholder="Search files..."
+                   className="flex-1 text-[11px] outline-none"
+                   value={searchQuery}
+                   onChange={(e) => setSearchQuery(e.target.value)}
+                 />
+                 <button onClick={() => { setIsSearchOpen(false); setSearchQuery(""); }}><X className="h-3 w-3 text-slate-400" /></button>
+              </div>
+           ) : (
+              <>
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Evidence Feed</span>
+                <div className="flex items-center gap-2">
+                   <button onClick={() => setIsSearchOpen(true)} className="p-1 hover:bg-slate-200 rounded transition-colors"><Search className="h-3.5 w-3.5 text-slate-400" /></button>
+                   <button className="p-1 hover:bg-slate-200 rounded"><Settings className="h-3.5 w-3.5 text-slate-400" /></button>
+                </div>
+              </>
+           )}
         </div>
         <div className="p-2.5 border-b flex gap-1 bg-white">
            {["All Files", "Docs", "Images", "Audio"].map(f => (
@@ -690,35 +722,54 @@ function ExtractionTab() {
               </button>
            ))}
         </div>
-        <div className="flex-1 overflow-auto custom-scrollbar">
-           {filteredFiles.map(file => (
-             <div 
-               key={file.id}
-               onClick={() => setSelectedFile(file)}
-               className={`p-3 border-b cursor-pointer transition-all hover:bg-slate-50 relative group ${
-                 selectedFile.id === file.id ? "bg-primary/5 border-l-4 border-l-primary" : "border-l-4 border-l-transparent"
-               }`}
-             >
-                <div className="flex gap-2.5">
-                   <div className={`h-8 w-8 rounded shrink-0 flex items-center justify-center border ${
-                     selectedFile.id === file.id ? "bg-white border-primary/20 shadow-sm" : "bg-slate-50 border-slate-100"
-                   }`}>
-                      {getFileIcon(file.type)}
-                   </div>
-                   <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-0.5">
-                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{file.type}</span>
-                         <span className="text-[9px] font-bold text-slate-400">{file.uploadDate}</span>
-                      </div>
-                      <p className={`text-xs font-bold truncate ${selectedFile.id === file.id ? "text-primary" : "text-slate-700"}`}>{file.name}</p>
-                      <div className="flex items-center gap-2 mt-1.5">
-                         <StatusIndicator status={file.extractionStatus} type="extraction" />
-                         {file.tags.includes("key") && <Star className="h-2.5 w-2.5 fill-amber-400 text-amber-400" />}
-                      </div>
-                   </div>
+        <div className="flex-1 overflow-auto custom-scrollbar bg-slate-50/30">
+           {groupedFiles.map(batch => (
+             <div key={batch.id} className="border-b last:border-b-0 bg-white">
+                <div 
+                  onClick={() => toggleBatch(batch.id)}
+                  className="flex items-center gap-2 px-3 py-2 bg-slate-50/80 cursor-pointer hover:bg-slate-100 transition-colors border-b border-slate-100"
+                >
+                   {expandedBatches.includes(batch.id) ? <ChevronDown className="h-3 w-3 text-slate-400" /> : <ChevronRight className="h-3 w-3 text-slate-400" />}
+                   <Folders className="h-3.5 w-3.5 text-primary/60" />
+                   <span className="text-[10px] font-bold text-slate-600 uppercase tracking-tighter truncate leading-tight flex-1">{batch.name}</span>
+                   <span className="text-[9px] font-bold text-slate-400 bg-white px-1.5 py-0.5 rounded-full border">{batch.files.length}</span>
                 </div>
+                {expandedBatches.includes(batch.id) && batch.files.map(file => (
+                  <div 
+                    key={file.id}
+                    onClick={() => setSelectedFile(file)}
+                    className={`p-3 pl-8 border-b border-slate-50 cursor-pointer transition-all hover:bg-slate-50 relative group ${
+                      selectedFile.id === file.id ? "bg-primary/5 border-l-4 border-l-primary" : "border-l-4 border-l-transparent"
+                    }`}
+                  >
+                     <div className="flex gap-2.5">
+                        <div className={`h-8 w-8 rounded shrink-0 flex items-center justify-center border ${
+                          selectedFile.id === file.id ? "bg-white border-primary/20 shadow-sm" : "bg-white border-slate-100 shadow-sm"
+                        }`}>
+                           {getFileIcon(file.type)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                           <div className="flex items-center justify-between mb-0.5">
+                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{file.type}</span>
+                              <span className="text-[9px] font-bold text-slate-400">{file.uploadDate}</span>
+                           </div>
+                           <p className={`text-xs font-bold truncate ${selectedFile.id === file.id ? "text-primary font-bold" : "text-slate-700"}`}>{file.name}</p>
+                           <div className="flex items-center gap-2 mt-1.5">
+                              <StatusIndicator status={file.extractionStatus} type="extraction" />
+                              {file.tags.includes("key") && <Star className="h-2.5 w-2.5 fill-amber-400 text-amber-400" />}
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+                ))}
              </div>
            ))}
+           {groupedFiles.length === 0 && (
+              <div className="p-8 text-center text-slate-400">
+                 <Search className="h-8 w-8 mx-auto mb-3 opacity-20" />
+                 <p className="text-xs font-bold uppercase tracking-widest opacity-50">No files found</p>
+              </div>
+           )}
         </div>
       </div>
 
