@@ -1,5 +1,6 @@
 import { AppLayout } from "@/components/AppLayout";
 import { StatusChip, SeverityChip } from "@/components/StatusChip";
+import { useNavigate } from "react-router-dom";
 import {
   FolderSearch,
   AlertTriangle,
@@ -8,6 +9,8 @@ import {
   FileSearch,
   ChevronRight,
   MessageSquare,
+  History,
+  Brain,
 } from "lucide-react";
 
 const summaryCards = [

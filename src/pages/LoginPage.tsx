@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 
-import { BerauCoalLogo, InvestigasiIntelligenceLogo } from "@/components/BrandLogo";
+import { BerauCoalLogo, InvestigationIntelligenceLogo } from "@/components/BrandLogo";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -67,7 +67,7 @@ export default function LoginPage() {
         <div className="max-w-[400px] w-full mx-auto">
           {/* Logo & Product Name */}
           <div className="flex items-center gap-3 mb-12">
-            <InvestigasiIntelligenceLogo className="h-8 w-auto" />
+            <InvestigationIntelligenceLogo className="h-8 w-auto" />
           </div>
 
           <div className="mb-8">

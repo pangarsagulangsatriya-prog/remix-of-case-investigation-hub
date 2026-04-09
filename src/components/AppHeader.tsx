@@ -1,13 +1,13 @@
 import { Bell, ChevronDown, Menu } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 
-import { InvestigasiIntelligenceLogo } from "./BrandLogo";
+import { InvestigationIntelligenceLogo } from "./BrandLogo";
 
 export function AppHeader() {
   return (
     <header className="h-11 flex items-center justify-between border-b px-3 bg-white shrink-0 antialiased">
       <div className="flex items-center gap-2 px-3">
-        <InvestigasiIntelligenceLogo className="h-6 w-auto" />
+        <InvestigationIntelligenceLogo className="h-6 w-auto" />
       </div>
 
       <div className="flex items-center gap-2">

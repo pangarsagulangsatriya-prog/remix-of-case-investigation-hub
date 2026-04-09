@@ -19,7 +19,7 @@ export function BerauCoalLogo({ className = "h-8 w-auto" }: { className?: string
   );
 }
 
-export function InvestigasiIntelligenceLogo({ className = "h-6 w-auto" }: { className?: string }) {
+export function InvestigationIntelligenceLogo({ className = "h-6 w-auto" }: { className?: string }) {
   return (
     <div className={`flex items-center gap-2 ${className}`}>
       <div className="h-8 w-8 bg-green-700 rounded-lg flex items-center justify-center shadow-sm">
