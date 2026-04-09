@@ -36,7 +36,7 @@ export default function LoginPage() {
             Advanced Intelligence for Industrial Safety.
           </h1>
           <p className="text-lg text-emerald-100/80 mb-8 leading-relaxed max-w-xl">
-             Investigasi Intelligence powered by Berau Coal. Unified investigation gateway for enterprise safety operations, extraction review, and AI-driven analysis.
+             Investigation Intelligence powered by Berau Coal. Unified investigation gateway for enterprise safety operations, extraction review, and AI-driven analysis.
           </p>
 
           <div className="flex flex-wrap gap-6 mt-8">
