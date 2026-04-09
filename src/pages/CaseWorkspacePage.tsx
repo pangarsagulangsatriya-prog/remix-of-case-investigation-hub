@@ -53,6 +53,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel
 } from "@/components/ui/dropdown-menu";
+import { UploadModal } from "@/components/UploadModal";
 
 // --- Mock Data ---
 
@@ -68,20 +69,27 @@ const progressSteps = [
 ];
 
 const evidenceBatches = [
-  { id: "B1", name: "Site Inspection Photos", description: "Photos taken by Ahmed Khan during initial walkthrough", type: "Images", fileCount: 12, uploadedBy: "Ahmed Khan", updated: "2h ago", extractionProgress: 100, reviewProgress: 80, keyEvidenceCount: 4, linkedAnalysis: 3 },
-  { id: "B2", name: "Initial Incident Documents", description: "Incident report, witness statements, and handover notes", type: "Documents", fileCount: 3, uploadedBy: "Sarah Chen", updated: "4h ago", extractionProgress: 66, reviewProgress: 33, keyEvidenceCount: 1, linkedAnalysis: 5 },
-  { id: "B3", name: "Maintenance & CAL Records", description: "Maintenance logs and calibration certificates for roller #14", type: "Documents", fileCount: 2, uploadedBy: "Maria Santos", updated: "1d ago", extractionProgress: 100, reviewProgress: 0, keyEvidenceCount: 0, linkedAnalysis: 1 },
-  { id: "B4", name: "Witness Interviews", description: "Audio recordings from Operator A and Supervisor B", type: "Audio", fileCount: 2, uploadedBy: "John Doe", updated: "1d ago", extractionProgress: 100, reviewProgress: 50, keyEvidenceCount: 1, linkedAnalysis: 2 },
-  { id: "B5", name: "CCTV Storage Export", description: "Footage from Zone B cameras during incident window", type: "Video", fileCount: 1, uploadedBy: "System", updated: "4h ago", extractionProgress: 25, reviewProgress: 0, keyEvidenceCount: 0, linkedAnalysis: 0 },
+  { id: "B1", name: "Mechanical Inspection - Zone B", description: "Photos and detail logs from conveyor section 14 incident area", type: "Images", fileCount: 12, uploadedBy: "Ahmed Khan", updated: "2h ago", extractionProgress: 100, reviewProgress: 80, keyEvidenceCount: 4, linkedAnalysis: 3 },
+  { id: "B2", name: "Incident Documentation Batch", description: "Initial HSE reports and hazard observation forms", type: "Documents", fileCount: 5, uploadedBy: "Sarah Chen", updated: "4h ago", extractionProgress: 80, reviewProgress: 40, keyEvidenceCount: 2, linkedAnalysis: 5 },
+  { id: "B3", name: "Maintenance & CAL History", description: "Historical telemetry for haul trucks and conveyor drives", type: "Documents", fileCount: 3, uploadedBy: "Maria Santos", updated: "1d ago", extractionProgress: 100, reviewProgress: 0, keyEvidenceCount: 0, linkedAnalysis: 1 },
+  { id: "B4", name: "Witness Statements & Radio", description: "Digital audio recordings from 14:15 - 14:45 incident window", type: "Audio", fileCount: 3, uploadedBy: "John Doe", updated: "1d ago", extractionProgress: 100, reviewProgress: 66, keyEvidenceCount: 2, linkedAnalysis: 2 },
 ];
 
 const evidenceFiles = [
-  { id: "F1", batchId: "B1", name: "mechanical_failure_detail_01.jpg", type: "Image", source: "Field Camera", uploadedBy: "Ahmed Khan", uploadDate: "2026-04-05", extractionStatus: "completed", reviewStatus: "reviewed", tags: ["key", "roller-detail"], linked: 2, size: "2.4 MB" },
-  { id: "F2", batchId: "B1", name: "conveyor_belt_tear_A.jpg", type: "Image", source: "Field Camera", uploadedBy: "Ahmed Khan", uploadDate: "2026-04-05", extractionStatus: "completed", reviewStatus: "reviewed", tags: ["key"], linked: 1, size: "3.1 MB" },
-  { id: "F3", batchId: "B2", name: "incident_report_initial.pdf", type: "Document", source: "HSE Portal", uploadedBy: "Sarah Chen", uploadDate: "2026-04-05", extractionStatus: "completed", reviewStatus: "reviewed", tags: ["key"], linked: 5, size: "1.2 MB", snippet: "The belt tore at section 14, causing material spillage across the walkway." },
-  { id: "F4", batchId: "B4", name: "witness_statement_operator_A.mp3", type: "Audio", source: "Digital Recorder", uploadedBy: "John Doe", uploadDate: "2026-04-06", extractionStatus: "completed", reviewStatus: "partial", tags: ["interview"], linked: 2, size: "15 MB", duration: "04:22" },
-  { id: "F5", batchId: "B5", name: "cctv_zone_b_cam2_1430.mp4", type: "Video", source: "CCTV Server", uploadedBy: "System", uploadDate: "2026-04-05", extractionStatus: "processing", reviewStatus: "pending", tags: [], linked: 0, size: "124 MB" },
-  { id: "F6", batchId: "B3", name: "maintenance_log_roller14.xlsx", type: "Document", source: "Maintenance Sys", uploadedBy: "Maria Santos", uploadDate: "2026-04-06", extractionStatus: "completed", reviewStatus: "pending", tags: [], linked: 1, size: "450 KB" },
+  // Images
+  { id: "F1", batchId: "B1", name: "mechanical_failure_detail_01.jpg", type: "Image", source: "Field Cam 01", uploadedBy: "Ahmed Khan", uploadDate: "2026-04-05", extractionStatus: "completed", reviewStatus: "reviewed", tags: ["key", "roller-detail"], linked: 2, size: "2.4 MB" },
+  { id: "F2", batchId: "B1", name: "conveyor_belt_tear_A.jpg", type: "Image", source: "Field Cam 01", uploadedBy: "Ahmed Khan", uploadDate: "2026-04-05", extractionStatus: "completed", reviewStatus: "reviewed", tags: ["key"], linked: 1, size: "3.1 MB" },
+  { id: "F3", batchId: "B1", name: "haul_road_spillage_zone_3.jpg", type: "Image", source: "UAV Inspection", uploadedBy: "Ahmed Khan", uploadDate: "2026-04-06", extractionStatus: "completed", reviewStatus: "pending", tags: ["spillage"], linked: 0, size: "5.2 MB" },
+  
+  // Documents
+  { id: "F4", batchId: "B2", name: "incident_report_initial.pdf", type: "Document", source: "HSE Portal", uploadedBy: "Sarah Chen", uploadDate: "2026-04-05", extractionStatus: "completed", reviewStatus: "reviewed", tags: ["key"], linked: 5, size: "1.2 MB", snippet: "The belt tore at section 14, causing material spillage across the walkway. Tensioners failed to retract." },
+  { id: "F5", batchId: "B2", name: "hazard_observation_form_04.pdf", type: "Document", source: "Safety Tablet", uploadedBy: "Sarah Chen", uploadDate: "2026-04-05", extractionStatus: "completed", reviewStatus: "pending", tags: ["observation"], linked: 1, size: "850 KB" },
+  { id: "F6", batchId: "B3", name: "maintenance_log_conveyor_C.xlsx", type: "Document", source: "Maintenance Sys", uploadedBy: "Maria Santos", uploadDate: "2026-04-06", extractionStatus: "completed", reviewStatus: "pending", tags: [], linked: 1, size: "450 KB" },
+  
+  // Audio
+  { id: "F7", batchId: "B4", name: "witness_statement_operator_A.wav", type: "Audio", source: "Field Voice Link", uploadedBy: "John Doe", uploadDate: "2026-04-06", extractionStatus: "completed", reviewStatus: "reviewed", tags: ["interview"], linked: 2, size: "12 MB", duration: "04:22" },
+  { id: "F8", batchId: "B4", name: "supervisor_followup_interview.mp3", type: "Audio", source: "Digital Recorder", uploadedBy: "John Doe", uploadDate: "2026-04-06", extractionStatus: "completed", reviewStatus: "partial", tags: ["interview", "management"], linked: 1, size: "8.5 MB", duration: "02:15" },
+  { id: "F9", batchId: "B4", name: "radio_communication_shift_B.m4a", type: "Audio", source: "Radio Link Archiver", uploadedBy: "System", uploadDate: "2026-04-05", extractionStatus: "completed", reviewStatus: "pending", tags: ["radio-log"], linked: 0, size: "4.1 MB", duration: "10:05" },
 ];
 
 const analysisAgents = [
@@ -253,16 +261,39 @@ function OverviewTab() {
 function EvidenceTab() {
   const [viewMode, setViewMode] = useState<"grouped" | "files">("grouped");
   const [filterType, setFilterType] = useState("All Evidence");
+  const [localEvidenceFiles, setLocalEvidenceFiles] = useState(evidenceFiles);
   const [selectedFile, setSelectedFile] = useState<typeof evidenceFiles[0] | null>(null);
-  const [expandedBatches, setExpandedBatches] = useState<string[]>(["B1", "B2"]);
+  const [expandedBatches, setExpandedBatches] = useState<string[]>(["B1", "B2", "B4"]);
+  
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [uploadType, setUploadType] = useState<"Document" | "Image" | "Audio" | undefined>();
 
   const toggleBatch = (id: string) => {
     setExpandedBatches(prev => prev.includes(id) ? prev.filter(b => b !== id) : [...prev, id]);
   };
 
   const currentFiles = filterType === "All Evidence" 
-    ? evidenceFiles 
-    : evidenceFiles.filter(f => f.type === filterType.replace(/s$/, ""));
+    ? localEvidenceFiles 
+    : localEvidenceFiles.filter(f => f.type === filterType.replace(/s$/, ""));
+
+  const handleUploadComplete = (newFiles: any[]) => {
+    const formattedFiles = newFiles.map(f => ({
+      ...f,
+      batchId: "B2", // Default to documentation batch for now
+      source: "Manual Upload",
+      uploadedBy: "Current User",
+      extractionStatus: "processing",
+      reviewStatus: "pending",
+      tags: [],
+      linked: 0
+    }));
+    setLocalEvidenceFiles(prev => [...formattedFiles, ...prev]);
+  };
+
+  const openUpload = (type: "Document" | "Image" | "Audio") => {
+    setUploadType(type);
+    setIsUploadModalOpen(true);
+  };
 
   return (
     <div className="flex flex-col h-full bg-slate-50/10">
@@ -315,13 +346,17 @@ function EvidenceTab() {
                 <Upload className="h-3.5 w-3.5" /> Upload Evidence <ChevronDown className="h-3 w-3" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-slate-500 font-bold p-2 pb-1">Structured Upload</DropdownMenuLabel>
-              <DropdownMenuItem className="text-xs font-bold py-2"><DocIcon className="h-3.5 w-3.5 mr-2 text-primary" /> Documents</DropdownMenuItem>
-              <DropdownMenuItem className="text-xs font-bold py-2"><ImageIcon className="h-3.5 w-3.5 mr-2 text-emerald-500" /> Images</DropdownMenuItem>
-              <DropdownMenuItem className="text-xs font-bold py-2"><AudioIcon className="h-3.5 w-3.5 mr-2 text-amber-500" /> Audio Recordings</DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-xs font-bold py-2"><Folders className="h-3.5 w-3.5 mr-2 text-primary" /> ZIP / Folder Upload</DropdownMenuItem>
+            <DropdownMenuContent align="end" className="w-56 p-1.5 shadow-2xl border-slate-200">
+              <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-slate-500 font-bold p-2 pb-1.5">Ingest Structured Evidence</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => openUpload("Document")} className="text-xs font-bold py-2.5 cursor-pointer rounded-md focus:bg-primary/5 transition-colors">
+                 <DocIcon className="h-4 w-4 mr-3 text-primary" /> Documents
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => openUpload("Image")} className="text-xs font-bold py-2.5 cursor-pointer rounded-md focus:bg-emerald-50 transition-colors">
+                 <ImageIcon className="h-4 w-4 mr-3 text-emerald-500" /> Images
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => openUpload("Audio")} className="text-xs font-bold py-2.5 cursor-pointer rounded-md focus:bg-amber-50 transition-colors">
+                 <AudioIcon className="h-4 w-4 mr-3 text-amber-500" /> Audio Recordings
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -412,7 +447,7 @@ function EvidenceTab() {
                           </DropdownMenu>
                         </td>
                       </tr>
-                      {expandedBatches.includes(batch.id) && evidenceFiles.filter(f => f.batchId === batch.id).map(file => (
+                      {expandedBatches.includes(batch.id) && localEvidenceFiles.filter(f => f.batchId === batch.id).map(file => (
                         <tr 
                           key={file.id} 
                           className={`hover:bg-primary/5 transition-all cursor-pointer border-l-2 border-transparent ${selectedFile?.id === file.id ? "bg-primary/5 border-primary shadow-[inset_0_1px_0_0_rgba(0,0,0,0.05)]" : ""}`}
@@ -488,7 +523,7 @@ function EvidenceTab() {
         {selectedFile && (
           <div className="w-[360px] border-l bg-white flex flex-col shrink-0 animate-in slide-in-from-right duration-300">
             <div className="h-12 border-b flex items-center justify-between px-4 shrink-0 bg-slate-50/50">
-               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Evidence Preview</span>
+               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">Evidence Context Panel</span>
                <button onClick={() => setSelectedFile(null)} className="p-1 hover:bg-slate-200 rounded transition-colors">
                   <X className="h-4 w-4 text-slate-400" />
                </button>
@@ -602,6 +637,13 @@ function EvidenceTab() {
           </div>
         )}
       </div>
+      
+      <UploadModal 
+        isOpen={isUploadModalOpen} 
+        onClose={() => setIsUploadModalOpen(false)} 
+        onUploadComplete={handleUploadComplete}
+        initialType={uploadType}
+      />
     </div>
   );
 }
