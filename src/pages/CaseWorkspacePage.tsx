@@ -42,7 +42,20 @@ import {
   History,
   Settings,
   MessageSquare,
-  ChevronLeft
+  ChevronLeft,
+  Users,
+  FileJson,
+  Copy,
+  ZoomIn,
+  ZoomOut,
+  RefreshCcw,
+  HardHat,
+  Footprints,
+  Wind,
+  Navigation,
+  Truck,
+  Activity,
+  Box
 } from "lucide-react";
 
 import { 
@@ -73,14 +86,14 @@ const evidenceBatches = [
   { id: "B2", name: "Incident Documentation Batch", description: "Initial HSE reports and hazard observation forms", type: "Documents", fileCount: 5, uploadedBy: "Sarah Chen", updated: "4h ago", extractionProgress: 80, reviewProgress: 40, keyEvidenceCount: 2, linkedAnalysis: 5 },
   { id: "B3", name: "Maintenance & CAL History", description: "Historical telemetry for haul trucks and conveyor drives", type: "Documents", fileCount: 3, uploadedBy: "Maria Santos", updated: "1d ago", extractionProgress: 100, reviewProgress: 0, keyEvidenceCount: 0, linkedAnalysis: 1 },
   { id: "B4", name: "Witness Statements & Radio", description: "Digital audio recordings from 14:15 - 14:45 incident window", type: "Audio", fileCount: 3, uploadedBy: "John Doe", updated: "1d ago", extractionProgress: 100, reviewProgress: 66, keyEvidenceCount: 2, linkedAnalysis: 2 },
-  { id: "B5", name: "CCTV Storage Export", description: "Footage from Zone B cameras during incident window", type: "Video", fileCount: 1, uploadedBy: "System", updated: "4h ago", extractionProgress: 25, reviewProgress: 0, keyEvidenceCount: 0, linkedAnalysis: 0 },
+  { id: "B5", name: "CCTV Storage Export", description: "Footage from Zone B cameras during incident window", type: "Video", fileCount: 1, uploadedBy: "System", updated: "4h ago", extractionProgress: 100, reviewProgress: 0, keyEvidenceCount: 1, linkedAnalysis: 0 },
 ];
 
 const evidenceFiles = [
   // Images
-  { id: "F1", batchId: "B1", name: "mechanical_failure_detail_01.jpg", type: "Image", source: "Field Cam 01", uploadedBy: "Ahmed Khan", uploadDate: "2026-04-05", extractionStatus: "completed", reviewStatus: "reviewed", tags: ["key", "roller-detail"], linked: 2, size: "2.4 MB" },
-  { id: "F2", batchId: "B1", name: "conveyor_belt_tear_A.jpg", type: "Image", source: "Field Cam 01", uploadedBy: "Ahmed Khan", uploadDate: "2026-04-05", extractionStatus: "completed", reviewStatus: "reviewed", tags: ["key"], linked: 1, size: "3.1 MB" },
-  { id: "F3", batchId: "B1", name: "haul_road_spillage_zone_3.jpg", type: "Image", source: "UAV Inspection", uploadedBy: "Ahmed Khan", uploadDate: "2026-04-06", extractionStatus: "completed", reviewStatus: "pending", tags: ["spillage"], linked: 0, size: "5.2 MB" },
+  { id: "F1", batchId: "B1", name: "pit_overview_west_sector.jpg", type: "Image", source: "Drone-04", uploadedBy: "Ahmed Khan", uploadDate: "2026-04-05", extractionStatus: "completed", reviewStatus: "reviewed", tags: ["key", "site-overview"], linked: 2, size: "4.2 MB", url: "/mining_1.png" },
+  { id: "F2", batchId: "B1", name: "conveyor_roller_failure_macro.jpg", type: "Image", source: "Field-Cam-A1", uploadedBy: "Ahmed Khan", uploadDate: "2026-04-05", extractionStatus: "completed", reviewStatus: "reviewed", tags: ["key", "mechanical"], linked: 1, size: "2.8 MB", url: "/mining_2.png" },
+  { id: "F3", batchId: "B1", name: "worker_ppe_check_pit_3.jpg", type: "Image", source: "Safety Officer", uploadedBy: "Ahmed Khan", uploadDate: "2026-04-06", extractionStatus: "completed", reviewStatus: "pending", tags: ["ppe", "compliance"], linked: 0, size: "3.5 MB", url: "/mining_3.png" },
   
   // Documents
   { id: "F4", batchId: "B2", name: "incident_report_initial.pdf", type: "Document", source: "HSE Portal", uploadedBy: "Sarah Chen", uploadDate: "2026-04-05", extractionStatus: "completed", reviewStatus: "reviewed", tags: ["key"], linked: 5, size: "1.2 MB", snippet: "The belt tore at section 14, causing material spillage across the walkway. Tensioners failed to retract." },
@@ -91,7 +104,7 @@ const evidenceFiles = [
   { id: "F7", batchId: "B4", name: "witness_statement_operator_A.wav", type: "Audio", source: "Field Voice Link", uploadedBy: "John Doe", uploadDate: "2026-04-06", extractionStatus: "completed", reviewStatus: "reviewed", tags: ["interview"], linked: 2, size: "12 MB", duration: "04:22" },
   { id: "F8", batchId: "B4", name: "supervisor_followup_interview.mp3", type: "Audio", source: "Digital Recorder", uploadedBy: "John Doe", uploadDate: "2026-04-06", extractionStatus: "completed", reviewStatus: "partial", tags: ["interview", "management"], linked: 1, size: "8.5 MB", duration: "02:15" },
   { id: "F9", batchId: "B4", name: "radio_communication_shift_B.m4a", type: "Audio", source: "Radio Link Archiver", uploadedBy: "System", uploadDate: "2026-04-05", extractionStatus: "completed", reviewStatus: "pending", tags: ["radio-log"], linked: 0, size: "4.1 MB", duration: "10:05" },
-  { id: "F10", batchId: "B5", name: "cctv_zone_b_cam2_1430.mp4", type: "Video", source: "CCTV Server", uploadedBy: "System", uploadDate: "2026-04-05", extractionStatus: "processing", reviewStatus: "pending", tags: [], linked: 0, size: "124 MB" },
+  { id: "F10", batchId: "B5", name: "cctv_zone_b_conveyor_1430.mp4", type: "Video", source: "CCTV-Z2", uploadedBy: "System", uploadDate: "2026-04-05", extractionStatus: "completed", reviewStatus: "pending", tags: ["cctv", "incident"], linked: 0, size: "124 MB", url: "https://assets.mixkit.co/videos/preview/mixkit-mechanical-gears-moving-in-a-machine-42409-large.mp4" },
 ];
 
 const analysisAgents = [
@@ -102,15 +115,309 @@ const analysisAgents = [
   { name: "Actor Intelligence", icon: DocIcon, purpose: "Analyzing worker profiles, training history and fatigue levels.", inputReady: true, lastRun: "4h ago", lastStatus: "draft" },
 ];
 
+const extractionData = {
+  "image_properties": {
+    "scale": "normal",
+    "source": "CCTV fixed",
+    "lighting": "Daylight",
+    "image_quality": "Clear"
+  },
+  "composition": {
+    "activities": [
+      "Tumpahan sampah dan material konstruksi di area tanah"
+    ],
+    "relationships": [
+      "Tumpukan sampah berada di samping jalan tanah and dekat bangunan workshop",
+      "Kerucut lalu lintas tergeletak di dekat tumpukan sampah",
+      "Pagar kayu and papan kayu berserakan di atas tumpukan"
+    ],
+    "area_condition": "Area tanah berdebu dengan tumpahan sampah and material konstruksi, tidak rapi, and tidak terkendali.",
+    "central_object": {
+      "name": "Tumpukan sampah dan material konstruksi",
+      "shape": "Tidak beraturan",
+      "material": "Karet, kayu, plastik, logam, and tanah",
+      "estimated_size": "Sedang (sekitar 2-3 meter lebar)"
+    },
+    "surrounding_objects": [
+      "Bangunan workshop dengan dinding seng biru",
+      "Jalan tanah berdebu",
+      "Pohon and vegetasi di latar belakang",
+      "Bendera Indonesia di tiang",
+      "Kerucut lalu lintas oranye",
+      "Pagar kayu and papan kayu",
+      "Tanda peringatan kuning-hitam"
+    ]
+  },
+  "people_ppe": {
+    "activities": [],
+    "person_count": 0,
+    "ppe_equipment": {
+      "gloves": { "color": "Tidak terlihat", "detected": false, "description": "Tidak terlihat", "properly_worn": false },
+      "earplugs": { "color": "Tidak terlihat", "detected": false, "description": "Tidak terlihat", "properly_worn": false },
+      "safety_boots": { "color": "Tidak terlihat", "detected": false, "description": "Tidak terlihat", "properly_worn": false },
+      "safety_glass": { "color": "Tidak terlihat", "detected": false, "description": "Tidak terlihat", "properly_worn": false },
+      "safety_helmet": { "color": "Tidak terlihat", "detected": false, "description": "Tidak terlihat", "properly_worn": false },
+      "safety_harness": { "color": "Tidak terlihat", "detected": false, "description": "Tidak terlihat", "properly_worn": false },
+      "reflective_vest": { "color": "Tidak terlihat", "detected": false, "description": "Tidak terlihat", "properly_worn": false },
+      "respiratory_mask": { "color": "Tidak terlihat", "detected": false, "description": "Tidak terlihat", "properly_worn": false }
+    },
+    "hazard_potential": [],
+    "people_relationships": []
+  },
+  "vehicles": [],
+  "traffic_control": [],
+  "access_infra": [],
+  "environment": {
+    "size": "Luas area terbuka dengan tumpahan sampah di tengah",
+    "type": "Area konstruksi atau workshop luar ruangan",
+    "condition": "Tidak terawat, kotor, and berpotensi menimbulkan bahaya lingkungan serta keselamatan.",
+    "composition": "Lingkungan luar ruangan dengan tanah berdebu, vegetasi alami di latar belakang, and struktur bangunan workshop di sisi kanan."
+  },
+  "initial_interpretation": {
+    "brief_summary": "Tumpahan sampah and material konstruksi yang tidak dikelola dengan baik di area workshop, menunjukkan ketidaksesuaian dalam pengelolaan sampah and potensi bahaya lingkungan.",
+    "main_hazard_potentials": [
+      "Bahaya lingkungan akibat penumpahan sampah",
+      "Bahaya keselamatan karena material berserakan and kerucut lalu lintas tergeletak",
+      "Potensi kebakaran atau pencemaran tanah"
+    ],
+    "estimated_risk_category": "medium",
+    "supporting_hazard_factors": [
+      "Tidak ada penandaan atau penghalang yang memadai",
+      "Material tidak disimpan atau dikelola sesuai prosedur",
+      "Area tidak bersih and tidak terawat"
+    ]
+  }
+};
+
+const audioExtractionData = {
+  "recording_properties": {
+    "file_name": "witness_statement_operator_A.mp3",
+    "duration": "08:42",
+    "audio_quality": "High",
+    "recording_type": "Interview / Field Recording",
+    "source": "B1-Operator-Radio",
+    "language": "Indonesian / English (Mixed)",
+    "channel_type": "Mono",
+    "noise_level": "Moderate (Background Industrial Noise)",
+    "clarity": "Good",
+    "overlap_level": "Low"
+  },
+  "participants": {
+    "speaker_count": 2,
+    "speakers": [
+      {
+        "speaker_id": "SPK_01",
+        "display_name": "Ahnad (Operator)",
+        "probable_role": "Primary Operator",
+        "role_confidence": "High",
+        "total_speaking_time": "05:12",
+        "tone_summary": "Distressed, Urgent",
+        "pace": "Rapid",
+        "stress_level": "High",
+        "confidence_level": "High"
+      },
+      {
+        "speaker_id": "SPK_02",
+        "display_name": "Supervisor B",
+        "probable_role": "Safety Lead",
+        "role_confidence": "High",
+        "total_speaking_time": "03:30",
+        "tone_summary": "Calm, Directive",
+        "pace": "Measured",
+        "stress_level": "Low",
+        "confidence_level": "Very High"
+      }
+    ]
+  },
+  "diarization_overview": {
+    "total_segments": 14,
+    "overlap_count": 2,
+    "interruptions_count": 1,
+    "silent_gap_count": 3
+  },
+  "key_statements": [
+    {
+      "type": "claim",
+      "severity": "high",
+      "speaker_id": "SPK_01",
+      "timestamp": "01:22",
+      "statement": "I noticed the vibration around 14:15. It didn't sound right so I called Supervisor B.",
+      "evidence_note": "Confirms awareness before total failure."
+    },
+    {
+      "type": "verification",
+      "severity": "medium",
+      "speaker_id": "SPK_02",
+      "timestamp": "03:45",
+      "statement": "Understood. We are checking maintenance logs for roller #14 immediately.",
+      "evidence_note": "Acknowledge of specific equipment issues."
+    }
+  ],
+  "timeline_events": [
+    { "timestamp": "01:22", "speaker_id": "SPK_01", "event_title": "Detection", "event_detail": "Unusual vibration detected by operator.", "importance": "critical" },
+    { "timestamp": "01:45", "speaker_id": "SPK_01", "event_title": "Reporting", "event_detail": "First contact with site supervisor.", "importance": "high" },
+    { "timestamp": "03:45", "speaker_id": "SPK_02", "event_title": "Response Init", "event_detail": "Supervisor initiates maintenance log check.", "importance": "medium" }
+  ],
+  "risk_safety_signals": [
+    { "signal_type": "Procedure Deviation", "severity": "medium", "timestamp": "04:12", "speaker_id": "SPK_01", "description": "Operator continued to observe the belt from within 5m, ignoring standard standoff protocol." },
+    { "signal_type": "Equipment Issue", "severity": "high", "timestamp": "01:22", "speaker_id": "SPK_01", "description": "Audible high-pitched screeching reported but machine not immediately stopped." }
+  ],
+  "contradictions_unclear_points": [
+    { "type": "Timeline Mismatch", "timestamp": "05:20", "description": "Operator claims alarm sounded at 14:30, but SCADA logs show 14:35.", "confidence": "high" }
+  ],
+  "summary": {
+    "brief_summary": "A 8-minute recording of the initial emergency response call during the belt failure.",
+    "main_findings": [
+      "Operator reported vibration 20 minutes before failure.",
+      "Initial response was focused on documentation rather than immediate shutdown.",
+      "Clear audible background noise confirms machinery state."
+    ],
+    "potential_risk_implication": ["Delay in emergency shutdown procedures."],
+    "recommended_human_review_focus": ["Review cross-check between Operator A and SCADA logs regarding the alarm time."]
+  }
+};
+
+const audioDiarizationData = [
+  { segment_id: "S1", start_time: "00:00", end_time: "00:15", speaker_id: "SPK_01", speaker_label: "Ahmad (Operator)", text: "Radio check, Site Alpha. Do you copy? We have an unusual noise at section 14. Over.", confidence: "high", flags: [] },
+  { segment_id: "S2", start_time: "00:16", end_time: "00:22", speaker_id: "SPK_02", speaker_label: "Supervisor B", text: "Copy Site Alpha. Supervisor B here. What kind of noise are we talking about?", confidence: "high", flags: [] },
+  { segment_id: "S3", start_time: "00:23", end_time: "00:45", speaker_id: "SPK_01", speaker_label: "Ahmad (Operator)", text: "It's a rhythmic vibration, high frequency. Started about five minutes ago. I'm standing by the roller bank now. It sounds like a bearing failure.", confidence: "high", flags: ["key_observation"] },
+  { segment_id: "S4", start_time: "00:46", end_time: "01:05", speaker_id: "SPK_02", speaker_label: "Supervisor B", text: "Okay, Ahmad. Keep your distance. Don't get too close to the drive side. I'm pulling up the maintenance records for that sector right now.", confidence: "high", flags: [] },
+  { segment_id: "S5", start_time: "01:06", end_time: "01:25", speaker_id: "SPK_01", speaker_label: "Ahmad (Operator)", text: "I'm already here, about 3 meters away. The screeching is getting louder. I think we should consider a restricted speed mode or a full stop.", confidence: "high", flags: ["hazard_alert"] },
+  { segment_id: "S6", start_time: "01:26", end_time: "01:40", speaker_id: "SPK_02", speaker_label: "Supervisor B", text: "Let me check with the control room first. We need to verify the material flow impacts before we just hit the E-Stop.", confidence: "medium", flags: ["decision_point"] },
+  { segment_id: "S7", start_time: "01:41", end_time: "02:10", speaker_id: "SPK_01", speaker_label: "Ahmad (Operator)", text: "Copy that... Wait, I see fragments now. Small pieces of rubber on the floor. It's escalating. The belt is starting to deflect.", confidence: "high", flags: ["critical_evidence"] },
+  { segment_id: "S8", start_time: "02:11", end_time: "02:25", speaker_id: "SPK_02", speaker_label: "Supervisor B", text: "Ahmad, get out of there immediately. Section 14 is compromised. Contact the gatehouse to block the walkway. I'm initiating the shutdown now.", confidence: "high", flags: ["emergency_command"] },
+  { segment_id: "S9", start_time: "02:26", end_time: "03:00", speaker_id: "SPK_01", speaker_label: "Ahmad (Operator)", text: "[Loud mechanical noise heard in background] Copy. Moving to safe zone. Section 14 walkway cleared. The alarm is sounding now.", confidence: "medium", flags: [] },
+];
+
 const runHistory = [
   { runId: "RUN-046", agent: "PEEPO Reasoning", triggeredBy: "Sarah Chen", inputSource: "Evidence Batch B1, B2", status: "completed", createdAt: "2026-04-08 10:12" },
   { runId: "RUN-045", agent: "Fact & Chronology", triggeredBy: "System (Auto)", inputSource: "witness_statement_operator_A.mp3", status: "completed", createdAt: "2026-04-08 09:30" },
   { runId: "RUN-044", agent: "IPLS Classification", triggeredBy: "Ahmed Khan", inputSource: "incident_report_initial.pdf", status: "completed", createdAt: "2026-04-07 15:20" },
 ];
 
+const videoTimeframesData = [
+  {
+    "id": "TF_01",
+    "start_time": "00:00",
+    "end_time": "01:59",
+    "summary": "Initial Site Inspection",
+    "importance": "low",
+    "badges": ["normal"],
+    "script": {
+      "scene_overview": "Operator A arrives at Section 14 with a handheld sensor.",
+      "visible_actors": ["Operator A", "Security Guard (Background)"],
+      "actions": ["Walking", "Inspecting roller bearings", "Talking on radio"],
+      "environment": "Daylight, clear visibility, standard industrial background noise.",
+      "changes": "N/A — Segment Start"
+    },
+    "analysis": {
+      "events": ["Visual inspection started"],
+      "anomalies": ["None"],
+      "hazards": ["None"],
+      "assets": "Belt moving at nominal speed (4.2 m/s).",
+      "behavior": "Standard operating procedure followed.",
+      "environmental_risk": "Low",
+      "confidence": "98%"
+    }
+  },
+  {
+    "id": "TF_02",
+    "start_time": "02:00",
+    "end_time": "03:59",
+    "summary": "Anomaly Detection — Vibration",
+    "importance": "high",
+    "badges": ["anomaly", "event"],
+    "script": {
+      "scene_overview": "Visible vibration starts at the upper roller bank.",
+      "visible_actors": ["Operator A"],
+      "actions": ["Pointing at belt", "Backing away from machinery"],
+      "environment": "Slight dust accumulation visible near the tear point.",
+      "changes": "Increasing mechanical oscillation in Section 14."
+    },
+    "analysis": {
+      "events": ["Structural Anomaly detected"],
+      "anomalies": ["Rhythmic vertical oscillation on belt surface"],
+      "hazards": ["Pinch point hazard if belt deflects further"],
+      "assets": "Section 14 roller support bracket shows visible fatigue.",
+      "behavior": "Operator identifies issue but remains within 2m. High exposure.",
+      "environmental_risk": "Moderate (Potential debris throw)",
+      "confidence": "92%"
+    }
+  },
+  {
+    "id": "TF_03",
+    "start_time": "04:00",
+    "end_time": "05:59",
+    "summary": "Critical Incident — Belt Tear",
+    "importance": "critical",
+    "badges": ["hazard", "critical"],
+    "script": {
+      "scene_overview": "Belt tears across the width. Friction sparks and smoke visible.",
+      "visible_actors": ["Operator A"],
+      "actions": ["Running towards E-Stop", "Alerting via radio"],
+      "environment": "High dust and smoke obscuring the primary camera angle.",
+      "changes": "Sudden structural failure; material spillage."
+    },
+    "analysis": {
+      "events": ["Conveyor failure", "E-Stop activated"],
+      "anomalies": ["Full-width longitudinal tear"],
+      "hazards": ["Fire risk (Friction sparks)", "Structural collapse", "Slap hazard"],
+      "assets": "Conveyor belt destroyed. Section 14 roller seized.",
+      "behavior": "Emergency response initiated immediately.",
+      "environmental_risk": "High (Smoke inhalation, Spillage)",
+      "confidence": "99%"
+    }
+  }
+];
+
+const videoExtractionData = {
+  "properties": {
+    "file_name": "cctv_zone_b_conveyor_1430.mp4",
+    "duration": "14:30",
+    "source_type": "Static CCTV",
+    "camera_type": "Fixed IP Camera (Axis P3245)",
+    "angle": "High-Angle, Wide Field",
+    "resolution": "1920x1080 (HD)",
+    "lighting": "Artificial / Ambient Mixed",
+    "stability": "Fixed Mount",
+    "visibility": "Moderate (Affected by smoke in late segments)"
+  },
+  "timeframe_overview": {
+    "total_segments": 8,
+    "interval": "02:00",
+    "anomalies": 2,
+    "hazards": 1,
+    "human_activity": true,
+    "vehicle_activity": false,
+    "review_required": 3
+  },
+  "key_findings": [
+    { "type": "Visual Anomaly", "severity": "high", "title": "Pre-failure Vibration", "timeframe": "02:00", "source": "Optical Flow AI" },
+    { "type": "Safety Violation", "severity": "medium", "title": "Standoff Zone Breach", "timeframe": "00:45", "source": "Proximity Sensor" }
+  ],
+  "event_timeline": [
+    { "timestamp": "02:05", "type": "Anomaly", "desc": "Vertical oscillation detected", "importance": "high" },
+    { "timestamp": "04:12", "type": "Failure", "desc": "Belt surface split initiated", "importance": "critical" }
+  ],
+  "hazards": [
+    { "type": "Fire/Sparks", "severity": "high", "timestamp": "04:15", "desc": "Friction between belt and seized roller." },
+    { "type": "Spillage", "severity": "medium", "timestamp": "04:20", "desc": "Material falling to walkway." }
+  ],
+  "people": { "count": 1, "ppe": "Compliant (Vest, Helmet)", "behavior": "Urgent response detected after 04:00." },
+  "vehicles": { "detected": "None", "condition": "N/A" },
+  "environment": { "visibility": "Degrading", "air": "Smoke/Dust detected near failure point." },
+  "summary": {
+    "brief": "CCTV footage capturing the structural failure of Section 14 conveyor belt.",
+    "findings": ["Vibration ignored for 2 mins", "Sparks detected before shutdown"],
+    "risk": "High risk windows: 04:00 - 05:00",
+    "focus": "Verify if Opertor A noticed the sparks at 04:15."
+  }
+};
+
 // --- Components ---
 
 function StatusIndicator({ status, type }: { status: string, type: 'extraction' | 'review' }) {
+  if (!status) return null;
   const isAlt = status === "completed" || status === "reviewed";
   const isProcess = status === "processing" || status === "partial";
   const isFail = status === "failed";
@@ -140,6 +447,326 @@ function getFileIcon(type: string) {
     case "Video": return <VideoIcon className="h-4 w-4 text-purple-500" />;
     default: return <FileCode className="h-4 w-4 text-slate-400" />;
   }
+}
+
+function ImageViewer({ file }: { file: any }) {
+  const [zoom, setZoom] = useState(1);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+
+  const handleZoomIn = () => setZoom(prev => Math.min(prev + 0.3, 8));
+  const handleZoomOut = () => {
+    setZoom(prev => {
+      const next = Math.max(prev - 0.3, 0.5);
+      if (next <= 1) setPosition({ x: 0, y: 0 });
+      return next;
+    });
+  };
+  
+  const handleReset = () => {
+    setZoom(1);
+    setPosition({ x: 0, y: 0 });
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (zoom > 1) {
+      setIsDragging(true);
+      setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y });
+    }
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (isDragging) {
+      setPosition({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y });
+    }
+  };
+
+  const handleMouseUp = () => setIsDragging(false);
+
+  const handleWheel = (e: React.WheelEvent) => {
+    if (e.ctrlKey || e.metaKey) {
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? -0.1 : 0.1;
+      setZoom(prev => Math.min(Math.max(prev + delta, 0.5), 8));
+    }
+  };
+
+  return (
+    <div className={`w-full h-full relative cursor-default overflow-hidden flex items-center justify-center ${zoom > 1 ? 'cursor-grab active:cursor-grabbing' : ''}`}
+         onWheel={handleWheel}
+         onMouseDown={handleMouseDown}
+         onMouseMove={handleMouseMove}
+         onMouseUp={handleMouseUp}
+         onMouseLeave={handleMouseUp}>
+      
+      {/* Utility Bar */}
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 bg-white/95 backdrop-blur-md px-1.5 py-1 rounded-xl border border-slate-200 shadow-2xl flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-all duration-300 transform -translate-y-2 group-hover:translate-y-0 scale-95 group-hover:scale-100">
+          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-slate-100 rounded-lg" onClick={handleZoomIn} title="Zoom In"><ZoomIn className="h-4 w-4 text-slate-700" /></Button>
+          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-slate-100 rounded-lg" onClick={handleZoomOut} title="Zoom Out"><ZoomOut className="h-4 w-4 text-slate-700" /></Button>
+          <div className="w-px h-4 bg-slate-200 mx-1" />
+          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-slate-100 rounded-lg" onClick={handleReset} title="Reset View"><RefreshCcw className="h-3.5 w-3.5 text-slate-700" /></Button>
+          <div className="w-px h-4 bg-slate-200 mx-1" />
+          <Button variant="ghost" size="sm" className="h-8 px-2 text-[9px] font-black text-slate-700 hover:bg-slate-100 rounded-lg uppercase tracking-wider" onClick={() => { setZoom(1); setPosition({x:0, y:0}); }}>Fit</Button>
+          <Button variant="ghost" size="sm" className="h-8 px-2 text-[9px] font-black text-slate-700 hover:bg-slate-100 rounded-lg uppercase tracking-wider border border-transparent hover:border-slate-100" onClick={() => setZoom(1.5)}>1.5x</Button>
+          <div className="w-px h-4 bg-slate-200 mx-1" />
+          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-slate-100 rounded-lg" title="Open Original" onClick={() => window.open(file.url, '_blank')}><ExternalLink className="h-3.5 w-3.5 text-slate-700" /></Button>
+      </div>
+
+      <div className="w-full h-full flex items-center justify-center pointer-events-none">
+        {file.url ? (
+            <img 
+              src={file.url} 
+              alt={file.name} 
+              className={`max-w-full max-h-full object-contain pointer-events-none select-none transition-transform duration-200 ease-out`}
+              style={{ 
+                transformOrigin: 'center center',
+                transform: `translate(${position.x}px, ${position.y}px) scale(${zoom})`,
+              }}
+              draggable={false}
+            />
+        ) : (
+          <ImageIcon className="h-32 w-32 text-slate-800 opacity-50" />
+        )}
+      </div>
+
+      <div className="absolute bottom-4 left-4 z-20 pointer-events-none">
+          <div className="bg-slate-900/60 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 flex items-center gap-2">
+            <span className="text-[9px] font-black text-white uppercase tracking-[0.2em]">{Math.round(zoom * 100)}%</span>
+          </div>
+      </div>
+
+      <div className="absolute bottom-4 right-4 bg-slate-900/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 flex items-center gap-2 z-20 pointer-events-none">
+          <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
+          <span className="text-[10px] font-bold text-white uppercase tracking-widest">Enhanced AI Layer ON</span>
+      </div>
+
+      {/* Grid Overlay subtle */}
+      <div className="absolute inset-0 pointer-events-none opacity-20" style={{ backgroundImage: 'radial-gradient(circle, #ffffff 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
+    </div>
+  );
+}function AIAnalysisPanel({ file }: { file: any }) {
+  const [viewMode, setViewMode] = useState<"Structured" | "JSON">("Structured");
+  const [expandedSections, setExpandedSections] = useState<string[]>(["Image Properties", "Initial Interpretation"]);
+
+  const toggleSection = (section: string) => {
+    setExpandedSections(prev => 
+      prev.includes(section) ? prev.filter(s => s !== section) : [...prev, section]
+    );
+  };
+
+  const categories = [
+    { name: "Image Properties", id: "image_properties", icon: ImageIcon, data: extractionData.image_properties },
+    { name: "Composition & Objects", id: "composition", icon: LayoutGrid, data: extractionData.composition },
+    { name: "People & PPE", id: "people_ppe", icon: Users, data: extractionData.people_ppe },
+    { name: "Vehicles", id: "vehicles", icon: Truck, data: extractionData.vehicles },
+    { name: "Traffic Control", id: "traffic_control", icon: Navigation, data: extractionData.traffic_control },
+    { name: "Access & Infra", id: "access_infra", icon: Box, data: extractionData.access_infra },
+    { name: "Environment", id: "environment", icon: Wind, data: extractionData.environment },
+    { name: "Initial Interpretation", id: "initial_interpretation", icon: Brain, data: extractionData.initial_interpretation },
+  ];
+
+  const DataField = ({ label, value, fullWidth = false }: { label: string, value: any, fullWidth?: boolean }) => (
+    <div className={`${fullWidth ? 'col-span-2' : ''} mb-3 last:mb-0`}>
+      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight block mb-0.5">{label}</span>
+      <div className="text-xs font-bold text-slate-800 leading-snug">{value || "—"}</div>
+    </div>
+  );
+
+  const PPETag = ({ name, data }: { name: string, data: any }) => {
+    const isYes = data.detected === true;
+    const isNo = data.detected === false;
+    
+    return (
+      <div className="flex flex-col gap-1 p-2 border rounded-lg bg-slate-50/50">
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] font-bold text-slate-500 capitalize">{name.replace('_', ' ')}</span>
+          <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase text-center min-w-[32px] ${
+            isYes ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' : 
+            isNo ? 'bg-rose-50 text-rose-600 border border-rose-100' : 
+            'bg-slate-100 text-slate-400 border border-slate-200'
+          }`}>
+            {isYes ? 'Yes' : isNo ? 'No' : 'N/A'}
+          </span>
+        </div>
+        {(data.color || data.description) && data.color !== "Tidak terlihat" && (
+          <span className="text-[9px] text-slate-400 italic leading-tight truncate">{data.color} · {data.description}</span>
+        )}
+      </div>
+    );
+  };
+
+  const renderStructuredContent = (id: string, data: any) => {
+    switch (id) {
+      case "image_properties":
+        return (
+          <div className="grid grid-cols-2 gap-x-4">
+             <DataField label="Scale" value={data.scale} />
+             <DataField label="Source" value={data.source} />
+             <DataField label="Lighting" value={data.lighting} />
+             <DataField label="Quality" value={data.image_quality} />
+          </div>
+        );
+      case "composition":
+        return (
+          <div className="space-y-4">
+            <div>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5 opacity-60">Activities</span>
+              <div className="flex flex-wrap gap-1.5">
+                {data.activities.length > 0 ? data.activities.map((a: string, i: number) => (
+                  <span key={i} className="px-2 py-0.5 bg-slate-100 text-slate-700 text-[10px] font-bold rounded border border-slate-200">{a}</span>
+                )) : <span className="text-xs italic text-slate-300">No activities detected</span>}
+              </div>
+            </div>
+            <div>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5 opacity-60">Relationships</span>
+              <ul className="space-y-1">
+                {data.relationships.length > 0 ? data.relationships.map((r: string, i: number) => (
+                  <li key={i} className="text-[11px] font-bold text-slate-600 flex gap-2">
+                    <span className="text-primary mt-1">•</span> {r}
+                  </li>
+                )) : <span className="text-xs italic text-slate-300">—</span>}
+              </ul>
+            </div>
+            <DataField label="Area Condition" value={data.area_condition} fullWidth />
+            <div className="p-3 border rounded-xl bg-slate-50 shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]">
+               <span className="text-[10px] font-bold text-primary uppercase tracking-widest block mb-2 border-b border-primary/5 pb-1">Central Object</span>
+               <div className="grid grid-cols-2 gap-2">
+                 <DataField label="Name" value={data.central_object.name} />
+                 <DataField label="Shape" value={data.central_object.shape} />
+                 <DataField label="Material" value={data.central_object.material} />
+                 <DataField label="Est. Size" value={data.central_object.estimated_size} />
+               </div>
+            </div>
+          </div>
+        );
+      case "people_ppe":
+        return (
+          <div className="space-y-5">
+            <div className="grid grid-cols-2 gap-4">
+              <DataField label="Person Count" value={data.person_count} />
+              <div>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight block mb-0.5">Activities</span>
+                <span className="text-xs italic text-slate-300">No data</span>
+              </div>
+            </div>
+            <div>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-3 opacity-60 border-b pb-1">PPE Compliance Detail</span>
+              <div className="grid grid-cols-2 gap-2">
+                {Object.entries(data.ppe_equipment).map(([key, val]: any) => (
+                  <PPETag key={key} name={key} data={val} />
+                ))}
+              </div>
+            </div>
+            {data.hazard_potential.length > 0 && (
+               <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5 opacity-60">Hazard Potential</span>
+                  {data.hazard_potential.map((h: string, i: number) => <span key={i} className="text-xs font-bold text-rose-600">• {h}</span>)}
+               </div>
+            )}
+          </div>
+        );
+      case "environment":
+        return (
+          <div className="grid grid-cols-2 gap-4">
+             <DataField label="Size" value={data.size} />
+             <DataField label="Type" value={data.type} />
+             <DataField label="Condition" value={data.condition} fullWidth />
+             <DataField label="Composition" value={data.composition} fullWidth />
+          </div>
+        );
+      case "initial_interpretation":
+        return (
+          <div className="space-y-4">
+            <DataField label="Brief Summary" value={data.brief_summary} fullWidth />
+            <div className="flex items-center justify-between py-2 border-y border-slate-50">
+               <span className="text-[10px] font-bold text-slate-400 uppercase">Risk Level</span>
+               <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-tighter shadow-sm border ${
+                 data.estimated_risk_category === 'critical' ? 'bg-rose-500 text-white border-rose-600' :
+                 data.estimated_risk_category === 'high' ? 'bg-amber-500 text-white border-amber-600' :
+                 'bg-emerald-500 text-white border-emerald-600'
+               }`}>
+                 {data.estimated_risk_category}
+               </span>
+            </div>
+            <div>
+               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5 opacity-60">Main Hazard Potentials</span>
+               <div className="flex flex-wrap gap-1.5">
+                 {data.main_hazard_potentials.map((h: string, i: number) => (
+                   <span key={i} className="px-2 py-0.5 bg-rose-50 text-rose-700 text-[10px] font-bold rounded border border-rose-100">{h}</span>
+                 ))}
+               </div>
+            </div>
+          </div>
+        );
+      default:
+        return (
+          <div className="py-6 text-center border-2 border-dashed rounded-xl bg-slate-50">
+            <span className="text-xs font-bold text-slate-300 italic tracking-widest uppercase">No Data Available</span>
+          </div>
+        );
+    }
+  };
+
+  return (
+    <div className="flex flex-col h-full bg-white">
+      <div className="px-5 py-4 shrink-0 flex items-center justify-between border-b bg-slate-50/20">
+         <div className="flex items-center gap-2">
+           <Brain className="h-4 w-4 text-primary" />
+           <span className="text-[11px] font-black text-slate-900 uppercase tracking-widest">Analysis Matrix</span>
+         </div>
+         <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-lg border border-slate-200/60 shadow-inner">
+            <button 
+              onClick={() => setViewMode("Structured")}
+              className={`px-3 py-1 text-[9px] font-black uppercase tracking-tighter rounded-md transition-all ${viewMode === "Structured" ? "bg-white text-primary shadow-sm ring-1 ring-slate-200/50" : "text-slate-400 hover:text-slate-600"}`}
+            >
+              Structured
+            </button>
+            <button 
+              onClick={() => setViewMode("JSON")}
+              className={`px-3 py-1 text-[9px] font-black uppercase tracking-tighter rounded-md transition-all ${viewMode === "JSON" ? "bg-white text-primary shadow-sm ring-1 ring-slate-200/50" : "text-slate-400 hover:text-slate-600"}`}
+            >
+              JSON
+            </button>
+         </div>
+      </div>
+
+      <div className="flex-1 overflow-auto custom-scrollbar p-5 space-y-3">
+         {categories.map((cat) => (
+            <div key={cat.id} className={`border rounded-xl overflow-hidden shadow-sm transition-all duration-300 ${expandedSections.includes(cat.name) ? 'ring-1 ring-primary/20 shadow-md translate-y-[-2px]' : 'hover:border-slate-300'}`}>
+               <button 
+                 onClick={() => toggleSection(cat.name)}
+                 className={`w-full flex items-center justify-between p-4 transition-colors ${expandedSections.includes(cat.name) ? 'bg-slate-50/80 border-b' : 'bg-white hover:bg-slate-50/50'}`}
+               >
+                 <div className="flex items-center gap-3">
+                   <div className={`h-8 w-8 rounded-lg border shadow-sm flex items-center justify-center transition-all ${expandedSections.includes(cat.name) ? 'bg-primary text-white border-primary shadow-primary/20' : 'bg-white text-slate-400'}`}>
+                     <cat.icon className="h-4 w-4" />
+                   </div>
+                   <span className={`text-sm font-bold transition-colors ${expandedSections.includes(cat.name) ? 'text-slate-900' : 'text-slate-700'}`}>{cat.name}</span>
+                 </div>
+                 <div className={`transition-transform duration-300 ${expandedSections.includes(cat.name) ? 'rotate-180' : ''}`}>
+                    <ChevronDown className="h-4 w-4 text-slate-400" />
+                 </div>
+               </button>
+               
+               {expandedSections.includes(cat.name) && (
+                 <div className="p-5 bg-white animate-in slide-in-from-top-2 duration-300">
+                    {viewMode === "Structured" ? (
+                      renderStructuredContent(cat.id, cat.data)
+                    ) : (
+                      <div className="bg-slate-900 rounded-lg p-4 overflow-hidden border border-slate-800 shadow-inner">
+                        <pre className="text-[10.5px] font-mono text-emerald-400 leading-relaxed overflow-auto max-h-[400px] custom-scrollbar">
+                           {JSON.stringify(cat.data, null, 2)}
+                        </pre>
+                      </div>
+                    )}
+                 </div>
+               )}
+            </div>
+         ))}
+      </div>
+    </div>
+  );
 }
 
 // --- Tabs ---
@@ -304,18 +931,29 @@ function EvidenceTab() {
   return (
     <div className="flex flex-col h-full bg-slate-50/10">
       <div className="h-12 border-b bg-white flex items-center justify-between px-4 shrink-0 shadow-sm relative z-10">
-        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-md border">
-          {["All Evidence", "Documents", "Images", "Audio", "Video"].map((type) => (
+        <div className="flex items-center gap-1.5 bg-slate-100 p-1.5 rounded-lg border shadow-inner">
+          {[
+            { id: "All Evidence", icon: Grid, label: "All" },
+            { id: "Documents", icon: FileText, label: "Docs" },
+            { id: "Images", icon: ImageIcon, label: "Images" },
+            { id: "Audio", icon: AudioIcon, label: "Audio" },
+            { id: "Video", icon: VideoIcon, label: "Video" },
+          ].map((type) => (
             <button
-              key={type}
-              onClick={() => setFilterType(type)}
-              className={`px-3 py-1 text-2xs font-bold rounded-sm transition-all ${
-                filterType === type 
-                ? "bg-white text-primary shadow-sm" 
-                : "text-slate-500 hover:text-slate-800"
+              key={type.id}
+              onClick={() => {
+                setFilterType(type.id);
+                if (type.id !== "All Evidence") setViewMode("files");
+              }}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-md transition-all ${
+                filterType === type.id 
+                ? "bg-white text-primary shadow-sm border border-slate-200" 
+                : "text-slate-500 hover:text-slate-800 hover:bg-slate-200/50"
               }`}
+              title={type.id}
             >
-              {type}
+              <type.icon className="h-3.5 w-3.5" />
+              <span className="text-[10px] font-bold uppercase tracking-widest">{type.label}</span>
             </button>
           ))}
         </div>
@@ -682,8 +1320,9 @@ function ExtractionTab() {
   })).filter(b => b.files.length > 0);
 
   return (
-    <div className="flex h-full bg-slate-50/10">
-      <div className="w-[280px] border-r bg-white flex flex-col shrink-0 z-20 shadow-[1px_0_5px_rgba(0,0,0,0.02)]">
+    <div className="flex h-full overflow-hidden">
+      {/* LEFT PANEL — 320px for readable file names and folder labels */}
+      <div className="w-[320px] min-w-[280px] border-r bg-white flex flex-col shrink-0 z-20 shadow-[1px_0_5px_rgba(0,0,0,0.03)]">
         <div className="h-12 border-b flex items-center px-4 shrink-0 justify-between bg-slate-50/50">
            {isSearchOpen ? (
               <div className="flex-1 flex items-center bg-white border rounded px-2 h-8 animate-in slide-in-from-right-1 duration-200">
@@ -707,103 +1346,158 @@ function ExtractionTab() {
               </>
            )}
         </div>
-        <div className="p-2.5 border-b flex gap-1 bg-white">
-           {["All Files", "Docs", "Images", "Audio"].map(f => (
+        
+        <div className="px-2.5 py-2 border-b flex gap-1 bg-white shadow-sm">
+           {[
+             { id: "All Files", label: "All", icon: Grid },
+             { id: "Document", label: "Docs", icon: FileText },
+             { id: "Image", label: "Images", icon: ImageIcon },
+             { id: "Audio", label: "Audio", icon: AudioIcon },
+             { id: "Video", label: "Video", icon: VideoIcon },
+           ].map(f => (
               <button 
-                key={f}
-                onClick={() => setActiveFilter(f === "Docs" ? "Documents" : f === "All Files" ? "All Files" : f)}
-                className={`flex-1 py-1 text-[9px] font-bold rounded-sm border transition-all ${
-                  (activeFilter === f || (f === "Docs" && activeFilter === "Documents")) 
-                  ? "bg-slate-900 text-white border-slate-900" 
-                  : "bg-white text-slate-500 border-slate-100 hover:border-slate-300"
+                key={f.id}
+                onClick={() => setActiveFilter(f.id)}
+                title={f.id}
+                className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-1.5 px-0.5 rounded-md border transition-all ${
+                  activeFilter === f.id
+                  ? "bg-slate-900 text-white border-slate-900 shadow-sm" 
+                  : "bg-white text-slate-400 border-slate-100 hover:border-slate-300 hover:text-slate-700 hover:bg-slate-50"
                 }`}
               >
-                {f}
+                <f.icon className="h-3.5 w-3.5" />
+                <span className="text-[9px] font-bold uppercase tracking-wide">{f.label}</span>
               </button>
            ))}
         </div>
+
         <div className="flex-1 overflow-auto custom-scrollbar bg-slate-50/30">
-           {groupedFiles.map(batch => (
-             <div key={batch.id} className="border-b last:border-b-0 bg-white">
-                <div 
-                  onClick={() => toggleBatch(batch.id)}
-                  className="flex items-center gap-2 px-3 py-2 bg-slate-50/80 cursor-pointer hover:bg-slate-100 transition-colors border-b border-slate-100"
-                >
-                   {expandedBatches.includes(batch.id) ? <ChevronDown className="h-3 w-3 text-slate-400" /> : <ChevronRight className="h-3 w-3 text-slate-400" />}
-                   <Folders className="h-3.5 w-3.5 text-primary/60" />
-                   <span className="text-[10px] font-bold text-slate-600 uppercase tracking-tighter truncate leading-tight flex-1">{batch.name}</span>
-                   <span className="text-[9px] font-bold text-slate-400 bg-white px-1.5 py-0.5 rounded-full border">{batch.files.length}</span>
-                </div>
-                {expandedBatches.includes(batch.id) && batch.files.map(file => (
+           {activeFilter === "All Files" ? (
+             groupedFiles.map(batch => (
+               <div key={batch.id} className="border-b last:border-b-0 bg-white">
                   <div 
-                    key={file.id}
-                    onClick={() => setSelectedFile(file)}
-                    className={`p-3 pl-8 border-b border-slate-50 cursor-pointer transition-all hover:bg-slate-50 relative group ${
-                      selectedFile.id === file.id ? "bg-primary/5 border-l-4 border-l-primary" : "border-l-4 border-l-transparent"
-                    }`}
+                    onClick={() => toggleBatch(batch.id)}
+                    className="flex items-start gap-2 px-3 py-2.5 bg-slate-50 cursor-pointer hover:bg-slate-100 transition-colors border-b border-slate-100"
                   >
-                     <div className="flex gap-2.5">
-                        <div className={`h-8 w-8 rounded shrink-0 flex items-center justify-center border ${
-                          selectedFile.id === file.id ? "bg-white border-primary/20 shadow-sm" : "bg-white border-slate-100 shadow-sm"
-                        }`}>
-                           {getFileIcon(file.type)}
+                     <div className="shrink-0 mt-0.5">
+                       {expandedBatches.includes(batch.id) ? <ChevronDown className="h-3 w-3 text-slate-400" /> : <ChevronRight className="h-3 w-3 text-slate-400" />}
+                     </div>
+                     <Folders className="h-3.5 w-3.5 text-primary/60 shrink-0 mt-0.5" />
+                     {/* Allow folder name to wrap — no truncation */}
+                     <span className="text-[10px] font-bold text-slate-600 uppercase tracking-tighter leading-snug flex-1 min-w-0">{batch.name}</span>
+                     <span className="text-[9px] font-bold text-slate-400 bg-white px-1.5 py-0.5 rounded-full border shrink-0 mt-0.5 ml-1">{batch.files.length}</span>
+                  </div>
+                  {expandedBatches.includes(batch.id) && batch.files.map(file => (
+                    <div 
+                      key={file.id}
+                      onClick={() => setSelectedFile(file)}
+                      className={`px-3 py-2.5 pl-7 border-b border-slate-50 cursor-pointer transition-all hover:bg-slate-50/80 relative group ${
+                        selectedFile.id === file.id ? "bg-primary/5 border-l-[3px] border-l-primary" : "border-l-[3px] border-l-transparent"
+                      }`}
+                    >
+                       <div className="flex gap-2.5 items-start">
+                          <div className={`h-7 w-7 rounded shrink-0 flex items-center justify-center border mt-0.5 ${
+                            selectedFile.id === file.id ? "bg-white border-primary/20 shadow-sm" : "bg-white border-slate-100"
+                          }`}>
+                             {getFileIcon(file.type)}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                             <div className="flex items-center justify-between mb-0.5 gap-2">
+                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter shrink-0">{file.type}</span>
+                                <span className="text-[9px] text-slate-300 shrink-0">{file.uploadDate}</span>
+                             </div>
+                             {/* 2-line clamp so filenames are readable without being cut mid-character */}
+                             <p className={`text-[11px] font-semibold leading-snug break-all line-clamp-2 ${selectedFile.id === file.id ? "text-primary" : "text-slate-700"}`}>{file.name}</p>
+                             <div className="flex items-center gap-2 mt-1.5">
+                                <StatusIndicator status={file.extractionStatus} type="extraction" />
+                                {file.tags.includes("key") && <Star className="h-2.5 w-2.5 fill-amber-400 text-amber-400" />}
+                             </div>
+                          </div>
+                       </div>
+                    </div>
+                  ))}
+               </div>
+             ))
+           ) : (
+             filteredFiles.map(file => (
+               <div 
+                 key={file.id}
+                 onClick={() => setSelectedFile(file)}
+                 className={`px-3 py-2.5 border-b border-slate-50 cursor-pointer transition-all hover:bg-slate-50/80 relative group ${
+                   selectedFile.id === file.id ? "bg-primary/5 border-l-[3px] border-l-primary" : "border-l-[3px] border-l-transparent"
+                 }`}
+               >
+                  <div className="flex gap-2.5 items-start">
+                     <div className={`h-7 w-7 rounded shrink-0 flex items-center justify-center border mt-0.5 ${
+                       selectedFile.id === file.id ? "bg-white border-primary/20 shadow-sm" : "bg-white border-slate-100"
+                     }`}>
+                        {getFileIcon(file.type)}
+                     </div>
+                     <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-0.5 gap-2">
+                           <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter shrink-0">{file.type}</span>
+                           <span className="text-[9px] text-slate-300 shrink-0">{file.uploadDate}</span>
                         </div>
-                        <div className="flex-1 min-w-0">
-                           <div className="flex items-center justify-between mb-0.5">
-                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{file.type}</span>
-                              <span className="text-[9px] font-bold text-slate-400">{file.uploadDate}</span>
-                           </div>
-                           <p className={`text-xs font-bold truncate ${selectedFile.id === file.id ? "text-primary font-bold" : "text-slate-700"}`}>{file.name}</p>
-                           <div className="flex items-center gap-2 mt-1.5">
-                              <StatusIndicator status={file.extractionStatus} type="extraction" />
-                              {file.tags.includes("key") && <Star className="h-2.5 w-2.5 fill-amber-400 text-amber-400" />}
-                           </div>
+                        <p className={`text-[11px] font-semibold leading-snug break-all line-clamp-2 ${selectedFile.id === file.id ? "text-primary" : "text-slate-700"}`}>{file.name}</p>
+                        <div className="flex items-center gap-2 mt-1.5">
+                           <StatusIndicator status={file.extractionStatus} type="extraction" />
+                           {file.tags.includes("key") && <Star className="h-2.5 w-2.5 fill-amber-400 text-amber-400" />}
                         </div>
                      </div>
                   </div>
-                ))}
-             </div>
-           ))}
-           {groupedFiles.length === 0 && (
-              <div className="p-8 text-center text-slate-400">
-                 <Search className="h-8 w-8 mx-auto mb-3 opacity-20" />
-                 <p className="text-xs font-bold uppercase tracking-widest opacity-50">No files found</p>
-              </div>
+               </div>
+             ))
            )}
+           {(activeFilter === "All Files" ? groupedFiles : filteredFiles).length === 0 && (
+               <div className="p-8 text-center text-slate-400">
+                  <Search className="h-8 w-8 mx-auto mb-3 opacity-20" />
+                  <p className="text-xs font-bold uppercase tracking-widest opacity-50">No files found</p>
+               </div>
+            )}
         </div>
       </div>
 
       <div className="flex-1 flex flex-col relative z-10 bg-white">
         <div className="h-12 border-b flex items-center justify-between px-6 shrink-0 bg-white">
-           <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                 <div className="h-7 w-7 bg-slate-100 rounded flex items-center justify-center border">
-                    {getFileIcon(selectedFile.type)}
-                 </div>
-                 <h2 className="text-sm font-bold text-slate-900">{selectedFile.name}</h2>
-              </div>
-              <div className="h-4 w-px bg-slate-200" />
-              <div className="flex items-center gap-3">
-                 <StatusIndicator status={selectedFile.extractionStatus} type="extraction" />
-                 <ConfidenceChip level="high" />
-              </div>
-           </div>
-           <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" className="h-8 text-[11px] font-bold gap-2">
-                 <Maximize2 className="h-3.5 w-3.5" /> Fullscreen
-              </Button>
-              <Button variant="outline" size="sm" className="h-8 text-[11px] font-bold gap-2">
-                 <Upload className="h-3.5 w-3.5" /> Replace Source
-              </Button>
-           </div>
+           {selectedFile ? (
+             <>
+               <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                     <div className="h-7 w-7 bg-slate-100 rounded flex items-center justify-center border">
+                        {getFileIcon(selectedFile.type)}
+                     </div>
+                     <h2 className="text-sm font-bold text-slate-900">{selectedFile.name}</h2>
+                  </div>
+                  <div className="h-4 w-px bg-slate-200" />
+                  <div className="flex items-center gap-3">
+                     <StatusIndicator status={selectedFile.extractionStatus} type="extraction" />
+                     <ConfidenceChip level="high" />
+                  </div>
+               </div>
+               <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" className="h-8 text-[11px] font-bold gap-2">
+                     <Maximize2 className="h-3.5 w-3.5" /> Fullscreen
+                  </Button>
+                  <Button variant="outline" size="sm" className="h-8 text-[11px] font-bold gap-2">
+                     <Upload className="h-3.5 w-3.5" /> Replace Source
+                  </Button>
+               </div>
+             </>
+           ) : (
+             <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">No active selection</div>
+           )}
         </div>
 
-        <div className="flex-1 overflow-auto bg-slate-100/50 p-6 flex flex-col items-center custom-scrollbar">
-           <AdaptiveSourcePreview file={selectedFile} />
+        {/* CENTER — flex-1, but preview canvas is capped so it doesn't over-expand on wide screens */}
+        <div className="flex-1 overflow-auto bg-[#f0f2f4] p-6 flex flex-col items-center custom-scrollbar" style={{ minWidth: 0 }}>
+           <div className="w-full max-w-3xl">
+             <AdaptiveSourcePreview file={selectedFile} />
+           </div>
         </div>
       </div>
 
-      <div className="w-[380px] border-l bg-white flex flex-col shrink-0 z-20 shadow-[-1px_0_5px_rgba(0,0,0,0.02)]">
+      {/* RIGHT PANEL — 460px for dense structured content (JSON, accordion, action buttons) */}
+      <div className="w-[460px] min-w-[380px] border-l bg-white flex flex-col shrink-0 z-20 shadow-[-2px_0_6px_rgba(0,0,0,0.04)]">
         <div className="h-12 border-b flex items-center justify-between px-4 shrink-0 bg-slate-50/50">
            <div className="flex items-center gap-2">
               <Brain className="h-4 w-4 text-primary" />
@@ -817,14 +1511,21 @@ function ExtractionTab() {
            </div>
         </div>
         
-        <div className="flex-1 overflow-auto p-5 custom-scrollbar bg-slate-50/10">
-           <AdaptiveExtractionOutput file={selectedFile} />
+        <div className="flex-1 overflow-auto custom-scrollbar bg-white">
+           {selectedFile?.type === "Image" ? (
+             <AIAnalysisPanel file={selectedFile} />
+           ) : (
+             <div className="p-6">
+               <AdaptiveExtractionOutput file={selectedFile} />
+             </div>
+           )}
         </div>
 
-        <div className="p-4 border-t bg-white shrink-0 shadow-[0_-1px_5px_rgba(0,0,0,0.01)]">
+        {/* Action bar — prominent, stable, always visible */}
+        <div className="px-5 py-4 border-t bg-white shrink-0 shadow-[0_-2px_8px_rgba(0,0,0,0.04)]">
            <div className="flex items-center gap-2">
-              <Button className="flex-1 h-9 text-xs font-bold bg-slate-900 hover:bg-slate-800 shadow-md">Accept All Findings</Button>
-              <Button variant="outline" className="h-9 px-3 border-slate-200">
+              <Button className="flex-1 h-9 text-xs font-bold bg-slate-900 hover:bg-slate-800 shadow-sm tracking-wide">Accept All Findings</Button>
+              <Button variant="outline" className="h-9 px-3 border-slate-200 hover:bg-slate-50">
                  <MoreVertical className="h-4 w-4 text-slate-400" />
               </Button>
            </div>
@@ -835,6 +1536,7 @@ function ExtractionTab() {
 }
 
 function AdaptiveSourcePreview({ file }: { file: any }) {
+  if (!file) return <div className="p-20 text-center text-slate-400 font-bold uppercase tracking-[0.2em] opacity-50">Select evidence for preview</div>;
   if (file.type === "Document") {
     return (
       <div className="w-full max-w-4xl min-h-[800px] bg-white border border-slate-200 rounded-lg shadow-xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-500">
@@ -874,98 +1576,394 @@ function AdaptiveSourcePreview({ file }: { file: any }) {
 
   if (file.type === "Image") {
     return (
-      <div className="w-full max-w-4xl aspect-[4/3] bg-white border border-slate-300 rounded-lg shadow-2xl relative overflow-hidden group animate-in fade-in zoom-in-95 duration-500">
-         <div className="absolute inset-0 bg-slate-900 flex items-center justify-center p-4">
-            <div className="relative w-full h-full border-4 border-slate-700 rounded-lg overflow-hidden shadow-2xl flex items-center justify-center">
-               <ImageIcon className="h-32 w-32 text-slate-800 opacity-50" />
-               <div className="absolute top-[20%] left-[15%] w-[40%] h-[35%] border-2 border-amber-500 bg-amber-500/10 rounded cursor-pointer hover:bg-amber-500/20 transition-all group-hover:scale-[1.01] shadow-[0_0_15px_rgba(245,158,11,0.3)]">
-                  <div className="absolute -top-6 left-0 bg-amber-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-t tracking-wider shadow-sm uppercase">Equipment Hazard [92%]</div>
-                  <div className="absolute inset-0 border border-white/20 animate-pulse" />
-               </div>
-               <div className="absolute top-[60%] left-[60%] w-[25%] h-[25%] border-2 border-emerald-500 bg-emerald-500/10 rounded cursor-pointer hover:bg-emerald-500/20 transition-all group-hover:scale-[1.01] shadow-[0_0_15px_rgba(16,185,129,0.3)]">
-                  <div className="absolute -top-6 left-0 bg-emerald-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-t tracking-wider shadow-sm uppercase">PPE Compliance [98%]</div>
-                  <div className="absolute inset-0 border border-white/20 animate-pulse" />
-               </div>
-               <div className="absolute bottom-4 right-4 bg-slate-900/80 backdrop-blur px-3 py-1.5 rounded-full border border-white/10 flex items-center gap-2">
-                  <div className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                  <span className="text-[10px] font-bold text-white uppercase tracking-widest">Enhanced AI Layer ON</span>
-               </div>
-            </div>
-         </div>
-         <div className="absolute bottom-0 left-0 right-0 h-1 border-t border-slate-200/50 bg-white/20 blur-[1px]" />
+      <div className="w-full max-w-4xl aspect-[4/3] bg-[#0f172a] rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] relative overflow-hidden group animate-in fade-in zoom-in-95 duration-500 ring-1 ring-white/10">
+         <ImageViewer file={file} />
       </div>
     );
   }
 
   if (file.type === "Audio") {
+    // Shared state for playback
+    const [currentTime, setCurrentTime] = useState(0);
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [playbackSpeed, setPlaybackSpeed] = useState(1);
+    
+    // Jump to time helper
+    const jumpTo = (timeStr: string) => {
+      const parts = timeStr.split(':').map(Number);
+      const seconds = parts[0] * 60 + parts[1];
+      setCurrentTime(seconds);
+      setIsPlaying(true);
+    };
+
+    // Helper to check if current time is within a segment
+    const isSegmentActive = (start: string, end: string) => {
+      const getS = (s: string) => s.split(':').map(Number)[0] * 60 + s.split(':').map(Number)[1];
+      return currentTime >= getS(start) && currentTime <= getS(end);
+    };
+
     return (
-      <div className="w-full max-w-4xl space-y-8 animate-in slide-in-from-bottom-4 duration-500">
-         <div className="bg-white border-2 border-slate-100 rounded-2xl shadow-2xl p-8 space-y-6">
-            <div className="flex items-center justify-between">
-               <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 bg-amber-500 rounded-full flex items-center justify-center text-white shadow-lg shadow-amber-500/20">
-                     <AudioIcon className="h-5 w-5" />
-                  </div>
-                  <div>
-                     <h3 className="text-lg font-bold text-slate-900">{file.name}</h3>
-                     <p className="text-xs text-slate-400 font-medium uppercase tracking-[0.2em]">{file.duration} · High Fidelity Recording</p>
-                  </div>
-               </div>
-               <StatusIndicator status="reviewed" type="review" />
-            </div>
+       <div className="w-full max-w-4xl space-y-6 animate-in slide-in-from-bottom-4 duration-500 pb-20">
+          {/* Audio Player Card */}
+          <div className="bg-white border-2 border-slate-100 rounded-2xl shadow-xl p-8 space-y-8 relative overflow-hidden group">
+             <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none group-hover:opacity-20 transition-opacity">
+                <AudioIcon className="h-32 w-32 -mr-10 -mt-10 rotate-12" />
+             </div>
+             
+             <div className="flex items-center justify-between relative z-10">
+                <div className="flex items-center gap-4">
+                   <div className="h-14 w-14 bg-slate-900 rounded-2xl flex items-center justify-center text-white shadow-2xl shadow-slate-900/20 group-hover:scale-105 transition-transform">
+                      <AudioIcon className="h-7 w-7" />
+                   </div>
+                   <div>
+                      <h3 className="text-xl font-black text-slate-900 leading-tight">{file.name}</h3>
+                      <div className="flex items-center gap-3 mt-1">
+                        <p className="text-[11px] text-slate-400 font-black uppercase tracking-[0.2em]">Source: {file.source || "External"}</p>
+                        <div className="h-1 w-1 bg-slate-300 rounded-full" />
+                        <p className="text-[11px] text-slate-400 font-black uppercase tracking-[0.2em]">{file.duration} · High Fidelity</p>
+                      </div>
+                   </div>
+                </div>
+                <div className="flex items-center gap-2">
+                   <StatusIndicator status="reviewed" type="review" />
+                   <Button variant="ghost" size="sm" className="h-9 w-9 p-0 rounded-full hover:bg-slate-100 transition-colors">
+                      <MoreVertical className="h-4 w-4 text-slate-400" />
+                   </Button>
+                </div>
+             </div>
 
-            <div className="h-32 w-full bg-slate-50 rounded-xl relative overflow-hidden border border-slate-100 shadow-inner group">
-               <div className="absolute inset-0 flex items-center justify-evenly px-4">
-                  {[2, 4, 3, 6, 8, 4, 2, 5, 9, 3, 5, 8, 4, 6, 2, 4, 6, 8, 4, 2, 3, 5, 7, 5, 3, 2, 4, 6, 4, 2].map((h, i) => (
-                    <div key={i} className="w-1.5 bg-slate-200 rounded-full transition-all group-hover:bg-slate-300" style={{ height: `${h * 10}%` }} />
-                  ))}
-               </div>
-               <div className="absolute inset-0 flex items-center justify-evenly px-4">
-                  {[2, 4, 3, 6, 8, 4, 2, 5, 9, 3, 5, 8, 4, 6, 2, 4, 6, 8, 4, 2, 3, 5, 7, 5, 3, 2, 4, 6, 4, 2].map((h, i) => (
-                    <div key={i} className={`w-1.5 bg-primary/60 rounded-full shadow-[0_0_10px_rgba(37,99,235,0.2)] transition-all ${i < 12 ? "opacity-100" : "opacity-0"}`} style={{ height: `${h * 10}%` }} />
-                  ))}
-               </div>
-               <div className="absolute top-0 bottom-0 left-[40%] w-0.5 bg-primary shadow-[0_0_15px_rgba(37,99,235,0.5)] z-20" />
-               <div className="absolute top-0 bottom-0 left-[40%] -translate-x-1/2 flex items-center">
-                  <div className="h-4 w-4 bg-primary rounded-full border-2 border-white shadow-lg shadow-primary/30" />
-               </div>
-            </div>
+             {/* Functional Seek Bar */}
+             <div className="space-y-3">
+                <div className="h-20 w-full bg-slate-50/50 flex items-end gap-[2px] px-2 py-3 rounded-xl border border-slate-100 group/wave cursor-pointer relative"
+                     onClick={(e) => {
+                       const rect = e.currentTarget.getBoundingClientRect();
+                       const x = e.clientX - rect.left;
+                       const pct = x / rect.width;
+                       const totalSeconds = 8 * 60 + 42; // mock duration
+                       setCurrentTime(Math.floor(totalSeconds * pct));
+                     }}>
+                   {Array.from({ length: 120 }).map((_, i) => {
+                     const totalSeconds = 8 * 60 + 42;
+                     const targetX = (i / 120) * totalSeconds;
+                     const isPast = targetX <= currentTime;
+                     return (
+                        <div key={i} 
+                             className={`flex-1 rounded-full transition-all duration-300 ${isPast ? "bg-primary" : "bg-slate-200"}`} 
+                             style={{ height: `${20 + Math.sin(i * 0.2) * 20 + Math.random() * 40}%`, opacity: isPast ? 1 : 0.4 }} />
+                     );
+                   })}
+                   {/* Playhead indicator */}
+                   <div className="absolute top-0 bottom-0 w-0.5 bg-primary z-20 shadow-[0_0_10px_rgba(37,99,235,0.8)]" 
+                        style={{ left: `${(currentTime / (8*60+42)) * 100}%` }} />
+                </div>
+                <div className="flex justify-between px-1">
+                   <span className="text-[11px] font-black text-slate-400 tabular-nums">
+                     {Math.floor(currentTime / 60).toString().padStart(2, '0')}:{(currentTime % 60).toString().padStart(2, '0')}
+                   </span>
+                   <span className="text-[11px] font-black text-slate-400 tabular-nums">{file.duration}</span>
+                </div>
+             </div>
 
-            <div className="flex items-center justify-center gap-10">
-               <button className="text-slate-400 hover:text-primary transition-colors hover:scale-110 active:scale-95"><Clock className="h-6 w-6" /></button>
-               <button className="h-14 w-14 bg-slate-900 rounded-full flex items-center justify-center text-white shadow-xl hover:bg-slate-800 transition-all hover:scale-105 active:scale-95">
-                  <Play className="h-6 w-6 fill-white ml-1" />
-               </button>
-               <button className="text-slate-400 hover:text-emerald-600 transition-colors hover:scale-110 active:scale-95"><Settings className="h-6 w-6" /></button>
-            </div>
-         </div>
+             <div className="flex items-center justify-between bg-slate-50/50 p-2 rounded-2xl border border-slate-100 shadow-inner">
+                <div className="flex items-center gap-1">
+                   <Button variant="ghost" size="sm" className="h-9 w-9 p-0 text-slate-500" onClick={() => setCurrentTime(prev => Math.max(0, prev - 10))}><RefreshCcw className="h-4 w-4 -scale-x-100" /></Button>
+                   <Button 
+                      className="h-12 w-12 bg-slate-900 rounded-xl flex items-center justify-center text-white shadow-xl hover:bg-slate-800 transition-all hover:scale-105 active:scale-95"
+                      onClick={() => setIsPlaying(!isPlaying)}>
+                      {isPlaying ? <div className="h-4 w-4 bg-white rounded-sm" /> : <Play className="h-5 w-5 fill-white ml-1" />}
+                   </Button>
+                   <Button variant="ghost" size="sm" className="h-9 w-9 p-0 text-slate-500" onClick={() => setCurrentTime(prev => prev + 10)}><RefreshCcw className="h-4 w-4" /></Button>
+                </div>
+                <div className="flex items-center gap-6">
+                   <div className="flex items-center gap-3">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Rate</span>
+                      <select 
+                        value={playbackSpeed}
+                        onChange={(e) => setPlaybackSpeed(Number(e.target.value))}
+                        className="bg-transparent text-xs font-black text-slate-700 outline-none border-none cursor-pointer">
+                        <option value={0.5}>0.5x</option>
+                        <option value={1}>1.0x</option>
+                        <option value={1.5}>1.5x</option>
+                        <option value={2}>2.0x</option>
+                      </select>
+                   </div>
+                   <div className="flex items-center gap-2">
+                       <Wind className="h-4 w-4 text-slate-300" />
+                       <div className="w-20 h-1 bg-slate-200 rounded-full overflow-hidden">
+                          <div className="h-full w-3/4 bg-slate-400" />
+                       </div>
+                   </div>
+                </div>
+             </div>
+          </div>
 
-         <div className="grid grid-cols-2 gap-4">
-            <div className="bg-white border border-slate-100 rounded-xl p-4 shadow-sm relative overflow-hidden">
-               <div className="absolute top-0 left-0 w-1 h-full bg-emerald-600" />
-               <div className="flex items-center gap-2 mb-2">
-                  <div className="h-6 w-6 rounded bg-emerald-50 flex items-center justify-center text-emerald-600 text-xs font-bold">A</div>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Speaker A (Operator)</span>
-               </div>
-               <p className="text-xs text-slate-600 italic font-medium">"I noticed the vibration around 14:15. It didn't sound right so I called Supervisor B."</p>
-            </div>
-            <div className="bg-white border border-slate-100 rounded-xl p-4 shadow-sm relative overflow-hidden">
-               <div className="absolute top-0 left-0 w-1 h-full bg-amber-500" />
-               <div className="flex items-center gap-2 mb-2">
-                  <div className="h-6 w-6 rounded bg-amber-50 flex items-center justify-center text-amber-600 text-xs font-bold">B</div>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Speaker B (Supervisor)</span>
-               </div>
-               <p className="text-xs text-slate-600 italic font-medium">"Understood. We are checking maintenance logs for roller #14 immediately."</p>
-            </div>
-         </div>
-      </div>
+          {/* Full Diarization Transcript */}
+          <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col">
+             <div className="px-6 py-4 border-b flex items-center justify-between bg-white relative z-10">
+                <div className="flex items-center gap-3">
+                   <div className="h-8 w-8 bg-primary/5 rounded-lg flex items-center justify-center border border-primary/10">
+                      <FileText className="h-4 w-4 text-primary" />
+                   </div>
+                   <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Full Diarization Transcript</h3>
+                </div>
+                <div className="flex items-center gap-3">
+                   <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 mr-2">
+                      <div className="h-2 w-2 rounded-full bg-primary" /> Current Seg: {currentTime}s
+                   </div>
+                   <Button variant="outline" size="sm" className="h-7 text-[10px] font-bold gap-1.5 px-3 border-slate-200 hover:bg-slate-50">
+                      <Copy className="h-3 w-3" /> Sync Export
+                   </Button>
+                </div>
+             </div>
+             
+             <div className="flex-1 overflow-auto max-h-[1200px] custom-scrollbar bg-slate-50/20">
+                <div className="divide-y divide-slate-100">
+                   {audioDiarizationData.map((seg) => {
+                     const active = isSegmentActive(seg.start_time, seg.end_time);
+                     return (
+                        <div 
+                          key={seg.segment_id} 
+                          id={seg.segment_id}
+                          className={`group flex items-start p-6 transition-all cursor-pointer relative overflow-hidden ${active ? "bg-white shadow-[inset_0_0_20px_rgba(37,99,235,0.03)]" : "hover:bg-white"}`}
+                          onClick={() => jumpTo(seg.start_time)}>
+                          
+                          {/* Active Indicator */}
+                          <div className={`absolute top-0 bottom-0 left-0 w-1 transition-all ${active ? "bg-primary" : "bg-transparent group-hover:bg-slate-200"}`} />
+                          
+                          <div className="w-24 shrink-0 pt-0.5">
+                             <span className={`text-[11px] font-bold tabular-nums transition-colors ${active ? "text-primary" : "text-slate-400"}`}>
+                               {seg.start_time} — {seg.end_time}
+                             </span>
+                          </div>
+                          
+                          <div className="flex-1 space-y-2 pl-6">
+                             <div className="flex items-center gap-3">
+                                <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider border transition-all ${
+                                  seg.speaker_id === "SPK_01" 
+                                  ? "bg-amber-50 text-amber-700 border-amber-100 shadow-sm" 
+                                  : "bg-indigo-50 text-indigo-700 border-indigo-100 shadow-sm"
+                                }`}>
+                                   {seg.speaker_label}
+                                </span>
+                                {seg.flags.includes("key_observation") && <span className="h-1.5 w-1.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.6)]" />}
+                                {seg.flags.includes("critical_evidence") && <span className="h-1.5 w-1.5 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]" />}
+                                {seg.confidence === "medium" && <span className="text-[10px] text-slate-300 italic">low confidence</span>}
+                             </div>
+                             <p className={`text-sm leading-relaxed transition-colors ${active ? "text-slate-900 font-medium" : "text-slate-600 font-medium"}`}>
+                                {seg.text}
+                             </p>
+                          </div>
+                        </div>
+                     );
+                   })}
+                </div>
+                {/* Visual End state */}
+                <div className="p-12 flex flex-col items-center justify-center text-slate-300 space-y-4 opacity-50">
+                    <div className="h-px w-20 bg-slate-200" />
+                    <span className="text-[10px] font-black uppercase tracking-[0.3em]">Recording Termination</span>
+                </div>
+             </div>
+          </div>
+       </div>
     );
+  }
+
+  if (file.type === "Video") {
+     const [currentTime, setCurrentTime] = useState(0);
+     const [isPlaying, setIsPlaying] = useState(false);
+     const videoRef = useRef<HTMLVideoElement>(null);
+
+     const activeSegment = videoTimeframesData.find(tf => {
+        const getS = (s: string) => s.split(':').map(Number)[0] * 60 + s.split(':').map(Number)[1];
+        return currentTime >= getS(tf.start_time) && currentTime <= getS(tf.end_time);
+     });
+
+     const jumpTo = (timeStr: string) => {
+        const parts = timeStr.split(':').map(Number);
+        const seconds = parts[0] * 60 + parts[1];
+        if (videoRef.current) {
+          videoRef.current.currentTime = seconds;
+          videoRef.current.play();
+          setIsPlaying(true);
+        }
+     };
+
+     return (
+       <div className="w-full max-w-4xl space-y-8 animate-in slide-in-from-bottom-4 duration-500 pb-20">
+          {/* Header & Player */}
+          <div className="space-y-4">
+             <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                   <div className="h-10 w-10 bg-black rounded-lg flex items-center justify-center text-white border border-white/20 shadow-xl">
+                      <VideoIcon className="h-5 w-5" />
+                   </div>
+                   <div>
+                      <h3 className="text-lg font-black text-slate-900 leading-tight uppercase tracking-tight">{file.name}</h3>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-none mt-1">
+                        {file.source} · High Fidelity Visual Stream · 1080p
+                      </p>
+                   </div>
+                </div>
+                <div className="flex items-center gap-2">
+                   <StatusIndicator status="completed" type="extraction" />
+                   <div className="h-4 w-px bg-slate-200" />
+                   <Button variant="outline" size="sm" className="h-8 text-[10px] font-bold uppercase tracking-widest gap-2 bg-white">
+                      <Download className="h-3 w-3" /> Export Clip
+                   </Button>
+                </div>
+             </div>
+
+             <div className="aspect-video bg-slate-950 border border-slate-800 rounded-2xl shadow-2xl relative overflow-hidden group">
+                <div className="absolute top-4 left-4 z-50 flex items-center gap-2">
+                   <div className="h-2 w-2 rounded-full bg-rose-500 animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.6)]" />
+                   <span className="text-[9px] font-black text-white uppercase tracking-[0.2em] bg-black/60 backdrop-blur px-2.5 py-1 rounded border border-white/10">ARCHIVE RECORDING</span>
+                </div>
+                
+                <video
+                  ref={videoRef}
+                  src={file.url}
+                  className="w-full h-full object-contain"
+                  onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
+                  onPlay={() => setIsPlaying(true)}
+                  onPause={() => setIsPlaying(false)}
+                />
+
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity" />
+                
+                <div className="absolute bottom-0 left-0 right-0 p-6 flex flex-col gap-4 opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0">
+                   <div className="flex items-center gap-4">
+                      <button onClick={() => isPlaying ? videoRef.current?.pause() : videoRef.current?.play()} className="h-10 w-10 bg-white rounded-full flex items-center justify-center text-slate-900 shadow-xl hover:scale-110 active:scale-95 transition-all">
+                        {isPlaying ? <div className="h-3 w-3 bg-slate-900 rounded-sm" /> : <Play className="h-4 w-4 fill-slate-900 ml-0.5" />}
+                      </button>
+                      <div className="flex-1 h-1 bg-white/20 rounded-full overflow-hidden cursor-pointer">
+                         <div className="h-full bg-primary" style={{ width: `${(currentTime / (14*60+30)) * 100}%` }} />
+                      </div>
+                      <span className="text-[10px] font-black text-white tabular-nums tracking-widest">
+                        {Math.floor(currentTime/60).toString().padStart(2,'0')}:{(Math.floor(currentTime%60)).toString().padStart(2,'0')} / {file.duration}
+                      </span>
+                   </div>
+                </div>
+             </div>
+          </div>
+
+          {/* Timeframe Review Feed */}
+          <div className="space-y-4">
+             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div className="flex items-center gap-3">
+                   <div className="h-8 w-8 bg-slate-900 rounded-lg flex items-center justify-center text-white border border-slate-700">
+                      <LayoutGrid className="h-4 w-4" />
+                   </div>
+                   <h3 className="text-sm font-black text-slate-900 uppercase tracking-[0.1em]">Timeframe Investigative Feed</h3>
+                </div>
+                <div className="flex items-center gap-4">
+                   <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-black text-slate-400 uppercase">Interval</span>
+                      <span className="px-2 py-0.5 bg-slate-100 text-[10px] font-black rounded border">2:00</span>
+                   </div>
+                </div>
+             </div>
+
+             <div className="space-y-4">
+                {videoTimeframesData.map((tf) => {
+                  const isActive = activeSegment?.id === tf.id;
+                  return (
+                    <div key={tf.id} className={`border rounded-2xl overflow-hidden shadow-sm transition-all duration-500 cursor-pointer ${isActive ? "ring-2 ring-primary shadow-2xl scale-[1.01] bg-white translate-x-2" : "bg-white hover:border-slate-300 translate-x-0 opacity-80 hover:opacity-100"}`} onClick={() => jumpTo(tf.start_time)}>
+                       <div className={`px-5 py-3 flex items-center justify-between border-b transition-colors ${isActive ? "bg-primary/5 border-primary/10" : "bg-slate-50/50"}`}>
+                          <div className="flex items-center gap-3">
+                             <div className={`text-[11px] font-black tabular-nums tracking-widest ${isActive ? "text-primary" : "text-slate-500"}`}>
+                               {tf.start_time} — {tf.end_time}
+                             </div>
+                             <div className="h-1 w-1 bg-slate-300 rounded-full" />
+                             <span className="text-xs font-black text-slate-800 uppercase tracking-tight">{tf.summary}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                             {tf.badges.map(b => (
+                               <span key={b} className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border transition-all ${
+                                 b === 'critical' || b === 'hazard' ? 'bg-rose-50 text-rose-600 border-rose-100' :
+                                 b === 'anomaly' ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                                 'bg-slate-100 text-slate-400 border-slate-200'
+                               }`}>{b}</span>
+                             ))}
+                          </div>
+                       </div>
+                       
+                       <div className="p-8 grid grid-cols-2 gap-10 relative">
+                          {/* Script Layer */}
+                          <div className="space-y-4 relative">
+                             <div className="flex items-center gap-2 mb-2 pb-1 border-b border-slate-50">
+                                <FileText className="h-3.5 w-3.5 text-slate-400" />
+                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Script / Timeline</span>
+                             </div>
+                             <div className="space-y-4">
+                                <div>
+                                   <p className="text-sm font-bold text-slate-900 leading-relaxed italic pr-4">"{tf.script.scene_overview}"</p>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                   <div>
+                                      <span className="text-[9px] font-black text-slate-400 uppercase block mb-1">Actors</span>
+                                      <ul className="text-[11px] font-bold text-slate-600 space-y-1">
+                                         {tf.script.visible_actors.map(a => <li key={a}>• {a}</li>)}
+                                      </ul>
+                                   </div>
+                                   <div>
+                                      <span className="text-[9px] font-black text-slate-400 uppercase block mb-1">Actions</span>
+                                      <ul className="text-[11px] font-bold text-slate-600 space-y-1">
+                                         {tf.script.actions.map(a => <li key={a}>• {a}</li>)}
+                                      </ul>
+                                   </div>
+                                </div>
+                             </div>
+                          </div>
+
+                          {/* Analysis Layer */}
+                          <div className="bg-slate-50/50 rounded-2xl p-6 border border-slate-100 space-y-4 shadow-inner">
+                             <div className="flex items-center gap-2 mb-2 pb-1 border-b border-slate-100">
+                                <Brain className="h-3.5 w-3.5 text-primary" />
+                                <span className="text-[10px] font-black text-primary uppercase tracking-widest">Key Analysis</span>
+                             </div>
+                             <div className="space-y-4">
+                                <div className="flex flex-wrap gap-1.5">
+                                   {tf.analysis.events.map(e => (
+                                     <span key={e} className="px-2 py-0.5 bg-primary/10 text-primary text-[9px] font-black uppercase rounded border border-primary/20">{e}</span>
+                                   ))}
+                                </div>
+                                <div className="space-y-3">
+                                   <div className="flex items-start gap-3">
+                                      <div className={`h-2 w-2 mt-1 rounded-full ${tf.analysis.hazards[0] === 'None' ? 'bg-emerald-500' : 'bg-rose-500 animate-pulse'}`} />
+                                      <div>
+                                         <span className="text-[9px] font-black text-slate-400 uppercase block">Hazard Control</span>
+                                         <p className="text-[11px] font-bold text-slate-700">{tf.analysis.hazards[0]}</p>
+                                      </div>
+                                   </div>
+                                   <div className="flex items-start gap-3">
+                                      <div className="h-2 w-2 mt-1 rounded-full bg-amber-500" />
+                                      <div>
+                                         <span className="text-[9px] font-black text-slate-400 uppercase block">Equipment Condition</span>
+                                         <p className="text-[11px] font-bold text-slate-700">{tf.analysis.assets}</p>
+                                      </div>
+                                   </div>
+                                </div>
+                                <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+                                   <span className="text-[10px] font-black text-slate-400 uppercase">Analysis Confidence</span>
+                                   <span className="text-[10px] font-black text-slate-900">{tf.analysis.confidence}</span>
+                                </div>
+                             </div>
+                          </div>
+                       </div>
+                    </div>
+                  );
+                })}
+             </div>
+          </div>
+       </div>
+     );
   }
 
   return null;
 }
 
 function AdaptiveExtractionOutput({ file }: { file: any }) {
+  if (!file) return null;
   const ExtractionItem = ({ fact, type, source, conf }: any) => (
     <div className="bg-white border border-slate-200 rounded-lg p-3 hover:border-primary/40 transition-all hover:shadow-md cursor-pointer group mb-3 last:mb-0 relative overflow-hidden">
        <div className="absolute top-0 left-0 w-1 h-full bg-slate-100 group-hover:bg-primary/50 transition-colors" />
@@ -1032,14 +2030,198 @@ function AdaptiveExtractionOutput({ file }: { file: any }) {
   }
 
   if (file.type === "Audio") {
+     const data = audioExtractionData;
+     const [viewMode, setViewMode] = useState<"Structured" | "JSON">("Structured");
+     const [expandedSections, setExpandedSections] = useState<string[]>(["Recording Properties", "Summary"]);
+     
+     const toggle = (s: string) => setExpandedSections(p => p.includes(s) ? p.filter(x => x !== s) : [...p, s]);
+
+     const DataRow = ({ label, value, badge }: any) => (
+        <div className="flex items-center justify-between py-1.5">
+           <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-tight">{label}</span>
+           {badge ? (
+             <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border ${badge.className}`}>{badge.text}</span>
+           ) : (
+             <span className="text-[11px] font-black text-slate-700">{value || "—"}</span>
+           )}
+        </div>
+     );
+
+     const Section = ({ title, icon: Icon, children }: any) => (
+        <div className={`border rounded-xl overflow-hidden shadow-sm transition-all duration-300 ${expandedSections.includes(title) ? 'ring-1 ring-primary/20 shadow-md translate-y-[-2px]' : 'hover:border-slate-300'}`}>
+           <button 
+              onClick={() => toggle(title)}
+              className={`w-full flex items-center justify-between p-4 transition-colors ${expandedSections.includes(title) ? 'bg-slate-50/80 border-b' : 'bg-white hover:bg-slate-50/50'}`}
+           >
+              <div className="flex items-center gap-3">
+                 <div className={`h-8 w-8 rounded-lg border shadow-sm flex items-center justify-center transition-all ${expandedSections.includes(title) ? 'bg-primary text-white border-primary shadow-primary/20' : 'bg-white text-slate-400'}`}>
+                    <Icon className="h-4 w-4" />
+                 </div>
+                 <span className={`text-sm font-black transition-colors ${expandedSections.includes(title) ? 'text-slate-900' : 'text-slate-700'}`}>{title}</span>
+              </div>
+              <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${expandedSections.includes(title) ? 'rotate-180' : ''}`} />
+           </button>
+           {expandedSections.includes(title) && (
+              <div className="p-5 bg-white space-y-4 animate-in slide-in-from-top-2 duration-300">
+                 {children}
+              </div>
+           )}
+        </div>
+     );
+
+     return (
+        <div className="space-y-3 pb-20">
+           {/* Logic Toggle */}
+           <div className="flex items-center justify-between mb-2">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Extraction Console</span>
+              <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-lg border shadow-inner">
+                 <button onClick={() => setViewMode("Structured")} className={`px-2 py-0.5 text-[8px] font-black uppercase rounded transition-all ${viewMode === "Structured" ? "bg-white text-primary shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>Structured</button>
+                 <button onClick={() => setViewMode("JSON")} className={`px-2 py-0.5 text-[8px] font-black uppercase rounded transition-all ${viewMode === "JSON" ? "bg-white text-primary shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>JSON</button>
+              </div>
+           </div>
+
+           {viewMode === "JSON" ? (
+              <div className="bg-slate-900 rounded-2xl p-6 overflow-hidden border border-slate-800 shadow-2xl">
+                 <pre className="text-[10.5px] font-mono text-emerald-400 leading-relaxed overflow-auto max-h-[800px] custom-scrollbar">
+                    {JSON.stringify(data, null, 2)}
+                 </pre>
+              </div>
+           ) : (
+             <>
+               <Section title="Recording Properties" icon={Settings}>
+                  <div className="divide-y divide-slate-50">
+                     <DataRow label="File Name" value={data.recording_properties.file_name} />
+                     <DataRow label="Duration" value={data.recording_properties.duration} />
+                     <DataRow label="Quality" value={data.recording_properties.audio_quality} badge={{ text: data.recording_properties.audio_quality, className: "bg-emerald-50 text-emerald-700 border-emerald-100" }} />
+                     <DataRow label="Source" value={data.recording_properties.source} />
+                     <DataRow label="Language" value={data.recording_properties.language} />
+                     <DataRow label="Noise Level" value={data.recording_properties.noise_level} />
+                     <DataRow label="Clarity" value={data.recording_properties.clarity} />
+                  </div>
+               </Section>
+
+               <Section title="Participants & Tone" icon={Users}>
+                  <div className="space-y-4">
+                     <div className="flex items-center justify-between border-b pb-2">
+                        <span className="text-[10px] font-black text-slate-400 uppercase">Speaker Count</span>
+                        <span className="text-xl font-black text-slate-900">{data.participants.speaker_count}</span>
+                     </div>
+                     {data.participants.speakers.map(s => (
+                        <div key={s.speaker_id} className="p-3 border rounded-xl bg-slate-50/50 hover:bg-slate-50 transition-colors">
+                           <div className="flex items-center justify-between mb-3">
+                              <span className="px-2 py-0.5 bg-slate-900 text-white text-[9px] font-black uppercase rounded tracking-widest">{s.display_name}</span>
+                              <span className="text-[9px] font-bold text-slate-500">{s.probable_role}</span>
+                           </div>
+                           <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+                              <DataRow label="Time" value={s.total_speaking_time} />
+                              <DataRow label="Tone" value={s.tone_summary} />
+                              <DataRow label="Pace" value={s.pace} />
+                              <DataRow label="Stress" value={s.stress_level} badge={s.stress_level === "High" ? { text: "High Stress", className: "bg-rose-50 text-rose-600 border-rose-100" } : null} />
+                           </div>
+                        </div>
+                     ))}
+                  </div>
+               </Section>
+
+               <Section title="Key Statements" icon={MessageSquare}>
+                  <div className="space-y-3">
+                     {data.key_statements.map((ks, i) => (
+                        <div key={i} className="bg-white border-2 border-slate-50 rounded-xl p-4 shadow-sm hover:border-primary/20 transition-all cursor-pointer relative overflow-hidden group">
+                           <div className={`absolute top-0 right-0 w-12 h-12 -mr-6 -mt-6 rounded-full group-hover:scale-110 transition-transform ${ks.severity === "high" ? "bg-rose-50" : "bg-primary/5"}`} />
+                           <div className="flex items-center gap-2 mb-2 relative z-10">
+                              <span className="px-1.5 py-0.5 bg-slate-100 text-[8px] font-black uppercase text-slate-500 rounded border">{ks.type}</span>
+                              <span className="text-[9px] font-black text-primary">{ks.timestamp}</span>
+                              {ks.severity === "high" && <AlertTriangle className="h-3 w-3 text-rose-500" />}
+                           </div>
+                           <p className="text-xs font-black text-slate-700 italic leading-snug mb-2 relative z-10">"{ks.statement}"</p>
+                           <div className="flex items-center gap-2 relative z-10 pt-2 border-t border-slate-50">
+                              <div className="h-4 w-4 bg-slate-100 rounded-full flex items-center justify-center text-[7px] font-black">{ks.speaker_id.slice(-2)}</div>
+                              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">{ks.evidence_note}</span>
+                           </div>
+                        </div>
+                     ))}
+                  </div>
+               </Section>
+
+               <Section title="Evidence Timeline" icon={Clock}>
+                  <div className="relative pl-6 space-y-6 before:absolute before:top-0 before:bottom-0 before:left-2 before:w-[1.5px] before:bg-slate-100">
+                     {data.timeline_events.map((te, i) => (
+                        <div key={i} className="relative">
+                           <div className="absolute -left-[22.5px] top-1 px-1 bg-white">
+                              <div className={`h-3 w-3 rounded-full border-2 transition-transform hover:scale-125 ${te.importance === "critical" ? "bg-rose-500 border-rose-200" : "bg-primary border-primary/20"}`} />
+                           </div>
+                           <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                 <span className="text-[10px] font-black text-primary tabular-nums">{te.timestamp}</span>
+                                 <span className="text-xs font-black text-slate-900">{te.event_title}</span>
+                              </div>
+                              <p className="text-[11px] font-bold text-slate-500 leading-tight">{te.event_detail}</p>
+                           </div>
+                        </div>
+                     ))}
+                  </div>
+               </Section>
+
+               <Section title="Risk & Safety Signals" icon={AlertTriangle}>
+                  <div className="space-y-3">
+                     {data.risk_safety_signals.map((rss, i) => (
+                        <div key={i} className="p-3 border rounded-xl bg-orange-50/20 border-orange-100 flex gap-3">
+                           <div className="h-8 w-8 bg-orange-100 rounded-lg flex items-center justify-center shrink-0">
+                              <AlertCircle className="h-4 w-4 text-orange-600" />
+                           </div>
+                           <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                 <span className="text-[10px] font-black text-orange-700 uppercase tracking-tighter">{rss.signal_type}</span>
+                                 <div className="h-1 w-1 bg-orange-200 rounded-full" />
+                                 <span className="text-[9px] font-black text-orange-500">{rss.timestamp}</span>
+                              </div>
+                              <p className="text-[11px] font-bold text-slate-700 leading-snug">{rss.description}</p>
+                           </div>
+                        </div>
+                     ))}
+                  </div>
+               </Section>
+
+               <Section title="Investigation Summary" icon={Brain}>
+                  <div className="space-y-4">
+                     <p className="text-xs font-bold text-slate-700 leading-relaxed bg-slate-50 p-4 rounded-xl border italic">
+                        {data.summary.brief_summary}
+                     </p>
+                     <div>
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2 opacity-60">Main Findings</span>
+                        <ul className="space-y-2">
+                           {data.summary.main_findings.map((f, i) => (
+                              <li key={i} className="text-[11px] font-bold text-slate-700 flex gap-3">
+                                 <Check className="h-3 w-3 text-emerald-500 mt-0.5 shrink-0" /> {f}
+                              </li>
+                           ))}
+                        </ul>
+                     </div>
+                     <div className="pt-4 border-t">
+                        <span className="text-[10px] font-black text-primary uppercase tracking-widest block mb-2">Review Focus</span>
+                        <div className="bg-primary/5 rounded-xl p-3 border border-primary/10">
+                           {data.summary.recommended_human_review_focus.map((f, i) => (
+                              <p key={i} className="text-[11px] font-black text-primary leading-tight">{f}</p>
+                           ))}
+                        </div>
+                     </div>
+                  </div>
+               </Section>
+             </>
+           )}
+        </div>
+     );
+  }
+
+  if (file.type === "Video") {
      return (
         <div className="space-y-6 pb-20">
-           <ExtractionSection title="Key Statements" icon={MessageSquare}>
-              <ExtractionItem fact="Supervisor B was notified 15 mins before failure" type="Statement" source="Audio [01:22]" conf="High" />
-              <ExtractionItem fact="Warning lights were functioning (audible alarm)" type="Verification" source="Audio [03:45]" conf="High" />
+           <ExtractionSection title="Detected Events" icon={VideoIcon}>
+              <ExtractionItem fact="Metal-on-metal friction sparks detected at section 14" type="Visual Anomaly" source="CCTV [14:35:12]" conf="High" />
+              <ExtractionItem fact="Conveyor belt deflection exceeding 150mm" type="Measurement" source="Computer Vision" conf="High" />
            </ExtractionSection>
-           <ExtractionSection title="Participants & Tone" icon={DocIcon}>
-              <ExtractionItem fact="Speaker A: High stress, rapid speech" type="Affect Analysis" source="Metadata" conf="Medium" />
+           <ExtractionSection title="Hazards & Alerts" icon={AlertCircle}>
+              <ExtractionItem fact="Operator seen approaching moving parts without barriers" type="Safety Violation" source="Scene AI" conf="Medium" />
            </ExtractionSection>
         </div>
      );
@@ -1347,7 +2529,7 @@ function AuditTrailTab() {
   ];
 
   return (
-    <div className="flex flex-col h-full bg-slate-50/10">
+    <div className="flex flex-col h-full bg-slate-50/10 h-screen overflow-hidden">
       <div className="h-12 border-b bg-white flex items-center justify-between px-6 shrink-0 shadow-sm relative z-10">
          <div className="flex items-center gap-3">
             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Audit Logs</span>

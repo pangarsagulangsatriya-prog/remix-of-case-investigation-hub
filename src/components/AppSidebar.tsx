@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
+import { cn } from "@/lib/utils";
 import {
   Sidebar,
   SidebarContent,
@@ -45,8 +46,14 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="border-r-0">
-      <div className="flex items-center gap-2 px-4 py-4 border-b border-sidebar-border h-14 bg-sidebar-background">
-        <BerauCoalLogo className={collapsed ? "h-8 w-8 overflow-hidden" : "h-9 w-auto text-white"} />
+      <div className={cn(
+        "flex items-center gap-2 px-4 py-4 border-b border-sidebar-border h-14 bg-sidebar-background transition-all",
+        collapsed && "px-0 justify-center"
+      )}>
+        <BerauCoalLogo 
+          hideText={collapsed} 
+          className={collapsed ? "h-9 w-9" : "h-9 w-auto text-white"} 
+        />
       </div>
       <SidebarContent>
         <SidebarGroup>

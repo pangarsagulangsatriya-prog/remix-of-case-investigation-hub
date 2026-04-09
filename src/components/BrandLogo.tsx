@@ -1,6 +1,6 @@
 import React from "react";
 
-export function BerauCoalLogo({ className = "h-8 w-auto" }: { className?: string }) {
+export function BerauCoalLogo({ className = "h-8 w-auto", hideText = false }: { className?: string; hideText?: boolean }) {
   return (
     <div className={`flex items-center gap-2 ${className}`}>
       {/* 
@@ -14,7 +14,7 @@ export function BerauCoalLogo({ className = "h-8 w-auto" }: { className?: string
         <path d="M60 120L180 70L230 90L110 140L60 120Z" fill="#33832E" />
         <path d="M80 160L200 110L250 130L130 180L80 160Z" fill="#33832E" />
       </svg>
-      <span className="font-bold tracking-tight text-inherit">BERAU COAL</span>
+      {!hideText && <span className="font-bold tracking-tight text-inherit whitespace-nowrap">BERAU COAL</span>}
     </div>
   );
 }
