@@ -84,6 +84,10 @@ export function UploadModal({ isOpen, onClose, onUploadComplete, initialType }: 
     if (addedFiles.length > 0 && !selectedFileId) {
       setSelectedFileId(addedFiles[0].id);
     }
+
+    // Reset input value so the same file can be selected again if removed
+    const input = document.getElementById('fileInput') as HTMLInputElement;
+    if (input) input.value = '';
   };
 
   const onDrop = useCallback((e: React.DragEvent) => {
@@ -154,6 +158,14 @@ export function UploadModal({ isOpen, onClose, onUploadComplete, initialType }: 
             <X className="h-5 w-5 text-slate-400" />
           </button>
         </div>
+        
+        <input 
+          type="file" 
+          id="fileInput" 
+          className="hidden" 
+          multiple 
+          onChange={(e) => handleFiles(e.target.files)}
+        />
 
         {/* Content */}
         <div className="flex-1 flex overflow-hidden">
@@ -176,13 +188,6 @@ export function UploadModal({ isOpen, onClose, onUploadComplete, initialType }: 
                  <p className="text-xs text-slate-500 mb-6 font-medium text-center max-w-[240px]">
                    Images (20MB), Audio (100MB), or PDF/Docs (50MB) supported
                  </p>
-                 <input 
-                   type="file" 
-                   id="fileInput" 
-                   className="hidden" 
-                   multiple 
-                   onChange={(e) => handleFiles(e.target.files)}
-                 />
                  <Button 
                    variant="outline" 
                    className="h-9 px-6 bg-white border-primary/20 text-primary hover:bg-primary/5 font-bold text-xs"
