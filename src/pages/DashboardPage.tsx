@@ -14,6 +14,7 @@ import {
   Brain,
   LayoutGrid,
   Plus,
+  Star,
 } from "lucide-react";
 
 const summaryCards = [
