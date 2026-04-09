@@ -1,18 +1,18 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import { 
   X, 
   Upload, 
   FileText, 
   Image as ImageIcon, 
   Mic as AudioIcon, 
+  Video as VideoIcon,
   Trash2, 
   CheckCircle2, 
   AlertCircle, 
   Loader2,
   FileIcon,
   Play,
-  Pause,
-  Clock
+  FileVideo
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -24,14 +24,13 @@ interface UploadFile {
   progress: number;
   status: "idle" | "uploading" | "success" | "error";
   error?: string;
-  duration?: string; // For audio
 }
 
 interface UploadModalProps {
   isOpen: boolean;
   onClose: () => void;
   onUploadComplete: (files: any[]) => void;
-  initialType?: "Document" | "Image" | "Audio";
+  initialType?: "Document" | "Image" | "Audio" | "Video";
 }
 
 export function UploadModal({ isOpen, onClose, onUploadComplete, initialType }: UploadModalProps) {
@@ -39,6 +38,47 @@ export function UploadModal({ isOpen, onClose, onUploadComplete, initialType }: 
   const [isUploading, setIsUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
+
+  const typeConfig = useMemo(() => {
+     switch(initialType) {
+        case "Image": return { 
+           title: "Ingest Image Evidence", 
+           icon: ImageIcon, 
+           color: "text-emerald-500", 
+           bg: "bg-emerald-50",
+           accept: "image/*",
+           limit: "20MB",
+           description: "High-resolution site photos and inspection captures."
+        };
+        case "Audio": return { 
+           title: "Ingest Audio Evidence", 
+           icon: AudioIcon, 
+           color: "text-amber-500", 
+           bg: "bg-amber-50",
+           accept: "audio/*",
+           limit: "100MB",
+           description: "Voice link statements and radio communication recordings."
+        };
+        case "Video": return { 
+           title: "Ingest Video Evidence", 
+           icon: VideoIcon, 
+           color: "text-slate-700", 
+           bg: "bg-slate-100",
+           accept: "video/*",
+           limit: "500MB",
+           description: "CCTV exports and mobile inspection footage."
+        };
+        default: return { 
+           title: "Ingest Document Evidence", 
+           icon: FileText, 
+           color: "text-primary", 
+           bg: "bg-primary/5",
+           accept: ".pdf,.doc,.docx,.xls,.xlsx",
+           limit: "50MB",
+           description: "Incident reports, maintenance logs, and audit forms."
+        };
+     }
+  }, [initialType]);
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -53,17 +93,23 @@ export function UploadModal({ isOpen, onClose, onUploadComplete, initialType }: 
   const validateFile = (file: File) => {
     const isImage = file.type.startsWith("image/");
     const isAudio = file.type.startsWith("audio/");
+    const isVideo = file.type.startsWith("video/");
     const isDoc = file.type === "application/pdf" || 
-                 file.type === "application/msword" || 
-                 file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+                 file.type.includes("word") || 
+                 file.type.includes("spreadsheet") ||
+                 file.name.endsWith(".doc") || file.name.endsWith(".docx") || 
+                 file.name.endsWith(".xls") || file.name.endsWith(".xlsx");
+
+    if (initialType === "Image" && !isImage) return "File must be an image";
+    if (initialType === "Audio" && !isAudio) return "File must be an audio recording";
+    if (initialType === "Video" && !isVideo) return "File must be a video";
+    if (initialType === "Document" && !isDoc) return "File must be a document (PDF, DOC, XLS)";
 
     const sizeMB = file.size / (1024 * 1024);
-    
     if (isImage && sizeMB > 20) return "Image exceeds 20MB limit";
     if (isAudio && sizeMB > 100) return "Audio exceeds 100MB limit";
+    if (isVideo && sizeMB > 500) return "Video exceeds 500MB limit";
     if (isDoc && sizeMB > 50) return "Document exceeds 50MB limit";
-    
-    if (!isImage && !isAudio && !isDoc) return "Unsupported file type";
     
     return null;
   };
@@ -85,7 +131,6 @@ export function UploadModal({ isOpen, onClose, onUploadComplete, initialType }: 
       setSelectedFileId(addedFiles[0].id);
     }
 
-    // Reset input value so the same file can be selected again if removed
     const input = document.getElementById('fileInput') as HTMLInputElement;
     if (input) input.value = '';
   };
@@ -95,7 +140,7 @@ export function UploadModal({ isOpen, onClose, onUploadComplete, initialType }: 
     e.stopPropagation();
     setDragActive(false);
     handleFiles(e.dataTransfer.files);
-  }, []);
+  }, [initialType]); // Re-bind handleFiles context if needed
 
   const removeFile = (id: string) => {
     setFiles(prev => prev.filter(f => f.id !== id));
@@ -107,12 +152,10 @@ export function UploadModal({ isOpen, onClose, onUploadComplete, initialType }: 
     
     const uploadPromises = files.map(async (fileObj) => {
       if (fileObj.status === "success" || fileObj.error) return;
-
       setFiles(prev => prev.map(f => f.id === fileObj.id ? { ...f, status: "uploading" } : f));
 
-      // Simulate progress
       for (let i = 0; i <= 100; i += 10) {
-        await new Promise(r => setTimeout(r, 150));
+        await new Promise(r => setTimeout(r, 120));
         setFiles(prev => prev.map(f => f.id === fileObj.id ? { ...f, progress: i } : f));
       }
 
@@ -122,12 +165,11 @@ export function UploadModal({ isOpen, onClose, onUploadComplete, initialType }: 
     await Promise.all(uploadPromises);
     setIsUploading(false);
 
-    // Final callback after a short delay
     setTimeout(() => {
       const successfulFiles = files.filter(f => !f.error).map(f => ({
         id: "F-" + Math.random().toString(36).substr(2, 5),
         name: f.file.name,
-        type: f.file.type.startsWith("image/") ? "Image" : f.file.type.startsWith("audio/") ? "Audio" : "Document",
+        type: initialType || (f.file.type.startsWith("image/") ? "Image" : "Document"),
         size: (f.file.size / (1024 * 1024)).toFixed(1) + " MB",
         uploadDate: new Date().toISOString().split('T')[0],
         status: "UPLOADED"
@@ -150,20 +192,26 @@ export function UploadModal({ isOpen, onClose, onUploadComplete, initialType }: 
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col h-[640px] border border-slate-200 animate-in zoom-in-95 duration-200">
         {/* Header */}
         <div className="px-6 py-4 border-b flex items-center justify-between bg-slate-50/50">
-          <div>
-             <h2 className="text-lg font-bold text-slate-900">Upload Evidence Files</h2>
-             <p className="text-xs text-slate-500 font-medium mt-0.5">Add supporting evidence to the investigation workspace</p>
+          <div className="flex items-center gap-3">
+             <div className={`h-10 w-10 ${typeConfig.bg} rounded-xl flex items-center justify-center border border-slate-200`}>
+                <typeConfig.icon className={`h-5 w-5 ${typeConfig.color}`} />
+             </div>
+             <div>
+                <h2 className="text-lg font-bold text-slate-900">{typeConfig.title}</h2>
+                <p className="text-xs text-slate-500 font-medium mt-0.5">{typeConfig.description}</p>
+             </div>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-slate-200 rounded-lg transition-colors">
             <X className="h-5 w-5 text-slate-400" />
           </button>
         </div>
-        
+
         <input 
           type="file" 
           id="fileInput" 
           className="hidden" 
           multiple 
+          accept={typeConfig.accept}
           onChange={(e) => handleFiles(e.target.files)}
         />
 
@@ -182,11 +230,11 @@ export function UploadModal({ isOpen, onClose, onUploadComplete, initialType }: 
                  onDrop={onDrop}
                >
                  <div className="h-16 w-16 bg-slate-50 rounded-full flex items-center justify-center mb-4 border shadow-sm text-slate-400">
-                   <Upload className="h-8 w-8" />
+                   <typeConfig.icon className={`h-8 w-8 ${typeConfig.color}`} />
                  </div>
-                 <h3 className="text-sm font-bold text-slate-900 mb-1">Drag and drop files here</h3>
+                 <h3 className="text-sm font-bold text-slate-900 mb-1">Drag and drop {initialType?.toLowerCase()} files here</h3>
                  <p className="text-xs text-slate-500 mb-6 font-medium text-center max-w-[240px]">
-                   Images (20MB), Audio (100MB), or PDF/Docs (50MB) supported
+                   Maximum file size: {typeConfig.limit}
                  </p>
                  <Button 
                    variant="outline" 
@@ -212,6 +260,8 @@ export function UploadModal({ isOpen, onClose, onUploadComplete, initialType }: 
                                <img src={fileObj.previewUrl} className="h-full w-full object-cover" />
                             ) : fileObj.file.type.startsWith("audio/") ? (
                                <AudioIcon className="h-5 w-5 text-amber-500" />
+                            ) : fileObj.file.type.startsWith("video/") ? (
+                               <VideoIcon className="h-5 w-5 text-slate-600" />
                             ) : (
                                <FileText className="h-5 w-5 text-primary" />
                             )}
@@ -228,7 +278,7 @@ export function UploadModal({ isOpen, onClose, onUploadComplete, initialType }: 
                                </div>
                             ) : fileObj.status === "uploading" ? (
                                <div className="space-y-1">
-                                  <Progress value={fileObj.progress} className="h-1" />
+                                  <Progress value={fileObj.progress} className="h-2 bg-slate-100" />
                                   <span className="text-[9px] font-bold text-primary uppercase tracking-widest leading-none">Uploading {fileObj.progress}%</span>
                                </div>
                             ) : fileObj.status === "success" ? (
@@ -252,10 +302,10 @@ export function UploadModal({ isOpen, onClose, onUploadComplete, initialType }: 
                  <div className="p-4 border-t bg-white">
                     <Button 
                       variant="ghost" 
-                      className="w-full border-2 border-dashed border-slate-200 h-10 text-xs font-bold text-slate-400 hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition-all"
+                      className="w-full border-2 border-dashed border-slate-200 h-10 text-xs font-bold text-slate-400 hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition-all text-center flex items-center justify-center gap-2"
                       onClick={() => document.getElementById('fileInput')?.click()}
                     >
-                      + Add More Files
+                      <Upload className="h-3.5 w-3.5" /> + Add More {initialType}s
                     </Button>
                  </div>
                </div>
@@ -281,7 +331,17 @@ export function UploadModal({ isOpen, onClose, onUploadComplete, initialType }: 
                               </div>
                               <div className="flex items-center bg-white/10 px-3 py-1.5 rounded-full border border-white/10 gap-2">
                                  <Play className="h-3 w-3 fill-white" />
-                                 <span className="text-2xs font-bold tracking-widest">00:00 / --:--</span>
+                                 <span className="text-2xs font-bold tracking-widest uppercase">00:00 / Audio</span>
+                              </div>
+                           </div>
+                        ) : selectedFile.file.type.startsWith("video/") ? (
+                           <div className="flex flex-col items-center gap-4 text-white">
+                              <div className="h-16 w-16 bg-white/10 rounded-full flex items-center justify-center backdrop-blur-md border border-white/20">
+                                 <FileVideo className="h-8 w-8 text-slate-300" />
+                              </div>
+                              <div className="flex items-center bg-white/10 px-3 py-1.5 rounded-full border border-white/10 gap-2">
+                                 <Play className="h-3 w-3 fill-white" />
+                                 <span className="text-2xs font-bold tracking-widest uppercase">Preview Capture</span>
                               </div>
                            </div>
                         ) : (
@@ -295,7 +355,7 @@ export function UploadModal({ isOpen, onClose, onUploadComplete, initialType }: 
                      <div className="space-y-4">
                         <div>
                            <span className="text-[10px] font-bold text-primary uppercase tracking-[0.2em] block mb-1">File Identity</span>
-                           <h4 className="text-sm font-bold text-slate-900 leading-tight">{selectedFile.file.name}</h4>
+                           <h4 className="text-sm font-bold text-slate-900 leading-tight break-all">{selectedFile.file.name}</h4>
                         </div>
 
                         <div className="grid grid-cols-2 gap-4 pt-2">
@@ -305,17 +365,17 @@ export function UploadModal({ isOpen, onClose, onUploadComplete, initialType }: 
                            </div>
                            <div className="p-2 bg-slate-50 rounded-lg border border-slate-100">
                               <span className="text-[9px] font-bold text-slate-400 uppercase block mb-1">Type</span>
-                              <span className="text-xs font-bold text-slate-700 truncate">{selectedFile.file.type.split('/')[1]?.toUpperCase() || 'FILE'}</span>
+                              <span className="text-xs font-bold text-slate-700 truncate font-mono">{selectedFile.file.type.split('/')[1]?.toUpperCase() || 'FILE'}</span>
                            </div>
                         </div>
 
                         <div className="p-3 bg-slate-900 rounded-xl text-white">
                            <div className="flex items-center gap-2 mb-2">
                               <div className="h-2 w-2 rounded-full bg-emerald-500" />
-                              <span className="text-[10px] font-bold uppercase tracking-widest">Initial Analysis Hub</span>
+                              <span className="text-[10px] font-bold uppercase tracking-widest">Inference Ready</span>
                            </div>
                            <p className="text-[10px] text-slate-400 font-medium leading-relaxed italic">
-                              "This file will be automatically routed to the extraction engine for OCR and transcription upon submission."
+                              "Validated for {initialType?.toLowerCase()} extraction pipeline. Automated transcription will follow."
                            </p>
                         </div>
                      </div>
@@ -324,7 +384,7 @@ export function UploadModal({ isOpen, onClose, onUploadComplete, initialType }: 
              ) : (
                <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-slate-300">
                   <FileIcon className="h-12 w-12 mb-4 opacity-20" />
-                  <p className="text-xs font-bold uppercase tracking-widest opacity-50">No File Selected</p>
+                  <p className="text-xs font-bold uppercase tracking-widest opacity-50">Select file to preview</p>
                </div>
              )}
           </div>
@@ -344,25 +404,25 @@ export function UploadModal({ isOpen, onClose, onUploadComplete, initialType }: 
            </div>
            <div className="flex items-center gap-3 shrink-0">
              <Button 
-               variant="ghost" 
-               className="h-10 text-xs font-bold text-slate-500 hover:text-slate-800"
+               variant="outline" 
+               className="h-10 text-xs font-bold border-slate-200 text-slate-500 hover:text-slate-800"
                onClick={onClose}
                disabled={isUploading}
              >
-               Cancel Workflow
+               Discard
              </Button>
              <Button 
-               className="h-10 px-8 text-xs font-bold bg-primary hover:bg-green-800 shadow-md transition-all active:scale-95 gap-2"
+               className="h-10 px-8 text-xs font-bold bg-primary hover:bg-green-800 shadow-lg transition-all active:scale-95 gap-2"
                onClick={simulateUpload}
                disabled={isUploading || files.length === 0 || files.some(f => f.error)}
              >
                {isUploading ? (
                  <>
-                   <Loader2 className="h-3.5 w-3.5 animate-spin" /> Authorizing...
+                   <Loader2 className="h-3.5 w-3.5 animate-spin" /> Verifying...
                  </>
                ) : (
                  <>
-                   Initialize Upload ({files.length} Files)
+                   Ingest {files.length} {initialType || 'Files'}
                  </>
                )}
              </Button>

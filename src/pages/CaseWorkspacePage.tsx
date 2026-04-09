@@ -268,7 +268,7 @@ function EvidenceTab() {
   const [expandedBatches, setExpandedBatches] = useState<string[]>(["B1", "B2", "B4"]);
   
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-  const [uploadType, setUploadType] = useState<"Document" | "Image" | "Audio" | undefined>();
+  const [uploadType, setUploadType] = useState<"Document" | "Image" | "Audio" | "Video" | undefined>();
 
   const toggleBatch = (id: string) => {
     setExpandedBatches(prev => prev.includes(id) ? prev.filter(b => b !== id) : [...prev, id]);
@@ -296,7 +296,7 @@ function EvidenceTab() {
     setLocalEvidenceFiles(prev => [...formattedFiles, ...prev]);
   };
 
-  const openUpload = (type: "Document" | "Image" | "Audio") => {
+  const openUpload = (type: "Document" | "Image" | "Audio" | "Video") => {
     setUploadType(type);
     setIsUploadModalOpen(true);
   };
@@ -362,6 +362,9 @@ function EvidenceTab() {
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => openUpload("Audio")} className="text-xs font-bold py-2.5 cursor-pointer rounded-md focus:bg-amber-50 transition-colors">
                  <AudioIcon className="h-4 w-4 mr-3 text-amber-500" /> Audio Recordings
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => openUpload("Video")} className="text-xs font-bold py-2.5 cursor-pointer rounded-md focus:bg-slate-100 transition-colors">
+                 <VideoIcon className="h-4 w-4 mr-3 text-slate-700" /> Video Footage
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
