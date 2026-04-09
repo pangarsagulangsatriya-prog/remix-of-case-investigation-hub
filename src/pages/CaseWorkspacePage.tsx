@@ -354,7 +354,7 @@ function EvidenceTab() {
                       >
                         <td className="pl-4 py-3">
                           <button className="text-slate-400 group-hover:text-primary transition-colors">
-                            {expandedBatches.includes(batch.id) ? <ChevronDown className="h-4 w-4" /> : <ChevronRightIcon className="h-4 w-4" />}
+                            {expandedBatches.includes(batch.id) ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                           </button>
                         </td>
                         <td className="py-3">
