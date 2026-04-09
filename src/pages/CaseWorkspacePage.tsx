@@ -73,6 +73,7 @@ const evidenceBatches = [
   { id: "B2", name: "Incident Documentation Batch", description: "Initial HSE reports and hazard observation forms", type: "Documents", fileCount: 5, uploadedBy: "Sarah Chen", updated: "4h ago", extractionProgress: 80, reviewProgress: 40, keyEvidenceCount: 2, linkedAnalysis: 5 },
   { id: "B3", name: "Maintenance & CAL History", description: "Historical telemetry for haul trucks and conveyor drives", type: "Documents", fileCount: 3, uploadedBy: "Maria Santos", updated: "1d ago", extractionProgress: 100, reviewProgress: 0, keyEvidenceCount: 0, linkedAnalysis: 1 },
   { id: "B4", name: "Witness Statements & Radio", description: "Digital audio recordings from 14:15 - 14:45 incident window", type: "Audio", fileCount: 3, uploadedBy: "John Doe", updated: "1d ago", extractionProgress: 100, reviewProgress: 66, keyEvidenceCount: 2, linkedAnalysis: 2 },
+  { id: "B5", name: "CCTV Storage Export", description: "Footage from Zone B cameras during incident window", type: "Video", fileCount: 1, uploadedBy: "System", updated: "4h ago", extractionProgress: 25, reviewProgress: 0, keyEvidenceCount: 0, linkedAnalysis: 0 },
 ];
 
 const evidenceFiles = [
@@ -90,6 +91,7 @@ const evidenceFiles = [
   { id: "F7", batchId: "B4", name: "witness_statement_operator_A.wav", type: "Audio", source: "Field Voice Link", uploadedBy: "John Doe", uploadDate: "2026-04-06", extractionStatus: "completed", reviewStatus: "reviewed", tags: ["interview"], linked: 2, size: "12 MB", duration: "04:22" },
   { id: "F8", batchId: "B4", name: "supervisor_followup_interview.mp3", type: "Audio", source: "Digital Recorder", uploadedBy: "John Doe", uploadDate: "2026-04-06", extractionStatus: "completed", reviewStatus: "partial", tags: ["interview", "management"], linked: 1, size: "8.5 MB", duration: "02:15" },
   { id: "F9", batchId: "B4", name: "radio_communication_shift_B.m4a", type: "Audio", source: "Radio Link Archiver", uploadedBy: "System", uploadDate: "2026-04-05", extractionStatus: "completed", reviewStatus: "pending", tags: ["radio-log"], linked: 0, size: "4.1 MB", duration: "10:05" },
+  { id: "F10", batchId: "B5", name: "cctv_zone_b_cam2_1430.mp4", type: "Video", source: "CCTV Server", uploadedBy: "System", uploadDate: "2026-04-05", extractionStatus: "processing", reviewStatus: "pending", tags: [], linked: 0, size: "124 MB" },
 ];
 
 const analysisAgents = [
@@ -276,6 +278,10 @@ function EvidenceTab() {
     ? localEvidenceFiles 
     : localEvidenceFiles.filter(f => f.type === filterType.replace(/s$/, ""));
 
+  const filteredBatches = filterType === "All Evidence"
+    ? evidenceBatches
+    : evidenceBatches.filter(b => b.type === filterType);
+
   const handleUploadComplete = (newFiles: any[]) => {
     const formattedFiles = newFiles.map(f => ({
       ...f,
@@ -381,7 +387,7 @@ function EvidenceTab() {
               </thead>
               <tbody className="divide-y">
                 {viewMode === "grouped" ? (
-                  evidenceBatches.map(batch => (
+                  filteredBatches.map(batch => (
                     <React.Fragment key={batch.id}>
                       <tr 
                         className={`group bg-white hover:bg-slate-50/50 transition-colors cursor-pointer ${expandedBatches.includes(batch.id) ? "bg-slate-50/20" : ""}`}
