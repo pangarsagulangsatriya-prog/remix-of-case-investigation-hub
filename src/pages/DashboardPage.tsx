@@ -11,6 +11,7 @@ import {
   MessageSquare,
   History,
   Brain,
+  LayoutGrid,
 } from "lucide-react";
 
 const summaryCards = [
