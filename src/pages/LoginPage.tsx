@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 
+import { BerauCoalLogo, InvestigasiIntelligenceLogo } from "@/components/BrandLogo";
+
 export default function LoginPage() {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
@@ -17,123 +19,86 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-white overflow-hidden">
       {/* LEFT PANEL - Illustration (60%) */}
-      <div className="hidden md:flex md:w-[60%] relative bg-[#0a192f] flex-col justify-center px-12 lg:px-20 overflow-hidden">
+      <div className="hidden md:flex md:w-[60%] relative bg-[#0F2A1D] flex-col justify-center px-12 lg:px-20 overflow-hidden">
         {/* Background Decorative Elements */}
         <div className="absolute top-0 left-0 w-full h-full opacity-20">
-          <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-500 rounded-full blur-[120px]" />
-          <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-600 rounded-full blur-[100px]" />
+          <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-emerald-500 rounded-full blur-[120px]" />
+          <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-green-600 rounded-full blur-[100px]" />
         </div>
 
         <div className="relative z-10 max-w-2xl">
           {/* Main Illustration Area */}
-          <div className="mb-12 rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-1 shadow-2xl">
-            <img 
-              src="/login_illustration.png" 
-              alt="Investigation Workspace Mockup" 
-              className="w-full rounded-lg shadow-inner"
-            />
+          <div className="mb-12 rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-4 shadow-2xl flex items-center justify-center min-h-[300px]">
+             <BerauCoalLogo className="h-48 w-auto text-white" />
           </div>
 
           <h1 className="text-3xl lg:text-4xl font-bold text-white mb-4 leading-tight tracking-tight">
-            Turn evidence into defensible investigation reports.
+            Advanced Intelligence for Industrial Safety.
           </h1>
-          <p className="text-lg text-blue-100/80 mb-8 leading-relaxed max-w-xl">
-            Review facts, trace evidence, run AI analysis, and prepare audit-ready reports in one secure workspace.
+          <p className="text-lg text-emerald-100/80 mb-8 leading-relaxed max-w-xl">
+             Investigasi Intelligence powered by Berau Coal. Unified investigation gateway for enterprise safety operations, extraction review, and AI-driven analysis.
           </p>
 
           <div className="flex flex-wrap gap-6 mt-8">
             <div className="flex items-center gap-2 text-sm font-medium text-white/90 bg-white/5 px-3 py-1.5 rounded-full border border-white/10">
-              <Check className="h-4 w-4 text-blue-400" />
-              Evidence-linked
+              <Check className="h-4 w-4 text-emerald-400" />
+              K3 Standards
             </div>
             <div className="flex items-center gap-2 text-sm font-medium text-white/90 bg-white/5 px-3 py-1.5 rounded-full border border-white/10">
-              <ShieldCheck className="h-4 w-4 text-blue-400" />
-              Human-reviewed
+              <ShieldCheck className="h-4 w-4 text-emerald-400" />
+              Compliance Verified
             </div>
             <div className="flex items-center gap-2 text-sm font-medium text-white/90 bg-white/5 px-3 py-1.5 rounded-full border border-white/10">
-              <Globe className="h-4 w-4 text-blue-400" />
-              Audit-ready
+              <Globe className="h-4 w-4 text-emerald-400" />
+              Corporate Ready
             </div>
           </div>
         </div>
 
         {/* Footer Area Left */}
-        <div className="absolute bottom-8 left-12 lg:left-20 z-10 flex items-center gap-2 text-xs text-white/40">
+        <div className="absolute bottom-8 left-12 lg:left-20 z-10 flex items-center gap-2 text-xs text-white/40 font-bold uppercase tracking-widest">
           <Lock className="h-3 w-3" />
-          AES-256 Bit Encryption Standard
+          Secure Industrial Network Access
         </div>
       </div>
 
       {/* RIGHT PANEL - Login Form (40%) */}
-      <div className="flex-1 md:w-[40%] flex flex-col justify-center bg-white p-8 lg:p-16 relative">
+      <div className="flex-1 md:w-[40%] flex flex-col justify-center bg-[#F8FAF8] p-8 lg:p-16 relative">
         <div className="max-w-[400px] w-full mx-auto">
           {/* Logo & Product Name */}
-          <div className="flex items-center gap-3 mb-10">
-            <div className="h-10 w-10 bg-[#0a192f] rounded-lg flex items-center justify-center shadow-md">
-              <Shield className="h-6 w-6 text-blue-400" />
-            </div>
-            <div>
-              <div className="text-sm font-bold text-[#0a192f] tracking-tight whitespace-nowrap">
-                AI Safety Investigation Workspace
-              </div>
-            </div>
+          <div className="flex items-center gap-3 mb-12">
+            <InvestigasiIntelligenceLogo className="h-8 w-auto" />
           </div>
 
           <div className="mb-8">
-            <h2 className="text-2xl font-bold text-slate-900 mb-2">Welcome back</h2>
-            <p className="text-sm text-slate-500">Sign in to access your investigation workspace</p>
+            <h2 className="text-2xl font-bold text-slate-900 mb-2 tracking-tight">Enterprise Gateway</h2>
+            <p className="text-sm text-slate-500 font-medium">Sign in to your safety investigation workspace</p>
           </div>
 
           <div className="space-y-4">
-            {/* SSO Buttons */}
-            <Button variant="outline" className="w-full h-11 text-sm font-medium border-slate-200 hover:bg-slate-50 transition-colors gap-3 rounded-lg" type="button">
-              <svg className="h-5 w-5" viewBox="0 0 24 24">
-                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
-                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-              </svg>
-              Sign in with Google
-            </Button>
-            <Button variant="outline" className="w-full h-11 text-sm font-medium border-slate-200 hover:bg-slate-50 transition-colors gap-3 rounded-lg" type="button">
-              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M11.4 24H0V12.6h11.4V24zM24 24H12.6V12.6H24V24zM11.4 11.4H0V0h11.4v11.4zM24 11.4H12.6V0H24v11.4z"/>
-              </svg>
-              Sign in with Microsoft
-            </Button>
-
-            <div className="relative my-8">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-slate-100"></span>
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white px-3 text-slate-400 font-medium tracking-wider">or sign in with email</span>
-              </div>
-            </div>
-
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-700 tracking-tight">Email address</label>
+            <form onSubmit={handleLogin} className="space-y-5">
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-700 uppercase tracking-widest">Corporate email</label>
                 <Input
                   type="email"
-                  placeholder="name@company.com"
-                  className="h-11 text-sm border-slate-200 bg-slate-50/50 focus:bg-white transition-colors rounded-lg"
-                  defaultValue="investigator@acme.com"
+                  placeholder="investigator@beraucoal.co.id"
+                  className="h-11 text-sm border-slate-200 bg-white focus:ring-primary focus:border-primary transition-all rounded-lg"
+                  defaultValue="investigator@beraucoal.co.id"
                   required
                 />
               </div>
-              <div className="space-y-1.5 relative">
+              <div className="space-y-2 relative">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-semibold text-slate-700 tracking-tight">Password</label>
-                  <button type="button" className="text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors">
-                    Forgot password?
+                  <label className="text-xs font-bold text-slate-700 uppercase tracking-widest">Password</label>
+                  <button type="button" className="text-xs font-bold text-green-700 hover:text-green-800 transition-colors uppercase tracking-tight">
+                    Reset Access
                   </button>
                 </div>
                 <div className="relative">
                   <Input
                     type={showPassword ? "text" : "password"}
-                    placeholder="Enter your password"
-                    className="h-11 text-sm border-slate-200 bg-slate-50/50 focus:bg-white transition-colors rounded-lg pr-10"
+                    placeholder="••••••••"
+                    className="h-11 text-sm border-slate-200 bg-white focus:ring-primary focus:border-primary transition-all rounded-lg pr-10"
                     defaultValue="password123"
                     required
                   />
@@ -148,32 +113,44 @@ export default function LoginPage() {
               </div>
 
               <div className="flex items-center space-x-2 py-1">
-                <Checkbox id="remember" className="rounded-sm border-slate-300" />
+                <Checkbox id="remember" className="rounded-sm border-slate-300 h-4 w-4 data-[state=checked]:bg-primary" />
                 <label
                   htmlFor="remember"
-                  className="text-xs font-medium text-slate-500 leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                  className="text-xs font-bold text-slate-500 leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer uppercase tracking-tighter"
                 >
-                  Remember this device
+                  Trust this device for 30 days
                 </label>
               </div>
 
-              <Button type="submit" className="w-full h-11 text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20 transition-all rounded-lg">
-                Login
+              <Button type="submit" className="w-full h-11 text-sm font-bold bg-primary hover:bg-green-800 text-white shadow-lg shadow-green-900/10 transition-all rounded-lg uppercase tracking-widest">
+                Authorize Access
               </Button>
             </form>
 
-            <div className="mt-8 pt-8 border-t border-slate-100">
-              <div className="flex items-start gap-3 p-3 rounded-lg bg-slate-50 border border-slate-200/50">
-                <ShieldCheck className="h-4 w-4 text-slate-400 mt-0.5" />
-                <p className="text-[10px] leading-relaxed text-slate-500 font-medium uppercase tracking-wider">
-                  Protected enterprise access. This system is monitored and access is restricted by role and organization.
+            <div className="relative my-10">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-slate-200"></span>
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-[#F8FAF8] px-4 text-slate-400 font-bold tracking-[0.2em]">Compliance Single Sign-On</span>
+              </div>
+            </div>
+
+            <Button variant="outline" className="w-full h-11 text-xs font-bold border-slate-200 bg-white hover:bg-slate-50 transition-colors gap-3 rounded-lg uppercase tracking-widest" type="button">
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M11.4 24H0V12.6h11.4V24zM24 24H12.6V12.6H24V24zM11.4 11.4H0V0h11.4v11.4zM24 11.4H12.6V0H24v11.4z"/>
+              </svg>
+              Corporate SSO Login
+            </Button>
+
+            <div className="mt-12 pt-8 border-t border-slate-200">
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-emerald-50 border border-emerald-100">
+                <ShieldCheck className="h-4 w-4 text-green-700 shrink-0" />
+                <p className="text-[10px] leading-relaxed text-green-800 font-bold uppercase tracking-wider">
+                  Berau Coal Information Security Policy Active.
                 </p>
               </div>
             </div>
-            
-            <p className="text-[11px] text-center text-slate-400 mt-6 font-medium uppercase tracking-widest">
-              Role-based secure workspace
-            </p>
           </div>
         </div>
       </div>

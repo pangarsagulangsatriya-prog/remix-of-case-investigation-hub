@@ -317,7 +317,7 @@ function EvidenceTab() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-slate-500 font-bold p-2 pb-1">Structured Upload</DropdownMenuLabel>
-              <DropdownMenuItem className="text-xs font-bold py-2"><DocIcon className="h-3.5 w-3.5 mr-2 text-blue-500" /> Documents</DropdownMenuItem>
+              <DropdownMenuItem className="text-xs font-bold py-2"><DocIcon className="h-3.5 w-3.5 mr-2 text-primary" /> Documents</DropdownMenuItem>
               <DropdownMenuItem className="text-xs font-bold py-2"><ImageIcon className="h-3.5 w-3.5 mr-2 text-emerald-500" /> Images</DropdownMenuItem>
               <DropdownMenuItem className="text-xs font-bold py-2"><AudioIcon className="h-3.5 w-3.5 mr-2 text-amber-500" /> Audio Recordings</DropdownMenuItem>
               <DropdownMenuSeparator />
@@ -513,7 +513,7 @@ function EvidenceTab() {
                          </div>
                        ) : (
                          <div className="text-center space-y-2 p-4">
-                            <DocIcon className="h-12 w-12 text-blue-200 mx-auto" />
+                            <DocIcon className="h-12 w-12 text-primary/20 mx-auto" />
                             <span className="text-2xs font-bold text-slate-400 uppercase tracking-widest">Document Text Rendering...</span>
                          </div>
                        )}
@@ -745,7 +745,7 @@ function AdaptiveSourcePreview({ file }: { file: any }) {
          </div>
          <div className="flex-1 p-12 space-y-6 relative overflow-hidden">
             <div className="absolute top-48 left-0 right-0 h-8 bg-amber-100/30 border-y border-amber-200/50 mix-blend-multiply" />
-            <div className="absolute top-[320px] left-0 right-0 h-6 bg-blue-100/30 border-y border-blue-200/50 mix-blend-multiply" />
+            <div className="absolute top-[320px] left-0 right-0 h-6 bg-primary/10 border-y border-primary/20 mix-blend-multiply" />
             <h1 className="text-2xl font-bold text-slate-900 border-none p-0">HSE Incident Report - Initial Findings</h1>
             <div className="h-px bg-slate-100 w-full" />
             <div className="space-y-4">
@@ -834,15 +834,15 @@ function AdaptiveSourcePreview({ file }: { file: any }) {
                <button className="h-14 w-14 bg-slate-900 rounded-full flex items-center justify-center text-white shadow-xl hover:bg-slate-800 transition-all hover:scale-105 active:scale-95">
                   <Play className="h-6 w-6 fill-white ml-1" />
                </button>
-               <button className="text-slate-400 hover:text-primary transition-colors hover:scale-110 active:scale-95"><Settings className="h-6 w-6" /></button>
+               <button className="text-slate-400 hover:text-emerald-600 transition-colors hover:scale-110 active:scale-95"><Settings className="h-6 w-6" /></button>
             </div>
          </div>
 
          <div className="grid grid-cols-2 gap-4">
             <div className="bg-white border border-slate-100 rounded-xl p-4 shadow-sm relative overflow-hidden">
-               <div className="absolute top-0 left-0 w-1 h-full bg-blue-500" />
+               <div className="absolute top-0 left-0 w-1 h-full bg-emerald-600" />
                <div className="flex items-center gap-2 mb-2">
-                  <div className="h-6 w-6 rounded bg-blue-50 flex items-center justify-center text-blue-600 text-xs font-bold">A</div>
+                  <div className="h-6 w-6 rounded bg-emerald-50 flex items-center justify-center text-emerald-600 text-xs font-bold">A</div>
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Speaker A (Operator)</span>
                </div>
                <p className="text-xs text-slate-600 italic font-medium">"I noticed the vibration around 14:15. It didn't sound right so I called Supervisor B."</p>

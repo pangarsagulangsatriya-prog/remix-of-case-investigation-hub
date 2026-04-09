@@ -113,7 +113,7 @@ export default function CreateCasePage() {
                             }`}
                          >
                             <span className={`text-[10px] font-bold uppercase tracking-widest block mb-1 ${
-                               s === "Critical" ? "text-rose-600" : s === "High" ? "text-amber-600" : "text-blue-600"
+                               s === "Critical" ? "text-rose-600" : s === "High" ? "text-amber-600" : "text-emerald-700"
                             }`}>{s}</span>
                             <span className="text-xs font-bold text-slate-700">Level {s === "Critical" ? 5 : s === "High" ? 4 : 3}</span>
                             {formData.severity === s && <div className="absolute -bottom-1 -right-1 h-4 w-4 bg-primary rotate-45 transform translate-x-2 translate-y-2" />}
@@ -175,13 +175,13 @@ export default function CreateCasePage() {
                     </div>
 
                     <div className="mt-8 pt-6 border-t">
-                       <div className="p-4 bg-blue-50/50 rounded-xl border border-blue-100 flex gap-3">
-                          <div className="h-6 w-6 bg-blue-600 rounded flex items-center justify-center text-white shrink-0">
+                       <div className="p-4 bg-emerald-50/50 rounded-xl border border-emerald-100 flex gap-3">
+                          <div className="h-6 w-6 bg-emerald-600 rounded flex items-center justify-center text-white shrink-0">
                              <Brain className="h-3.5 w-3.5" />
                           </div>
                           <div>
-                             <p className="text-[11px] font-bold text-blue-900 leading-tight">AI Priming Ready</p>
-                             <p className="text-[9px] text-blue-700/70 font-medium leading-relaxed mt-1">Workspace will automatically initialize extraction pipelines upon creation.</p>
+                             <p className="text-[11px] font-bold text-emerald-900 leading-tight">AI Priming Ready</p>
+                             <p className="text-[9px] text-emerald-700 font-medium leading-relaxed mt-1">Workspace will automatically initialize extraction pipelines upon creation.</p>
                           </div>
                        </div>
                     </div>

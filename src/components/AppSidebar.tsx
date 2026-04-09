@@ -36,6 +36,8 @@ const navItems = [
   { title: "Admin", url: "/admin", icon: Settings },
 ];
 
+import { BerauCoalLogo } from "./BrandLogo";
+
 export function AppSidebar() {
   const { state, toggleSidebar } = useSidebar();
   const collapsed = state === "collapsed";
@@ -43,18 +45,8 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="border-r-0">
-      <div className="flex items-center gap-2 px-4 py-4 border-b border-sidebar-border h-12">
-        <Shield className="h-6 w-6 text-sidebar-primary shrink-0" />
-        {!collapsed && (
-          <div className="flex flex-col">
-            <span className="text-sm font-bold text-sidebar-accent-foreground tracking-tight">
-              AI Safety
-            </span>
-            <span className="text-2xs text-sidebar-foreground">
-              Investigation Workspace
-            </span>
-          </div>
-        )}
+      <div className="flex items-center gap-2 px-4 py-4 border-b border-sidebar-border h-14 bg-sidebar-background">
+        <BerauCoalLogo className={collapsed ? "h-8 w-8 overflow-hidden" : "h-9 w-auto text-white"} />
       </div>
       <SidebarContent>
         <SidebarGroup>
