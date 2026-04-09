@@ -8,6 +8,8 @@ import {
   History,
   Settings,
   Shield,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -19,6 +21,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarFooter,
   useSidebar,
 } from "@/components/ui/sidebar";
 
@@ -34,13 +37,13 @@ const navItems = [
 ];
 
 export function AppSidebar() {
-  const { state } = useSidebar();
+  const { state, toggleSidebar } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
 
   return (
     <Sidebar collapsible="icon" className="border-r-0">
-      <div className="flex items-center gap-2 px-4 py-4 border-b border-sidebar-border">
+      <div className="flex items-center gap-2 px-4 py-4 border-b border-sidebar-border h-12">
         <Shield className="h-6 w-6 text-sidebar-primary shrink-0" />
         {!collapsed && (
           <div className="flex flex-col">
@@ -61,7 +64,7 @@ export function AppSidebar() {
                 const isActive = location.pathname.startsWith(item.url);
                 return (
                   <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild isActive={isActive}>
+                    <SidebarMenuButton asChild isActive={isActive} tooltip={item.title}>
                       <NavLink
                         to={item.url}
                         className="flex items-center gap-3 px-3 py-2 rounded-md text-sm text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
@@ -78,6 +81,26 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+      <SidebarFooter className="p-2 border-t border-sidebar-border">
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton 
+              onClick={toggleSidebar}
+              className="w-full flex items-center gap-3 px-3 py-2 h-9"
+              tooltip={collapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+            >
+              {collapsed ? (
+                <PanelLeftOpen className="h-4 w-4" />
+              ) : (
+                <>
+                  <PanelLeftClose className="h-4 w-4" />
+                  <span className="text-xs font-medium">Collapse Sidebar</span>
+                </>
+              )}
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
     </Sidebar>
   );
 }

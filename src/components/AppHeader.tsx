@@ -4,10 +4,8 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 export function AppHeader() {
   return (
     <header className="h-11 flex items-center justify-between border-b px-3 bg-white shrink-0">
-      <div className="flex items-center gap-2">
-        <SidebarTrigger className="h-7 w-7">
-          <Menu className="h-4 w-4" />
-        </SidebarTrigger>
+      <div className="flex items-center gap-2 px-3">
+        <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Safety Context</span>
       </div>
 
       <div className="flex items-center gap-2">
