@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react"; 
 import { useParams } from "react-router-dom";
 import { AppLayout } from "@/components/AppLayout";
 import { StatusChip, SeverityChip, ConfidenceChip } from "@/components/StatusChip";
@@ -61,7 +61,8 @@ import {
   Loader2,
   Database,
   Ruler,
-  MessageCircle
+  MessageCircle,
+  Download
 } from "lucide-react";
 
 interface AgentState {
@@ -745,18 +746,18 @@ function AIAnalysisPanel({ file }: { file: any }) {
         return (
           <div className="grid grid-cols-1 gap-3">
              {data.map((s: any) => (
-               <div key={s.speaker_id} className="p-3 border rounded-xl bg-slate-50/50 hover:bg-white transition-all">
-                  <div className="flex items-center justify-between mb-2">
-                     <span className="text-[11px] font-black text-slate-900 uppercase">{s.probable_role} ({s.speaker_id})</span>
-                     <span className={`px-2 py-0.5 text-[8px] font-black uppercase rounded ${s.stress_level.includes('High') ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}`}>
-                        Stress: {s.stress_level.split(' ')[0]}
-                     </span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 text-[10px] font-bold text-slate-500">
-                     <div>Assertiveness: <span className="text-slate-800">{s.assertiveness}</span></div>
-                     <div>Style: <span className="text-slate-800">{s.speaking_style}</span></div>
-                  </div>
-               </div>
+                <div key={s.speaker_id} className="p-3 border rounded-xl bg-slate-50/50 hover:bg-white transition-all">
+                   <div className="flex items-center justify-between mb-2">
+                      <span className="text-[11px] font-black text-slate-900 uppercase">{s.probable_role} ({s.speaker_id})</span>
+                      <span className={`px-2 py-0.5 text-[8px] font-black uppercase rounded ${s.stress_level.includes('High') ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                         Stress: {s.stress_level.split(' ')[0]}
+                      </span>
+                   </div>
+                   <div className="grid grid-cols-2 gap-2 text-[10px] font-bold text-slate-500">
+                      <div>Assertiveness: <span className="text-slate-800">{s.assertiveness}</span></div>
+                      <div>Style: <span className="text-slate-800">{s.speaking_style}</span></div>
+                   </div>
+                </div>
              ))}
           </div>
         );
@@ -1145,10 +1146,8 @@ function ExtractionTab({ files: evidenceFiles, setFiles: setEvidenceFiles }: { f
   const [selectedFile, setSelectedFile] = useState<any>(evidenceFiles[1]);
   const [activeFilter, setActiveFilter] = useState("All Files");
   const [searchQuery, setSearchQuery] = useState("");
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [expandedBatches, setExpandedBatches] = useState<string[]>(["B1", "B2", "B4", "B5"]);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
 
   const toggleBatch = (id: string) => {
@@ -1280,7 +1279,6 @@ function ExtractionTab({ files: evidenceFiles, setFiles: setEvidenceFiles }: { f
                        {expandedBatches.includes(batch.id) ? <ChevronDown className="h-3 w-3 text-slate-400" /> : <ChevronRight className="h-3 w-3 text-slate-400" />}
                      </div>
                      <Folders className="h-3.5 w-3.5 text-primary/60 shrink-0 mt-0.5" />
-                     {/* Allow folder name to wrap — no truncation */}
                      <span className="text-[10px] font-bold text-slate-600 uppercase tracking-tighter leading-snug flex-1 min-w-0">{batch.name}</span>
                      <span className="text-[9px] font-bold text-slate-400 bg-white px-1.5 py-0.5 rounded-full border shrink-0 mt-0.5 ml-1">{batch.files.length}</span>
                   </div>
@@ -1404,11 +1402,10 @@ function ExtractionTab({ files: evidenceFiles, setFiles: setEvidenceFiles }: { f
            )}
         </div>
 
-        {/* CENTER — flex-1, but preview canvas is capped so it doesn't over-expand on wide screens */}
         <div className="flex-1 overflow-auto bg-[#f0f2f4] p-6 flex flex-col items-center custom-scrollbar" style={{ minWidth: 0 }}>
-            <div className="w-full max-w-3xl h-full flex items-center justify-center">
-              {selectedFile ? (
-                <AdaptiveSourcePreview file={selectedFile} />
+             <div className={`w-full flex ${selectedFile?.type === "Image" ? "max-w-3xl h-full items-center justify-center" : "max-w-5xl items-start justify-center pt-4"}`}>
+               {selectedFile ? (
+                 <AdaptiveSourcePreview file={selectedFile} />
               ) : (
                 <div className="flex flex-col items-center justify-center p-12 text-center">
                    <div className="h-20 w-20 rounded-[2.5rem] bg-white shadow-2xl flex items-center justify-center mb-8 border border-white/50 animate-in fade-in zoom-in duration-700">
@@ -1424,7 +1421,6 @@ function ExtractionTab({ files: evidenceFiles, setFiles: setEvidenceFiles }: { f
          </div>
       </div>
 
-      {/* RIGHT PANEL — 460px for dense structured content (JSON, accordion, action buttons) */}
       <div className="w-[460px] min-w-[380px] border-l bg-white flex flex-col shrink-0 z-20 shadow-[-2px_0_6px_rgba(0,0,0,0.04)]">
         <div className="h-12 border-b flex items-center justify-between px-4 shrink-0 bg-slate-50/50">
            <div className="flex items-center gap-2">
@@ -1449,7 +1445,6 @@ function ExtractionTab({ files: evidenceFiles, setFiles: setEvidenceFiles }: { f
            )}
         </div>
 
-        {/* Action bar — prominent, stable, always visible */}
         <div className="px-5 py-4 border-t bg-white shrink-0 shadow-[0_-2px_8px_rgba(0,0,0,0.04)]">
            <div className="flex items-center gap-2">
               <Button 
@@ -1489,11 +1484,19 @@ function ExtractionTab({ files: evidenceFiles, setFiles: setEvidenceFiles }: { f
 }
 
 function AdaptiveSourcePreview({ file }: { file: any }) {
+  const [audioCurrentTime, setAudioCurrentTime] = useState(0);
+  const [audioIsPlaying, setAudioIsPlaying] = useState(false);
+  const [audioPlaybackSpeed, setAudioPlaybackSpeed] = useState(1);
+  
+  const [videoCurrentTime, setVideoCurrentTime] = useState(0);
+  const [videoIsPlaying, setVideoIsPlaying] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
   if (!file) return <div className="p-20 text-center text-slate-400 font-bold uppercase tracking-[0.2em] opacity-50">Select evidence for preview</div>;
+  
   if (file.type === "Document") {
     return (
       <div className="flex flex-col gap-6 w-full max-w-4xl pb-20">
-        {/* A. Document Preview Area */}
         <div className="bg-white border border-slate-200 rounded-lg shadow-xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-500">
            <div className="h-10 bg-slate-50 border-b flex items-center justify-between px-4">
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Digital Evidence / PDF Source</span>
@@ -1530,7 +1533,6 @@ function AdaptiveSourcePreview({ file }: { file: any }) {
            </div>
         </div>
 
-        {/* B. Facts Section — Cross-page Thematic Intelligence */}
         <div className="space-y-4">
            <div className="flex items-center justify-between border-b pb-2 px-1">
               <div className="flex items-center gap-2">
@@ -1581,28 +1583,20 @@ function AdaptiveSourcePreview({ file }: { file: any }) {
   }
 
   if (file.type === "Audio") {
-    // Shared state for playback
-    const [currentTime, setCurrentTime] = useState(0);
-    const [isPlaying, setIsPlaying] = useState(false);
-    const [playbackSpeed, setPlaybackSpeed] = useState(1);
-    
-    // Jump to time helper
     const jumpTo = (timeStr: string) => {
       const parts = timeStr.split(':').map(Number);
       const seconds = parts[0] * 60 + parts[1];
-      setCurrentTime(seconds);
-      setIsPlaying(true);
+      setAudioCurrentTime(seconds);
+      setAudioIsPlaying(true);
     };
 
-    // Helper to check if current time is within a segment
     const isSegmentActive = (start: string, end: string) => {
       const getS = (s: string) => s.split(':').map(Number)[0] * 60 + s.split(':').map(Number)[1];
-      return currentTime >= getS(start) && currentTime <= getS(end);
+      return audioCurrentTime >= getS(start) && audioCurrentTime <= getS(end);
     };
 
     return (
        <div className="w-full max-w-4xl space-y-6 animate-in slide-in-from-bottom-4 duration-500 pb-20">
-          {/* Audio Player Card */}
           <div className="bg-white border-2 border-slate-100 rounded-2xl shadow-xl p-8 space-y-8 relative overflow-hidden group">
              <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none group-hover:opacity-20 transition-opacity">
                 <AudioIcon className="h-32 w-32 -mr-10 -mt-10 rotate-12" />
@@ -1630,33 +1624,31 @@ function AdaptiveSourcePreview({ file }: { file: any }) {
                 </div>
              </div>
 
-             {/* Functional Seek Bar */}
              <div className="space-y-3">
                 <div className="h-20 w-full bg-slate-50/50 flex items-end gap-[2px] px-2 py-3 rounded-xl border border-slate-100 group/wave cursor-pointer relative"
                      onClick={(e) => {
                        const rect = e.currentTarget.getBoundingClientRect();
                        const x = e.clientX - rect.left;
                        const pct = x / rect.width;
-                       const totalSeconds = 8 * 60 + 42; // mock duration
-                       setCurrentTime(Math.floor(totalSeconds * pct));
+                       const totalSeconds = 8 * 60 + 42; 
+                       setAudioCurrentTime(Math.floor(totalSeconds * pct));
                      }}>
                    {Array.from({ length: 120 }).map((_, i) => {
                      const totalSeconds = 8 * 60 + 42;
                      const targetX = (i / 120) * totalSeconds;
-                     const isPast = targetX <= currentTime;
+                     const isPast = targetX <= audioCurrentTime;
                      return (
                         <div key={i} 
                              className={`flex-1 rounded-full transition-all duration-300 ${isPast ? "bg-primary" : "bg-slate-200"}`} 
                              style={{ height: `${20 + Math.sin(i * 0.2) * 20 + Math.random() * 40}%`, opacity: isPast ? 1 : 0.4 }} />
                      );
                    })}
-                   {/* Playhead indicator */}
                    <div className="absolute top-0 bottom-0 w-0.5 bg-primary z-20 shadow-[0_0_10px_rgba(37,99,235,0.8)]" 
-                        style={{ left: `${(currentTime / (8*60+42)) * 100}%` }} />
+                        style={{ left: `${(audioCurrentTime / (8*60+42)) * 100}%` }} />
                 </div>
                 <div className="flex justify-between px-1">
                    <span className="text-[11px] font-black text-slate-400 tabular-nums">
-                     {Math.floor(currentTime / 60).toString().padStart(2, '0')}:{(currentTime % 60).toString().padStart(2, '0')}
+                     {Math.floor(audioCurrentTime / 60).toString().padStart(2, '0')}:{(audioCurrentTime % 60).toString().padStart(2, '0')}
                    </span>
                    <span className="text-[11px] font-black text-slate-400 tabular-nums">{file.duration}</span>
                 </div>
@@ -1664,20 +1656,20 @@ function AdaptiveSourcePreview({ file }: { file: any }) {
 
              <div className="flex items-center justify-between bg-slate-50/50 p-2 rounded-2xl border border-slate-100 shadow-inner">
                 <div className="flex items-center gap-1">
-                   <Button variant="ghost" size="sm" className="h-9 w-9 p-0 text-slate-500" onClick={() => setCurrentTime(prev => Math.max(0, prev - 10))}><RefreshCcw className="h-4 w-4 -scale-x-100" /></Button>
+                   <Button variant="ghost" size="sm" className="h-9 w-9 p-0 text-slate-500" onClick={() => setAudioCurrentTime(prev => Math.max(0, prev - 10))}><RefreshCcw className="h-4 w-4 -scale-x-100" /></Button>
                    <Button 
                       className="h-12 w-12 bg-slate-900 rounded-xl flex items-center justify-center text-white shadow-xl hover:bg-slate-800 transition-all hover:scale-105 active:scale-95"
-                      onClick={() => setIsPlaying(!isPlaying)}>
-                      {isPlaying ? <div className="h-4 w-4 bg-white rounded-sm" /> : <Play className="h-5 w-5 fill-white ml-1" />}
+                      onClick={() => setAudioIsPlaying(!audioIsPlaying)}>
+                      {audioIsPlaying ? <div className="h-4 w-4 bg-white rounded-sm" /> : <Play className="h-5 w-5 fill-white ml-1" />}
                    </Button>
-                   <Button variant="ghost" size="sm" className="h-9 w-9 p-0 text-slate-500" onClick={() => setCurrentTime(prev => prev + 10)}><RefreshCcw className="h-4 w-4" /></Button>
+                   <Button variant="ghost" size="sm" className="h-9 w-9 p-0 text-slate-500" onClick={() => setAudioCurrentTime(prev => prev + 10)}><RefreshCcw className="h-4 w-4" /></Button>
                 </div>
                 <div className="flex items-center gap-6">
                    <div className="flex items-center gap-3">
                       <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Rate</span>
                       <select 
-                        value={playbackSpeed}
-                        onChange={(e) => setPlaybackSpeed(Number(e.target.value))}
+                        value={audioPlaybackSpeed}
+                        onChange={(e) => setAudioPlaybackSpeed(Number(e.target.value))}
                         className="bg-transparent text-xs font-black text-slate-700 outline-none border-none cursor-pointer">
                         <option value={0.5}>0.5x</option>
                         <option value={1}>1.0x</option>
@@ -1695,7 +1687,6 @@ function AdaptiveSourcePreview({ file }: { file: any }) {
              </div>
           </div>
 
-          {/* Full Diarization Transcript */}
           <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col">
              <div className="px-6 py-4 border-b flex items-center justify-between bg-white relative z-10">
                 <div className="flex items-center gap-3">
@@ -1706,7 +1697,7 @@ function AdaptiveSourcePreview({ file }: { file: any }) {
                 </div>
                 <div className="flex items-center gap-3">
                    <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 mr-2">
-                      <div className="h-2 w-2 rounded-full bg-primary" /> Current Seg: {currentTime}s
+                      <div className="h-2 w-2 rounded-full bg-primary" /> Current Seg: {audioCurrentTime}s
                    </div>
                    <Button variant="outline" size="sm" className="h-7 text-[10px] font-bold gap-1.5 px-3 border-slate-200 hover:bg-slate-50">
                       <Copy className="h-3 w-3" /> Sync Export
@@ -1724,16 +1715,12 @@ function AdaptiveSourcePreview({ file }: { file: any }) {
                           id={seg.segment_id}
                           className={`group flex items-start p-6 transition-all cursor-pointer relative overflow-hidden ${active ? "bg-white shadow-[inset_0_0_20px_rgba(37,99,235,0.03)]" : "hover:bg-white"}`}
                           onClick={() => jumpTo(seg.start_time)}>
-                          
-                          {/* Active Indicator */}
                           <div className={`absolute top-0 bottom-0 left-0 w-1 transition-all ${active ? "bg-primary" : "bg-transparent group-hover:bg-slate-200"}`} />
-                          
                           <div className="w-24 shrink-0 pt-0.5">
                              <span className={`text-[11px] font-bold tabular-nums transition-colors ${active ? "text-primary" : "text-slate-400"}`}>
                                {seg.start_time} — {seg.end_time}
                              </span>
                           </div>
-                          
                           <div className="flex-1 space-y-2 pl-6">
                              <div className="flex items-center gap-3">
                                 <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider border transition-all ${
@@ -1745,7 +1732,6 @@ function AdaptiveSourcePreview({ file }: { file: any }) {
                                 </span>
                                 {seg.flags.includes("key_observation") && <span className="h-1.5 w-1.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.6)]" />}
                                 {seg.flags.includes("critical_evidence") && <span className="h-1.5 w-1.5 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]" />}
-                                {seg.confidence === "medium" && <span className="text-[10px] text-slate-300 italic">low confidence</span>}
                              </div>
                              <p className={`text-sm leading-relaxed transition-colors ${active ? "text-slate-900 font-medium" : "text-slate-600 font-medium"}`}>
                                 {seg.text}
@@ -1755,7 +1741,6 @@ function AdaptiveSourcePreview({ file }: { file: any }) {
                      );
                    })}
                 </div>
-                {/* Visual End state */}
                 <div className="p-12 flex flex-col items-center justify-center text-slate-300 space-y-4 opacity-50">
                     <div className="h-px w-20 bg-slate-200" />
                     <span className="text-[10px] font-black uppercase tracking-[0.3em]">Recording Termination</span>
@@ -1767,13 +1752,9 @@ function AdaptiveSourcePreview({ file }: { file: any }) {
   }
 
   if (file.type === "Video") {
-     const [currentTime, setCurrentTime] = useState(0);
-     const [isPlaying, setIsPlaying] = useState(false);
-     const videoRef = useRef<HTMLVideoElement>(null);
-
      const activeSegment = videoTimeframesData.find(tf => {
         const getS = (s: string) => s.split(':').map(Number)[0] * 60 + s.split(':').map(Number)[1];
-        return currentTime >= getS(tf.start_time) && currentTime <= getS(tf.end_time);
+        return videoCurrentTime >= getS(tf.start_time) && videoCurrentTime <= getS(tf.end_time);
      });
 
      const jumpTo = (timeStr: string) => {
@@ -1782,13 +1763,12 @@ function AdaptiveSourcePreview({ file }: { file: any }) {
         if (videoRef.current) {
           videoRef.current.currentTime = seconds;
           videoRef.current.play();
-          setIsPlaying(true);
+          setVideoIsPlaying(true);
         }
      };
 
      return (
        <div className="w-full max-w-4xl space-y-8 animate-in slide-in-from-bottom-4 duration-500 pb-20">
-          {/* Header & Player */}
           <div className="space-y-4">
              <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -1821,30 +1801,29 @@ function AdaptiveSourcePreview({ file }: { file: any }) {
                   ref={videoRef}
                   src={file.url}
                   className="w-full h-full object-contain"
-                  onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
-                  onPlay={() => setIsPlaying(true)}
-                  onPause={() => setIsPlaying(false)}
+                  onTimeUpdate={(e) => setVideoCurrentTime(e.currentTarget.currentTime)}
+                  onPlay={() => setVideoIsPlaying(true)}
+                  onPause={() => setVideoIsPlaying(false)}
                 />
 
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity" />
                 
                 <div className="absolute bottom-0 left-0 right-0 p-6 flex flex-col gap-4 opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0">
                    <div className="flex items-center gap-4">
-                      <button onClick={() => isPlaying ? videoRef.current?.pause() : videoRef.current?.play()} className="h-10 w-10 bg-white rounded-full flex items-center justify-center text-slate-900 shadow-xl hover:scale-110 active:scale-95 transition-all">
-                        {isPlaying ? <div className="h-3 w-3 bg-slate-900 rounded-sm" /> : <Play className="h-4 w-4 fill-slate-900 ml-0.5" />}
+                      <button onClick={() => videoIsPlaying ? videoRef.current?.pause() : videoRef.current?.play()} className="h-10 w-10 bg-white rounded-full flex items-center justify-center text-slate-900 shadow-xl hover:scale-110 active:scale-95 transition-all">
+                        {videoIsPlaying ? <div className="h-3 w-3 bg-slate-900 rounded-sm" /> : <Play className="h-4 w-4 fill-slate-900 ml-0.5" />}
                       </button>
                       <div className="flex-1 h-1 bg-white/20 rounded-full overflow-hidden cursor-pointer">
-                         <div className="h-full bg-primary" style={{ width: `${(currentTime / (14*60+30)) * 100}%` }} />
+                         <div className="h-full bg-primary" style={{ width: `${(videoCurrentTime / (14*60+30)) * 100}%` }} />
                       </div>
                       <span className="text-[10px] font-black text-white tabular-nums tracking-widest">
-                        {Math.floor(currentTime/60).toString().padStart(2,'0')}:{(Math.floor(currentTime%60)).toString().padStart(2,'0')} / {file.duration}
+                        {Math.floor(videoCurrentTime/60).toString().padStart(2,'0')}:{(Math.floor(videoCurrentTime%60)).toString().padStart(2,'0')} / {file.duration}
                       </span>
                    </div>
                 </div>
              </div>
           </div>
 
-          {/* Timeframe Review Feed */}
           <div className="space-y-4">
              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div className="flex items-center gap-3">
@@ -1855,8 +1834,8 @@ function AdaptiveSourcePreview({ file }: { file: any }) {
                 </div>
                 <div className="flex items-center gap-4">
                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-black text-slate-400 uppercase">Interval</span>
-                      <span className="px-2 py-0.5 bg-slate-100 text-[10px] font-black rounded border">2:00</span>
+                       <span className="text-[10px] font-black text-slate-400 uppercase">Interval</span>
+                       <span className="px-2 py-0.5 bg-slate-100 text-[10px] font-black rounded border">2:00</span>
                    </div>
                 </div>
              </div>
@@ -1886,7 +1865,6 @@ function AdaptiveSourcePreview({ file }: { file: any }) {
                        </div>
                        
                        <div className="p-8 grid grid-cols-2 gap-10 relative">
-                          {/* Script Layer */}
                           <div className="space-y-4 relative">
                              <div className="flex items-center gap-2 mb-2 pb-1 border-b border-slate-50">
                                 <FileText className="h-3.5 w-3.5 text-slate-400" />
@@ -1913,7 +1891,6 @@ function AdaptiveSourcePreview({ file }: { file: any }) {
                              </div>
                           </div>
 
-                          {/* Analysis Layer */}
                           <div className="bg-slate-50/50 rounded-2xl p-6 border border-slate-100 space-y-4 shadow-inner">
                              <div className="flex items-center gap-2 mb-2 pb-1 border-b border-slate-100">
                                 <Brain className="h-3.5 w-3.5 text-primary" />
@@ -1964,28 +1941,60 @@ function AdaptiveExtractionOutput({ file }: { file: any }) {
   const [viewMode, setViewMode] = useState<"Structured" | "JSON">("Structured");
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
   
-  // Set default expanded sections based on file type
   useEffect(() => {
     if (file?.type === "Audio") {
-      setExpandedSections(["Recording Meta", "Interpretation Seeds"]);
-    } else if (file?.type === "Document") {
-      setExpandedSections([]); // Documents use a different internal layout for now
+      setExpandedSections(["Recording Meta", "Intelligence Seeds"]);
+    } else if (file?.type === "Video") {
+      setExpandedSections(["Detected Events"]);
+    } else {
+      setExpandedSections([]);
     }
   }, [file?.id, file?.type]);
 
   if (!file) return null;
+
+  const toggle = (s: string) => setExpandedSections(p => p.includes(s) ? p.filter(x => x !== s) : [...p, s]);
+
+  const Section = ({ title, icon: Icon, children }: any) => (
+     <div className={`border rounded-xl overflow-hidden shadow-sm transition-all duration-300 ${expandedSections.includes(title) ? 'ring-1 ring-primary/20 shadow-md translate-y-[-2px]' : 'hover:border-slate-300'}`}>
+        <button 
+           onClick={() => toggle(title)}
+           className={`w-full flex items-center justify-between p-4 transition-colors ${expandedSections.includes(title) ? 'bg-slate-50/80 border-b' : 'bg-white hover:bg-slate-50/50'}`}
+        >
+           <div className="flex items-center gap-3">
+              <div className={`h-8 w-8 rounded-lg border shadow-sm flex items-center justify-center transition-all ${expandedSections.includes(title) ? 'bg-primary text-white border-primary shadow-primary/20' : 'bg-white text-slate-400'}`}>
+                 <Icon className="h-4 w-4" />
+              </div>
+              <span className={`text-sm font-black transition-colors ${expandedSections.includes(title) ? 'text-slate-900' : 'text-slate-700'}`}>{title}</span>
+           </div>
+           <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${expandedSections.includes(title) ? 'rotate-180' : ''}`} />
+        </button>
+        {expandedSections.includes(title) && (
+           <div className="p-5 bg-white space-y-4 animate-in slide-in-from-top-2 duration-300">
+              {children}
+           </div>
+        )}
+     </div>
+  );
+
+  const DataRow = ({ label, value, badge }: any) => (
+     <div className="flex items-center justify-between py-1.5">
+        <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-tight">{label}</span>
+        {badge ? (
+          <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border ${badge.className}`}>{badge.text}</span>
+        ) : (
+          <span className="text-[11px] font-black text-slate-700">{value || "—"}</span>
+        )}
+     </div>
+  );
+
   const ExtractionItem = ({ fact, type, source, conf }: any) => (
     <div className="bg-white border border-slate-200 rounded-lg p-3 hover:border-primary/40 transition-all hover:shadow-md cursor-pointer group mb-3 last:mb-0 relative overflow-hidden">
        <div className="absolute top-0 left-0 w-1 h-full bg-slate-100 group-hover:bg-primary/50 transition-colors" />
-          <div className="flex items-center justify-between mb-1.5">
+       <div className="flex items-center justify-between mb-1.5">
           <div className="flex items-center gap-2">
              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{type}</span>
-             <ConfidenceChip level={conf.toLowerCase() as any} />
-          </div>
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-             <button className="p-1 hover:bg-emerald-50 text-emerald-600 rounded transition-colors" title="Accept"><Check className="h-3 w-3" /></button>
-             <button className="p-1 hover:bg-slate-100 text-slate-400 rounded transition-colors" title="Edit"><Pencil className="h-3 w-3" /></button>
-             <button className="p-1 hover:bg-rose-50 text-rose-600 rounded transition-colors" title="Reject"><X className="h-3 w-3" /></button>
+             <ConfidenceChip level={(conf || "Low").toLowerCase() as any} />
           </div>
        </div>
        <p className="text-xs font-bold text-slate-900 leading-snug mb-2 pr-4">{fact}</p>
@@ -1996,142 +2005,12 @@ function AdaptiveExtractionOutput({ file }: { file: any }) {
     </div>
   );
 
-  const ExtractionSection = ({ title, icon: Icon, children }: { title: string, icon: any, children: React.ReactNode }) => (
-    <div className="mb-6 last:mb-0">
-       <div className="flex items-center gap-2 mb-3 px-1 text-slate-800">
-          <Icon className="h-3.5 w-3.5 opacity-60" />
-          <h3 className="text-[10px] font-black uppercase tracking-widest">{title}</h3>
-       </div>
-       <div className="space-y-3">
-          {children}
-       </div>
-    </div>
-  );
-
-  if (file.type === "Document") {
-    return (
-      <div className="p-6 pb-20 space-y-8 animate-in fade-in duration-500">
-        {/* A. Document Summary */}
-        <div className="space-y-3 bg-slate-50/50 p-4 rounded-xl border border-slate-100 shadow-inner">
-           <div className="flex items-center gap-2 mb-0.5">
-              <FileText className="h-3.5 w-3.5 text-primary" />
-              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Executive Summary</span>
-           </div>
-           <p className="text-xs font-bold text-slate-700 leading-relaxed italic">
-             Initial HSE report documenting structural failure of Conveyor Belt 14 in Zone B. 
-             Findings suggest mechanical bearing fatigue compounded by thermal stress, leading to a 920mm tear. 
-             Critical spillage blocked safety walkway, requiring emergency secondary containment protocols.
-           </p>
-        </div>
-
-        {/* B. Entities & Parameters Grid */}
-        <div className="space-y-4">
-           <div className="flex items-center gap-2 mb-3">
-              <Database className="h-3.5 w-3.5 text-primary" />
-              <span className="text-[10px] font-black text-slate-800 uppercase tracking-widest">Entities & Parameters</span>
-           </div>
-           <div className="grid grid-cols-2 gap-px bg-slate-100 border border-slate-100 rounded-lg overflow-hidden shadow-sm">
-              {[
-                { label: "Incident Type", value: "Mechanical Failure" },
-                { label: "Date / Time", value: "2026-04-02 / 14:35" },
-                { label: "Location", value: "Pit Delta / Zone B" },
-                { label: "Department", value: "Operations & HSE" },
-                { label: "Material", value: "Iron Ore Grade A" },
-                { label: "Severity", value: "High", badge: "bg-rose-100 text-rose-700" },
-                { label: "Critical Assets", value: "Conveyor 14, Roller 02" },
-                { label: "Policy Ref", value: "SAF-M-009 Rev.4" },
-              ].map((item, i) => (
-                 <div key={i} className="bg-white p-3 flex flex-col gap-1 transition-colors hover:bg-slate-50/50">
-                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">{item.label}</span>
-                    <span className={`text-[10px] font-black ${item.badge ? item.badge + " px-1.5 py-0.5 rounded-sm w-fit" : "text-slate-800"}`}>
-                       {item.value}
-                    </span>
-                 </div>
-              ))}
-           </div>
-        </div>
-
-        {/* C. Thematic Sections */}
-        <ExtractionSection title="Timeline & Sequence" icon={Clock}>
-           <ExtractionItem fact="14:15 - Unusual vibration reported by SCADA" type="Telemetry" source="Page 1, Para 2" conf="High" />
-           <ExtractionItem fact="14:35 - Belt tear occurs, E-stop triggered" type="Critical Event" source="Page 1, Para 3" conf="High" />
-        </ExtractionSection>
-
-        <ExtractionSection title="Measurements & Specs" icon={Ruler}>
-           <ExtractionItem fact="Tear length: 920mm (90% width)" type="Damage Metric" source="Page 2, Table 1" conf="High" />
-           <ExtractionItem fact="Operating tension: 450kN at failure" type="Asset State" source="Page 2, Table 2" conf="Medium" />
-        </ExtractionSection>
-
-        <ExtractionSection title="Risk & Safety Signals" icon={AlertTriangle}>
-           <ExtractionItem fact="Secondary spill risk: Uncontained spillage" type="Hazmat Risk" source="Page 3, Section 4" conf="Medium" />
-           <ExtractionItem fact="Locked egress: Walkway B blocked" type="Safety Violation" source="Page 1, Para 4" conf="High" />
-        </ExtractionSection>
-
-        <ExtractionSection title="Actor Statements" icon={Users}>
-           <ExtractionItem fact="Supervisor observed roller misalignment" type="Eye Witness" source="Page 3, Statement 1" conf="High" />
-        </ExtractionSection>
-      </div>
-    );
-  }
-
-  if (file.type === "Image") {
-    return (
-      <div className="space-y-2 pb-20">
-         <ExtractionSection title="Composition & Objects" icon={LayoutGrid}>
-            <ExtractionItem fact="Visible tear across 90% of belt width" type="Surface Condition" source="Region [X:234, Y:782]" conf="High" />
-            <ExtractionItem fact="Roller support bracket appears detached" type="Equipment Hazard" source="Region [X:451, Y:123]" conf="Medium" />
-         </ExtractionSection>
-         <ExtractionSection title="Safety & PPE" icon={CheckCircle2}>
-            <ExtractionItem fact="Person wearing high-vis vest & hard hat" type="PPE Compliance" source="Global Scene" conf="High" />
-            <ExtractionItem fact="No exclusion zone barriers visible near tear" type="Safety Observation" source="Global Scene" conf="High" />
-         </ExtractionSection>
-      </div>
-    );
-  }
-
   if (file.type === "Audio") {
      const data = audioExtractionData;
-     
-     const toggle = (s: string) => setExpandedSections(p => p.includes(s) ? p.filter(x => x !== s) : [...p, s]);
-
-     const DataRow = ({ label, value, badge }: any) => (
-        <div className="flex items-center justify-between py-1.5">
-           <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-tight">{label}</span>
-           {badge ? (
-             <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border ${badge.className}`}>{badge.text}</span>
-           ) : (
-             <span className="text-[11px] font-black text-slate-700">{value || "—"}</span>
-           )}
-        </div>
-     );
-
-     const Section = ({ title, icon: Icon, children }: any) => (
-        <div className={`border rounded-xl overflow-hidden shadow-sm transition-all duration-300 ${expandedSections.includes(title) ? 'ring-1 ring-primary/20 shadow-md translate-y-[-2px]' : 'hover:border-slate-300'}`}>
-           <button 
-              onClick={() => toggle(title)}
-              className={`w-full flex items-center justify-between p-4 transition-colors ${expandedSections.includes(title) ? 'bg-slate-50/80 border-b' : 'bg-white hover:bg-slate-50/50'}`}
-           >
-              <div className="flex items-center gap-3">
-                 <div className={`h-8 w-8 rounded-lg border shadow-sm flex items-center justify-center transition-all ${expandedSections.includes(title) ? 'bg-primary text-white border-primary shadow-primary/20' : 'bg-white text-slate-400'}`}>
-                    <Icon className="h-4 w-4" />
-                 </div>
-                 <span className={`text-sm font-black transition-colors ${expandedSections.includes(title) ? 'text-sm text-slate-900' : 'text-slate-700'}`}>{title}</span>
-              </div>
-              <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${expandedSections.includes(title) ? 'rotate-180' : ''}`} />
-           </button>
-           {expandedSections.includes(title) && (
-              <div className="p-5 bg-white space-y-4 animate-in slide-in-from-top-2 duration-300">
-                 {children}
-              </div>
-           )}
-        </div>
-     );
-
      return (
         <div className="space-y-3 pb-20">
-           {/* Logic Toggle */}
            <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Forensic Logic</span>
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Forensic logic</span>
               <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-lg border shadow-inner">
                  <button onClick={() => setViewMode("Structured")} className={`px-2 py-0.5 text-[8px] font-black uppercase rounded transition-all ${viewMode === "Structured" ? "bg-white text-primary shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>Structured</button>
                  <button onClick={() => setViewMode("JSON")} className={`px-2 py-0.5 text-[8px] font-black uppercase rounded transition-all ${viewMode === "JSON" ? "bg-white text-primary shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>JSON</button>
@@ -2145,97 +2024,109 @@ function AdaptiveExtractionOutput({ file }: { file: any }) {
                  </pre>
               </div>
            ) : (
-             <>
-               <Section title="Recording Meta" icon={Settings}>
-                  <div className="divide-y divide-slate-50">
-                     <DataRow label="File Name" value={data.recording_meta.file_name} />
-                     <DataRow label="Duration" value={data.recording_meta.duration} />
-                     <DataRow label="Quality" value={data.recording_meta.audio_quality} badge={{ text: data.recording_meta.audio_quality, className: "bg-emerald-50 text-emerald-700 border-emerald-100" }} />
-                     <DataRow label="Type" value={data.recording_meta.recording_type} />
-                     <DataRow label="Language" value={data.recording_meta.language} />
-                     <DataRow label="Noise Level" value={data.recording_meta.noise_level} />
-                  </div>
-               </Section>
-
-               <Section title="Diarization & Transcript" icon={MessageSquare}>
-                  <div className="space-y-5">
-                     {data.full_diarization.map((seg: any) => (
-                       <div key={seg.segment_id} className="flex flex-col gap-1.5 pl-3 border-l-2 border-slate-100 hover:border-primary/50 transition-colors">
-                          <div className="flex items-center justify-between">
-                             <span className="text-[10px] font-black text-slate-500 uppercase">{seg.speaker_label} · {seg.start_time}</span>
-                             <ConfidenceChip level={seg.confidence.toLowerCase()} />
-                          </div>
-                          <p className="text-[11px] font-black text-slate-800 italic leading-relaxed">"{seg.text}"</p>
+              <div className="space-y-4">
+                 <Section title="Recording Meta" icon={Settings}>
+                    <div className="divide-y divide-slate-50">
+                       <DataRow label="Duration" value={data.recording_meta.duration} />
+                       <DataRow label="Quality" value={data.recording_meta.audio_quality} badge={{ text: data.recording_meta.audio_quality, className: "bg-emerald-50 text-emerald-700 border-emerald-100" }} />
+                       <DataRow label="Type" value={data.recording_meta.recording_type} />
+                       <DataRow label="Noise Level" value={data.recording_meta.noise_level} />
+                    </div>
+                 </Section>
+                 <Section title="Diarization & Transcript" icon={MessageSquare}>
+                    <div className="space-y-4">
+                       {data.full_diarization.map((seg: any) => (
+                         <div key={seg.segment_id} className="flex flex-col gap-1.5 pl-3 border-l-2 border-slate-100">
+                            <span className="text-[10px] font-black text-slate-500 uppercase">{seg.speaker_label} · {seg.start_time}</span>
+                            <p className="text-[11px] font-bold text-slate-800 italic leading-relaxed">"{seg.text}"</p>
+                         </div>
+                       ))}
+                    </div>
+                 </Section>
+                 <Section title="Intelligence Seeds" icon={Brain}>
+                    <div className="space-y-4">
+                       <div className="p-3 border rounded-xl bg-slate-900 text-white">
+                          <span className="text-[10px] font-black text-primary uppercase block mb-2">PEEPO Reasoning</span>
+                          {Object.entries(data.peepo_seeds).map(([k, v]: any) => (
+                            <div key={k} className="flex gap-2 mb-1.5 last:mb-0 opacity-90">
+                               <span className="text-[9px] font-black text-slate-500 uppercase min-w-[60px]">{k}</span>
+                               <p className="text-[10px] font-bold text-slate-300 leading-tight">"{v[0]}"</p>
+                            </div>
+                          ))}
                        </div>
-                     ))}
-                  </div>
-               </Section>
-
-               <Section title="Speaker Profiles" icon={Users}>
-                  <div className="space-y-3">
-                     {data.speaker_profiles.map(s => (
-                        <div key={s.speaker_id} className="p-3 border rounded-xl bg-slate-50/40 hover:bg-white transition-all shadow-sm">
-                           <div className="flex items-center justify-between mb-2">
-                              <span className="text-[11px] font-black text-slate-900 uppercase">{s.probable_role}</span>
-                              <span className={`px-2 py-0.5 text-[8px] font-black uppercase rounded ${s.stress_level.includes('High') ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}`}>
-                                 Stress: {s.stress_level.split(' ')[0]}
-                              </span>
-                           </div>
-                           <div className="grid grid-cols-2 gap-2 text-[10px] font-bold text-slate-500">
-                              <div>Assertiveness: <span className="text-slate-800">{s.assertiveness}</span></div>
-                              <div>Escalation: <span className="text-slate-800">{s.escalation_role}</span></div>
-                           </div>
-                        </div>
-                     ))}
-                  </div>
-               </Section>
-
-               <Section title="Interpretation Seeds" icon={Brain}>
-                  <div className="space-y-4">
-                     <div className="bg-rose-50 border border-rose-100 p-3 rounded-xl">
-                        <span className="text-[10px] font-black text-rose-700 uppercase block mb-2">Performance Clues</span>
-                        <div className="space-y-1.5">
-                           {data.human_performance_signals.delayed_reporting.map((sig: string, i: number) => (
-                             <div key={i} className="flex items-center gap-2 text-[10px] font-bold text-rose-800">
-                               <AlertCircle className="h-3 w-3" /> {sig}
-                             </div>
-                           ))}
-                           {data.human_performance_signals.supervision_signal.map((sig: string, i: number) => (
-                             <div key={i} className="flex items-center gap-2 text-[10px] font-bold text-rose-800">
-                               <MessageCircle className="h-3 w-3 text-rose-300" /> {sig}
-                             </div>
-                           ))}
-                        </div>
-                     </div>
-                     <div className="p-3 border rounded-xl bg-slate-900 text-white relative overflow-hidden">
-                        <span className="text-[10px] font-black text-primary uppercase tracking-widest block mb-2 relative z-10">PEEPO Reasoning</span>
-                        {Object.entries(data.peepo_seeds).map(([k, v]: any) => (
-                          <div key={k} className="flex gap-2 mb-1.5 last:mb-0 relative z-10 opacity-90">
-                             <span className="text-[9px] font-black text-slate-500 uppercase min-w-[60px]">{k}</span>
-                             <p className="text-[10px] font-bold text-slate-300 leading-tight">"{v[0]}"</p>
-                          </div>
-                        ))}
-                     </div>
-                  </div>
-               </Section>
-             </>
+                    </div>
+                 </Section>
+              </div>
            )}
         </div>
      );
   }
 
+  if (file.type === "Document") {
+    return (
+      <div className="space-y-6 pb-20">
+        <div className="space-y-3 bg-slate-50 p-4 rounded-xl border">
+           <div className="flex items-center gap-2 mb-0.5">
+              <FileText className="h-3.5 w-3.5 text-primary" />
+              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Document Summary</span>
+           </div>
+           <p className="text-[11px] font-bold text-slate-700 leading-relaxed italic">
+             Initial HSE report documenting structural failure of Conveyor Belt 14 in Zone B. 
+           </p>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+           {[
+             { label: "Incident Type", value: "Mechanical Failure" },
+             { label: "Location", value: "Pit Delta / Zone B" },
+             { label: "Critical Assets", value: "Conveyor 14" },
+             { label: "Severity", value: "High", badge: "bg-rose-100 text-rose-700" },
+           ].map((item, i) => (
+              <div key={i} className="bg-slate-50/50 p-2.5 border rounded-lg">
+                 <span className="text-[8px] font-black text-slate-400 uppercase block mb-0.5">{item.label}</span>
+                 <span className={`text-[10px] font-black ${item.badge ? item.badge + " px-1.5 py-0.5 rounded-sm" : "text-slate-800"}`}>
+                    {item.value}
+                 </span>
+              </div>
+           ))}
+        </div>
+        <Section title="Timeline & Facts" icon={Clock}>
+           <ExtractionItem fact="14:35 - Belt tear occurs, E-stop triggered" type="Critical Event" source="Page 1, Para 3" conf="High" />
+           <ExtractionItem fact="14:15 - Unusual vibration reported" type="Telemetry" source="Page 1, Para 2" conf="High" />
+        </Section>
+        <Section title="Risk Signals" icon={AlertTriangle}>
+           <ExtractionItem fact="Locked egress: Walkway B blocked" type="Safety Violation" source="Page 1, Para 4" conf="High" />
+        </Section>
+      </div>
+    );
+  }
+
   if (file.type === "Video") {
      return (
-        <div className="space-y-6 pb-20">
-           <ExtractionSection title="Detected Events" icon={VideoIcon}>
+        <div className="space-y-4 pb-20">
+           <Section title="Detected Events" icon={VideoIcon}>
               <ExtractionItem fact="Metal-on-metal friction sparks detected at section 14" type="Visual Anomaly" source="CCTV [14:35:12]" conf="High" />
               <ExtractionItem fact="Conveyor belt deflection exceeding 150mm" type="Measurement" source="Computer Vision" conf="High" />
-           </ExtractionSection>
-           <ExtractionSection title="Hazards & Alerts" icon={AlertCircle}>
+           </Section>
+           <Section title="Hazards & Alerts" icon={AlertCircle}>
               <ExtractionItem fact="Operator seen approaching moving parts without barriers" type="Safety Violation" source="Scene AI" conf="Medium" />
-           </ExtractionSection>
+           </Section>
         </div>
      );
+  }
+
+  if (file.type === "Image") {
+    return (
+      <div className="space-y-4 pb-20">
+         <Section title="Composition & Objects" icon={LayoutGrid}>
+            <ExtractionItem fact="Visible tear across 90% of belt width" type="Surface Condition" source="Region [X:234, Y:782]" conf="High" />
+            <ExtractionItem fact="Roller support bracket appears detached" type="Equipment Hazard" source="Region [X:451, Y:123]" conf="Medium" />
+         </Section>
+         <Section title="Safety & PPE" icon={CheckCircle2}>
+            <ExtractionItem fact="Person wearing high-vis vest & hard hat" type="PPE Compliance" source="Global Scene" conf="High" />
+            <ExtractionItem fact="No exclusion zone barriers visible near tear" type="Safety Observation" source="Global Scene" conf="High" />
+         </Section>
+      </div>
+    );
   }
 
   return (
@@ -2428,14 +2319,8 @@ function AnalysisTab() {
      }, 1500);
   };
 
-  const stats = {
-    total: agents.length,
-    completed: agents.filter(a => a.status === 'completed').length
-  };
-
   return (
     <div className="flex h-full bg-[#f0f2f4] overflow-hidden animate-in fade-in duration-500">
-         {/* PANEL 1: LEFT - ORCHESTRATION NODES (320px) - Aligned with Extraction Review */}
          <div className="w-[320px] border-r border-slate-200 bg-slate-50 flex flex-col shrink-0 z-20 shadow-[1px_0_4px_rgba(0,0,0,0.02)]">
             <div className="h-12 border-b border-slate-200 flex items-center justify-between px-5 bg-white shrink-0">
                <div className="flex items-center gap-2">
@@ -2460,9 +2345,7 @@ function AnalysisTab() {
             </div>
 
             <div className="flex-1 overflow-y-auto custom-scrollbar relative">
-               {/* Vertical Connecting Line */}
                <div className="absolute left-[39px] top-6 bottom-6 w-px bg-slate-200 z-0" />
-               
                <div className="p-4 space-y-4 relative z-10">
                   {agents.map((agent) => (
                      <div 
@@ -2478,23 +2361,19 @@ function AnalysisTab() {
                               <agent.icon className="h-5 w-5" />
                            </div>
                            <div className={`
-                              px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border
-                              ${agent.status === 'completed' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 
-                                agent.status === 'running' ? 'bg-blue-50 text-blue-700 border-blue-100 animate-pulse' : 
-                                'bg-slate-50 text-slate-400 border-slate-100 uppercase'}
+                               px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border
+                               ${agent.status === 'completed' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 
+                                 agent.status === 'running' ? 'bg-blue-50 text-blue-700 border-blue-100 animate-pulse' : 
+                                 'bg-slate-50 text-slate-400 border-slate-100'}
                            `}>
-                              {agent.status}
+                               {agent.status}
                            </div>
                         </div>
                         <h4 className={`text-[10px] font-black uppercase tracking-[0.15em] mb-1.5 ${selectedAgentId === agent.id ? "text-slate-900" : "text-slate-500"}`}>{agent.name}</h4>
                         <p className="text-[10px] font-bold text-slate-400 leading-snug opacity-80">{agent.purpose}</p>
-                        
-                        {selectedAgentId === agent.id && (
-                           <div className="absolute top-0 right-0 w-1 h-full bg-slate-900" />
-                        )}
                         {agent.status === 'running' && (
                            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500/20 overflow-hidden rounded-b-xl">
-                              <div className="h-full bg-blue-500 animate-[loading_2s_infinite] w-1/3" />
+                              <div className="h-full bg-blue-500 animate-pulse w-full" />
                            </div>
                         )}
                      </div>
@@ -2503,9 +2382,7 @@ function AnalysisTab() {
             </div>
          </div>
 
-         {/* PANEL 2: CENTER - PRESENTATIONS / SLIDES - Aligned proportion with Source Viewer */}
          <div className="flex-1 flex flex-col min-w-0 bg-[#f0f2f4]">
-            {/* Standard Header Rhythm */}
             <div className="h-12 bg-white border-b border-slate-200 flex items-center justify-between px-6 shadow-sm z-30">
                <div className="flex items-center gap-6">
                   <div className="flex items-center gap-2">
@@ -2530,7 +2407,6 @@ function AnalysisTab() {
                      })}
                   </div>
                </div>
-
                <div className="flex items-center gap-2">
                   <Button variant="outline" size="sm" className="h-8 text-[10px] font-bold gap-2 bg-white">
                      <ZoomIn className="h-3.5 w-3.5" /> Full Screen
@@ -2540,14 +2416,7 @@ function AnalysisTab() {
 
             <div 
                ref={containerRef}
-               onWheel={(e) => {
-                  if (e.ctrlKey) {
-                     setCanvasZoom(z => Math.max(20, Math.min(200, z - e.deltaY / 10)));
-                     e.preventDefault();
-                  }
-               }}
-               onDoubleClick={fitToWorkspace}
-               className="group/workspace flex-1 flex flex-col items-center justify-center p-4 overflow-hidden relative cursor-zoom-in"
+               className="flex-1 flex flex-col items-center justify-center p-4 overflow-hidden relative"
                style={{
                   backgroundImage: 'radial-gradient(circle, #E2E8F0 1px, transparent 1px)',
                   backgroundSize: '24px 24px'
@@ -2555,200 +2424,118 @@ function AnalysisTab() {
             >
                 {!selectedAgentId ? (
                     <div className="py-24 flex flex-col items-center text-center max-w-sm">
-                        <div className="h-24 w-24 rounded-[3.rem] bg-white border border-slate-200 shadow-2xl flex items-center justify-center mb-10 rotate-12 transition-transform hover:rotate-0">
+                        <div className="h-24 w-24 rounded-[3rem] bg-white border border-slate-200 shadow-2xl flex items-center justify-center mb-10 rotate-12 transition-transform hover:rotate-0">
                             <Brain className="h-10 w-10 text-slate-200" />
                         </div>
                         <h3 className="text-xl font-black text-slate-800 tracking-tighter mb-3 uppercase opacity-50">Orchestration Standby</h3>
                     </div>
                 ) : (
-                    <div className="relative flex flex-col items-center transition-all duration-300">
-                        {/* Slide Shadow Base */}
-                        <div 
-                           className="bg-white shadow-[0_30px_90px_-20px_rgba(0,0,0,0.3)] flex flex-col relative transition-all duration-300 origin-center overflow-hidden rounded-[2px] border-b-2 border-slate-300" 
-                           style={{ 
-                               width: '1024px', 
-                               height: '576px', 
-                               transform: `scale(${canvasZoom/100})`
-                           }}
-                        >
-                           <div className="flex-1 p-[60px] flex flex-col relative overflow-hidden h-full">
-                              {selectedAgent?.status === 'running' ? (
-                                 <div className="flex flex-col items-center justify-center h-full text-center space-y-8 animate-pulse text-slate-300">
-                                    <Loader2 className="h-12 w-12 animate-spin" />
-                                    <span className="text-[20px] font-black uppercase tracking-[0.2em]">{selectedAgent.microStatus || "Processing Matrix..."}</span>
-                                 </div>
-                              ) : !selectedAgent?.results ? (
-                                 <div className="flex flex-col h-full items-center justify-center text-center opacity-30 grayscale pointer-events-none space-y-6">
-                                    <Cpu className="h-12 w-12 text-slate-300" />
-                                    <h2 className="text-3xl font-black uppercase tracking-[0.2em] text-slate-400">Node Standby</h2>
-                                 </div>
-                              ) : (
-                                 <div className="flex-1 animate-in fade-in duration-500 overflow-hidden">
-                                    {slides[activeSlide]?.type === 'chronology' && (
-                                       <div className="flex flex-col h-full text-slate-900">
-                                          {/* 1. Top Header Section */}
-                                          <div className="flex justify-between items-start mb-6 border-b-2 border-slate-900 pb-4">
-                                             <div>
-                                                <div className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-1">{slides[activeSlide]?.subtitle}</div>
-                                                <h2 contentEditable suppressContentEditableWarning className="text-[32px] font-black uppercase tracking-tighter outline-none leading-none">{slides[activeSlide]?.title}</h2>
-                                             </div>
-                                             {slides[activeSlide]?.caseCode && (
-                                                <div className="text-right">
-                                                   <div className="text-[9px] font-black text-slate-300 uppercase tracking-widest leading-none mb-1">Investigation Code</div>
-                                                   <div className="text-sm font-mono font-bold text-slate-800 leading-none">#{slides[activeSlide]?.caseCode}</div>
-                                                </div>
-                                             )}
-                                          </div>
-
-                                          {/* 2. Incident Summary Section */}
-                                          <div className="mb-6 bg-slate-50 border-l-4 border-slate-900 p-4 rounded-r-lg shadow-sm">
-                                             <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Executive Summary / Ringkasan Kejadian</div>
-                                             <div contentEditable suppressContentEditableWarning className="text-[14px] text-slate-700 font-medium leading-relaxed outline-none">
-                                                {slides[activeSlide]?.content?.summary}
-                                             </div>
-                                          </div>
-
-                                          {/* 3. Incident Metadata Section */}
-                                          <div className="grid grid-cols-4 gap-x-8 gap-y-4 mb-8 bg-white border border-slate-100 p-4 rounded-xl shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
-                                             {(slides[activeSlide]?.content?.metadata || []).map((m: any) => (
-                                                <div key={m.label}>
-                                                   <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">{m.label}</div>
-                                                   <div contentEditable suppressContentEditableWarning className="text-[11px] font-bold text-slate-800 outline-none truncate">{m.value}</div>
-                                                </div>
-                                             ))}
-                                          </div>
-
-                                          {/* 4. Main Chronology Section */}
-                                          <div className="flex-1 grid grid-cols-3 gap-4 min-h-0 overflow-hidden">
-                                             {/* Pra Kontak */}
-                                             <div className="flex flex-col border border-slate-100 rounded-xl overflow-hidden bg-white shadow-sm flex-1 min-h-0">
-                                                <div className="bg-emerald-600 px-4 py-2 flex items-center justify-between shadow-md">
-                                                   <span className="text-[10px] font-black text-white uppercase tracking-widest">A. Pra Kontak</span>
-                                                   <span className="h-1.5 w-6 bg-white/30 rounded-full" />
-                                                </div>
-                                                <div className="flex-1 overflow-y-auto p-3 custom-scrollbar space-y-2.5">
-                                                   {(slides[activeSlide]?.content?.timeline?.praKontak || []).map((item: any, idx: number) => (
-                                                      <div key={idx} className="flex gap-2 group">
-                                                         <div contentEditable suppressContentEditableWarning className="text-[9px] font-black text-emerald-700 bg-emerald-50 h-fit px-1.5 py-0.5 rounded outline-none shrink-0">[{item.time}]</div>
-                                                         <div className="flex-1 min-w-0">
-                                                            <div contentEditable suppressContentEditableWarning className="text-[10px] font-black text-slate-800 leading-none mb-1 outline-none">[{item.name}]</div>
-                                                            <div contentEditable suppressContentEditableWarning className="text-[10px] text-slate-500 font-medium leading-normal outline-none">{item.event}</div>
-                                                         </div>
-                                                      </div>
-                                                   ))}
-                                                </div>
-                                             </div>
-
-                                             {/* Kontak */}
-                                             <div className="flex flex-col border border-slate-100 rounded-xl overflow-hidden bg-white shadow-sm flex-1 min-h-0">
-                                                <div className="bg-rose-600 px-4 py-2 flex items-center justify-between shadow-md">
-                                                   <span className="text-[10px] font-black text-white uppercase tracking-widest">B. Kontak</span>
-                                                   <span className="h-1.5 w-6 bg-white/30 rounded-full" />
-                                                </div>
-                                                <div className="flex-1 overflow-y-auto p-3 custom-scrollbar space-y-2.5">
-                                                   {(slides[activeSlide]?.content?.timeline?.kontak || []).map((item: any, idx: number) => (
-                                                      <div key={idx} className="flex gap-2 group">
-                                                         <div contentEditable suppressContentEditableWarning className="text-[9px] font-black text-rose-700 bg-rose-50 h-fit px-1.5 py-0.5 rounded outline-none shrink-0">[{item.time}]</div>
-                                                         <div className="flex-1 min-w-0">
-                                                            <div contentEditable suppressContentEditableWarning className="text-[10px] font-black text-slate-800 leading-none mb-1 outline-none">[{item.name}]</div>
-                                                            <div contentEditable suppressContentEditableWarning className="text-[10px] text-slate-500 font-medium leading-normal outline-none">{item.event}</div>
-                                                         </div>
-                                                      </div>
-                                                   ))}
-                                                </div>
-                                             </div>
-
-                                             {/* Pasca Kontak */}
-                                             <div className="flex flex-col border border-slate-100 rounded-xl overflow-hidden bg-white shadow-sm flex-1 min-h-0">
-                                                <div className="bg-amber-500 px-4 py-2 flex items-center justify-between shadow-md">
-                                                   <span className="text-[10px] font-black text-white uppercase tracking-widest">C. Pasca Kontak</span>
-                                                   <span className="h-1.5 w-6 bg-white/30 rounded-full" />
-                                                </div>
-                                                <div className="flex-1 overflow-y-auto p-3 custom-scrollbar space-y-2.5">
-                                                   {(slides[activeSlide]?.content?.timeline?.pascaKontak || []).map((item: any, idx: number) => (
-                                                      <div key={idx} className="flex gap-2 group">
-                                                         <div contentEditable suppressContentEditableWarning className="text-[9px] font-black text-amber-700 bg-amber-50 h-fit px-1.5 py-0.5 rounded outline-none shrink-0">[{item.time}]</div>
-                                                         <div className="flex-1 min-w-0">
-                                                            <div contentEditable suppressContentEditableWarning className="text-[10px] font-black text-slate-800 leading-none mb-1 outline-none">[{item.name}]</div>
-                                                            <div contentEditable suppressContentEditableWarning className="text-[10px] text-slate-500 font-medium leading-normal outline-none">{item.event}</div>
-                                                         </div>
-                                                      </div>
-                                                   ))}
-                                                </div>
-                                             </div>
-                                          </div>
-                                       </div>
-                                    )}
-                                    
-                                    {slides[activeSlide]?.type === 'raw' && (
-                                       <div className="flex flex-col h-full">
-                                          <div className="flex items-center gap-3 mb-4">
-                                             <span className="h-px w-8 bg-slate-400" />
-                                             <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Raw Synthesis Data</span>
-                                          </div>
-                                          <h2 className="text-[32px] font-black text-slate-800 mb-8 tracking-tighter uppercase">{slides[activeSlide]?.title}</h2>
-                                          <div className="flex-1 bg-[#1a1c23] rounded-2xl p-6 overflow-hidden border border-slate-700 shadow-2xl relative">
-                                             <div className="absolute top-4 right-6 text-[9px] font-mono text-emerald-500/50 uppercase tracking-widest">JSON Output Mode</div>
-                                             <pre className="text-[12px] font-mono text-emerald-400/90 leading-tight h-full overflow-auto custom-scrollbar">
-                                                {JSON.stringify(slides[activeSlide]?.content, null, 2)}
-                                             </pre>
-                                          </div>
-                                       </div>
-                                    )}
-                                 </div>
-                              )}
-
-                              <div className="absolute bottom-10 left-[60px] right-[60px] flex justify-between items-center opacity-40 border-t border-slate-100 pt-8">
-                                 <span className="text-[11px] font-black text-slate-800 uppercase tracking-[0.3em] font-mono whitespace-nowrap">BERAU CORE INTELLIGENCE PIPELINE</span>
-                                 <span className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] font-mono whitespace-nowrap">MATRIX v4.8.2-SYNTH</span>
-                              </div>
-                           </div>
-                        </div>
-                     </div>
+                    <div className="bg-white shadow-[0_30px_90px_-20px_rgba(0,0,0,0.3)] flex flex-col relative transition-all duration-300 origin-center overflow-hidden rounded-[2px]" 
+                         style={{ width: '1024px', height: '576px', transform: `scale(${canvasZoom/100})` }}>
+                       <div className="flex-1 p-[60px] flex flex-col relative overflow-hidden h-full">
+                          {selectedAgent?.status === 'running' ? (
+                             <div className="flex flex-col items-center justify-center h-full text-center space-y-8 animate-pulse text-slate-300">
+                                <Loader2 className="h-12 w-12 animate-spin" />
+                                <span className="text-[20px] font-black uppercase tracking-[0.2em]">{selectedAgent.microStatus || "Processing Matrix..."}</span>
+                             </div>
+                          ) : !selectedAgent?.results ? (
+                             <div className="flex flex-col h-full items-center justify-center text-center opacity-30 grayscale pointer-events-none space-y-6">
+                                <Cpu className="h-12 w-12 text-slate-300" />
+                                <h2 className="text-3xl font-black uppercase tracking-[0.2em] text-slate-400">Node Standby</h2>
+                             </div>
+                          ) : (
+                             <div className="flex-1 animate-in fade-in duration-500 overflow-hidden">
+                                {slides[activeSlide]?.type === 'chronology' ? (
+                                   <div className="flex flex-col h-full text-slate-900">
+                                      <div className="flex justify-between items-start mb-6 border-b-2 border-slate-900 pb-4">
+                                         <div>
+                                            <div className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-1">{slides[activeSlide]?.subtitle}</div>
+                                            <h2 className="text-[32px] font-black uppercase tracking-tighter leading-none">{slides[activeSlide]?.title}</h2>
+                                         </div>
+                                         <div className="text-right">
+                                            <div className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1">Investigation Code</div>
+                                            <div className="text-sm font-mono font-bold text-slate-800">#{slides[activeSlide]?.caseCode}</div>
+                                         </div>
+                                      </div>
+                                      <div className="mb-6 bg-slate-50 border-l-4 border-slate-900 p-4 rounded-r-lg">
+                                         <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Executive Summary</div>
+                                         <div className="text-[14px] text-slate-700 font-medium leading-relaxed">{slides[activeSlide]?.content?.summary}</div>
+                                      </div>
+                                      <div className="grid grid-cols-4 gap-4 mb-8 bg-white border border-slate-100 p-4 rounded-xl">
+                                         {slides[activeSlide]?.content?.metadata.map((m: any) => (
+                                            <div key={m.label}>
+                                               <div className="text-[8px] font-black text-slate-400 uppercase mb-1">{m.label}</div>
+                                               <div className="text-[11px] font-bold text-slate-800">{m.value}</div>
+                                            </div>
+                                         ))}
+                                      </div>
+                                      <div className="flex-1 grid grid-cols-3 gap-4 min-h-0 overflow-hidden">
+                                         {['praKontak', 'kontak', 'pascaKontak'].map((key, i) => (
+                                            <div key={key} className="flex flex-col border border-slate-100 rounded-xl overflow-hidden bg-white">
+                                               <div className={`${i === 0 ? 'bg-emerald-600' : i === 1 ? 'bg-rose-600' : 'bg-amber-500'} px-4 py-2`}>
+                                                  <span className="text-[10px] font-black text-white uppercase tracking-widest">{key.replace('K', ' K')}</span>
+                                               </div>
+                                               <div className="flex-1 overflow-y-auto p-3 space-y-2.5 custom-scrollbar">
+                                                  {slides[activeSlide]?.content?.timeline[key].map((item: any, idx: number) => (
+                                                     <div key={idx} className="flex gap-2">
+                                                        <div className="text-[9px] font-black text-slate-400">[{item.time}]</div>
+                                                        <div>
+                                                           <div className="text-[10px] font-black text-slate-800 mb-0.5">[{item.name}]</div>
+                                                           <div className="text-[10px] text-slate-500 font-medium leading-normal">{item.event}</div>
+                                                        </div>
+                                                     </div>
+                                                  ))}
+                                               </div>
+                                            </div>
+                                         ))}
+                                      </div>
+                                   </div>
+                                ) : (
+                                   <div className="flex flex-col h-full">
+                                      <h2 className="text-[32px] font-black text-slate-800 mb-8 tracking-tighter uppercase">{slides[activeSlide]?.title}</h2>
+                                      <div className="flex-1 bg-[#1a1c23] rounded-2xl p-6 overflow-hidden border border-slate-700 shadow-2xl relative">
+                                         <pre className="text-[12px] font-mono text-emerald-400/90 leading-tight h-full overflow-auto custom-scrollbar">
+                                            {JSON.stringify(slides[activeSlide]?.content, null, 2)}
+                                         </pre>
+                                      </div>
+                                   </div>
+                                )}
+                             </div>
+                          )}
+                          <div className="absolute bottom-10 left-[60px] right-[60px] flex justify-between items-center opacity-40 border-t border-slate-100 pt-8">
+                             <span className="text-[11px] font-black text-slate-800 uppercase tracking-[0.3em] font-mono">BERAU CORE INTELLIGENCE PIPELINE</span>
+                             <span className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] font-mono">MATRIX v4.8.2-SYNTH</span>
+                          </div>
+                       </div>
+                    </div>
                 )}
             </div>
 
-            <div className="h-12 bg-white border-t border-slate-200 px-6 flex items-center justify-between shrink-0 z-40 shadow-[0_-4px_12px_rgba(0,0,0,0.03)]">
+            <div className="h-12 bg-white border-t border-slate-200 px-6 flex items-center justify-between shrink-0 z-40">
                 <div className="flex items-center gap-4">
                    <div className="flex items-center gap-1">
-                      <Button 
-                         onClick={() => setActiveSlide(prev => Math.max(0, prev - 1))}
-                         variant="ghost" 
-                         size="sm" 
-                         className="h-8 w-8 p-0 text-slate-400 hover:text-slate-900 border"
-                      ><ChevronLeft className="h-4 w-4" /></Button>
+                      <Button onClick={() => setActiveSlide(prev => Math.max(0, prev - 1))} variant="ghost" size="sm" className="h-8 w-8 p-0 border"><ChevronLeft className="h-4 w-4" /></Button>
                       <div className="bg-slate-50 border px-3 h-8 flex items-center rounded-md">
-                        <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest leading-none">Slide {activeSlide + 1} of {slides.length || 1}</span>
+                        <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Slide {activeSlide + 1} of {slides.length || 1}</span>
                       </div>
-                      <Button 
-                         onClick={() => setActiveSlide(prev => Math.min((slides.length || 1) - 1, prev + 1))}
-                         variant="ghost" 
-                         size="sm" 
-                         className="h-8 w-8 p-0 text-slate-400 hover:text-slate-900 border"
-                      ><ChevronRight className="h-4 w-4" /></Button>
+                      <Button onClick={() => setActiveSlide(prev => Math.min((slides.length || 1) - 1, prev + 1))} variant="ghost" size="sm" className="h-8 w-8 p-0 border"><ChevronRight className="h-4 w-4" /></Button>
                    </div>
-                   <div className="w-px h-5 bg-slate-200 mx-1" />
                    <div className="flex items-center gap-1 bg-slate-100/50 border border-slate-200 rounded-lg p-1">
-                      <Button onClick={() => setCanvasZoom(Math.max(20, canvasZoom - 10))} variant="ghost" className="h-7 w-7 p-0 text-slate-500 hover:bg-white"><ZoomOut className="h-3.5 w-3.5" /></Button>
-                      <Button onClick={fitToWorkspace} variant="ghost" className="h-7 px-2 text-[9px] font-black text-slate-600 bg-white border border-slate-200 shadow-sm rounded">AUTO FIT</Button>
-                      <div className="w-12 text-center font-bold text-[10px] text-slate-700 leading-none">{canvasZoom}%</div>
-                      <Button onClick={() => setCanvasZoom(Math.min(200, canvasZoom + 10))} variant="ghost" className="h-7 w-7 p-0 text-slate-500 hover:bg-white"><ZoomIn className="h-3.5 w-3.5" /></Button>
+                      <Button onClick={() => setCanvasZoom(Math.max(20, canvasZoom - 10))} variant="ghost" className="h-7 w-7 p-0"><ZoomOut className="h-3.5 w-3.5" /></Button>
+                      <Button onClick={fitToWorkspace} variant="ghost" className="h-7 px-2 text-[9px] font-black text-slate-600 bg-white border shadow-sm rounded">AUTO FIT</Button>
+                      <div className="w-12 text-center font-bold text-[10px] text-slate-700">{canvasZoom}%</div>
+                      <Button onClick={() => setCanvasZoom(Math.min(200, canvasZoom + 10))} variant="ghost" className="h-7 w-7 p-0"><ZoomIn className="h-3.5 w-3.5" /></Button>
                    </div>
                 </div>
-
                 <div className="flex items-center gap-2">
-                   <Button variant="ghost" className="h-8 w-8 p-0 text-slate-400 border hover:bg-slate-50">
-                      <Maximize2 className="h-4 w-4" />
-                   </Button>
-                   <div className="w-px h-6 bg-slate-200 mx-1" />
-                   <Button onClick={handleSaveArtifact} disabled={isSaving} className="h-9 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black uppercase tracking-widest px-6 rounded-lg shadow-sm">
+                   <Button variant="ghost" className="h-8 w-8 p-0 border hover:bg-slate-50"><Maximize2 className="h-4 w-4" /></Button>
+                   <Button onClick={handleSaveArtifact} disabled={isSaving} className="h-9 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black uppercase tracking-widest px-6 rounded-lg">
                       {isSaving ? "Syncing..." : "Sync to Case"}
                    </Button>
                 </div>
              </div>
          </div>
 
-         {/* PANEL 3: RIGHT - DATA PROPERTIES (460px) - Aligned Proportion with Extraction Console */}
          <div className="w-[460px] border-l border-slate-200 bg-white flex flex-col shrink-0 z-20 shadow-[-2px_0_10px_rgba(0,0,0,0.03)] overflow-hidden">
              <div className="h-12 border-b border-slate-200 flex items-center justify-between px-5 bg-slate-50/50 shrink-0">
                 <div className="flex items-center gap-2">
@@ -2756,10 +2543,10 @@ function AnalysisTab() {
                    <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest">Synthesis Console</span>
                 </div>
                 <div className="flex items-center gap-2">
-                   <Button variant="ghost" size="sm" className="h-7 px-2 text-[9px] font-bold text-slate-400 hover:text-slate-900 border">
+                   <Button variant="ghost" size="sm" className="h-7 px-2 text-[9px] font-bold text-slate-400 border">
                       <History className="h-3.5 w-3.5 mr-1" /> Log
                    </Button>
-                   <Button variant="ghost" size="sm" className="h-7 px-2 text-[9px] font-bold text-primary hover:bg-primary/5 border border-primary/20">
+                   <Button variant="ghost" size="sm" className="h-7 px-2 text-[9px] font-bold text-primary border border-primary/20">
                       Rerun Node
                    </Button>
                 </div>
@@ -2768,7 +2555,6 @@ function AnalysisTab() {
              <div className="flex-1 overflow-y-auto custom-scrollbar">
                 {selectedAgentId ? (
                    <div className="p-6 space-y-8">
-                      {/* Node Context Block */}
                       <div className="bg-slate-50 border rounded-xl p-5 space-y-4">
                          <div className="flex items-center gap-2 border-b border-slate-200 pb-2 mb-2">
                             <Settings className="h-3.5 w-3.5 text-slate-400" />
@@ -2779,65 +2565,55 @@ function AnalysisTab() {
                                <span className="text-[9px] font-black text-slate-400 uppercase mb-1">State Relay</span>
                                <div className="flex items-center gap-2">
                                   <div className={`h-2 w-2 rounded-full ${selectedAgent?.status === 'running' ? 'bg-blue-500 animate-pulse' : 'bg-emerald-500'}`} />
-                                  <span className="text-[11px] font-black text-slate-800 uppercase tracking-tight">{selectedAgent?.status || "STANDBY"}</span>
+                                  <span className="text-[11px] font-black text-slate-800 tracking-tight uppercase">{selectedAgent?.status || "STANDBY"}</span>
                                </div>
                             </div>
                             <div className="flex flex-col">
                                <span className="text-[9px] font-black text-slate-400 uppercase mb-1">Last Run</span>
-                               <span className="text-[11px] font-black text-slate-800 uppercase tracking-tight">{selectedAgent?.lastRunTimestamp || "—"}</span>
+                               <span className="text-[11px] font-black text-slate-800 uppercase tabular-nums">{selectedAgent?.lastRunTimestamp || "—"}</span>
                             </div>
                          </div>
                       </div>
 
-                      {/* Artifact Directory */}
                       <div className="space-y-4">
                          <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
                             <FileText className="h-3.5 w-3.5 text-slate-400" />
                             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Slide Artifacts</span>
                          </div>
                          <div className="grid grid-cols-2 gap-3">
-                            {(slides || []).map((s, i) => (
-                               <div 
-                                  key={s.id} 
-                                  onClick={() => setActiveSlide(i)}
-                                  className={`group p-4 rounded-xl border-2 transition-all cursor-pointer relative overflow-hidden ${activeSlide === i ? 'bg-white border-blue-500 shadow-md ring-1 ring-blue-500/10' : 'bg-white border-slate-100 hover:border-slate-200'}`}
-                               >
+                            {slides.map((s, i) => (
+                               <div key={s.id} onClick={() => setActiveSlide(i)} className={`group p-4 rounded-xl border-2 transition-all cursor-pointer relative overflow-hidden ${activeSlide === i ? 'bg-white border-blue-500' : 'bg-white border-slate-100 hover:border-slate-200'}`}>
                                   <div className="flex items-start justify-between mb-3">
-                                     <div className={`h-8 w-8 rounded-lg border flex items-center justify-center transition-colors ${activeSlide === i ? "bg-blue-600 text-white border-blue-600" : "bg-slate-50 text-slate-400"}`}>
+                                     <div className={`h-8 w-8 rounded-lg border flex items-center justify-center ${activeSlide === i ? "bg-blue-600 text-white" : "bg-slate-50 text-slate-400"}`}>
                                         <FileCode className="h-4 w-4" />
                                      </div>
                                      <span className="text-[8px] font-black text-slate-400 uppercase">Slide {i + 1}</span>
                                   </div>
-                                  <h5 className={`text-[10px] font-black uppercase tracking-tight truncate ${activeSlide === i ? "text-slate-900" : "text-slate-700"}`}>{s.title}</h5>
-                                  {activeSlide === i && <div className="absolute top-0 right-0 w-1 h-full bg-blue-600" />}
+                                  <h5 className="text-[10px] font-black uppercase truncate">{s.title}</h5>
                                </div>
                             ))}
                          </div>
                       </div>
 
-                      {/* Industrial Context / Citation */}
                       <div className="bg-amber-50/30 border border-amber-100 rounded-xl p-5 space-y-3">
                          <div className="flex items-center gap-2">
                             <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
-                            <span className="text-[10px] font-bold text-amber-700 uppercase tracking-widest">Reasoning Gap detected</span>
+                            <span className="text-[10px] font-bold text-amber-700 uppercase tracking-widest">Reasoning Gap</span>
                          </div>
-                         <p className="text-[11px] font-bold text-amber-800 leading-relaxed opacity-80"> The Synthesis Matrix identified a high-confidence correlation between Manual Override and Bearing Temperature at Zone B-14. </p>
+                         <p className="text-[11px] font-bold text-amber-800 opacity-80 leading-relaxed">The Matrix identified a correlation between Manual Override and Bearing Temperature at Zone B-14.</p>
                       </div>
                    </div>
                 ) : (
-                   <div className="h-full flex flex-col items-center justify-center text-center p-12 opacity-30 filter grayscale">
-                      <div className="h-20 w-20 rounded-[2.5rem] bg-slate-100 border-4 border-white shadow-xl flex items-center justify-center mb-6">
-                         <Brain className="h-10 w-10 text-slate-300" />
-                      </div>
-                      <h4 className="text-sm font-black uppercase tracking-[0.2em] mb-2">Console Idle</h4>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">Select an intelligence node<br />to active the synthesis console</p>
+                   <div className="h-full flex flex-col items-center justify-center text-center p-12 opacity-30">
+                      <Brain className="h-10 w-10 text-slate-300 mb-6" />
+                      <h4 className="text-sm font-black uppercase tracking-[0.2em]">Console Idle</h4>
                    </div>
                 )}
              </div>
              
-             <div className="p-5 border-t border-slate-200 bg-white shrink-0 shadow-[0_-4px_12px_rgba(0,0,0,0.02)]">
-                <Button onClick={handleExport} disabled={isExporting} className="w-full h-11 bg-slate-900 hover:bg-slate-800 border-none text-white text-[11px] font-black uppercase tracking-[0.2em] rounded-xl shadow-lg transition-transform active:scale-[0.98]">
-                   {isExporting ? "Exporting Deck..." : "Publish Presentation"}
+             <div className="p-5 border-t bg-white shrink-0">
+                <Button onClick={handleExport} disabled={isExporting} className="w-full h-11 bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-black uppercase tracking-[0.2em] rounded-xl">
+                   {isExporting ? "Exporting..." : "Publish Presentation"}
                 </Button>
              </div>
           </div>
@@ -2849,25 +2625,23 @@ function ReportsTab() {
   return (
     <div className="flex h-full bg-slate-50/10">
       <div className="w-[300px] border-r bg-white flex flex-col shrink-0">
-        <div className="h-12 border-b flex items-center justify-between px-4 shrink-0 bg-slate-50/50">
-           <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Reports Console</span>
-           <Button variant="ghost" size="sm" className="h-8 text-[11px] font-bold gap-2 text-primary hover:bg-primary/5">
-              <Folders className="h-3.5 w-3.5" /> + Create New
-           </Button>
+        <div className="h-12 border-b flex items-center justify-between px-4 shrink-0">
+           <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Reports</span>
+           <Button variant="ghost" size="sm" className="h-8 text-[11px] font-bold text-primary">+ Create New</Button>
         </div>
-        <div className="flex-1 overflow-auto p-2 custom-scrollbar space-y-1">
+        <div className="flex-1 overflow-auto p-2 space-y-1">
            {[
              { title: "Initial Investigation Report", version: "V1.2", date: "Today", status: "draft" },
              { title: "Internal Compliance Review", version: "V1.0", date: "Yesterday", status: "in_review" },
              { title: "Executive Safety Summary", version: "V0.8", date: "2d ago", status: "draft" },
            ].map((r, i) => (
-             <div key={i} className={`p-3 rounded-lg border cursor-pointer transition-all hover:border-primary/30 ${i === 0 ? 'bg-primary/5 border-primary/20 shadow-sm' : 'bg-white border-transparent'}`}>
+             <div key={i} className={`p-3 rounded-lg border cursor-pointer ${i === 0 ? 'bg-primary/5 border-primary/20' : 'bg-white border-transparent'}`}>
                 <div className="flex justify-between items-start mb-1">
-                   <h4 className="text-xs font-bold text-slate-800 leading-tight pr-2">{r.title}</h4>
+                   <h4 className="text-xs font-bold text-slate-800 leading-tight">{r.title}</h4>
                    <span className="px-1.5 py-0.5 rounded bg-slate-100 text-[9px] font-bold text-slate-500">{r.version}</span>
                 </div>
                 <div className="flex items-center justify-between mt-3">
-                   <span className="text-[10px] text-slate-400 font-medium">Edited {r.date}</span>
+                   <span className="text-[10px] text-slate-400">Edited {r.date}</span>
                    <StatusChip status={r.status as any} />
                 </div>
              </div>
@@ -2875,77 +2649,36 @@ function ReportsTab() {
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col items-center p-8 overflow-auto custom-scrollbar">
+      <div className="flex-1 flex flex-col items-center p-8 overflow-auto">
          <div className="w-full max-w-[800px] flex flex-col gap-6">
-            <div className="flex items-center justify-between bg-white px-6 py-4 rounded-xl border-b -mx-8 -mt-8 mb-8 shadow-sm">
-               <div>
-                  <h2 className="text-lg font-bold text-slate-900 border-none p-0 inline-flex items-center gap-3">
-                     Initial Investigation Report <span className="text-slate-300 font-mono text-xs">V1.2</span>
-                  </h2>
-               </div>
+            <div className="flex items-center justify-between bg-white px-6 py-4 rounded-xl border shadow-sm w-full mb-8">
+               <h2 className="text-lg font-bold text-slate-900 border-none p-0">Initial Investigation Report V1.2</h2>
                <div className="flex items-center gap-2">
-                  <Button variant="outline" className="h-9 gap-2 font-bold text-xs"><Eye className="h-3.5 w-3.5" /> Preview PDF</Button>
-                  <Button className="h-9 gap-2 font-bold text-xs bg-slate-900 hover:bg-slate-800"><CheckCircle2 className="h-3.5 w-3.5" /> Finalize Build</Button>
+                  <Button variant="outline" className="h-9 font-bold text-xs">Preview PDF</Button>
+                  <Button className="h-9 font-bold text-xs bg-slate-900">Finalize Build</Button>
                </div>
             </div>
 
             <div className="space-y-8 pb-32">
                {[
-                 { title: "1. Executive Summary", content: "On April 5, 2026, a conveyor belt failure occurred in Zone B of Site Alpha, resulting in material spillage and near-miss injury to two operators.", ai: true },
-                 { title: "2. Facts & Incident Chronology", content: "Extraction from SCADA and witness statements confirms the failure occurred at 14:35 relative to section 14. E-Stop was manually triggered 12 mins later.", ai: true },
+                 { title: "1. Executive Summary", content: "On April 5, 2026, a conveyor belt failure occurred in Zone B of Site Alpha, resulting in material spillage and near-miss injury.", ai: true },
+                 { title: "2. Facts & Incident Chronology", content: "Extraction confirms the failure occurred at 14:35 relative to section 14. E-Stop was manually triggered 12 mins later.", ai: true },
                  { title: "3. Analysis & Root Cause", content: "Click to insert AI PEEPO proof-points...", ai: false },
-                 { title: "4. Preventive Actions", content: "Replacement of roller support bracket with industrial Grade 8 steel and quarterly vibration monitoring...", ai: false },
+                 { title: "4. Preventive Actions", content: "Replacement of roller support bracket with industrial Grade 8 steel...", ai: false },
                ].map((section, idx) => (
                   <div key={idx} className="group relative bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-all">
-                     <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-50">
+                     <div className="flex items-center justify-between mb-4 border-b border-slate-50 pb-2">
                         <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest">{section.title}</h4>
                         <div className="flex gap-1.5">
                            {section.ai && <span className="text-[9px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded uppercase">AI Drafted</span>}
-                           <button className="p-1 hover:bg-slate-50 rounded text-slate-400"><Pencil className="h-3.5 w-3.5" /></button>
+                           <Pencil className="h-3.5 w-3.5 text-slate-400" />
                         </div>
                      </div>
-                     <p className={`text-sm leading-relaxed ${section.content.includes("Click") ? "text-slate-300 italic" : "text-slate-700 font-medium"}`}>
-                        {section.content}
-                     </p>
-                     <div className="mt-6 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button variant="ghost" size="sm" className="h-7 text-[10px] font-bold border border-slate-100 hover:bg-slate-50 px-3">+ Add AI Proof Point</Button>
-                        <Button variant="ghost" size="sm" className="h-7 text-[10px] font-bold border border-slate-100 hover:bg-slate-50 px-3">+ Cite Evidence</Button>
-                     </div>
+                     <p className={`text-sm leading-relaxed ${section.content.includes("Click") ? "text-slate-300 italic" : "text-slate-700 font-medium"}`}>{section.content}</p>
                   </div>
                ))}
             </div>
          </div>
-      </div>
-
-      <div className="w-[280px] border-l bg-white flex flex-col shrink-0">
-        <div className="h-12 border-b flex items-center justify-between px-4 shrink-0 bg-slate-50/50">
-           <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Report Assets</span>
-        </div>
-        <div className="p-4 space-y-6 overflow-auto custom-scrollbar">
-           <div>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter block mb-3">AI Intelligence Blocks</span>
-              <div className="space-y-2">
-                 {["PEEPO Fact-Chain", "IPLS Coding Matrix", "Actor Fatigue Analysis", "Prevention Logic"].map(block => (
-                    <div key={block} className="p-2 border rounded border-slate-100 bg-slate-50/30 hover:bg-primary/5 hover:border-primary/20 transition-all cursor-move group">
-                       <span className="text-[11px] font-bold text-slate-600 group-hover:text-primary transition-colors">{block}</span>
-                    </div>
-                 ))}
-              </div>
-           </div>
-           <div>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter block mb-3">High Confidence Citations</span>
-              <div className="space-y-2">
-                 {evidenceFiles.filter(f => f.tags.includes("key")).map(f => (
-                    <div key={f.id} className="p-2 border rounded border-slate-100 bg-slate-50/30 hover:border-amber-200 transition-all cursor-move group">
-                       <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-bold text-slate-600 truncate max-w-[140px]">{f.name}</span>
-                          <Star className="h-2.5 w-2.5 fill-amber-400 text-amber-400" />
-                       </div>
-                    </div>
-                 ))}
-              </div>
-           </div>
-        </div>
       </div>
     </div>
   );
@@ -2954,24 +2687,22 @@ function ReportsTab() {
 function ReviewTab() {
   return (
     <div className="flex h-full bg-slate-50/10">
-      <div className="flex-1 overflow-auto p-8 custom-scrollbar">
+      <div className="flex-1 overflow-auto p-8">
         <div className="max-w-4xl mx-auto space-y-8">
           <div className="bg-white border rounded-2xl shadow-sm p-8 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-               <div className="h-12 w-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100 shadow-sm">
-                  <CheckCircle2 className="h-6 w-6" />
-               </div>
-               <div>
-                 <h2 className="text-xl font-bold text-slate-900 border-none p-0 inline-flex items-center gap-3">Review & Board Approval</h2>
-                 <p className="text-xs text-slate-500 font-medium uppercase tracking-widest mt-1">Final Investigation Report — CS-2026-0147 [v1.2]</p>
-               </div>
-            </div>
-            <div className="flex gap-2.5">
-              <Button variant="outline" className="h-10 text-xs font-bold px-5 border-slate-200 hover:bg-slate-50">Request Corrections</Button>
-              <Button className="h-10 text-xs font-bold px-6 bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-500/20 gap-2">
-                <CheckCircle2 className="h-4 w-4" /> Approve Case & Close
-              </Button>
-            </div>
+             <div className="flex items-center gap-4">
+                <div className="h-12 w-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100 shadow-sm">
+                   <CheckCircle2 className="h-6 w-6" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-slate-900">Review & Board Approval</h2>
+                  <p className="text-xs text-slate-500 font-medium uppercase mt-1">CS-2026-0147 [v1.2]</p>
+                </div>
+             </div>
+             <div className="flex gap-2.5">
+               <Button variant="outline" className="h-10 text-xs font-bold px-5">Request Corrections</Button>
+               <Button className="h-10 text-xs font-bold px-6 bg-emerald-600 text-white">Approve Case</Button>
+             </div>
           </div>
 
           <div className="bg-white border rounded-2xl shadow-sm overflow-hidden">
@@ -2980,7 +2711,7 @@ function ReviewTab() {
                <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-100 uppercase">Board Review In-Progress</span>
             </div>
             <div className="p-8 flex items-center justify-between relative">
-               <div className="absolute top-1/2 left-10 right-10 h-0.5 bg-slate-100 -translate-y-[24px] z-0" />
+               <div className="absolute top-1/2 left-10 right-10 h-0.5 bg-slate-100 -translate-y-[24px]" />
                {[
                  { role: "Investigator", user: "Sarah Chen", status: "submitted", date: "Apr 8, 10:12" },
                  { role: "Site Reviewer", user: "John Doe", status: "reviewed", date: "Apr 8, 14:45" },
@@ -2989,59 +2720,19 @@ function ReviewTab() {
                ].map((step, i) => (
                 <div key={step.role} className="flex flex-col items-center gap-3 relative z-10 w-48 text-center">
                    <div className={`h-10 w-10 rounded-full border-4 flex items-center justify-center transition-all ${
-                     step.status === "submitted" || step.status === "reviewed" ? "bg-emerald-500 border-white text-white shadow-lg shadow-emerald-500/20" :
+                     step.status === "reviewed" || step.status === "submitted" ? "bg-emerald-500 border-white text-white shadow-lg shadow-emerald-500/20" :
                      step.status === "pending" ? "bg-amber-500 border-white text-white shadow-lg shadow-amber-500/20 animate-pulse" :
                      "bg-slate-100 border-white text-slate-400"
                    }`}>
-                      {step.status === "reviewed" || step.status === "submitted" ? <Check className="h-5 w-5" /> : step.status === "pending" ? <Clock className="h-5 w-5" /> : (i+1)}
+                      {step.status === "reviewed" || step.status === "submitted" ? <Check className="h-4 w-4" /> : step.status === "pending" ? <Clock className="h-4 w-4" /> : (i+1)}
                    </div>
                    <div>
                       <h4 className="text-[11px] font-bold text-slate-900 uppercase tracking-tighter mb-0.5">{step.role}</h4>
-                      <p className="text-xs font-bold text-slate-700 truncate">{step.user}</p>
-                      <p className="text-[9px] text-slate-400 font-medium uppercase tracking-[0.1em] mt-1">{step.date}</p>
+                      <p className="text-xs font-bold text-slate-700">{step.user}</p>
                    </div>
                 </div>
               ))}
             </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-6 pb-20">
-             <div className="bg-white border rounded-2xl shadow-sm p-6 overflow-hidden relative">
-                <div className="absolute top-0 left-0 w-1 h-full bg-primary" />
-                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Board Comments (3)</h3>
-                <div className="space-y-4">
-                   <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
-                      <div className="flex items-center justify-between mb-1.5">
-                         <span className="text-[10px] font-bold text-slate-900 uppercase">Director Smith</span>
-                         <span className="text-[9px] text-slate-400 font-bold tracking-widest">2h ago</span>
-                      </div>
-                      <p className="text-xs text-slate-600 leading-relaxed font-medium">"Please confirm the specific grade of steel for the replacement bearings mentioned in Sec 4."</p>
-                   </div>
-                   <Textarea placeholder="Post a board comment..." className="text-xs min-h-[80px] border-slate-100 bg-slate-50/30 focus:bg-white transition-all shadow-inner" />
-                   <div className="flex justify-end">
-                      <Button size="sm" className="h-8 px-4 text-xs font-bold bg-slate-900">Post Comment</Button>
-                   </div>
-                </div>
-             </div>
-
-             <div className="bg-white border rounded-2xl shadow-sm p-6 overflow-hidden relative">
-                <div className="absolute top-0 left-0 w-1 h-full bg-status-review/50" />
-                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Compliance Checklist</h3>
-                <div className="space-y-2.5">
-                   {[
-                     { label: "Witness Confidentiality Logged", ok: true },
-                     { label: "Site Photos GPS Verified", ok: true },
-                     { label: "Root Cause Chain Complete", ok: true },
-                     { label: "Regulatory Form #12 Filed", ok: false },
-                     { label: "External Peer Review", ok: false },
-                   ].map((c, i) => (
-                      <div key={i} className="flex items-center justify-between py-2 border-b border-slate-50 last:border-0 px-1">
-                         <span className="text-xs font-bold text-slate-700">{c.label}</span>
-                         {c.ok ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> : <div className="h-4 w-4 rounded-full border-2 border-slate-200" />}
-                      </div>
-                   ))}
-                </div>
-             </div>
           </div>
         </div>
       </div>
@@ -3056,75 +2747,35 @@ function AuditTrailTab() {
     { timestamp: "2026-04-08 10:11", user: "Sarah Chen", role: "Investigator", action: "Extraction Accepted", objectType: "Evidence", objectName: "6 items accepted", prevState: "pending", newState: "reviewed" },
     { timestamp: "2026-04-08 09:45", user: "System", role: "AI Agent", action: "Extraction Metadata Sync", objectType: "Evidence", objectName: "incident_report_initial.pdf", prevState: "—", newState: "synced" },
     { timestamp: "2026-04-08 09:30", user: "System", role: "AI Agent", action: "Extraction Completed", objectType: "Evidence", objectName: "incident_report_initial.pdf", prevState: "processing", newState: "extracted" },
-    { timestamp: "2026-04-08 08:00", user: "Ahmed Khan", role: "Investigator", action: "Evidence Uploaded", objectType: "Evidence", objectName: "4 files uploaded", prevState: "—", newState: "uploaded" },
-    { timestamp: "2026-04-07 16:00", user: "John Doe", role: "Manager", action: "Case Created", objectType: "Case", objectName: "CS-2026-0147", prevState: "—", newState: "draft" },
   ];
 
   return (
     <div className="flex flex-col h-full bg-slate-50/10 h-screen overflow-hidden">
       <div className="h-12 border-b bg-white flex items-center justify-between px-6 shrink-0 shadow-sm relative z-10">
-         <div className="flex items-center gap-3">
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Audit Logs</span>
-            <div className="h-px w-8 bg-slate-200" />
-            <span className="text-[10px] font-bold text-slate-400">Total Entries: {auditEntries.length}</span>
-         </div>
-         <div className="flex items-center gap-2">
-            <div className="flex items-center p-1 bg-slate-100 rounded-md border">
-               <button className="px-3 py-1 text-[9px] font-bold rounded-sm bg-white shadow-sm text-primary">Live View</button>
-               <button className="px-3 py-1 text-[9px] font-bold rounded-sm text-slate-500 hover:text-slate-900">Historical Archive</button>
-            </div>
-            <Button variant="outline" size="sm" className="h-8 text-[10px] font-bold gap-2">
-               <Upload className="h-3.5 w-3.5" /> Export Logs
-            </Button>
-         </div>
+         <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Audit Logs</span>
       </div>
-      <div className="flex-1 overflow-auto p-4 custom-scrollbar">
-         <div className="bg-white border rounded-xl shadow-sm overflow-hidden">
-            <div className="h-12 border-b bg-slate-50 px-4 flex items-center justify-between">
-               <div className="flex gap-4">
-                  <select className="text-[10px] font-bold border rounded bg-white px-2 py-1 uppercase tracking-tight"><option>All Users</option></select>
-                  <select className="text-[10px] font-bold border rounded bg-white px-2 py-1 uppercase tracking-tight"><option>All Actions</option></select>
-                  <select className="text-[10px] font-bold border rounded bg-white px-2 py-1 uppercase tracking-tight"><option>All Objects</option></select>
-               </div>
-               <div className="relative">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400" />
-                  <input placeholder="Filter trail..." className="h-7 w-48 pl-8 text-[10px] font-bold border rounded bg-white focus:outline-none focus:ring-1 focus:ring-primary/20" />
-               </div>
-            </div>
-            <table className="w-full enterprise-table">
+      <div className="flex-1 overflow-auto p-4">
+         <div className="bg-white border rounded-xl shadow-sm overflow-hidden overflow-x-auto">
+            <table className="w-full text-left">
               <thead>
-                <tr className="bg-white">
-                  <th className="pl-6">Timestamp</th>
-                  <th>User Identity</th>
-                  <th>Role</th>
-                  <th>Operation</th>
-                  <th>Object Type</th>
-                  <th>Object Identifier</th>
-                  <th>Previous State</th>
-                  <th className="pr-6">New State</th>
+                <tr className="bg-slate-50 border-b">
+                  <th className="p-4 text-[10px] font-black uppercase text-slate-400">Timestamp</th>
+                  <th className="p-4 text-[10px] font-black uppercase text-slate-400">User</th>
+                  <th className="p-4 text-[10px] font-black uppercase text-slate-400">Action</th>
+                  <th className="p-4 text-[10px] font-black uppercase text-slate-400">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
                 {auditEntries.map((e, i) => (
-                  <tr key={i} className="hover:bg-slate-50 transition-colors cursor-pointer group">
-                    <td className="pl-6 text-[10px] font-mono text-slate-400 whitespace-nowrap">{e.timestamp}</td>
-                    <td className="text-xs font-bold text-slate-700 py-3">
-                       <div className="flex items-center gap-2">
-                          <div className="h-5 w-5 rounded-full bg-slate-100 border flex items-center justify-center text-[9px] font-bold text-slate-600">{e.user[0]}</div>
-                          {e.user}
-                       </div>
+                  <tr key={i} className="hover:bg-slate-50">
+                    <td className="p-4 text-[10px] font-mono text-slate-400">{e.timestamp}</td>
+                    <td className="p-4">
+                       <div className="text-xs font-bold text-slate-800">{e.user}</div>
+                       <div className="text-[9px] text-slate-400 uppercase">{e.role}</div>
                     </td>
-                    <td className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">{e.role}</td>
-                    <td className="text-xs font-bold text-slate-900 group-hover:text-primary transition-colors">{e.action}</td>
-                    <td className="text-[10px] text-slate-400 font-bold uppercase">{e.objectType}</td>
-                    <td className="text-xs font-bold text-primary truncate max-w-[180px]">{e.objectName}</td>
-                    <td className="text-[10px] font-mono text-slate-400 italic">"{e.prevState}"</td>
-                    <td className="pr-6">
-                       <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase border shadow-sm ${
-                         e.newState === 'completed' || e.newState === 'reviewed' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 
-                         e.newState === 'running' ? 'bg-amber-50 text-amber-700 border-amber-100 animate-pulse' :
-                         'bg-slate-50 text-slate-400 border-slate-100'
-                       }`}>
+                    <td className="p-4 text-[11px] font-bold text-slate-900">{e.action}</td>
+                    <td className="p-4">
+                       <span className={`px-2 py-0.5 rounded text-[9px] font-bold border ${e.newState === 'completed' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-slate-50 border-slate-100 text-slate-400'}`}>
                           {e.newState}
                        </span>
                     </td>
@@ -3133,7 +2784,6 @@ function AuditTrailTab() {
               </tbody>
             </table>
          </div>
-         <div className="h-20" />
       </div>
     </div>
   );
@@ -3143,12 +2793,10 @@ export default function CaseWorkspacePage() {
   const { caseId } = useParams();
   const [activeTab, setActiveTab] = useState("Evidence Review");
   const [files, setFiles] = useState(evidenceFiles);
-  const [batches, setBatches] = useState(evidenceBatches);
 
   return (
     <AppLayout>
       <div className="flex flex-col h-full bg-slate-50/10 h-screen overflow-hidden">
-        {/* Case Workspace Header */}
         <div className="bg-white border-b px-6 py-4 flex items-center justify-between shrink-0 shadow-sm relative z-30">
           <div className="flex items-center gap-4">
             <div className="h-10 w-10 bg-slate-900 rounded-lg flex items-center justify-center shadow-lg border-2 border-slate-800">
@@ -3169,48 +2817,30 @@ export default function CaseWorkspacePage() {
           <div className="flex items-center gap-4">
             <div className="flex -space-x-2">
               {[1, 2, 3].map(i => (
-                <div key={i} className="h-7 w-7 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center text-[10px] font-bold shadow-sm ring-1 ring-slate-100">U{i}</div>
+                <div key={i} className="h-7 w-7 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center text-[10px] font-bold shadow-sm">U{i}</div>
               ))}
-              <div className="h-7 w-7 rounded-full border-2 border-white bg-primary text-white flex items-center justify-center text-[10px] font-bold shadow-sm ring-1 ring-slate-100">+2</div>
             </div>
             <div className="h-8 w-px bg-slate-200" />
-            <Button className="h-9 font-bold px-4 gap-2 bg-slate-900 hover:bg-slate-800 shadow-md transition-all active:scale-95 group">
-              <Send className="h-3.5 w-3.5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" /> Submit Case for Approval
-            </Button>
-            <Button variant="ghost" size="sm" className="h-9 w-9 p-0 rounded-full hover:bg-slate-100 transition-colors">
-               <MoreVertical className="h-4 w-4 text-slate-400" />
-            </Button>
+            <Button className="h-9 font-bold px-4 bg-slate-900 text-white shadow-md">Submit Case</Button>
           </div>
         </div>
 
-        {/* Tactical Header / Progress */}
-        <div className="bg-white border-b h-12 flex items-center justify-between px-6 shrink-0 relative z-20 shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
+        <div className="bg-white border-b h-12 flex items-center justify-between px-6 shrink-0 relative z-20 shadow-sm">
           <div className="flex gap-1 h-full items-center">
             {tabs.map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`h-full px-5 text-xs font-bold transition-all relative group ${
-                  activeTab === tab 
-                  ? "text-primary bg-primary/5" 
-                  : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
+                className={`h-full px-5 text-xs font-bold transition-all relative ${
+                  activeTab === tab ? "text-primary bg-primary/5" : "text-slate-500 hover:bg-slate-50"
                 }`}
               >
                 {tab}
-                {activeTab === tab && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary shadow-[0_-2px_10px_rgba(37,99,235,0.5)]" />}
+                {activeTab === tab && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary shadow-md" />}
               </button>
             ))}
           </div>
-
           <div className="flex items-center gap-6">
-             <div className="flex items-center gap-3">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.1em]">Case Maturity</span>
-                <div className="flex gap-1.5">
-                   {progressSteps.map((step, i) => (
-                      <div key={i} className={`h-1.5 w-6 rounded-full transition-all duration-700 ${step.done ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.3)]" : "bg-slate-200"}`} title={step.label} />
-                   ))}
-                </div>
-             </div>
              <div className="flex items-center gap-2 border-l pl-6 border-slate-100">
                 <Clock className="h-3.5 w-3.5 text-slate-400" />
                 <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">3 Days Remaining</span>
@@ -3218,7 +2848,6 @@ export default function CaseWorkspacePage() {
           </div>
         </div>
 
-        {/* Tab Content Rendering */}
         <div className="flex-1 overflow-hidden relative">
           {activeTab === "Overview" && <OverviewTab />}
           {activeTab === "Evidence Review" && <ExtractionTab files={files} setFiles={setFiles} />}
