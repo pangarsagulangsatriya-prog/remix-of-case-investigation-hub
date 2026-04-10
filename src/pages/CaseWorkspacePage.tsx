@@ -1142,6 +1142,208 @@ function DeleteConfirmationModal({
   );
 }
 
+// ---- Delete Folder Modal ----
+// Uses an icon-based visual captcha: 3 shuffled icons, user must click the Folder icon
+// to unlock the Delete button. Rendered with key=target.id so captcha always resets.
+
+interface DeleteFolderTarget {
+  id: string;
+  name: string;
+  fileCount: number;
+  sampleFiles: string[];
+}
+
+const CAPTCHA_ICONS = [
+  { id: "folder",   label: "Folder",   Icon: Folders,  correct: true  },
+  { id: "document", label: "Document", Icon: FileText,  correct: false },
+  { id: "image",    label: "Image",    Icon: ImageIcon, correct: false },
+];
+
+function DeleteFolderModal({
+  target,
+  onClose,
+  onConfirm,
+}: {
+  target: DeleteFolderTarget | null;
+  onClose: () => void;
+  onConfirm: () => void;
+}) {
+  const [captchaVerified, setCaptchaVerified] = useState(false);
+  const [wrongAttempt, setWrongAttempt]       = useState(false);
+  const [isDeleting, setIsDeleting]           = useState(false);
+
+  // Shuffle once on mount (key prop forces remount per folder target)
+  const [shuffled] = useState(() => {
+    const arr = [...CAPTCHA_ICONS];
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  });
+
+  if (!target) return null;
+
+  const handleIconClick = (correct: boolean) => {
+    if (captchaVerified) return;
+    if (correct) {
+      setCaptchaVerified(true);
+      setWrongAttempt(false);
+    } else {
+      setWrongAttempt(true);
+      setTimeout(() => setWrongAttempt(false), 900);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!captchaVerified || isDeleting) return;
+    setIsDeleting(true);
+    await new Promise(r => setTimeout(r, 450));
+    onConfirm();
+    // modal unmounts via onConfirm → setDeleteFolderTarget(null)
+  };
+
+  const extraCount = target.fileCount - target.sampleFiles.length;
+
+  return (
+    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+      <div
+        className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200"
+        onClick={!isDeleting ? onClose : undefined}
+      />
+      <div className="relative z-10 bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 animate-in zoom-in-95 duration-200">
+
+        {/* Header */}
+        <div className="px-6 pt-6 pb-5">
+          <div className="flex items-start justify-between mb-4">
+            <div className="h-10 w-10 rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-center">
+              <Trash2 className="h-5 w-5 text-rose-500" />
+            </div>
+            {!isDeleting && (
+              <button
+                onClick={onClose}
+                className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors text-slate-400"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+
+          <h3 className="text-base font-black text-slate-900 mb-1">Delete Folder?</h3>
+          <p className="text-xs text-slate-500 font-medium leading-relaxed">
+            You are about to delete this folder and all files inside it.
+          </p>
+        </div>
+
+        {/* Folder info */}
+        <div className="mx-6 mb-5 rounded-xl border border-slate-100 bg-slate-50/60 overflow-hidden">
+          <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-100">
+            <Folders className="h-4 w-4 text-primary/60 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Folder</span>
+              <span className="text-xs font-black text-slate-800 uppercase tracking-tight truncate block">{target.name}</span>
+            </div>
+            <span className="text-[10px] font-black text-slate-500 bg-white border px-2 py-0.5 rounded-full shrink-0">
+              {target.fileCount} file{target.fileCount !== 1 ? "s" : ""}
+            </span>
+          </div>
+          {target.sampleFiles.length > 0 && (
+            <div className="px-4 py-2.5 space-y-1">
+              {target.sampleFiles.map((name, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <div className="h-1 w-1 rounded-full bg-slate-300 shrink-0" />
+                  <span className="text-[10px] text-slate-500 font-medium truncate">{name}</span>
+                </div>
+              ))}
+              {extraCount > 0 && (
+                <p className="text-[10px] text-slate-400 font-medium pl-3 italic">
+                  +{extraCount} more file{extraCount !== 1 ? "s" : ""}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Warning */}
+        <div className="mx-6 mb-5 flex items-start gap-2 px-3 py-2.5 rounded-lg bg-amber-50 border border-amber-100">
+          <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0 mt-0.5" />
+          <p className="text-[10px] font-medium text-amber-700 leading-relaxed">
+            This action will remove the folder and its contents from Evidence Control. This cannot be undone.
+          </p>
+        </div>
+
+        {/* Visual captcha */}
+        <div className="mx-6 mb-6">
+          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-2.5">
+            Click the folder icon to enable deletion
+          </label>
+          <div className={`flex gap-2 transition-all ${wrongAttempt ? "animate-pulse" : ""}`}>
+            {shuffled.map(({ id, label, Icon, correct }) => {
+              const isSelected = captchaVerified && correct;
+              const isWrong    = wrongAttempt && !correct && !captchaVerified;
+              return (
+                <button
+                  key={id}
+                  disabled={captchaVerified}
+                  onClick={() => handleIconClick(correct)}
+                  className={[
+                    "flex-1 flex flex-col items-center gap-1.5 py-3 rounded-xl border transition-all",
+                    isSelected
+                      ? "bg-emerald-50 border-emerald-200 text-emerald-600 cursor-default"
+                      : wrongAttempt && !correct
+                      ? "bg-rose-50 border-rose-100 text-rose-400"
+                      : captchaVerified
+                      ? "bg-slate-50 border-slate-100 text-slate-300 cursor-default"
+                      : "bg-white border-slate-200 text-slate-500 hover:border-slate-300 hover:bg-slate-50 cursor-pointer",
+                  ].join(" ")}
+                >
+                  {isSelected ? (
+                    <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                  ) : (
+                    <Icon className="h-5 w-5" />
+                  )}
+                  <span className="text-[9px] font-bold uppercase tracking-wide">{label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-4 bg-slate-50 border-t flex items-center justify-between">
+          <Button
+            variant="ghost"
+            onClick={onClose}
+            disabled={isDeleting}
+            className="h-9 text-xs font-bold text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleDelete}
+            disabled={!captchaVerified || isDeleting}
+            className={[
+              "h-9 px-6 text-xs font-black uppercase tracking-widest transition-all",
+              captchaVerified && !isDeleting
+                ? "bg-rose-600 hover:bg-rose-700 text-white shadow-sm shadow-rose-200"
+                : "bg-slate-100 text-slate-300 cursor-not-allowed",
+            ].join(" ")}
+          >
+            {isDeleting ? (
+              <span className="flex items-center gap-1.5">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                Deleting…
+              </span>
+            ) : (
+              "Delete Folder"
+            )}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ExtractionTab({ files: evidenceFiles, setFiles: setEvidenceFiles, batches, setBatches }: { files: any[], setFiles: React.Dispatch<React.SetStateAction<any[]>>, batches: any[], setBatches: React.Dispatch<React.SetStateAction<any[]>> }) {
   const [selectedFile, setSelectedFile] = useState<any>(evidenceFiles[1]);
   const [activeFilter, setActiveFilter] = useState("All Files");
@@ -1149,6 +1351,27 @@ function ExtractionTab({ files: evidenceFiles, setFiles: setEvidenceFiles, batch
   const [expandedBatches, setExpandedBatches] = useState<string[]>(["B1", "B2", "B4", "B5"]);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [deleteFolderTarget, setDeleteFolderTarget] = useState<DeleteFolderTarget | null>(null);
+
+  const openDeleteFolderModal = (batch: any) => {
+    const filesInBatch = evidenceFiles.filter(f => f.batchId === batch.id);
+    setDeleteFolderTarget({
+      id: batch.id,
+      name: batch.name,
+      fileCount: filesInBatch.length,
+      sampleFiles: filesInBatch.slice(0, 5).map((f: any) => f.name),
+    });
+  };
+
+  const handleDeleteFolder = () => {
+    if (!deleteFolderTarget) return;
+    const targetId = deleteFolderTarget.id;
+    setBatches(prev => prev.filter(b => b.id !== targetId));
+    setEvidenceFiles(prev => prev.filter(f => f.batchId !== targetId));
+    setExpandedBatches(prev => prev.filter(id => id !== targetId));
+    if (selectedFile?.batchId === targetId) setSelectedFile(null);
+    setDeleteFolderTarget(null);
+  };
 
   const toggleBatch = (id: string) => {
     setExpandedBatches(prev => prev.includes(id) ? prev.filter(b => b !== id) : [...prev, id]);
@@ -1309,16 +1532,23 @@ function ExtractionTab({ files: evidenceFiles, setFiles: setEvidenceFiles, batch
            {activeFilter === "All Files" ? (
              groupedFiles.map(batch => (
                <div key={batch.id} className="border-b last:border-b-0 bg-white">
-                  <div 
+                  <div
                     onClick={() => toggleBatch(batch.id)}
-                    className="flex items-start gap-2 px-3 py-2.5 bg-slate-50 cursor-pointer hover:bg-slate-100 transition-colors border-b border-slate-100"
+                    className="flex items-center gap-2 px-3 py-2.5 bg-slate-50 cursor-pointer hover:bg-slate-100 transition-colors border-b border-slate-100 group/brow"
                   >
-                     <div className="shrink-0 mt-0.5">
+                     <div className="shrink-0">
                        {expandedBatches.includes(batch.id) ? <ChevronDown className="h-3 w-3 text-slate-400" /> : <ChevronRight className="h-3 w-3 text-slate-400" />}
                      </div>
-                     <Folders className="h-3.5 w-3.5 text-primary/60 shrink-0 mt-0.5" />
-                     <span className="text-[10px] font-bold text-slate-600 uppercase tracking-tighter leading-snug flex-1 min-w-0">{batch.name}</span>
-                     <span className="text-[9px] font-bold text-slate-400 bg-white px-1.5 py-0.5 rounded-full border shrink-0 mt-0.5 ml-1">{batch.files.length}</span>
+                     <Folders className="h-3.5 w-3.5 text-primary/60 shrink-0" />
+                     <span className="text-[10px] font-bold text-slate-600 uppercase tracking-tighter leading-snug flex-1 min-w-0 truncate">{batch.name}</span>
+                     <span className="text-[9px] font-bold text-slate-400 bg-white px-1.5 py-0.5 rounded-full border shrink-0">{batch.files.length}</span>
+                     <button
+                       onClick={(e) => { e.stopPropagation(); openDeleteFolderModal(batch); }}
+                       className="p-1 hover:bg-rose-50 rounded transition-colors opacity-0 group-hover/brow:opacity-100 text-slate-300 hover:text-rose-400 shrink-0"
+                       title="Delete folder"
+                     >
+                       <Trash2 className="h-3 w-3" />
+                     </button>
                   </div>
                   {expandedBatches.includes(batch.id) && batch.files.map(file => (
                     <div 
@@ -1512,10 +1742,17 @@ function ExtractionTab({ files: evidenceFiles, setFiles: setEvidenceFiles, batch
         fileName={selectedFile?.name || ""}
       />
 
-      <UploadModal 
-        isOpen={isUploadModalOpen} 
-        onClose={() => setIsUploadModalOpen(false)} 
+      <UploadModal
+        isOpen={isUploadModalOpen}
+        onClose={() => setIsUploadModalOpen(false)}
         onUploadComplete={handleUploadComplete}
+      />
+
+      <DeleteFolderModal
+        key={deleteFolderTarget?.id ?? "none"}
+        target={deleteFolderTarget}
+        onClose={() => setDeleteFolderTarget(null)}
+        onConfirm={handleDeleteFolder}
       />
     </div>
   );
