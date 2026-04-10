@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { AppLayout } from "@/components/AppLayout";
 import { StatusChip, SeverityChip, ConfidenceChip } from "@/components/StatusChip";
@@ -55,8 +55,134 @@ import {
   Navigation,
   Truck,
   Activity,
-  Box
+  Trash2,
+  Box,
+  Cpu,
+  Loader2
 } from "lucide-react";
+
+interface AgentState {
+  id: string;
+  name: string;
+  icon: any;
+  purpose: string;
+  status: 'idle' | 'queued' | 'running' | 'completed' | 'warning' | 'failed' | 'blocked' | 'cancelled' | 'skipped';
+  triggeredBy?: string;
+  lastRunTimestamp?: string;
+  lastUpdatedTimestamp?: string;
+  confidence?: string;
+  dependencyState?: string;
+  microStatus?: string;
+  results?: any;
+  dependencies: string[];
+}
+
+const initialAgentsState: AgentState[] = [
+  { 
+     id: 'fact', 
+     name: 'Fact & Chronology', 
+     icon: Clock, 
+     purpose: 'Reconstruct sequence of events from raw evidence batches.', 
+     status: 'idle', 
+     dependencies: [], 
+     results: {
+        ringkasan: {
+           tanggal: "April 05, 2026",
+           jam: "14:23 - 14:45",
+           lokasi: "Conveyor Zone B, Section 14",
+           jenis: "Mechanical Failure & Material Spillage",
+           deskripsi: "Tear in conveyor belt led to massive spillage and structural stress at Section 14 conveyor drives.",
+           departemen: "Mining Operations",
+           sumber_bukti: "SCADA, CCTV-B14, HSE Logs",
+           severity: "High"
+        },
+        timeline: {
+           praKontak: [
+              { time: "14:10", name: "System", event: "Vibration sensor alarm start on Section 14 drive motor" },
+              { time: "14:20", name: "Ahmed Khan", event: "Operator manual override initiated to maintain throughput" },
+              { time: "14:21", name: "System", event: "Secondary tension alarm ignored by control room" }
+           ],
+           kontak: [
+              { time: "14:23", name: "Equipment", event: "Belt rupture detected at Section 14 leading to massive spillage" },
+              { time: "14:24", name: "System", event: "Main line conveyor 2 motor torque spike detected" },
+              { time: "14:25", name: "System", event: "Emergency stop automatically triggered by belt rip sensors" }
+           ],
+           pascaKontak: [
+              { time: "14:30", name: "HSE Team", event: "Departure to incident site for initial containment and safety cordoning" },
+              { time: "14:45", name: "Maria Santos", event: "Area secured and maintenance lockout-tagout (LOTO) procedures applied" },
+              { time: "15:00", name: "Ahmed Khan", event: "Initial witness statement provided to HSE supervisor" }
+           ]
+        }
+     }
+  },
+  { 
+     id: 'actor', 
+     name: 'Actor Intelligence', 
+     icon: Users, 
+     purpose: 'Map roles, permissions, and coordination gaps of involved entities.', 
+     status: 'idle', 
+     dependencies: ['fact'],
+     results: {
+        aktor: [
+           { nama: "Ahmed Khan", peran: "Conveyor Supervisor", status_shift: "Active", tindakan: "Manual Override" },
+           { nama: "Maria Santos", peran: "Maintenance Lead", status_shift: "Remote", tindakan: "Log Review" }
+        ],
+        relasi: "Gaps found between HSE protocol and manual override speed.",
+        temuan_utama: " احمد (Ahmed) was operating outside standard speed parameters."
+     }
+  },
+  { 
+     id: 'peepo', 
+     name: 'PEEPO Reasoning', 
+     icon: Brain, 
+     purpose: 'Analyze People, Environment, Equipment, Procedures, and Org factors.', 
+     status: 'idle', 
+     dependencies: ['actor'],
+     results: {
+        people: ["Operator fatigue suspected", "Training gap on Section 14 override"],
+        environment: ["High dust levels impacting sensors", "Limited visibility in sector"],
+        equipment: ["Belt tensioner fatigue", "Sensor calibration drift"],
+        procedures: ["Incomplete lockout-tagout log", "Delayed radio relay"],
+        organisation: ["Shift swap overlap issues"],
+        ringkasan: "A combination of equipment fatigue and procedure gaps was the primary driver.",
+        synthesis: "Factor convergence score: High (Critical)"
+     }
+  },
+  { 
+     id: 'ipls', 
+     name: 'IPLS Classification', 
+     icon: FileSearch, 
+     purpose: 'Classify incident across the 5 layers of Industrial Prevention Logic.', 
+     status: 'idle', 
+     dependencies: ['peepo'],
+     results: {
+        layer_1: "Immediate Cause: Mechanical Rupture",
+        layer_2: "Direct Cause: Tensioner Override",
+        layer_3: "Systemic Factor: Maintenance Cycle",
+        layer_4: "Org Factor: Resource Allocation",
+        layer_5: "Cultural Factor: Safety Priority",
+        root_cause: "Resource allocation led to deferred maintenance on Section 14.",
+        layer_priority: "Layer 4 (Organisation)"
+     }
+  },
+  { 
+     id: 'prev', 
+     name: 'Prevention Engine', 
+     icon: HardHat, 
+     purpose: 'Generate corrective actions and predictive risk mitigations.', 
+     status: 'idle', 
+     dependencies: ['ipls'],
+     results: {
+        actions: [
+           { id: "A1", desc: "Automated tensioner shutdown logic upgrade", priority: "Critical", owner: "Maintenance" },
+           { id: "A2", desc: "Enhanced radio relay frequency testing", priority: "High", owner: "Ops" }
+        ],
+        prioritas: "Critical",
+        risiko: "Moderate residual risk",
+        fokus_monitoring: "Section 14 Telemetry"
+     }
+  }
+];
 
 import { 
   DropdownMenu, 
@@ -70,7 +196,7 @@ import { UploadModal } from "@/components/UploadModal";
 
 // --- Mock Data ---
 
-const tabs = ["Overview", "Evidence", "Extraction Review", "Analysis", "Reports", "Review", "Audit Trail"];
+const tabs = ["Overview", "Evidence Review", "Analysis", "Reports", "Review", "Audit Trail"];
 
 const progressSteps = [
   { label: "Evidence", done: true },
@@ -418,7 +544,7 @@ const videoExtractionData = {
 
 function StatusIndicator({ status, type }: { status: string, type: 'extraction' | 'review' }) {
   if (!status) return null;
-  const isAlt = status === "completed" || status === "reviewed";
+  const isAlt = status === "completed" || status === "matched" || status === "reviewed";
   const isProcess = status === "processing" || status === "partial";
   const isFail = status === "failed";
   
@@ -887,32 +1013,90 @@ function OverviewTab() {
   );
 }
 
-function EvidenceTab() {
-  const [viewMode, setViewMode] = useState<"grouped" | "files">("grouped");
-  const [filterType, setFilterType] = useState("All Evidence");
-  const [localEvidenceFiles, setLocalEvidenceFiles] = useState(evidenceFiles);
-  const [selectedFile, setSelectedFile] = useState<typeof evidenceFiles[0] | null>(null);
-  const [expandedBatches, setExpandedBatches] = useState<string[]>(["B1", "B2", "B4"]);
+function DeleteConfirmationModal({ 
+  isOpen, 
+  onClose, 
+  onConfirm, 
+  fileName 
+}: { 
+  isOpen: boolean, 
+  onClose: () => void, 
+  onConfirm: () => void, 
+  fileName: string 
+}) {
+  const [captchaInput, setCaptchaInput] = useState("");
+  // Simple numeric captcha as requested by "simbol captcha"
+  const [captchaCode] = useState(() => Math.floor(1000 + Math.random() * 9000).toString());
   
+  if (!isOpen) return null;
+
+  const isConfirmed = captchaInput === captchaCode;
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300" onClick={onClose} />
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md relative z-10 overflow-hidden animate-in zoom-in-95 duration-300 border border-slate-200">
+        <div className="p-6">
+          <div className="h-12 w-12 rounded-xl bg-rose-50 flex items-center justify-center mb-4">
+             <Trash2 className="h-6 w-6 text-rose-500" />
+          </div>
+          <h3 className="text-xl font-bold text-slate-900 border-none p-0 mb-2">Delete Evidence File</h3>
+          <p className="text-sm text-slate-500 leading-relaxed mb-6">
+            This action is <span className="text-rose-600 font-bold uppercase underline">irreversible</span>. Deleting <span className="font-bold text-slate-900">"{fileName}"</span> will permanently remove it and all associated AI-extracted intelligence from this case.
+          </p>
+
+          <div className="space-y-4">
+            <div>
+               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Security Challenge</label>
+               <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-2 select-none pointer-events-none flex flex-col items-center">
+                  <span className="text-[10px] text-slate-400 uppercase font-black mb-1">Type the code to confirm deletion</span>
+                  <span className="text-3xl font-extrabold text-slate-300 tracking-[0.5em]">{captchaCode}</span>
+               </div>
+               <input 
+                  autoFocus
+                  className="w-full h-12 border rounded-xl px-4 text-center font-black text-xl tracking-[0.2em] focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 outline-none transition-all placeholder:text-slate-200"
+                  placeholder="0000"
+                  maxLength={4}
+                  value={captchaInput}
+                  onChange={(e) => setCaptchaInput(e.target.value)}
+               />
+            </div>
+          </div>
+        </div>
+
+        <div className="px-6 py-4 bg-slate-50 border-t flex items-center justify-between">
+           <Button variant="ghost" onClick={onClose} className="text-slate-500 font-bold hover:bg-slate-100">Cancel</Button>
+           <Button 
+              onClick={onConfirm} 
+              disabled={!isConfirmed}
+              className={`h-11 px-8 font-black uppercase tracking-widest transition-all ${isConfirmed ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-lg shadow-rose-500/20' : 'bg-slate-100 text-slate-300 cursor-not-allowed'}`}
+           >
+              Confirm Delete
+           </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ExtractionTab({ files: evidenceFiles, setFiles: setEvidenceFiles }: { files: any[], setFiles: React.Dispatch<React.SetStateAction<any[]>> }) {
+  const [selectedFile, setSelectedFile] = useState<any>(evidenceFiles[1]);
+  const [activeFilter, setActiveFilter] = useState("All Files");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [expandedBatches, setExpandedBatches] = useState<string[]>(["B1", "B2", "B4", "B5"]);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-  const [uploadType, setUploadType] = useState<"Document" | "Image" | "Audio" | "Video" | undefined>();
 
   const toggleBatch = (id: string) => {
     setExpandedBatches(prev => prev.includes(id) ? prev.filter(b => b !== id) : [...prev, id]);
   };
 
-  const currentFiles = filterType === "All Evidence" 
-    ? localEvidenceFiles 
-    : localEvidenceFiles.filter(f => f.type === filterType.replace(/s$/, ""));
-
-  const filteredBatches = filterType === "All Evidence"
-    ? evidenceBatches
-    : evidenceBatches.filter(b => b.type === filterType);
-
   const handleUploadComplete = (newFiles: any[]) => {
     const formattedFiles = newFiles.map(f => ({
       ...f,
-      batchId: "B2", // Default to documentation batch for now
+      batchId: "B2",
       source: "Manual Upload",
       uploadedBy: "Current User",
       extractionStatus: "processing",
@@ -920,390 +1104,41 @@ function EvidenceTab() {
       tags: [],
       linked: 0
     }));
-    setLocalEvidenceFiles(prev => [...formattedFiles, ...prev]);
+    setEvidenceFiles(prev => [...formattedFiles, ...prev]);
   };
 
-  const openUpload = (type: "Document" | "Image" | "Audio" | "Video") => {
-    setUploadType(type);
-    setIsUploadModalOpen(true);
+  const handleDelete = () => {
+    if (selectedFile) {
+      setEvidenceFiles(prev => prev.filter(f => f.id !== selectedFile.id));
+      setSelectedFile(null);
+      setIsDeleteModalOpen(false);
+    }
   };
 
-  return (
-    <div className="flex flex-col h-full bg-slate-50/10">
-      <div className="h-12 border-b bg-white flex items-center justify-between px-4 shrink-0 shadow-sm relative z-10">
-        <div className="flex items-center gap-1.5 bg-slate-100 p-1.5 rounded-lg border shadow-inner">
-          {[
-            { id: "All Evidence", icon: Grid, label: "All" },
-            { id: "Documents", icon: FileText, label: "Docs" },
-            { id: "Images", icon: ImageIcon, label: "Images" },
-            { id: "Audio", icon: AudioIcon, label: "Audio" },
-            { id: "Video", icon: VideoIcon, label: "Video" },
-          ].map((type) => (
-            <button
-              key={type.id}
-              onClick={() => {
-                setFilterType(type.id);
-                if (type.id !== "All Evidence") setViewMode("files");
-              }}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-md transition-all ${
-                filterType === type.id 
-                ? "bg-white text-primary shadow-sm border border-slate-200" 
-                : "text-slate-500 hover:text-slate-800 hover:bg-slate-200/50"
-              }`}
-              title={type.id}
-            >
-              <type.icon className="h-3.5 w-3.5" />
-              <span className="text-[10px] font-bold uppercase tracking-widest">{type.label}</span>
-            </button>
-          ))}
-        </div>
+  const goToNext = () => {
+    const allFiles = activeFilter === "All Files" ? groupedFiles.flatMap(b => b.files) : filteredFiles;
+    const currentIndex = allFiles.findIndex(f => f.id === selectedFile?.id);
+    if (currentIndex < allFiles.length - 1) {
+      setSelectedFile(allFiles[currentIndex + 1]);
+    }
+  };
 
-        <div className="flex items-center gap-3">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-            <input 
-              placeholder="Search evidence library..." 
-              className="h-8 w-64 pl-8 text-[11px] bg-slate-50 border rounded-md focus:outline-none focus:ring-1 focus:ring-primary/20 transition-all focus:bg-white"
-            />
-          </div>
-          
-          <div className="flex items-center bg-slate-100 p-1 rounded-md border">
-            <button 
-              onClick={() => setViewMode("grouped")}
-              className={`p-1 rounded-sm transition-all ${viewMode === "grouped" ? "bg-white shadow-sm text-primary" : "text-slate-400 hover:text-slate-600"}`}
-              title="Group by Batch"
-            >
-              <Folders className="h-4 w-4" />
-            </button>
-            <button 
-              onClick={() => setViewMode("files")}
-              className={`p-1 rounded-sm transition-all ${viewMode === "files" ? "bg-white shadow-sm text-primary" : "text-slate-400 hover:text-slate-600"}`}
-              title="Show Files Only"
-            >
-              <Grid className="h-4 w-4" />
-            </button>
-          </div>
+  const goToPrev = () => {
+    const allFiles = activeFilter === "All Files" ? groupedFiles.flatMap(b => b.files) : filteredFiles;
+    const currentIndex = allFiles.findIndex(f => f.id === selectedFile?.id);
+    if (currentIndex > 0) {
+      setSelectedFile(allFiles[currentIndex - 1]);
+    }
+  };
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button size="sm" className="h-8 text-[11px] font-bold gap-2 px-3 bg-primary hover:bg-primary/90 shadow-md transition-all active:scale-95">
-                <Upload className="h-3.5 w-3.5" /> Upload Evidence <ChevronDown className="h-3 w-3" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 p-1.5 shadow-2xl border-slate-200">
-              <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-slate-500 font-bold p-2 pb-1.5">Ingest Structured Evidence</DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => openUpload("Document")} className="text-xs font-bold py-2.5 cursor-pointer rounded-md focus:bg-primary/5 transition-colors">
-                 <DocIcon className="h-4 w-4 mr-3 text-primary" /> Documents
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => openUpload("Image")} className="text-xs font-bold py-2.5 cursor-pointer rounded-md focus:bg-emerald-50 transition-colors">
-                 <ImageIcon className="h-4 w-4 mr-3 text-emerald-500" /> Images
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => openUpload("Audio")} className="text-xs font-bold py-2.5 cursor-pointer rounded-md focus:bg-amber-50 transition-colors">
-                 <AudioIcon className="h-4 w-4 mr-3 text-amber-500" /> Audio Recordings
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => openUpload("Video")} className="text-xs font-bold py-2.5 cursor-pointer rounded-md focus:bg-slate-100 transition-colors">
-                 <VideoIcon className="h-4 w-4 mr-3 text-slate-700" /> Video Footage
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
-
-      <div className="flex flex-1 overflow-hidden">
-        <div className="flex-1 overflow-auto p-4 custom-scrollbar">
-          <div className="bg-white border rounded-lg shadow-sm overflow-hidden">
-            <table className="w-full enterprise-table">
-              <thead>
-                <tr className="bg-slate-50 border-b">
-                  <th className="w-10"></th>
-                  <th>File / Batch Name</th>
-                  <th>Type</th>
-                  <th>Source</th>
-                  <th>Uploaded By</th>
-                  <th>Extraction</th>
-                  <th>Review</th>
-                  <th className="text-center w-20">Linked</th>
-                  <th className="w-10 pr-4"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {viewMode === "grouped" ? (
-                  filteredBatches.map(batch => (
-                    <React.Fragment key={batch.id}>
-                      <tr 
-                        className={`group bg-white hover:bg-slate-50/50 transition-colors cursor-pointer ${expandedBatches.includes(batch.id) ? "bg-slate-50/20" : ""}`}
-                        onClick={() => toggleBatch(batch.id)}
-                      >
-                        <td className="pl-4 py-3">
-                          <button className="text-slate-400 group-hover:text-primary transition-colors">
-                            {expandedBatches.includes(batch.id) ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                          </button>
-                        </td>
-                        <td className="py-3">
-                          <div className="flex items-center gap-3">
-                            <div className="h-8 w-8 rounded bg-primary/5 flex items-center justify-center border border-primary/10">
-                              <Folders className="h-4 w-4 text-primary" />
-                            </div>
-                            <div>
-                              <span className="text-xs font-bold text-slate-900 leading-tight block">{batch.name}</span>
-                              <span className="text-[10px] font-medium text-slate-400 mt-0.5">{batch.fileCount} files · Updated {batch.updated}</span>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="text-xs text-slate-600 font-bold">{batch.type}</td>
-                        <td className="text-[11px] text-slate-500 font-medium">—</td>
-                        <td className="text-xs text-slate-700 font-bold">{batch.uploadedBy}</td>
-                        <td>
-                          <div className="flex flex-col gap-1.5 min-w-[120px]">
-                            <div className="flex justify-between items-center px-0.5">
-                              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{batch.extractionProgress}%</span>
-                              <span className="text-[9px] font-bold text-slate-500">PROCESSED</span>
-                            </div>
-                            <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden border border-slate-200/50">
-                              <div className="h-full bg-primary transition-all duration-500" style={{ width: `${batch.extractionProgress}%` }} />
-                            </div>
-                          </div>
-                        </td>
-                        <td>
-                          <div className="flex flex-col gap-1.5 min-w-[120px]">
-                            <div className="flex justify-between items-center px-0.5">
-                              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{batch.reviewProgress}%</span>
-                              <span className="text-[9px] font-bold text-slate-500">REVIEWED</span>
-                            </div>
-                            <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden border border-slate-200/50">
-                              <div className="h-full bg-emerald-500 transition-all duration-500" style={{ width: `${batch.reviewProgress}%` }} />
-                            </div>
-                          </div>
-                        </td>
-                        <td className="text-center">
-                          <span className="text-xs font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">{batch.linkedAnalysis}</span>
-                        </td>
-                        <td className="pr-4">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                              <button className="p-1 rounded hover:bg-slate-200 transition-colors opacity-0 group-hover:opacity-100">
-                                <MoreVertical className="h-4 w-4 text-slate-400" />
-                              </button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem className="text-xs font-bold py-2">Manage Batch</DropdownMenuItem>
-                              <DropdownMenuItem className="text-xs font-bold py-2">Download ZIP</DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem className="text-xs font-bold text-destructive py-2">Archive Batch</DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </td>
-                      </tr>
-                      {expandedBatches.includes(batch.id) && localEvidenceFiles.filter(f => f.batchId === batch.id).map(file => (
-                        <tr 
-                          key={file.id} 
-                          className={`hover:bg-primary/5 transition-all cursor-pointer border-l-2 border-transparent ${selectedFile?.id === file.id ? "bg-primary/5 border-primary shadow-[inset_0_1px_0_0_rgba(0,0,0,0.05)]" : ""}`}
-                          onClick={() => setSelectedFile(file)}
-                        >
-                          <td className="pl-12 py-2.5">
-                            {getFileIcon(file.type)}
-                          </td>
-                          <td className="py-2.5">
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs font-bold text-slate-700 truncate max-w-[240px]">{file.name}</span>
-                              {file.tags.includes("key") && (
-                                <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-                              )}
-                            </div>
-                          </td>
-                          <td className="text-[11px] text-slate-500 font-bold">{file.type}</td>
-                          <td className="text-[11px] text-slate-500 font-medium italic">{file.source}</td>
-                          <td className="text-[11px] text-slate-600 font-bold">{file.uploadedBy}</td>
-                          <td>
-                            <StatusIndicator status={file.extractionStatus} type="extraction" />
-                          </td>
-                          <td>
-                            <StatusIndicator status={file.reviewStatus} type="review" />
-                          </td>
-                          <td className="text-center">
-                            <span className="text-[11px] font-bold text-slate-500">{file.linked || "—"}</span>
-                          </td>
-                          <td className="pr-4"></td>
-                        </tr>
-                      ))}
-                    </React.Fragment>
-                  ))
-                ) : (
-                  currentFiles.map(file => (
-                    <tr 
-                      key={file.id}
-                      className={`hover:bg-slate-50 transition-all cursor-pointer border-l-2 border-transparent ${selectedFile?.id === file.id ? "bg-primary/5 border-primary" : ""}`}
-                      onClick={() => setSelectedFile(file)}
-                    >
-                      <td className="pl-4 py-2.5">
-                        {getFileIcon(file.type)}
-                      </td>
-                      <td className="py-2.5">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-slate-700">{file.name}</span>
-                          {file.tags.includes("key") && (
-                            <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-                          )}
-                        </div>
-                      </td>
-                      <td className="text-[11px] text-slate-500 font-bold">{file.type}</td>
-                      <td className="text-[11px] text-slate-500 font-medium italic">{file.source}</td>
-                      <td className="text-[11px] text-slate-600 font-bold">{file.uploadedBy}</td>
-                      <td>
-                        <StatusIndicator status={file.extractionStatus} type="extraction" />
-                      </td>
-                      <td>
-                        <StatusIndicator status={file.reviewStatus} type="review" />
-                      </td>
-                      <td className="text-center">
-                        <span className="text-[11px] font-bold text-slate-500">{file.linked || "—"}</span>
-                      </td>
-                      <td className="pr-4"></td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {selectedFile && (
-          <div className="w-[360px] border-l bg-white flex flex-col shrink-0 animate-in slide-in-from-right duration-300">
-            <div className="h-12 border-b flex items-center justify-between px-4 shrink-0 bg-slate-50/50">
-               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">Evidence Context Panel</span>
-               <button onClick={() => setSelectedFile(null)} className="p-1 hover:bg-slate-200 rounded transition-colors">
-                  <X className="h-4 w-4 text-slate-400" />
-               </button>
-            </div>
-            <div className="flex-1 overflow-auto p-5 custom-scrollbar">
-              <div className="space-y-6">
-                 <div className="aspect-video bg-slate-900 rounded-lg flex items-center justify-center overflow-hidden border border-slate-200 shadow-sm group relative">
-                    <div className="absolute inset-0 flex items-center justify-center">
-                       {selectedFile.type === "Image" ? (
-                         <ImageIcon className="h-12 w-12 text-slate-700/50" />
-                       ) : selectedFile.type === "Audio" ? (
-                         <div className="flex flex-col items-center gap-3 w-full px-6">
-                            <div className="h-12 flex items-center gap-1 w-full justify-center">
-                               {[1, 2, 3, 4, 3, 5, 2, 4, 6, 4, 2].map((h, i) => (
-                                 <div key={i} className="w-1 bg-primary/40 rounded-full animate-pulse" style={{ height: `${h * 15}%`, animationDelay: `${i * 100}ms` }} />
-                               ))}
-                            </div>
-                            <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400">
-                               <Play className="h-3 w-3 fill-slate-400" />
-                               <span>{selectedFile.duration}</span>
-                            </div>
-                         </div>
-                       ) : (
-                         <div className="text-center space-y-2 p-4">
-                            <DocIcon className="h-12 w-12 text-primary/20 mx-auto" />
-                            <span className="text-2xs font-bold text-slate-400 uppercase tracking-widest">Document Text Rendering...</span>
-                         </div>
-                       )}
-                    </div>
-                    <button className="absolute bottom-3 right-3 p-1.5 bg-white/90 backdrop-blur shadow-lg border rounded-md text-slate-600 hover:text-primary opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0">
-                       <ExternalLink className="h-3.5 w-3.5" />
-                    </button>
-                 </div>
-
-                 <div className="space-y-4">
-                   <div>
-                     <div className="flex items-center justify-between mb-1">
-                       <span className="text-[10px] font-bold text-primary uppercase tracking-widest">File Identity</span>
-                       <span className="text-[10px] font-bold text-slate-400">{selectedFile.size}</span>
-                     </div>
-                     <h3 className="text-sm font-bold text-slate-900 leading-snug">{selectedFile.name}</h3>
-                   </div>
-
-                   <div className="grid grid-cols-2 gap-4">
-                     <div className="space-y-1">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter block mb-1">System Accuracy</span>
-                        <div className="flex items-center gap-2">
-                           <ConfidenceChip level="high" />
-                           <span className="text-[10px] font-bold text-slate-900">94%</span>
-                        </div>
-                     </div>
-                     <div className="space-y-1">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter block mb-1">Audit Status</span>
-                        <StatusIndicator status={selectedFile.reviewStatus} type="review" />
-                     </div>
-                   </div>
-                 </div>
-
-                 <div className="bg-slate-50 border border-slate-100 rounded-lg p-3 space-y-3 shadow-inner">
-                    <div className="flex items-center justify-between">
-                       <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">AI Extraction Summary</span>
-                       <Button variant="ghost" className="h-6 text-[10px] font-bold text-primary hover:bg-white px-2 border border-primary/10">Rerun Engine</Button>
-                    </div>
-                    <div className="bg-white border border-slate-100 p-2.5 rounded shadow-sm italic">
-                       <p className="text-[11px] text-slate-600 leading-relaxed font-medium">
-                         {selectedFile.snippet || "Extraction engine has identified 5 key entities and 2 potential risk factors within this evidence object. Confidence score: High (94%)."}
-                       </p>
-                    </div>
-                    <div className="flex items-center gap-1.5 mt-2">
-                       <FileSearch className="h-3.5 w-3.5 text-primary" />
-                       <span className="text-[11px] font-bold text-slate-700">Linked to Chronology: 14:30 Event</span>
-                    </div>
-                 </div>
-
-                 <div className="space-y-3 pt-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Classification</span>
-                      <Button variant="ghost" size="sm" className="h-6 text-[10px] font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 px-2 transition-colors">+ Tag</Button>
-                    </div>
-                    <div className="flex flex-wrap gap-1.5">
-                       {selectedFile.tags.map(tag => (
-                         <div key={tag} className="flex items-center gap-1 bg-slate-50 border px-2 py-0.5 rounded text-[10px] font-bold text-slate-600 uppercase tracking-wider">
-                           <Tag className="h-2.5 w-2.5" />
-                           {tag}
-                         </div>
-                       ))}
-                       {selectedFile.tags.includes("key") && (
-                         <div className="flex items-center gap-1 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded text-[10px] font-bold text-amber-600 uppercase tracking-wider shadow-sm">
-                            <Star className="h-2.5 w-2.5 fill-amber-500" />
-                            CRITICAL EVIDENCE
-                         </div>
-                       )}
-                    </div>
-                 </div>
-
-                 <div className="space-y-2 pt-4 border-t">
-                    <Button className="w-full h-9 text-xs font-bold gap-2 bg-slate-900 hover:bg-slate-800 shadow-md transition-all">
-                       <ExternalLink className="h-3 w-3" /> View Extraction Workspace
-                    </Button>
-                    <div className="grid grid-cols-2 gap-2">
-                       <Button variant="outline" className="h-8 text-[10px] font-bold border-slate-200 bg-white hover:bg-slate-50">
-                          Link to Analysis
-                       </Button>
-                       <Button variant="outline" className="h-8 text-[10px] font-bold border-slate-200 bg-white hover:bg-slate-50">
-                          Assign Owner
-                       </Button>
-                    </div>
-                 </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-      
-      <UploadModal 
-        isOpen={isUploadModalOpen} 
-        onClose={() => setIsUploadModalOpen(false)} 
-        onUploadComplete={handleUploadComplete}
-        initialType={uploadType}
-      />
-    </div>
-  );
-}
-
-function ExtractionTab() {
-  const [selectedFile, setSelectedFile] = useState<typeof evidenceFiles[0]>(evidenceFiles[1]);
-  const [activeFilter, setActiveFilter] = useState("All Files");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [expandedBatches, setExpandedBatches] = useState<string[]>(["B1", "B2", "B4", "B5"]);
-
-  const toggleBatch = (id: string) => {
-    setExpandedBatches(prev => prev.includes(id) ? prev.filter(b => b !== id) : [...prev, id]);
+  const handleReview = () => {
+    if (selectedFile) {
+      const updatedFiles = evidenceFiles.map(f => 
+        f.id === selectedFile.id ? { ...f, reviewStatus: "reviewed" } : f
+      );
+      setEvidenceFiles(updatedFiles);
+      setSelectedFile({ ...selectedFile, reviewStatus: "reviewed" });
+    }
   };
 
   const filteredFiles = evidenceFiles.filter(f => {
@@ -1321,30 +1156,30 @@ function ExtractionTab() {
 
   return (
     <div className="flex h-full overflow-hidden">
-      {/* LEFT PANEL — 320px for readable file names and folder labels */}
+      {/* LEFT PANEL — Unified Evidence Library */}
       <div className="w-[320px] min-w-[280px] border-r bg-white flex flex-col shrink-0 z-20 shadow-[1px_0_5px_rgba(0,0,0,0.03)]">
-        <div className="h-12 border-b flex items-center px-4 shrink-0 justify-between bg-slate-50/50">
-           {isSearchOpen ? (
-              <div className="flex-1 flex items-center bg-white border rounded px-2 h-8 animate-in slide-in-from-right-1 duration-200">
-                 <Search className="h-3.5 w-3.5 text-slate-400 mr-2" />
-                 <input 
-                   autoFocus
-                   placeholder="Search files..."
-                   className="flex-1 text-[11px] outline-none"
-                   value={searchQuery}
-                   onChange={(e) => setSearchQuery(e.target.value)}
-                 />
-                 <button onClick={() => { setIsSearchOpen(false); setSearchQuery(""); }}><X className="h-3 w-3 text-slate-400" /></button>
-              </div>
-           ) : (
-              <>
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Evidence Feed</span>
-                <div className="flex items-center gap-2">
-                   <button onClick={() => setIsSearchOpen(true)} className="p-1 hover:bg-slate-200 rounded transition-colors"><Search className="h-3.5 w-3.5 text-slate-400" /></button>
-                   <button className="p-1 hover:bg-slate-200 rounded"><Settings className="h-3.5 w-3.5 text-slate-400" /></button>
-                </div>
-              </>
-           )}
+        <div className="p-4 border-b space-y-3 bg-slate-50/20">
+           <div className="flex items-center justify-between">
+              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Evidence Control</span>
+              <button className="p-1 hover:bg-slate-200 rounded transition-colors"><Settings className="h-3.5 w-3.5 text-slate-400" /></button>
+           </div>
+           
+           <Button 
+            onClick={() => setIsUploadModalOpen(true)}
+            className="w-full h-10 bg-slate-900 hover:bg-slate-800 text-white font-black uppercase tracking-widest text-[10px] gap-2 shadow-lg shadow-slate-900/10 active:scale-[0.98] transition-all"
+           >
+              <Upload className="h-3.5 w-3.5" /> Add New Evidence
+           </Button>
+
+           <div className="relative group">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300 group-focus-within:text-primary transition-colors" />
+              <input 
+                placeholder="Search library..." 
+                className="w-full h-9 pl-9 pr-4 bg-white border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-primary/10 focus:border-primary outline-none transition-all"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+           </div>
         </div>
         
         <div className="px-2.5 py-2 border-b flex gap-1 bg-white shadow-sm">
@@ -1392,25 +1227,26 @@ function ExtractionTab() {
                       key={file.id}
                       onClick={() => setSelectedFile(file)}
                       className={`px-3 py-2.5 pl-7 border-b border-slate-50 cursor-pointer transition-all hover:bg-slate-50/80 relative group ${
-                        selectedFile.id === file.id ? "bg-primary/5 border-l-[3px] border-l-primary" : "border-l-[3px] border-l-transparent"
+                        selectedFile?.id === file.id ? "bg-primary/5 border-l-[3px] border-l-primary" : "border-l-[3px] border-l-transparent"
                       }`}
                     >
                        <div className="flex gap-2.5 items-start">
                           <div className={`h-7 w-7 rounded shrink-0 flex items-center justify-center border mt-0.5 ${
-                            selectedFile.id === file.id ? "bg-white border-primary/20 shadow-sm" : "bg-white border-slate-100"
+                            selectedFile?.id === file.id ? "bg-white border-primary/20 shadow-sm" : "bg-white border-slate-100"
                           }`}>
                              {getFileIcon(file.type)}
                           </div>
                           <div className="flex-1 min-w-0">
                              <div className="flex items-center justify-between mb-0.5 gap-2">
                                 <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter shrink-0">{file.type}</span>
-                                <span className="text-[9px] text-slate-300 shrink-0">{file.uploadDate}</span>
+                                <span className="text-[9px] font-medium text-slate-400 shrink-0">{file.size}</span>
                              </div>
-                             {/* 2-line clamp so filenames are readable without being cut mid-character */}
-                             <p className={`text-[11px] font-semibold leading-snug break-all line-clamp-2 ${selectedFile.id === file.id ? "text-primary" : "text-slate-700"}`}>{file.name}</p>
-                             <div className="flex items-center gap-2 mt-1.5">
+                             <p className={`text-[11px] font-bold leading-snug break-all line-clamp-2 ${selectedFile?.id === file.id ? "text-primary" : "text-slate-800"}`}>{file.name}</p>
+                             <div className="flex items-center gap-2 mt-2">
                                 <StatusIndicator status={file.extractionStatus} type="extraction" />
-                                {file.tags.includes("key") && <Star className="h-2.5 w-2.5 fill-amber-400 text-amber-400" />}
+                                <div className="h-1 w-1 rounded-full bg-slate-200" />
+                                <span className="text-[8px] font-bold text-slate-300 uppercase tracking-widest">{file.uploadDate}</span>
+                                {file.tags.includes("key") && <Star className="h-2.5 w-2.5 fill-amber-400 text-amber-400 ml-auto" />}
                              </div>
                           </div>
                        </div>
@@ -1424,24 +1260,26 @@ function ExtractionTab() {
                  key={file.id}
                  onClick={() => setSelectedFile(file)}
                  className={`px-3 py-2.5 border-b border-slate-50 cursor-pointer transition-all hover:bg-slate-50/80 relative group ${
-                   selectedFile.id === file.id ? "bg-primary/5 border-l-[3px] border-l-primary" : "border-l-[3px] border-l-transparent"
+                   selectedFile?.id === file.id ? "bg-primary/5 border-l-[3px] border-l-primary" : "border-l-[3px] border-l-transparent"
                  }`}
                >
                   <div className="flex gap-2.5 items-start">
                      <div className={`h-7 w-7 rounded shrink-0 flex items-center justify-center border mt-0.5 ${
-                       selectedFile.id === file.id ? "bg-white border-primary/20 shadow-sm" : "bg-white border-slate-100"
+                       selectedFile?.id === file.id ? "bg-white border-primary/20 shadow-sm" : "bg-white border-slate-100"
                      }`}>
                         {getFileIcon(file.type)}
                      </div>
                      <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-0.5 gap-2">
                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter shrink-0">{file.type}</span>
-                           <span className="text-[9px] text-slate-300 shrink-0">{file.uploadDate}</span>
+                           <span className="text-[9px] font-medium text-slate-400 shrink-0">{file.size}</span>
                         </div>
-                        <p className={`text-[11px] font-semibold leading-snug break-all line-clamp-2 ${selectedFile.id === file.id ? "text-primary" : "text-slate-700"}`}>{file.name}</p>
-                        <div className="flex items-center gap-2 mt-1.5">
+                        <p className={`text-[11px] font-bold leading-snug break-all line-clamp-2 ${selectedFile?.id === file.id ? "text-primary" : "text-slate-800"}`}>{file.name}</p>
+                        <div className="flex items-center gap-2 mt-2">
                            <StatusIndicator status={file.extractionStatus} type="extraction" />
-                           {file.tags.includes("key") && <Star className="h-2.5 w-2.5 fill-amber-400 text-amber-400" />}
+                           <div className="h-1 w-1 rounded-full bg-slate-200" />
+                           <span className="text-[8px] font-bold text-slate-300 uppercase tracking-widest">{file.uploadDate}</span>
+                           {file.tags.includes("key") && <Star className="h-2.5 w-2.5 fill-amber-400 text-amber-400 ml-auto" />}
                         </div>
                      </div>
                   </div>
@@ -1462,38 +1300,66 @@ function ExtractionTab() {
            {selectedFile ? (
              <>
                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2">
-                     <div className="h-7 w-7 bg-slate-100 rounded flex items-center justify-center border">
-                        {getFileIcon(selectedFile.type)}
-                     </div>
-                     <h2 className="text-sm font-bold text-slate-900">{selectedFile.name}</h2>
-                  </div>
-                  <div className="h-4 w-px bg-slate-200" />
-                  <div className="flex items-center gap-3">
-                     <StatusIndicator status={selectedFile.extractionStatus} type="extraction" />
-                     <ConfidenceChip level="high" />
-                  </div>
-               </div>
+                   <div className="flex items-center gap-1 border-r pr-4 border-slate-100">
+                      <button 
+                        onClick={goToPrev}
+                        className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-900 transition-all disabled:opacity-30"
+                      >
+                         <ChevronLeft className="h-4 w-4" />
+                      </button>
+                      <button 
+                        onClick={goToNext}
+                        className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-900 transition-all disabled:opacity-30"
+                      >
+                         <ChevronRight className="h-4 w-4" />
+                      </button>
+                   </div>
+                   <div className="flex items-center gap-2">
+                      <div className="h-7 w-7 bg-slate-100 rounded flex items-center justify-center border shadow-inner">
+                         {getFileIcon(selectedFile.type)}
+                      </div>
+                      <h2 className="text-sm font-black text-slate-900 tracking-tight">{selectedFile.name}</h2>
+                   </div>
+                   <div className="h-4 w-px bg-slate-200" />
+                   <div className="flex items-center gap-3">
+                      <StatusIndicator status={selectedFile.extractionStatus} type="extraction" />
+                      <ConfidenceChip level="high" />
+                   </div>
+                </div>
                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" className="h-8 text-[11px] font-bold gap-2">
-                     <Maximize2 className="h-3.5 w-3.5" /> Fullscreen
-                  </Button>
-                  <Button variant="outline" size="sm" className="h-8 text-[11px] font-bold gap-2">
-                     <Upload className="h-3.5 w-3.5" /> Replace Source
-                  </Button>
-               </div>
+                   <Button 
+                      onClick={() => setIsDeleteModalOpen(true)}
+                      variant="outline" 
+                      size="sm" 
+                      className="h-8 text-[11px] font-bold gap-2 text-rose-600 hover:bg-rose-50 border-rose-100 transition-all hover:border-rose-200"
+                   >
+                      <Trash2 className="h-3.5 w-3.5" /> Delete Evidence
+                   </Button>
+                </div>
              </>
            ) : (
-             <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">No active selection</div>
+             <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Evidence Workspace Ready</div>
            )}
         </div>
 
         {/* CENTER — flex-1, but preview canvas is capped so it doesn't over-expand on wide screens */}
         <div className="flex-1 overflow-auto bg-[#f0f2f4] p-6 flex flex-col items-center custom-scrollbar" style={{ minWidth: 0 }}>
-           <div className="w-full max-w-3xl">
-             <AdaptiveSourcePreview file={selectedFile} />
-           </div>
-        </div>
+            <div className="w-full max-w-3xl h-full flex items-center justify-center">
+              {selectedFile ? (
+                <AdaptiveSourcePreview file={selectedFile} />
+              ) : (
+                <div className="flex flex-col items-center justify-center p-12 text-center">
+                   <div className="h-20 w-20 rounded-[2.5rem] bg-white shadow-2xl flex items-center justify-center mb-8 border border-white/50 animate-in fade-in zoom-in duration-700">
+                      <Folders className="h-10 w-10 text-slate-200" />
+                   </div>
+                   <h3 className="text-sm font-black text-slate-800 uppercase tracking-[0.2em] mb-3">No Evidence Selected</h3>
+                   <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest max-w-[280px] leading-relaxed opacity-80">
+                     Select an object from the library or use the Add Evidence button to begin the review workflow.
+                   </p>
+                </div>
+              )}
+            </div>
+         </div>
       </div>
 
       {/* RIGHT PANEL — 460px for dense structured content (JSON, accordion, action buttons) */}
@@ -1524,13 +1390,38 @@ function ExtractionTab() {
         {/* Action bar — prominent, stable, always visible */}
         <div className="px-5 py-4 border-t bg-white shrink-0 shadow-[0_-2px_8px_rgba(0,0,0,0.04)]">
            <div className="flex items-center gap-2">
-              <Button className="flex-1 h-9 text-xs font-bold bg-slate-900 hover:bg-slate-800 shadow-sm tracking-wide">Accept All Findings</Button>
+              <Button 
+                onClick={handleReview}
+                disabled={selectedFile?.reviewStatus === "reviewed"}
+                className={`flex-1 h-9 text-xs font-black uppercase tracking-widest shadow-sm transition-all ${
+                  selectedFile?.reviewStatus === "reviewed" 
+                  ? "bg-emerald-500 hover:bg-emerald-600 text-white" 
+                  : "bg-slate-900 hover:bg-slate-800 text-white"
+                }`}
+              >
+                 {selectedFile?.reviewStatus === "reviewed" ? (
+                   <span className="flex items-center gap-2 tracking-tighter"><CheckCircle className="h-4 w-4" /> Review Complete</span>
+                 ) : "Verify & Mark Reviewed"}
+              </Button>
               <Button variant="outline" className="h-9 px-3 border-slate-200 hover:bg-slate-50">
                  <MoreVertical className="h-4 w-4 text-slate-400" />
               </Button>
            </div>
         </div>
       </div>
+
+      <DeleteConfirmationModal 
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleDelete}
+        fileName={selectedFile?.name || ""}
+      />
+
+      <UploadModal 
+        isOpen={isUploadModalOpen} 
+        onClose={() => setIsUploadModalOpen(false)} 
+        onUploadComplete={handleUploadComplete}
+      />
     </div>
   );
 }
@@ -2235,80 +2126,601 @@ function AdaptiveExtractionOutput({ file }: { file: any }) {
 }
 
 function AnalysisTab() {
-  return (
-    <div className="flex flex-col h-full bg-slate-50/10 overflow-auto">
-      <div className="p-6 space-y-6">
-        <div className="bg-white border rounded-xl shadow-sm p-5">
-          <div className="flex items-center justify-between mb-6 pb-2 border-b">
-            <h3 className="text-sm font-bold text-slate-900 border-none">Analysis Agents & Execution Chain</h3>
-            <Button size="sm" className="h-8 text-xs font-bold gap-2 bg-slate-900 hover:bg-slate-800">
-               <Play className="h-3 w-3" /> Run Full Intelligence Chain
-            </Button>
-          </div>
-          <div className="grid grid-cols-5 gap-4">
-            {analysisAgents.map((agent) => (
-              <div key={agent.name} className="border rounded-xl p-4 hover:border-primary/30 transition-all hover:shadow-md bg-white group cursor-pointer relative overflow-hidden">
-                <div className={`absolute top-0 left-0 w-full h-1 ${agent.lastStatus === 'reviewed' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="h-7 w-7 rounded bg-slate-50 flex items-center justify-center border group-hover:bg-primary/5 transition-colors">
-                    {agent.icon && <agent.icon className="h-4 w-4 text-slate-600 group-hover:text-primary" />}
-                  </div>
-                  <span className="text-xs font-bold text-slate-800">{agent.name}</span>
-                </div>
-                <p className="text-[10px] text-slate-500 font-medium leading-relaxed mb-4 h-8 overflow-hidden">{agent.purpose}</p>
-                <div className="space-y-1.5 border-t pt-3">
-                  <div className="flex justify-between text-[10px] font-bold">
-                    <span className="text-slate-400 uppercase tracking-tighter">Status</span>
-                    <span className={agent.lastStatus === "reviewed" ? "text-emerald-600" : "text-amber-600"}>{agent.lastStatus}</span>
-                  </div>
-                  <div className="flex justify-between text-[10px] font-bold">
-                    <span className="text-slate-400 uppercase tracking-tighter">Confidence</span>
-                    <span className="text-slate-800">92%</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+  const [agents, setAgents] = useState<AgentState[]>(initialAgentsState);
+  const [execMode, setExecMode] = useState<"idle" | "full" | "manual">("idle");
+  const [globalStatus, setGlobalStatus] = useState<"idle" | "running" | "blocked" | "completed" | "stopped" | "failed">("idle");
+  const [chainQueue, setChainQueue] = useState<string[]>([]);
+  const [activeTask, setActiveTask] = useState<string | null>(null);
+  const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
+  const [activeSlide, setActiveSlide] = useState(0);
+  const [canvasZoom, setCanvasZoom] = useState(85);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
-        <div className="bg-white border rounded-xl shadow-sm p-5">
-           <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-4">Execution History</span>
-           <table className="w-full enterprise-table">
-              <thead>
-                <tr className="bg-slate-50">
-                  <th className="rounded-tl-lg">Run ID</th>
-                  <th>Agent</th>
-                  <th>Triggered By</th>
-                  <th>Input Source</th>
-                  <th>Status</th>
-                  <th>Created</th>
-                  <th className="rounded-tr-lg">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {runHistory.map((run) => (
-                  <tr key={run.runId} className="hover:bg-slate-50 transition-colors">
-                    <td className="font-mono text-[11px] font-bold text-primary">{run.runId}</td>
-                    <td className="text-xs font-bold text-slate-700">{run.agent}</td>
-                    <td className="text-[11px] text-slate-500">{run.triggeredBy}</td>
-                    <td className="text-[11px] text-slate-400 italic">"{run.inputSource}"</td>
-                    <td>
-                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase border ${
-                        run.status === "completed" ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-slate-50 text-slate-400 border-slate-100"
-                      }`}>
-                        {run.status}
-                      </span>
-                    </td>
-                    <td className="text-[11px] text-slate-500">{run.createdAt}</td>
-                    <td>
-                      <button className="text-[10px] font-bold text-primary hover:underline">View Proof-Points</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-           </table>
-        </div>
-      </div>
+  const containerRef = useRef<HTMLDivElement>(null);
+  
+  const fitToWorkspace = () => {
+    if (!containerRef.current) return;
+    const cw = containerRef.current.clientWidth - 40; 
+    const ch = containerRef.current.clientHeight - 80;
+    const scaleW = cw / 1024;
+    const scaleH = ch / 576;
+    const newZoom = Math.floor(Math.min(scaleW, scaleH) * 100);
+    setCanvasZoom(Math.min(newZoom, 110));
+  };
+
+  useEffect(() => {
+    if (selectedAgentId) {
+      setTimeout(fitToWorkspace, 100);
+      setActiveSlide(0);
+    }
+  }, [selectedAgentId]);
+
+  const selectedAgent = agents.find(a => a.id === selectedAgentId);
+  
+  const slides = React.useMemo(() => {
+    const agent = agents.find(a => a.id === selectedAgentId);
+    if (!agent) return [];
+
+    if (agent.id === 'fact' && agent.results) {
+       return [
+          {
+             id: 'fact-1',
+             type: 'chronology',
+             title: 'Fact & Chronology',
+             subtitle: 'Overview Incident',
+             caseCode: 'CS-2026-0147',
+             content: {
+                summary: agent.results.ringkasan?.deskripsi || "No summary available.",
+                metadata: [
+                   { label: 'Incident Date', value: agent.results.ringkasan?.tanggal || "—" },
+                   { label: 'Incident Time', value: agent.results.ringkasan?.jam || "—" },
+                   { label: 'Location', value: agent.results.ringkasan?.lokasi || "—" },
+                   { label: 'Incident Type', value: agent.results.ringkasan?.jenis || "—" },
+                   { label: 'Department', value: agent.results.ringkasan?.departemen || "—" },
+                   { label: 'Evidence Source', value: agent.results.ringkasan?.sumber_bukti || "—" },
+                   { label: 'Severity', value: agent.results.ringkasan?.severity || "—" }
+                ],
+                timeline: agent.results.timeline || { praKontak: [], kontak: [], pascaKontak: [] }
+             }
+          }
+       ];
+    }
+    
+    return [{
+       id: 'slide-1',
+       type: 'raw',
+       title: 'Extraction Result',
+       content: agent.results || {}
+    }];
+  }, [selectedAgentId, agents]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.target as HTMLElement).tagName === 'INPUT' || (e.target as HTMLElement).tagName === 'TEXTAREA') return;
+      if (e.key === "ArrowLeft") {
+        setActiveSlide(prev => Math.max(0, prev - 1));
+      } else if (e.key === "ArrowRight") {
+        setActiveSlide(prev => Math.min(slides.length - 1, prev + 1));
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [slides.length]);
+
+  useEffect(() => {
+    if (globalStatus === 'running' && !activeTask && chainQueue.length > 0) {
+      const nextId = chainQueue[0];
+      const agent = agents.find(a => a.id === nextId)!;
+      
+      const depsFailedOrBlocked = agent.dependencies.some(dId => {
+        const d = agents.find(x => x.id === dId)!;
+        return d.status === 'failed' || d.status === 'blocked';
+      });
+
+      if (depsFailedOrBlocked && (execMode === "full" || execMode === "manual")) {
+        setGlobalStatus('blocked');
+        setAgents(prev => prev.map(a => a.id === nextId ? { ...a, status: 'blocked', dependencyState: 'Blocked', microStatus: 'Waiting for upstream...' } : a));
+        return;
+      }
+
+      setActiveTask(nextId);
+      if (execMode === 'full') {
+          setSelectedAgentId(nextId);
+      }
+      setAgents(prev => prev.map(a => a.id === nextId ? { 
+          ...a, 
+          status: 'running', 
+          microStatus: 'Initializing engine context...', 
+          triggeredBy: execMode === 'full' ? 'System' : 'Current User' 
+      } : a));
+
+      const stages = [
+          'Reading evidence batches...',
+          'Mapping involved entities...',
+          'Synthesizing workspace findings...',
+          'Applying industrial safety logic...',
+          'Finalizing output schema...'
+      ];
+      stages.forEach((msg, idx) => {
+          setTimeout(() => {
+              setAgents(prev => prev.map(a => a.id === nextId ? { ...a, microStatus: msg } : a));
+          }, (idx + 1) * 700);
+      });
+
+      setTimeout(() => {
+        const d = new Date();
+        setAgents(prev => {
+          const a = prev.find(x => x.id === nextId);
+          if (a?.status === 'running') {
+            return prev.map(x => x.id === nextId ? { 
+              ...x, 
+              status: 'completed', 
+              lastRunTimestamp: d.toLocaleTimeString(),
+              lastUpdatedTimestamp: d.toLocaleTimeString(),
+              confidence: (85 + Math.floor(Math.random() * 10)) + "%",
+              dependencyState: 'Resolved',
+              microStatus: 'Synthesis complete.'
+            } : x);
+          }
+          return prev;
+        });
+
+        setChainQueue(q => q.slice(1));
+        setActiveTask(null);
+      }, 4000);
+    } else if (globalStatus === 'running' && !activeTask && chainQueue.length === 0) {
+      setGlobalStatus('completed');
+    }
+  }, [chainQueue, activeTask, globalStatus, agents, execMode]);
+
+  const startFullChain = () => {
+    setExecMode("full");
+    setGlobalStatus("running");
+    setAgents(prev => prev.map(a => ({ 
+        ...a, 
+        status: 'queued', 
+        dependencyState: a.dependencies.length === 0 ? 'Ready' : `Wait: ${a.dependencies[0]}`
+    })));
+    setChainQueue(["fact", "actor", "peepo", "ipls", "prev"]);
+  };
+
+  const stopChain = () => {
+    setGlobalStatus("stopped");
+    setAgents(prev => prev.map(a => a.status === 'queued' || a.status === 'running' ? { ...a, status: 'cancelled' } : a));
+    setChainQueue([]);
+    setActiveTask(null);
+  };
+
+  const handleExport = () => {
+     setIsExporting(true);
+     setTimeout(() => {
+        setIsExporting(false);
+        alert("Presentation deck exported successfully as .pptx");
+     }, 2000);
+  };
+
+  const handleSaveArtifact = () => {
+     setIsSaving(true);
+     setTimeout(() => {
+        setIsSaving(false);
+        alert("Artifact saved to Case Documentation");
+     }, 1500);
+  };
+
+  const stats = {
+    total: agents.length,
+    completed: agents.filter(a => a.status === 'completed').length
+  };
+
+  return (
+    <div className="flex h-full bg-[#f0f2f4] overflow-hidden animate-in fade-in duration-500">
+         {/* PANEL 1: LEFT - ORCHESTRATION NODES (320px) - Aligned with Extraction Review */}
+         <div className="w-[320px] border-r border-slate-200 bg-slate-50 flex flex-col shrink-0 z-20 shadow-[1px_0_4px_rgba(0,0,0,0.02)]">
+            <div className="h-12 border-b border-slate-200 flex items-center justify-between px-5 bg-white shrink-0">
+               <div className="flex items-center gap-2">
+                  <div className={`h-2 w-2 rounded-full ${globalStatus === 'running' ? 'bg-amber-500 animate-pulse' : 'bg-slate-300'}`} />
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Orchestration</span>
+               </div>
+               {globalStatus === 'running' && (
+                  <Button onClick={stopChain} variant="ghost" size="sm" className="h-7 px-2 text-[9px] font-bold text-rose-500 hover:bg-rose-50 border border-rose-100">
+                     <XCircle className="h-3 w-3 mr-1" /> Stop
+                  </Button>
+               )}
+            </div>
+
+            <div className="p-4 bg-white border-b border-slate-100">
+               <Button 
+                  onClick={startFullChain}
+                  disabled={globalStatus === 'running'}
+                  className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-[10px] uppercase tracking-wider h-10 shadow-sm border-none group"
+               >
+                  <Play className="h-3 w-3 mr-2 group-hover:translate-x-0.5 transition-transform" /> Execute Full Chain
+               </Button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto custom-scrollbar relative">
+               {/* Vertical Connecting Line */}
+               <div className="absolute left-[39px] top-6 bottom-6 w-px bg-slate-200 z-0" />
+               
+               <div className="p-4 space-y-4 relative z-10">
+                  {agents.map((agent) => (
+                     <div 
+                        key={agent.id}
+                        onClick={() => setSelectedAgentId(agent.id)}
+                        className={`
+                           group relative flex flex-col p-4 rounded-xl border bg-white transition-all cursor-pointer
+                           ${selectedAgentId === agent.id ? "border-slate-900 shadow-md ring-1 ring-slate-900/5 translate-x-1" : "border-slate-200 hover:border-slate-300"}
+                        `}
+                     >
+                        <div className="flex items-start justify-between mb-3">
+                           <div className={`h-11 w-11 rounded-xl border flex items-center justify-center transition-all ${selectedAgentId === agent.id ? "bg-slate-900 text-white border-slate-900 shadow-lg shadow-slate-900/10 scale-105" : "bg-white text-slate-400 border-slate-100"}`}>
+                              <agent.icon className="h-5 w-5" />
+                           </div>
+                           <div className={`
+                              px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border
+                              ${agent.status === 'completed' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 
+                                agent.status === 'running' ? 'bg-blue-50 text-blue-700 border-blue-100 animate-pulse' : 
+                                'bg-slate-50 text-slate-400 border-slate-100 uppercase'}
+                           `}>
+                              {agent.status}
+                           </div>
+                        </div>
+                        <h4 className={`text-[10px] font-black uppercase tracking-[0.15em] mb-1.5 ${selectedAgentId === agent.id ? "text-slate-900" : "text-slate-500"}`}>{agent.name}</h4>
+                        <p className="text-[10px] font-bold text-slate-400 leading-snug opacity-80">{agent.purpose}</p>
+                        
+                        {selectedAgentId === agent.id && (
+                           <div className="absolute top-0 right-0 w-1 h-full bg-slate-900" />
+                        )}
+                        {agent.status === 'running' && (
+                           <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500/20 overflow-hidden rounded-b-xl">
+                              <div className="h-full bg-blue-500 animate-[loading_2s_infinite] w-1/3" />
+                           </div>
+                        )}
+                     </div>
+                  ))}
+               </div>
+            </div>
+         </div>
+
+         {/* PANEL 2: CENTER - PRESENTATIONS / SLIDES - Aligned proportion with Source Viewer */}
+         <div className="flex-1 flex flex-col min-w-0 bg-[#f0f2f4]">
+            {/* Standard Header Rhythm */}
+            <div className="h-12 bg-white border-b border-slate-200 flex items-center justify-between px-6 shadow-sm z-30">
+               <div className="flex items-center gap-6">
+                  <div className="flex items-center gap-2">
+                     <Grid className="h-4 w-4 text-slate-400" />
+                     <span className="text-[10px] font-bold text-slate-700 uppercase tracking-widest">Analysis Matrix</span>
+                  </div>
+                  <div className="h-4 w-px bg-slate-200" />
+                  <div className="flex items-center gap-6">
+                     {['Fact', 'Actor', 'PEEPO', 'IPLS', 'Prev'].map((node, i) => {
+                        const ag = agents.find(a => a.name.includes(node));
+                        return (
+                           <div key={node} className="flex items-center gap-2">
+                              <div className={`
+                                 h-4 w-4 rounded-full border flex items-center justify-center text-[8px] font-black
+                                 ${ag?.status === 'completed' ? 'bg-emerald-500 border-emerald-500 text-white' : 
+                                   ag?.status === 'running' ? 'border-primary text-primary animate-pulse' : 
+                                   'bg-white border-slate-200 text-slate-300'}
+                              `}>{i + 1}</div>
+                              <span className={`text-[9px] font-black uppercase tracking-wider ${ag?.status === 'completed' ? 'text-slate-800' : 'text-slate-300'}`}>{node}</span>
+                           </div>
+                        );
+                     })}
+                  </div>
+               </div>
+
+               <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" className="h-8 text-[10px] font-bold gap-2 bg-white">
+                     <ZoomIn className="h-3.5 w-3.5" /> Full Screen
+                  </Button>
+               </div>
+            </div>
+
+            <div 
+               ref={containerRef}
+               onWheel={(e) => {
+                  if (e.ctrlKey) {
+                     setCanvasZoom(z => Math.max(20, Math.min(200, z - e.deltaY / 10)));
+                     e.preventDefault();
+                  }
+               }}
+               onDoubleClick={fitToWorkspace}
+               className="group/workspace flex-1 flex flex-col items-center justify-center p-4 overflow-hidden relative cursor-zoom-in"
+               style={{
+                  backgroundImage: 'radial-gradient(circle, #E2E8F0 1px, transparent 1px)',
+                  backgroundSize: '24px 24px'
+               }}
+            >
+                {!selectedAgentId ? (
+                    <div className="py-24 flex flex-col items-center text-center max-w-sm">
+                        <div className="h-24 w-24 rounded-[3.rem] bg-white border border-slate-200 shadow-2xl flex items-center justify-center mb-10 rotate-12 transition-transform hover:rotate-0">
+                            <Brain className="h-10 w-10 text-slate-200" />
+                        </div>
+                        <h3 className="text-xl font-black text-slate-800 tracking-tighter mb-3 uppercase opacity-50">Orchestration Standby</h3>
+                    </div>
+                ) : (
+                    <div className="relative flex flex-col items-center transition-all duration-300">
+                        {/* Slide Shadow Base */}
+                        <div 
+                           className="bg-white shadow-[0_30px_90px_-20px_rgba(0,0,0,0.3)] flex flex-col relative transition-all duration-300 origin-center overflow-hidden rounded-[2px] border-b-2 border-slate-300" 
+                           style={{ 
+                               width: '1024px', 
+                               height: '576px', 
+                               transform: `scale(${canvasZoom/100})`
+                           }}
+                        >
+                           <div className="flex-1 p-[60px] flex flex-col relative overflow-hidden h-full">
+                              {selectedAgent?.status === 'running' ? (
+                                 <div className="flex flex-col items-center justify-center h-full text-center space-y-8 animate-pulse text-slate-300">
+                                    <Loader2 className="h-12 w-12 animate-spin" />
+                                    <span className="text-[20px] font-black uppercase tracking-[0.2em]">{selectedAgent.microStatus || "Processing Matrix..."}</span>
+                                 </div>
+                              ) : !selectedAgent?.results ? (
+                                 <div className="flex flex-col h-full items-center justify-center text-center opacity-30 grayscale pointer-events-none space-y-6">
+                                    <Cpu className="h-12 w-12 text-slate-300" />
+                                    <h2 className="text-3xl font-black uppercase tracking-[0.2em] text-slate-400">Node Standby</h2>
+                                 </div>
+                              ) : (
+                                 <div className="flex-1 animate-in fade-in duration-500 overflow-hidden">
+                                    {slides[activeSlide]?.type === 'chronology' && (
+                                       <div className="flex flex-col h-full text-slate-900">
+                                          {/* 1. Top Header Section */}
+                                          <div className="flex justify-between items-start mb-6 border-b-2 border-slate-900 pb-4">
+                                             <div>
+                                                <div className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-1">{slides[activeSlide]?.subtitle}</div>
+                                                <h2 contentEditable suppressContentEditableWarning className="text-[32px] font-black uppercase tracking-tighter outline-none leading-none">{slides[activeSlide]?.title}</h2>
+                                             </div>
+                                             {slides[activeSlide]?.caseCode && (
+                                                <div className="text-right">
+                                                   <div className="text-[9px] font-black text-slate-300 uppercase tracking-widest leading-none mb-1">Investigation Code</div>
+                                                   <div className="text-sm font-mono font-bold text-slate-800 leading-none">#{slides[activeSlide]?.caseCode}</div>
+                                                </div>
+                                             )}
+                                          </div>
+
+                                          {/* 2. Incident Summary Section */}
+                                          <div className="mb-6 bg-slate-50 border-l-4 border-slate-900 p-4 rounded-r-lg shadow-sm">
+                                             <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Executive Summary / Ringkasan Kejadian</div>
+                                             <div contentEditable suppressContentEditableWarning className="text-[14px] text-slate-700 font-medium leading-relaxed outline-none">
+                                                {slides[activeSlide]?.content?.summary}
+                                             </div>
+                                          </div>
+
+                                          {/* 3. Incident Metadata Section */}
+                                          <div className="grid grid-cols-4 gap-x-8 gap-y-4 mb-8 bg-white border border-slate-100 p-4 rounded-xl shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
+                                             {(slides[activeSlide]?.content?.metadata || []).map((m: any) => (
+                                                <div key={m.label}>
+                                                   <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">{m.label}</div>
+                                                   <div contentEditable suppressContentEditableWarning className="text-[11px] font-bold text-slate-800 outline-none truncate">{m.value}</div>
+                                                </div>
+                                             ))}
+                                          </div>
+
+                                          {/* 4. Main Chronology Section */}
+                                          <div className="flex-1 grid grid-cols-3 gap-4 min-h-0 overflow-hidden">
+                                             {/* Pra Kontak */}
+                                             <div className="flex flex-col border border-slate-100 rounded-xl overflow-hidden bg-white shadow-sm flex-1 min-h-0">
+                                                <div className="bg-emerald-600 px-4 py-2 flex items-center justify-between shadow-md">
+                                                   <span className="text-[10px] font-black text-white uppercase tracking-widest">A. Pra Kontak</span>
+                                                   <span className="h-1.5 w-6 bg-white/30 rounded-full" />
+                                                </div>
+                                                <div className="flex-1 overflow-y-auto p-3 custom-scrollbar space-y-2.5">
+                                                   {(slides[activeSlide]?.content?.timeline?.praKontak || []).map((item: any, idx: number) => (
+                                                      <div key={idx} className="flex gap-2 group">
+                                                         <div contentEditable suppressContentEditableWarning className="text-[9px] font-black text-emerald-700 bg-emerald-50 h-fit px-1.5 py-0.5 rounded outline-none shrink-0">[{item.time}]</div>
+                                                         <div className="flex-1 min-w-0">
+                                                            <div contentEditable suppressContentEditableWarning className="text-[10px] font-black text-slate-800 leading-none mb-1 outline-none">[{item.name}]</div>
+                                                            <div contentEditable suppressContentEditableWarning className="text-[10px] text-slate-500 font-medium leading-normal outline-none">{item.event}</div>
+                                                         </div>
+                                                      </div>
+                                                   ))}
+                                                </div>
+                                             </div>
+
+                                             {/* Kontak */}
+                                             <div className="flex flex-col border border-slate-100 rounded-xl overflow-hidden bg-white shadow-sm flex-1 min-h-0">
+                                                <div className="bg-rose-600 px-4 py-2 flex items-center justify-between shadow-md">
+                                                   <span className="text-[10px] font-black text-white uppercase tracking-widest">B. Kontak</span>
+                                                   <span className="h-1.5 w-6 bg-white/30 rounded-full" />
+                                                </div>
+                                                <div className="flex-1 overflow-y-auto p-3 custom-scrollbar space-y-2.5">
+                                                   {(slides[activeSlide]?.content?.timeline?.kontak || []).map((item: any, idx: number) => (
+                                                      <div key={idx} className="flex gap-2 group">
+                                                         <div contentEditable suppressContentEditableWarning className="text-[9px] font-black text-rose-700 bg-rose-50 h-fit px-1.5 py-0.5 rounded outline-none shrink-0">[{item.time}]</div>
+                                                         <div className="flex-1 min-w-0">
+                                                            <div contentEditable suppressContentEditableWarning className="text-[10px] font-black text-slate-800 leading-none mb-1 outline-none">[{item.name}]</div>
+                                                            <div contentEditable suppressContentEditableWarning className="text-[10px] text-slate-500 font-medium leading-normal outline-none">{item.event}</div>
+                                                         </div>
+                                                      </div>
+                                                   ))}
+                                                </div>
+                                             </div>
+
+                                             {/* Pasca Kontak */}
+                                             <div className="flex flex-col border border-slate-100 rounded-xl overflow-hidden bg-white shadow-sm flex-1 min-h-0">
+                                                <div className="bg-amber-500 px-4 py-2 flex items-center justify-between shadow-md">
+                                                   <span className="text-[10px] font-black text-white uppercase tracking-widest">C. Pasca Kontak</span>
+                                                   <span className="h-1.5 w-6 bg-white/30 rounded-full" />
+                                                </div>
+                                                <div className="flex-1 overflow-y-auto p-3 custom-scrollbar space-y-2.5">
+                                                   {(slides[activeSlide]?.content?.timeline?.pascaKontak || []).map((item: any, idx: number) => (
+                                                      <div key={idx} className="flex gap-2 group">
+                                                         <div contentEditable suppressContentEditableWarning className="text-[9px] font-black text-amber-700 bg-amber-50 h-fit px-1.5 py-0.5 rounded outline-none shrink-0">[{item.time}]</div>
+                                                         <div className="flex-1 min-w-0">
+                                                            <div contentEditable suppressContentEditableWarning className="text-[10px] font-black text-slate-800 leading-none mb-1 outline-none">[{item.name}]</div>
+                                                            <div contentEditable suppressContentEditableWarning className="text-[10px] text-slate-500 font-medium leading-normal outline-none">{item.event}</div>
+                                                         </div>
+                                                      </div>
+                                                   ))}
+                                                </div>
+                                             </div>
+                                          </div>
+                                       </div>
+                                    )}
+                                    
+                                    {slides[activeSlide]?.type === 'raw' && (
+                                       <div className="flex flex-col h-full">
+                                          <div className="flex items-center gap-3 mb-4">
+                                             <span className="h-px w-8 bg-slate-400" />
+                                             <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Raw Synthesis Data</span>
+                                          </div>
+                                          <h2 className="text-[32px] font-black text-slate-800 mb-8 tracking-tighter uppercase">{slides[activeSlide]?.title}</h2>
+                                          <div className="flex-1 bg-[#1a1c23] rounded-2xl p-6 overflow-hidden border border-slate-700 shadow-2xl relative">
+                                             <div className="absolute top-4 right-6 text-[9px] font-mono text-emerald-500/50 uppercase tracking-widest">JSON Output Mode</div>
+                                             <pre className="text-[12px] font-mono text-emerald-400/90 leading-tight h-full overflow-auto custom-scrollbar">
+                                                {JSON.stringify(slides[activeSlide]?.content, null, 2)}
+                                             </pre>
+                                          </div>
+                                       </div>
+                                    )}
+                                 </div>
+                              )}
+
+                              <div className="absolute bottom-10 left-[60px] right-[60px] flex justify-between items-center opacity-40 border-t border-slate-100 pt-8">
+                                 <span className="text-[11px] font-black text-slate-800 uppercase tracking-[0.3em] font-mono whitespace-nowrap">BERAU CORE INTELLIGENCE PIPELINE</span>
+                                 <span className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] font-mono whitespace-nowrap">MATRIX v4.8.2-SYNTH</span>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                )}
+            </div>
+
+            <div className="h-12 bg-white border-t border-slate-200 px-6 flex items-center justify-between shrink-0 z-40 shadow-[0_-4px_12px_rgba(0,0,0,0.03)]">
+                <div className="flex items-center gap-4">
+                   <div className="flex items-center gap-1">
+                      <Button 
+                         onClick={() => setActiveSlide(prev => Math.max(0, prev - 1))}
+                         variant="ghost" 
+                         size="sm" 
+                         className="h-8 w-8 p-0 text-slate-400 hover:text-slate-900 border"
+                      ><ChevronLeft className="h-4 w-4" /></Button>
+                      <div className="bg-slate-50 border px-3 h-8 flex items-center rounded-md">
+                        <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest leading-none">Slide {activeSlide + 1} of {slides.length || 1}</span>
+                      </div>
+                      <Button 
+                         onClick={() => setActiveSlide(prev => Math.min((slides.length || 1) - 1, prev + 1))}
+                         variant="ghost" 
+                         size="sm" 
+                         className="h-8 w-8 p-0 text-slate-400 hover:text-slate-900 border"
+                      ><ChevronRight className="h-4 w-4" /></Button>
+                   </div>
+                   <div className="w-px h-5 bg-slate-200 mx-1" />
+                   <div className="flex items-center gap-1 bg-slate-100/50 border border-slate-200 rounded-lg p-1">
+                      <Button onClick={() => setCanvasZoom(Math.max(20, canvasZoom - 10))} variant="ghost" className="h-7 w-7 p-0 text-slate-500 hover:bg-white"><ZoomOut className="h-3.5 w-3.5" /></Button>
+                      <Button onClick={fitToWorkspace} variant="ghost" className="h-7 px-2 text-[9px] font-black text-slate-600 bg-white border border-slate-200 shadow-sm rounded">AUTO FIT</Button>
+                      <div className="w-12 text-center font-bold text-[10px] text-slate-700 leading-none">{canvasZoom}%</div>
+                      <Button onClick={() => setCanvasZoom(Math.min(200, canvasZoom + 10))} variant="ghost" className="h-7 w-7 p-0 text-slate-500 hover:bg-white"><ZoomIn className="h-3.5 w-3.5" /></Button>
+                   </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                   <Button variant="ghost" className="h-8 w-8 p-0 text-slate-400 border hover:bg-slate-50">
+                      <Maximize2 className="h-4 w-4" />
+                   </Button>
+                   <div className="w-px h-6 bg-slate-200 mx-1" />
+                   <Button onClick={handleSaveArtifact} disabled={isSaving} className="h-9 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black uppercase tracking-widest px-6 rounded-lg shadow-sm">
+                      {isSaving ? "Syncing..." : "Sync to Case"}
+                   </Button>
+                </div>
+             </div>
+         </div>
+
+         {/* PANEL 3: RIGHT - DATA PROPERTIES (460px) - Aligned Proportion with Extraction Console */}
+         <div className="w-[460px] border-l border-slate-200 bg-white flex flex-col shrink-0 z-20 shadow-[-2px_0_10px_rgba(0,0,0,0.03)] overflow-hidden">
+             <div className="h-12 border-b border-slate-200 flex items-center justify-between px-5 bg-slate-50/50 shrink-0">
+                <div className="flex items-center gap-2">
+                   <Brain className="h-4 w-4 text-primary" />
+                   <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest">Synthesis Console</span>
+                </div>
+                <div className="flex items-center gap-2">
+                   <Button variant="ghost" size="sm" className="h-7 px-2 text-[9px] font-bold text-slate-400 hover:text-slate-900 border">
+                      <History className="h-3.5 w-3.5 mr-1" /> Log
+                   </Button>
+                   <Button variant="ghost" size="sm" className="h-7 px-2 text-[9px] font-bold text-primary hover:bg-primary/5 border border-primary/20">
+                      Rerun Node
+                   </Button>
+                </div>
+             </div>
+
+             <div className="flex-1 overflow-y-auto custom-scrollbar">
+                {selectedAgentId ? (
+                   <div className="p-6 space-y-8">
+                      {/* Node Context Block */}
+                      <div className="bg-slate-50 border rounded-xl p-5 space-y-4">
+                         <div className="flex items-center gap-2 border-b border-slate-200 pb-2 mb-2">
+                            <Settings className="h-3.5 w-3.5 text-slate-400" />
+                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Node Properties</span>
+                         </div>
+                         <div className="grid grid-cols-2 gap-6">
+                            <div className="flex flex-col">
+                               <span className="text-[9px] font-black text-slate-400 uppercase mb-1">State Relay</span>
+                               <div className="flex items-center gap-2">
+                                  <div className={`h-2 w-2 rounded-full ${selectedAgent?.status === 'running' ? 'bg-blue-500 animate-pulse' : 'bg-emerald-500'}`} />
+                                  <span className="text-[11px] font-black text-slate-800 uppercase tracking-tight">{selectedAgent?.status || "STANDBY"}</span>
+                               </div>
+                            </div>
+                            <div className="flex flex-col">
+                               <span className="text-[9px] font-black text-slate-400 uppercase mb-1">Last Run</span>
+                               <span className="text-[11px] font-black text-slate-800 uppercase tracking-tight">{selectedAgent?.lastRunTimestamp || "—"}</span>
+                            </div>
+                         </div>
+                      </div>
+
+                      {/* Artifact Directory */}
+                      <div className="space-y-4">
+                         <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
+                            <FileText className="h-3.5 w-3.5 text-slate-400" />
+                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Slide Artifacts</span>
+                         </div>
+                         <div className="grid grid-cols-2 gap-3">
+                            {(slides || []).map((s, i) => (
+                               <div 
+                                  key={s.id} 
+                                  onClick={() => setActiveSlide(i)}
+                                  className={`group p-4 rounded-xl border-2 transition-all cursor-pointer relative overflow-hidden ${activeSlide === i ? 'bg-white border-blue-500 shadow-md ring-1 ring-blue-500/10' : 'bg-white border-slate-100 hover:border-slate-200'}`}
+                               >
+                                  <div className="flex items-start justify-between mb-3">
+                                     <div className={`h-8 w-8 rounded-lg border flex items-center justify-center transition-colors ${activeSlide === i ? "bg-blue-600 text-white border-blue-600" : "bg-slate-50 text-slate-400"}`}>
+                                        <FileCode className="h-4 w-4" />
+                                     </div>
+                                     <span className="text-[8px] font-black text-slate-400 uppercase">Slide {i + 1}</span>
+                                  </div>
+                                  <h5 className={`text-[10px] font-black uppercase tracking-tight truncate ${activeSlide === i ? "text-slate-900" : "text-slate-700"}`}>{s.title}</h5>
+                                  {activeSlide === i && <div className="absolute top-0 right-0 w-1 h-full bg-blue-600" />}
+                               </div>
+                            ))}
+                         </div>
+                      </div>
+
+                      {/* Industrial Context / Citation */}
+                      <div className="bg-amber-50/30 border border-amber-100 rounded-xl p-5 space-y-3">
+                         <div className="flex items-center gap-2">
+                            <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
+                            <span className="text-[10px] font-bold text-amber-700 uppercase tracking-widest">Reasoning Gap detected</span>
+                         </div>
+                         <p className="text-[11px] font-bold text-amber-800 leading-relaxed opacity-80"> The Synthesis Matrix identified a high-confidence correlation between Manual Override and Bearing Temperature at Zone B-14. </p>
+                      </div>
+                   </div>
+                ) : (
+                   <div className="h-full flex flex-col items-center justify-center text-center p-12 opacity-30 filter grayscale">
+                      <div className="h-20 w-20 rounded-[2.5rem] bg-slate-100 border-4 border-white shadow-xl flex items-center justify-center mb-6">
+                         <Brain className="h-10 w-10 text-slate-300" />
+                      </div>
+                      <h4 className="text-sm font-black uppercase tracking-[0.2em] mb-2">Console Idle</h4>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">Select an intelligence node<br />to active the synthesis console</p>
+                   </div>
+                )}
+             </div>
+             
+             <div className="p-5 border-t border-slate-200 bg-white shrink-0 shadow-[0_-4px_12px_rgba(0,0,0,0.02)]">
+                <Button onClick={handleExport} disabled={isExporting} className="w-full h-11 bg-slate-900 hover:bg-slate-800 border-none text-white text-[11px] font-black uppercase tracking-[0.2em] rounded-xl shadow-lg transition-transform active:scale-[0.98]">
+                   {isExporting ? "Exporting Deck..." : "Publish Presentation"}
+                </Button>
+             </div>
+          </div>
     </div>
   );
 }
@@ -2609,7 +3021,9 @@ function AuditTrailTab() {
 
 export default function CaseWorkspacePage() {
   const { caseId } = useParams();
-  const [activeTab, setActiveTab] = useState("Evidence");
+  const [activeTab, setActiveTab] = useState("Evidence Review");
+  const [files, setFiles] = useState(evidenceFiles);
+  const [batches, setBatches] = useState(evidenceBatches);
 
   return (
     <AppLayout>
@@ -2687,8 +3101,7 @@ export default function CaseWorkspacePage() {
         {/* Tab Content Rendering */}
         <div className="flex-1 overflow-hidden relative">
           {activeTab === "Overview" && <OverviewTab />}
-          {activeTab === "Evidence" && <EvidenceTab />}
-          {activeTab === "Extraction Review" && <ExtractionTab />}
+          {activeTab === "Evidence Review" && <ExtractionTab files={files} setFiles={setFiles} />}
           {activeTab === "Analysis" && <AnalysisTab />}
           {activeTab === "Reports" && <ReportsTab />}
           {activeTab === "Review" && <ReviewTab />}
