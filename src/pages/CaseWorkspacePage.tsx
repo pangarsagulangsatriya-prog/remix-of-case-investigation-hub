@@ -58,7 +58,9 @@ import {
   Trash2,
   Box,
   Cpu,
-  Loader2
+  Loader2,
+  Database,
+  Ruler
 } from "lucide-react";
 
 interface AgentState {
@@ -1430,37 +1432,82 @@ function AdaptiveSourcePreview({ file }: { file: any }) {
   if (!file) return <div className="p-20 text-center text-slate-400 font-bold uppercase tracking-[0.2em] opacity-50">Select evidence for preview</div>;
   if (file.type === "Document") {
     return (
-      <div className="w-full max-w-4xl min-h-[800px] bg-white border border-slate-200 rounded-lg shadow-xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-500">
-         <div className="h-10 bg-slate-50 border-b flex items-center justify-between px-4">
-            <span className="text-[10px] font-bold text-slate-500">Page 1 of 4</span>
-            <div className="flex items-center gap-2">
-               <Button variant="ghost" size="sm" className="h-7 w-7 p-0"><ChevronLeft className="h-4 w-4" /></Button>
-               <Button variant="ghost" size="sm" className="h-7 w-7 p-0"><ChevronRight className="h-4 w-4" /></Button>
-            </div>
-         </div>
-         <div className="flex-1 p-12 space-y-6 relative overflow-hidden">
-            <div className="absolute top-48 left-0 right-0 h-8 bg-amber-100/30 border-y border-amber-200/50 mix-blend-multiply" />
-            <div className="absolute top-[320px] left-0 right-0 h-6 bg-primary/10 border-y border-primary/20 mix-blend-multiply" />
-            <h1 className="text-2xl font-bold text-slate-900 border-none p-0">HSE Incident Report - Initial Findings</h1>
-            <div className="h-px bg-slate-100 w-full" />
-            <div className="space-y-4">
-               {[1, 2, 3, 4, 5, 2, 4, 3, 1, 5, 4, 2].map((w, i) => (
-                  <div key={i} className="flex gap-2">
-                     <div className="h-3 bg-slate-100 rounded transition-all group-hover:bg-slate-200" style={{ width: `${w * 10 + 20}%` }} />
-                     <div className="h-3 bg-slate-50 rounded" style={{ width: `${(10 - w) * 5 + 10}%` }} />
-                  </div>
-               ))}
-               <p className="text-sm text-slate-800 leading-relaxed font-medium bg-amber-50 p-2 rounded border border-amber-100 shadow-sm relative z-10">
-                 "The conveyor belt tore at section 14 at approximately 14:35, causing material spillage across the walkway which blocked emergency access."
-               </p>
-               {[4, 2, 5, 3, 4, 1, 2].map((w, i) => (
-                  <div key={i+20} className="flex gap-2">
-                     <div className="h-3 bg-slate-100 rounded" style={{ width: `${w * 12}%` }} />
-                     <div className="h-3 bg-slate-50 rounded" style={{ width: `${(6 - w) * 8}%` }} />
-                  </div>
-               ))}
-            </div>
-         </div>
+      <div className="flex flex-col gap-6 w-full max-w-4xl pb-20">
+        {/* A. Document Preview Area */}
+        <div className="bg-white border border-slate-200 rounded-lg shadow-xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-500">
+           <div className="h-10 bg-slate-50 border-b flex items-center justify-between px-4">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Digital Evidence / PDF Source</span>
+              <div className="flex items-center gap-4">
+                <span className="text-[10px] font-bold text-slate-400">Page 1 of 4</span>
+                <div className="flex items-center gap-1">
+                   <Button variant="ghost" size="sm" className="h-7 w-7 p-0 hover:bg-slate-200"><ChevronLeft className="h-4 w-4" /></Button>
+                   <Button variant="ghost" size="sm" className="h-7 w-7 p-0 hover:bg-slate-200"><ChevronRight className="h-4 w-4" /></Button>
+                </div>
+              </div>
+           </div>
+           <div className="flex-1 p-12 min-h-[600px] space-y-6 relative overflow-hidden bg-white">
+              <div className="absolute top-48 left-0 right-0 h-8 bg-amber-100/30 border-y border-amber-200/50 mix-blend-multiply" />
+              <div className="absolute top-[320px] left-0 right-0 h-6 bg-primary/10 border-y border-primary/20 mix-blend-multiply" />
+              <h1 className="text-2xl font-bold text-slate-900 border-none p-0">HSE Incident Report - Initial Findings</h1>
+              <div className="h-px bg-slate-100 w-full" />
+              <div className="space-y-4">
+                 {[1, 2, 3, 4, 5, 2, 4, 3, 1, 5, 4, 2].map((w, i) => (
+                    <div key={i} className="flex gap-2">
+                       <div className="h-3 bg-slate-100 rounded" style={{ width: `${w * 10 + 20}%` }} />
+                       <div className="h-3 bg-slate-50 rounded" style={{ width: `${(10 - w) * 5 + 10}%` }} />
+                    </div>
+                 ))}
+                 <p className="text-sm text-slate-800 leading-relaxed font-medium bg-amber-50 p-3 rounded border border-amber-100 shadow-sm relative z-10 transition-colors hover:bg-amber-100/50">
+                   "The conveyor belt tore at section 14 at approximately 14:35, causing material spillage across the walkway which blocked emergency access."
+                 </p>
+                 {[4, 2, 5, 3, 4, 1, 2].map((w, i) => (
+                    <div key={i+20} className="flex gap-2">
+                       <div className="h-3 bg-slate-100 rounded" style={{ width: `${w * 12}%` }} />
+                       <div className="h-3 bg-slate-50 rounded" style={{ width: `${(6 - w) * 8}%` }} />
+                    </div>
+                 ))}
+              </div>
+           </div>
+        </div>
+
+        {/* B. Facts Section — Cross-page Thematic Intelligence */}
+        <div className="space-y-4">
+           <div className="flex items-center justify-between border-b pb-2 px-1">
+              <div className="flex items-center gap-2">
+                 <FileSearch className="h-4 w-4 text-primary" />
+                 <h2 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.2em]">Thematic Investigation Facts</h2>
+              </div>
+              <div className="flex items-center gap-2">
+                 <span className="text-[10px] font-bold text-slate-400">Showing 8 findings across 4 pages</span>
+              </div>
+           </div>
+
+           <div className="grid gap-3">
+              {[
+                { title: "Incident Timeline", type: "Timeline Event", conf: "High", page: "Page 1, Para 2", detail: "Conveyor belt segment 14 identified as initial failure point at 14:35 during standard operation." },
+                { title: "Equipment Specification", type: "Asset Detail", conf: "High", page: "Page 2, Table 1.1", detail: "Belt model 'Titan-X 4000' installed Jan 2024. Last maintenance recorded 14 days prior to failure." },
+                { title: "Observed Hazard", type: "Safety Deviation", conf: "Medium", page: "Page 1, Para 4", detail: "Material spillage blocked critical walkway, impeding emergency response path for approximately 12 minutes." },
+                { title: "Witness Statement", type: "Actor Statement", conf: "High", page: "Page 3, Section A", detail: "Shift supervisor reported unusual vibration patterns 5 minutes before the structural tear happened." },
+                { title: "Environmental Context", type: "Climate Detail", conf: "Med", page: "Page 4, Footer", detail: "Ambient temperature recorded at 38°C with 85% humidity at time of incident." },
+              ].map((fact, i) => (
+                 <div key={i} className="bg-white border rounded-xl p-4 shadow-sm hover:border-primary/40 transition-all group relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-1 h-full bg-slate-100 group-hover:bg-primary/50 transition-all" />
+                    <div className="flex items-start justify-between mb-2">
+                       <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-black text-slate-900 uppercase tracking-tight">{fact.title}</span>
+                          <span className="px-1.5 py-0.5 bg-slate-100 border text-[8px] font-bold text-slate-500 rounded-full uppercase tracking-widest">{fact.type}</span>
+                       </div>
+                       <ConfidenceChip level={fact.conf.toLowerCase() as any} />
+                    </div>
+                    <p className="text-[12px] font-medium text-slate-700 leading-relaxed mb-3 pr-4">{fact.detail}</p>
+                    <div className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase tracking-[0.1em] border-t pt-3 border-slate-50">
+                       <Navigation className="h-2.5 w-2.5 text-primary" />
+                       Source: {fact.page}
+                    </div>
+                 </div>
+              ))}
+           </div>
+        </div>
       </div>
     );
   }
@@ -1878,29 +1925,79 @@ function AdaptiveExtractionOutput({ file }: { file: any }) {
   );
 
   const ExtractionSection = ({ title, icon: Icon, children }: { title: string, icon: any, children: React.ReactNode }) => (
-    <div className="space-y-3 mb-8 last:mb-0">
-      <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
-        <Icon className="h-3.5 w-3.5 text-slate-400" />
-        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">{title}</span>
-      </div>
-      <div>{children}</div>
+    <div className="mb-6 last:mb-0">
+       <div className="flex items-center gap-2 mb-3 px-1 text-slate-800">
+          <Icon className="h-3.5 w-3.5 opacity-60" />
+          <h3 className="text-[10px] font-black uppercase tracking-widest">{title}</h3>
+       </div>
+       <div className="space-y-3">
+          {children}
+       </div>
     </div>
   );
 
   if (file.type === "Document") {
     return (
-      <div className="space-y-2 pb-20">
-         <ExtractionSection title="Facts & Measurements" icon={FileText}>
-            <ExtractionItem fact="Conveyor belt tear identified at section 14" type="Critical Event" source="Page 1, Para 2" conf="High" />
-            <ExtractionItem fact="Tear length measured at 920mm (90% width)" type="Measurement" source="Page 2, Table 1" conf="High" />
-         </ExtractionSection>
-         <ExtractionSection title="Timeline & Sequence" icon={Clock}>
-            <ExtractionItem fact="14:15: First report of unusual vibration" type="Timestamp" source="Witness A Statement" conf="High" />
-            <ExtractionItem fact="14:47: Final e-stop activation detected" type="Timestamp" source="SCADA System Log" conf="Medium" />
-         </ExtractionSection>
-         <ExtractionSection title="Potential Risk Factors" icon={AlertTriangle}>
-            <ExtractionItem fact="Likely mechanical failure of bearing section" type="Root Cause" source="Maintenance Sys" conf="Medium" />
-         </ExtractionSection>
+      <div className="p-6 pb-20 space-y-8 animate-in fade-in duration-500">
+        {/* A. Document Summary */}
+        <div className="space-y-3 bg-slate-50/50 p-4 rounded-xl border border-slate-100 shadow-inner">
+           <div className="flex items-center gap-2 mb-0.5">
+              <FileText className="h-3.5 w-3.5 text-primary" />
+              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Executive Summary</span>
+           </div>
+           <p className="text-xs font-bold text-slate-700 leading-relaxed italic">
+             Initial HSE report documenting structural failure of Conveyor Belt 14 in Zone B. 
+             Findings suggest mechanical bearing fatigue compounded by thermal stress, leading to a 920mm tear. 
+             Critical spillage blocked safety walkway, requiring emergency secondary containment protocols.
+           </p>
+        </div>
+
+        {/* B. Entities & Parameters Grid */}
+        <div className="space-y-4">
+           <div className="flex items-center gap-2 mb-3">
+              <Database className="h-3.5 w-3.5 text-primary" />
+              <span className="text-[10px] font-black text-slate-800 uppercase tracking-widest">Entities & Parameters</span>
+           </div>
+           <div className="grid grid-cols-2 gap-px bg-slate-100 border border-slate-100 rounded-lg overflow-hidden shadow-sm">
+              {[
+                { label: "Incident Type", value: "Mechanical Failure" },
+                { label: "Date / Time", value: "2026-04-02 / 14:35" },
+                { label: "Location", value: "Pit Delta / Zone B" },
+                { label: "Department", value: "Operations & HSE" },
+                { label: "Material", value: "Iron Ore Grade A" },
+                { label: "Severity", value: "High", badge: "bg-rose-100 text-rose-700" },
+                { label: "Critical Assets", value: "Conveyor 14, Roller 02" },
+                { label: "Policy Ref", value: "SAF-M-009 Rev.4" },
+              ].map((item, i) => (
+                 <div key={i} className="bg-white p-3 flex flex-col gap-1 transition-colors hover:bg-slate-50/50">
+                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">{item.label}</span>
+                    <span className={`text-[10px] font-black ${item.badge ? item.badge + " px-1.5 py-0.5 rounded-sm w-fit" : "text-slate-800"}`}>
+                       {item.value}
+                    </span>
+                 </div>
+              ))}
+           </div>
+        </div>
+
+        {/* C. Thematic Sections */}
+        <ExtractionSection title="Timeline & Sequence" icon={Clock}>
+           <ExtractionItem fact="14:15 - Unusual vibration reported by SCADA" type="Telemetry" source="Page 1, Para 2" conf="High" />
+           <ExtractionItem fact="14:35 - Belt tear occurs, E-stop triggered" type="Critical Event" source="Page 1, Para 3" conf="High" />
+        </ExtractionSection>
+
+        <ExtractionSection title="Measurements & Specs" icon={Ruler}>
+           <ExtractionItem fact="Tear length: 920mm (90% width)" type="Damage Metric" source="Page 2, Table 1" conf="High" />
+           <ExtractionItem fact="Operating tension: 450kN at failure" type="Asset State" source="Page 2, Table 2" conf="Medium" />
+        </ExtractionSection>
+
+        <ExtractionSection title="Risk & Safety Signals" icon={AlertTriangle}>
+           <ExtractionItem fact="Secondary spill risk: Uncontained spillage" type="Hazmat Risk" source="Page 3, Section 4" conf="Medium" />
+           <ExtractionItem fact="Locked egress: Walkway B blocked" type="Safety Violation" source="Page 1, Para 4" conf="High" />
+        </ExtractionSection>
+
+        <ExtractionSection title="Actor Statements" icon={Users}>
+           <ExtractionItem fact="Supervisor observed roller misalignment" type="Eye Witness" source="Page 3, Statement 1" conf="High" />
+        </ExtractionSection>
       </div>
     );
   }
