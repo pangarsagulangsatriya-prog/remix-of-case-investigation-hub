@@ -60,7 +60,8 @@ import {
   Cpu,
   Loader2,
   Database,
-  Ruler
+  Ruler,
+  MessageCircle
 } from "lucide-react";
 
 interface AgentState {
@@ -243,166 +244,168 @@ const analysisAgents = [
   { name: "Actor Intelligence", icon: DocIcon, purpose: "Analyzing worker profiles, training history and fatigue levels.", inputReady: true, lastRun: "4h ago", lastStatus: "draft" },
 ];
 
-const extractionData = {
-  "image_properties": {
-    "scale": "normal",
-    "source": "CCTV fixed",
-    "lighting": "Daylight",
-    "image_quality": "Clear"
+const imageExtractionData = {
+  "evidence_meta": {
+    "file_name": "conveyor_roller_failure_macro.jpg",
+    "source_type": "image",
+    "capture_time": "2026-04-02 14:45",
+    "source_device": "Field-Cam-A1",
+    "location_hint": "Conveyor Zone B, Section 14",
+    "visibility_quality": "High",
+    "image_quality": "High (Macro Focus)",
+    "lighting": "Artificial / Ambient Mixed",
+    "weather_condition": "N/A (Indoor/Sheltered)"
   },
-  "composition": {
-    "activities": [
-      "Tumpahan sampah dan material konstruksi di area tanah"
+  "scene_context": {
+    "area_type": "Industrial Conveyor Gallery",
+    "work_zone": "Section 14 Drive End",
+    "operation_type": "Post-Incident Inspection",
+    "summary_scene": "Close-up of a ruptured conveyor belt and misaligned roller assembly.",
+    "scene_condition": "Compromised (Structural failure visible)",
+    "environmental_context": "Restricted access area, high dust accumulation observed."
+  },
+  "people": {
+    "person_count": 1,
+    "detected_people": [
+      {
+        "person_ref": "P1",
+        "role_guess": "Operator / Inspector",
+        "position_in_scene": "Bottom Left Foreground",
+        "activity": "Standing, pointing towards mechanical failure",
+        "direction_of_attention": "Towards Roller Assembly #02",
+        "interaction_target": "Belt Tear",
+        "confidence": "High"
+      }
     ],
-    "relationships": [
-      "Tumpukan sampah berada di samping jalan tanah and dekat bangunan workshop",
-      "Kerucut lalu lintas tergeletak di dekat tumpukan sampah",
-      "Pagar kayu and papan kayu berserakan di atas tumpukan"
+    "ppe_equipment": [
+      { "person_ref": "P1", "item": "High-Vis Vest", "detected": true, "properly_worn": true, "description": "Standard safety orange, reflective strips visible", "confidence": "High" },
+      { "person_ref": "P1", "item": "Hard Hat", "detected": true, "properly_worn": true, "description": "White site-manager style", "confidence": "High" },
+      { "person_ref": "P1", "item": "Safety Gloves", "detected": false, "properly_worn": false, "description": "Hands partially occluded during pointing", "confidence": "Low" }
     ],
-    "area_condition": "Area tanah berdebu dengan tumpahan sampah and material konstruksi, tidak rapi, and tidak terkendali.",
-    "central_object": {
-      "name": "Tumpukan sampah dan material konstruksi",
-      "shape": "Tidak beraturan",
-      "material": "Karet, kayu, plastik, logam, and tanah",
-      "estimated_size": "Sedang (sekitar 2-3 meter lebar)"
-    },
-    "surrounding_objects": [
-      "Bangunan workshop dengan dinding seng biru",
-      "Jalan tanah berdebu",
-      "Pohon and vegetasi di latar belakang",
-      "Bendera Indonesia di tiang",
-      "Kerucut lalu lintas oranye",
-      "Pagar kayu and papan kayu",
-      "Tanda peringatan kuning-hitam"
-    ]
+    "ppe_compliance_flags": ["Fully Compliant (Visible)"],
+    "unsafe_behavior_flags": ["Proximity to unshielded nip point (Inferred potential)"]
   },
-  "people_ppe": {
-    "activities": [],
-    "person_count": 0,
-    "ppe_equipment": {
-      "gloves": { "color": "Tidak terlihat", "detected": false, "description": "Tidak terlihat", "properly_worn": false },
-      "earplugs": { "color": "Tidak terlihat", "detected": false, "description": "Tidak terlihat", "properly_worn": false },
-      "safety_boots": { "color": "Tidak terlihat", "detected": false, "description": "Tidak terlihat", "properly_worn": false },
-      "safety_glass": { "color": "Tidak terlihat", "detected": false, "description": "Tidak terlihat", "properly_worn": false },
-      "safety_helmet": { "color": "Tidak terlihat", "detected": false, "description": "Tidak terlihat", "properly_worn": false },
-      "safety_harness": { "color": "Tidak terlihat", "detected": false, "description": "Tidak terlihat", "properly_worn": false },
-      "reflective_vest": { "color": "Tidak terlihat", "detected": false, "description": "Tidak terlihat", "properly_worn": false },
-      "respiratory_mask": { "color": "Tidak terlihat", "detected": false, "description": "Tidak terlihat", "properly_worn": false }
-    },
-    "hazard_potential": [],
-    "people_relationships": []
+  "equipment_assets": {
+    "detected_assets": [
+      {
+        "asset_ref": "A1",
+        "asset_type": "Conveyor Belt",
+        "unit_id_visible": "Unknown",
+        "category": "Drive Component",
+        "state": "Stationary / Failed",
+        "orientation": "Horizontal (Longitudinal)",
+        "operating_or_stationary": "Stationary (Locked Out)",
+        "visible_damage": "Longitudinal tear, approx 900mm length",
+        "anomaly_clue": "Exposure of internal steel cables",
+        "confidence": "Extreme"
+      },
+      {
+        "asset_ref": "A2",
+        "asset_type": "Roller System",
+        "unit_id_visible": "#022",
+        "category": "Support Component",
+        "state": "Misaligned",
+        "orientation": "Skewed 15 degrees from axis",
+        "operating_or_stationary": "Stationary",
+        "visible_damage": "Support bracket detachment",
+        "anomaly_clue": "Metal-on-metal friction scarring",
+        "confidence": "High"
+      }
+    ],
+    "equipment_condition_signals": ["Severe mechanical fatigue", "Bearing seizure suspected"],
+    "asset_relationships": ["Belt A1 is resting directly on seized roller A2."]
   },
-  "vehicles": [],
-  "traffic_control": [],
-  "access_infra": [],
+  "position_measurements": {
+    "relative_positions": ["Tear is centered over roller 02"],
+    "distance_estimates": ["Operator is approx 1.5m from primary failure"],
+    "clearance_estimates": ["Belt-to-chute clearance reduced by 40mm"],
+    "left_right_front_back_relations": ["Roller 01 (Left) appears nominal", "Roller 02 (Center) failed"],
+    "boundary_barrier_signals": ["Yellow hazard tape visible in far background"],
+    "lane_path_access_obstruction": ["Material spillage blocking 30% of standard walkway"]
+  },
   "environment": {
-    "size": "Luas area terbuka dengan tumpahan sampah di tengah",
-    "type": "Area konstruksi atau workshop luar ruangan",
-    "condition": "Tidak terawat, kotor, and berpotensi menimbulkan bahaya lingkungan serta keselamatan.",
-    "composition": "Lingkungan luar ruangan dengan tanah berdebu, vegetasi alami di latar belakang, and struktur bangunan workshop di sisi kanan."
+    "terrain_condition": "Concrete (Dusty)",
+    "housekeeping_condition": "Poor (Build-up of fine ore present)",
+    "visibility_condition": "Clear (Local focus)",
+    "dust_smoke_spillage": ["Significant iron ore spillage under belt", "Duct particles on surface"],
+    "traffic_control_present": ["None visible"],
+    "signage_present": ["Small warning label on motor frame (Legibility: Low)"],
+    "barrier_guarding_present": ["Section 14 perimeter mesh partially removed"]
   },
-  "initial_interpretation": {
-    "brief_summary": "Tumpahan sampah and material konstruksi yang tidak dikelola dengan baik di area workshop, menunjukkan ketidaksesuaian dalam pengelolaan sampah and potensi bahaya lingkungan.",
-    "main_hazard_potentials": [
-      "Bahaya lingkungan akibat penumpahan sampah",
-      "Bahaya keselamatan karena material berserakan and kerucut lalu lintas tergeletak",
-      "Potensi kebakaran atau pencemaran tanah"
-    ],
-    "estimated_risk_category": "medium",
-    "supporting_hazard_factors": [
-      "Tidak ada penandaan atau penghalang yang memadai",
-      "Material tidak disimpan atau dikelola sesuai prosedur",
-      "Area tidak bersih and tidak terawat"
-    ]
+  "incident_hazards": {
+    "critical_hazards": ["Unshielded Nip Point", "Structural Instability", "Tripping Hazard (Spillage)"],
+    "hazard_potentials": ["Potential for further belt propagation", "Dust inhalation risk"],
+    "anomaly_signals": ["Roller misalignment (Skewed state)"],
+    "immediate_risk_level": "High (Zone restricted)",
+    "supporting_visual_factors": ["Visible metal shavings on floor indicate friction"]
+  },
+  "extracted_facts": [
+    { "fact_id": "F1", "fact_type": "Damage State", "fact_text": "Belt shows full-depth longitudinal rupture.", "observed_or_inferred": "Observed", "source_region": "ROI_01", "confidence": "High" },
+    { "fact_id": "F2", "fact_type": "Equipment State", "fact_text": "Roller #022 is skewed 15 degrees relative to frame.", "observed_or_inferred": "Observed", "source_region": "ROI_02", "confidence": "High" },
+    { "fact_id": "F3", "fact_type": "Causal Clue", "fact_text": "Friction heat may have softened belt rubber before tear.", "observed_or_inferred": "Inferred", "source_region": "ROI_01_HeatMark", "confidence": "Medium" }
+  ],
+  "peepo_seeds": {
+    "people": ["Training on nip-point proximity might be required"],
+    "environment": ["Dust housekeeping identified as recurring issue"],
+    "equipment": ["Titan-X rollers showing consistent bracket fatigue"],
+    "procedures": ["Audit lockout-tagout timeline vs discovery"],
+    "organisation": ["Maintenance resource allocation for Section 14"]
+  },
+  "ipls_seeds": [
+    { "layer_candidate": "Engineering Controls", "control_area_candidate": "Automatic Guarding", "deviation_text": "Mesh guard was removed for inspection but not replaced before scene capture.", "evidence_basis": "Exposed drive gear in ROI_04", "confidence": "High" }
+  ],
+  "review_meta": {
+    "unknowns": ["Serial number of failed belt not visible"],
+    "needs_human_review": ["Verification of metal shaving composition (Mechanical vs Structural)"],
+    "confidence": "High Overall"
   }
 };
 
 const audioExtractionData = {
-  "recording_properties": {
-    "file_name": "witness_statement_operator_A.mp3",
-    "duration": "08:42",
-    "audio_quality": "High",
-    "recording_type": "Interview / Field Recording",
-    "source": "B1-Operator-Radio",
-    "language": "Indonesian / English (Mixed)",
-    "channel_type": "Mono",
-    "noise_level": "Moderate (Background Industrial Noise)",
-    "clarity": "Good",
+  "recording_meta": {
+    "file_name": "witness_statement_operator_section14.mp3",
+    "source_type": "audio",
+    "duration": "08:45",
+    "language": "Indonesian / English Mixed",
+    "channel_type": "Radio Transcription",
+    "recording_type": "In-cab Recording",
+    "audio_quality": "High-Fidelity",
+    "noise_level": "High (Engine Noise present)",
     "overlap_level": "Low"
   },
-  "participants": {
-    "speaker_count": 2,
-    "speakers": [
-      {
-        "speaker_id": "SPK_01",
-        "display_name": "Ahnad (Operator)",
-        "probable_role": "Primary Operator",
-        "role_confidence": "High",
-        "total_speaking_time": "05:12",
-        "tone_summary": "Distressed, Urgent",
-        "pace": "Rapid",
-        "stress_level": "High",
-        "confidence_level": "High"
-      },
-      {
-        "speaker_id": "SPK_02",
-        "display_name": "Supervisor B",
-        "probable_role": "Safety Lead",
-        "role_confidence": "High",
-        "total_speaking_time": "03:30",
-        "tone_summary": "Calm, Directive",
-        "pace": "Measured",
-        "stress_level": "Low",
-        "confidence_level": "Very High"
-      }
-    ]
+  "full_diarization": [
+    { "segment_id": "S1", "start_time": "00:00", "end_time": "00:05", "speaker_id": "SPK_01", "speaker_label": "Operator A", "text": "Base, ini Section 14. Ada getaran tidak biasa di Belt 14.", "confidence": "High", "inaudible_flag": false },
+    { "segment_id": "S2", "start_time": "00:06", "end_time": "00:10", "speaker_id": "SPK_02", "speaker_label": "Control Room", "text": "Section 14, copy. Monitor dulu. Kita lagi handle alarm di Zone C.", "confidence": "High", "inaudible_flag": false },
+    { "segment_id": "S3", "start_time": "00:15", "end_time": "00:22", "speaker_id": "SPK_01", "speaker_label": "Operator A", "text": "Tapi ini bunyinya makin keras. Kayak ada logam kegesek. Saya cek visual ya?", "confidence": "Medium", "inaudible_flag": false },
+    { "segment_id": "S4", "start_time": "00:45", "end_time": "00:50", "speaker_id": "SPK_01", "speaker_label": "Operator A", "text": "[Panic] Woi! Belt-nya robek! E-stop! E-stop sekarang!", "confidence": "High", "inaudible_flag": false }
+  ],
+  "speaker_profiles": [
+    { "speaker_id": "SPK_01", "probable_role": "Conveyor Operator", "speaking_time": "05:12", "speaking_style": "Urgent, Informal", "stress_level": "High (Post-failure)", "assertiveness": "High", "hesitation": "Low", "escalation_role": "Reporter", "confidence": "High" },
+    { "speaker_id": "SPK_02", "probable_role": "Dispatcher", "speaking_time": "03:33", "speaking_style": "Calm, Procedural", "stress_level": "Low", "assertiveness": "Medium", "hesitation": "Medium", "escalation_role": "Supervisor", "confidence": "High" }
+  ],
+  "communication_events": [
+    { "timestamp": "00:00", "event_type": "Initial Warning", "actor": "Operator A", "target_actor": "Control Room", "content_summary": "Reported unusual vibration in Section 14", "urgency": "Medium", "response_status": "Acknowledged (Delayed Action)", "confidence": "High" },
+    { "timestamp": "00:45", "event_type": "Emergency Escalation", "actor": "Operator A", "target_actor": "Control Room", "content_summary": "Emergency-stop requested due to belt tear", "urgency": "Critical", "response_status": "Immediate Action taken", "confidence": "High" }
+  ],
+  "human_performance_signals": {
+    "communication_positive_or_not": ["Operator A used clear identification", "Control Room used negative acknowledgment (Delayed action)"],
+    "missed_confirmation": ["None explicitly detected"],
+    "delayed_reporting": ["Potential 5-minute gap between initial sound and second report"],
+    "supervision_signal": ["Dispatcher attempted to prioritize Zone C over Section 14 warning"],
+    "stress_or_confusion": ["Operator A shows significant vocal stress at 00:45"],
+    "speak_up_signal": ["Operator A correctly escalated despite dispatcher's hesitation"],
+    "coordination_gap_signal": ["Information silos between Zone C and Zone B alarms"]
   },
-  "diarization_overview": {
-    "total_segments": 14,
-    "overlap_count": 2,
-    "interruptions_count": 1,
-    "silent_gap_count": 3
+  "peepo_seeds": {
+    "people": ["Dispatch training on alarm prioritization needed"],
+    "environment": ["High engine noise may have delayed early sound detection"],
+    "equipment": ["Belt 14 vibration reported before catastrophic failure"],
+    "procedures": ["Review E-stop response timeline vs radio escalation"],
+    "organisation": ["Control room workload during multi-zone alarms"]
   },
-  "key_statements": [
-    {
-      "type": "claim",
-      "severity": "high",
-      "speaker_id": "SPK_01",
-      "timestamp": "01:22",
-      "statement": "I noticed the vibration around 14:15. It didn't sound right so I called Supervisor B.",
-      "evidence_note": "Confirms awareness before total failure."
-    },
-    {
-      "type": "verification",
-      "severity": "medium",
-      "speaker_id": "SPK_02",
-      "timestamp": "03:45",
-      "statement": "Understood. We are checking maintenance logs for roller #14 immediately.",
-      "evidence_note": "Acknowledge of specific equipment issues."
-    }
-  ],
-  "timeline_events": [
-    { "timestamp": "01:22", "speaker_id": "SPK_01", "event_title": "Detection", "event_detail": "Unusual vibration detected by operator.", "importance": "critical" },
-    { "timestamp": "01:45", "speaker_id": "SPK_01", "event_title": "Reporting", "event_detail": "First contact with site supervisor.", "importance": "high" },
-    { "timestamp": "03:45", "speaker_id": "SPK_02", "event_title": "Response Init", "event_detail": "Supervisor initiates maintenance log check.", "importance": "medium" }
-  ],
-  "risk_safety_signals": [
-    { "signal_type": "Procedure Deviation", "severity": "medium", "timestamp": "04:12", "speaker_id": "SPK_01", "description": "Operator continued to observe the belt from within 5m, ignoring standard standoff protocol." },
-    { "signal_type": "Equipment Issue", "severity": "high", "timestamp": "01:22", "speaker_id": "SPK_01", "description": "Audible high-pitched screeching reported but machine not immediately stopped." }
-  ],
-  "contradictions_unclear_points": [
-    { "type": "Timeline Mismatch", "timestamp": "05:20", "description": "Operator claims alarm sounded at 14:30, but SCADA logs show 14:35.", "confidence": "high" }
-  ],
-  "summary": {
-    "brief_summary": "A 8-minute recording of the initial emergency response call during the belt failure.",
-    "main_findings": [
-      "Operator reported vibration 20 minutes before failure.",
-      "Initial response was focused on documentation rather than immediate shutdown.",
-      "Clear audible background noise confirms machinery state."
-    ],
-    "potential_risk_implication": ["Delay in emergency shutdown procedures."],
-    "recommended_human_review_focus": ["Review cross-check between Operator A and SCADA logs regarding the alarm time."]
-  }
+  "ipls_seeds": [
+    { "layer_candidate": "Administrative Controls", "control_area_candidate": "Radio Discipline", "deviation_text": "Dispatcher discouraged immediate inspection due to distractions in Zone C.", "evidence_quote": "'Monitor dulu. Kita lagi handle alarm di Zone C.'", "confidence": "High" }
+  ]
 };
 
 const audioDiarizationData = [
@@ -673,9 +676,19 @@ function ImageViewer({ file }: { file: any }) {
       <div className="absolute inset-0 pointer-events-none opacity-20" style={{ backgroundImage: 'radial-gradient(circle, #ffffff 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
     </div>
   );
-}function AIAnalysisPanel({ file }: { file: any }) {
+}
+
+function AIAnalysisPanel({ file }: { file: any }) {
   const [viewMode, setViewMode] = useState<"Structured" | "JSON">("Structured");
-  const [expandedSections, setExpandedSections] = useState<string[]>(["Image Properties", "Initial Interpretation"]);
+  const [expandedSections, setExpandedSections] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (file?.type === "Audio") {
+      setExpandedSections(["Audio Meta", "Intelligence Seeds"]);
+    } else {
+      setExpandedSections(["Image Properties", "Initial Interpretation"]);
+    }
+  }, [file?.id, file?.type]);
 
   const toggleSection = (section: string) => {
     setExpandedSections(prev => 
@@ -683,15 +696,17 @@ function ImageViewer({ file }: { file: any }) {
     );
   };
 
-  const categories = [
-    { name: "Image Properties", id: "image_properties", icon: ImageIcon, data: extractionData.image_properties },
-    { name: "Composition & Objects", id: "composition", icon: LayoutGrid, data: extractionData.composition },
-    { name: "People & PPE", id: "people_ppe", icon: Users, data: extractionData.people_ppe },
-    { name: "Vehicles", id: "vehicles", icon: Truck, data: extractionData.vehicles },
-    { name: "Traffic Control", id: "traffic_control", icon: Navigation, data: extractionData.traffic_control },
-    { name: "Access & Infra", id: "access_infra", icon: Box, data: extractionData.access_infra },
-    { name: "Environment", id: "environment", icon: Wind, data: extractionData.environment },
-    { name: "Initial Interpretation", id: "initial_interpretation", icon: Brain, data: extractionData.initial_interpretation },
+  const categories = file.type === "Audio" ? [
+    { name: "Audio Meta", id: "audio_meta", icon: History, data: audioExtractionData.recording_meta },
+    { name: "Diarization & Transcript", id: "audio_diarization", icon: MessageSquare, data: audioExtractionData.full_diarization },
+    { name: "Speaker Profiles", id: "audio_speakers", icon: Users, data: audioExtractionData.speaker_profiles },
+    { name: "Intelligence Seeds", id: "audio_intelligence", icon: Brain, data: audioExtractionData },
+  ] : [
+    { name: "Image Properties", id: "image_properties", icon: ImageIcon, data: imageExtractionData.evidence_meta },
+    { name: "Composition & Objects", id: "composition", icon: LayoutGrid, data: imageExtractionData.scene_context },
+    { name: "People & PPE", id: "people_ppe", icon: Users, data: imageExtractionData.people },
+    { name: "Environment", id: "environment", icon: Wind, data: imageExtractionData.environment },
+    { name: "Initial Interpretation", id: "initial_interpretation", icon: Brain, data: imageExtractionData },
   ];
 
   const DataField = ({ label, value, fullWidth = false }: { label: string, value: any, fullWidth?: boolean }) => (
@@ -701,70 +716,99 @@ function ImageViewer({ file }: { file: any }) {
     </div>
   );
 
-  const PPETag = ({ name, data }: { name: string, data: any }) => {
-    const isYes = data.detected === true;
-    const isNo = data.detected === false;
-    
-    return (
-      <div className="flex flex-col gap-1 p-2 border rounded-lg bg-slate-50/50">
-        <div className="flex items-center justify-between">
-          <span className="text-[10px] font-bold text-slate-500 capitalize">{name.replace('_', ' ')}</span>
-          <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase text-center min-w-[32px] ${
-            isYes ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' : 
-            isNo ? 'bg-rose-50 text-rose-600 border border-rose-100' : 
-            'bg-slate-100 text-slate-400 border border-slate-200'
-          }`}>
-            {isYes ? 'Yes' : isNo ? 'No' : 'N/A'}
-          </span>
-        </div>
-        {(data.color || data.description) && data.color !== "Tidak terlihat" && (
-          <span className="text-[9px] text-slate-400 italic leading-tight truncate">{data.color} · {data.description}</span>
-        )}
-      </div>
-    );
-  };
-
   const renderStructuredContent = (id: string, data: any) => {
     switch (id) {
+      case "audio_meta":
+        return (
+          <div className="grid grid-cols-2 gap-4">
+             <DataField label="Duration" value={data.duration} />
+             <DataField label="Quality" value={data.audio_quality} />
+             <DataField label="Noise Level" value={data.noise_level} />
+             <DataField label="Lang" value={data.language} />
+          </div>
+        );
+      case "audio_diarization":
+        return (
+          <div className="space-y-4 max-h-[400px] overflow-auto pr-2 custom-scrollbar">
+            {data.map((seg: any) => (
+              <div key={seg.segment_id} className="flex flex-col gap-1 relative pl-4 border-l-2 border-slate-100 hover:border-primary/30 transition-colors">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">{seg.speaker_label} · {seg.start_time}</span>
+                  <ConfidenceChip level={seg.confidence.toLowerCase()} />
+                </div>
+                <p className="text-[11px] font-black text-slate-800 leading-relaxed italic">"{seg.text}"</p>
+              </div>
+            ))}
+          </div>
+        );
+      case "audio_speakers":
+        return (
+          <div className="grid grid-cols-1 gap-3">
+             {data.map((s: any) => (
+               <div key={s.speaker_id} className="p-3 border rounded-xl bg-slate-50/50 hover:bg-white transition-all">
+                  <div className="flex items-center justify-between mb-2">
+                     <span className="text-[11px] font-black text-slate-900 uppercase">{s.probable_role} ({s.speaker_id})</span>
+                     <span className={`px-2 py-0.5 text-[8px] font-black uppercase rounded ${s.stress_level.includes('High') ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                        Stress: {s.stress_level.split(' ')[0]}
+                     </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-[10px] font-bold text-slate-500">
+                     <div>Assertiveness: <span className="text-slate-800">{s.assertiveness}</span></div>
+                     <div>Style: <span className="text-slate-800">{s.speaking_style}</span></div>
+                  </div>
+               </div>
+             ))}
+          </div>
+        );
+      case "audio_intelligence":
+        return (
+          <div className="space-y-4">
+             <div className="bg-rose-50 border border-rose-100 p-3 rounded-xl">
+                <span className="text-[10px] font-black text-rose-700 uppercase block mb-2">Human Performance Signals</span>
+                <div className="space-y-1">
+                   {data.human_performance_signals.delayed_reporting.map((sig: string, i: number) => (
+                     <div key={i} className="flex items-center gap-2 text-[10px] font-bold text-rose-800">
+                       <AlertCircle className="h-3 w-3" /> {sig}
+                     </div>
+                   ))}
+                   {data.human_performance_signals.supervision_signal.map((sig: string, i: number) => (
+                     <div key={i} className="flex items-center gap-2 text-[10px] font-bold text-rose-800">
+                       <Users className="h-3 w-3 text-rose-400" /> {sig}
+                     </div>
+                   ))}
+                </div>
+             </div>
+             
+             <div className="p-3 border rounded-xl bg-slate-900 shadow-2xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-primary/20 blur-3xl rounded-full" />
+                <span className="text-[10px] font-black text-primary uppercase tracking-widest block mb-1 relative z-10">Reasoning Seeds (PEEPO)</span>
+                {Object.entries(data.peepo_seeds).map(([key, val]: any) => (
+                  <div key={key} className="flex gap-2 mb-1 last:mb-0 relative z-10">
+                    <span className="text-[9px] font-black text-slate-500 uppercase min-w-[60px]">{key}</span>
+                    <p className="text-[10px] font-bold text-slate-400 leading-tight">"{val[0]}"</p>
+                  </div>
+                ))}
+             </div>
+          </div>
+        );
       case "image_properties":
         return (
           <div className="grid grid-cols-2 gap-x-4">
-             <DataField label="Scale" value={data.scale} />
-             <DataField label="Source" value={data.source} />
-             <DataField label="Lighting" value={data.lighting} />
-             <DataField label="Quality" value={data.image_quality} />
+             <DataField label="Source Device" value={data.source_device} />
+             <DataField label="Location" value={data.location_hint} />
+             <DataField label="Visibility" value={data.visibility_quality} />
+             <DataField label="Weather" value={data.weather_condition} />
           </div>
         );
       case "composition":
         return (
           <div className="space-y-4">
-            <div>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5 opacity-60">Activities</span>
-              <div className="flex flex-wrap gap-1.5">
-                {data.activities.length > 0 ? data.activities.map((a: string, i: number) => (
-                  <span key={i} className="px-2 py-0.5 bg-slate-100 text-slate-700 text-[10px] font-bold rounded border border-slate-200">{a}</span>
-                )) : <span className="text-xs italic text-slate-300">No activities detected</span>}
-              </div>
-            </div>
-            <div>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5 opacity-60">Relationships</span>
-              <ul className="space-y-1">
-                {data.relationships.length > 0 ? data.relationships.map((r: string, i: number) => (
-                  <li key={i} className="text-[11px] font-bold text-slate-600 flex gap-2">
-                    <span className="text-primary mt-1">•</span> {r}
-                  </li>
-                )) : <span className="text-xs italic text-slate-300">—</span>}
-              </ul>
-            </div>
-            <DataField label="Area Condition" value={data.area_condition} fullWidth />
-            <div className="p-3 border rounded-xl bg-slate-50 shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]">
-               <span className="text-[10px] font-bold text-primary uppercase tracking-widest block mb-2 border-b border-primary/5 pb-1">Central Object</span>
-               <div className="grid grid-cols-2 gap-2">
-                 <DataField label="Name" value={data.central_object.name} />
-                 <DataField label="Shape" value={data.central_object.shape} />
-                 <DataField label="Material" value={data.central_object.material} />
-                 <DataField label="Est. Size" value={data.central_object.estimated_size} />
-               </div>
+            <DataField label="Area Type" value={data.area_type} />
+            <DataField label="Work Zone" value={data.work_zone} />
+            <DataField label="Operation" value={data.operation_type} />
+            <div className="p-3 border rounded-xl bg-slate-50 shadow-inner">
+               <span className="text-[10px] font-bold text-primary uppercase tracking-widest block mb-2 border-b border-primary/5 pb-1">Scene Summary</span>
+               <p className="text-[11px] font-bold text-slate-700 leading-relaxed italic">"{data.summary_scene}"</p>
             </div>
           </div>
         );
@@ -772,58 +816,74 @@ function ImageViewer({ file }: { file: any }) {
         return (
           <div className="space-y-5">
             <div className="grid grid-cols-2 gap-4">
-              <DataField label="Person Count" value={data.person_count} />
-              <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight block mb-0.5">Activities</span>
-                <span className="text-xs italic text-slate-300">No data</span>
+              <DataField label="Detected" value={`${data.person_count} Identification`} />
+              <div className="bg-slate-50 p-2 rounded border border-slate-100">
+                <span className="text-[8px] font-black text-slate-400 uppercase block mb-1">Status</span>
+                <span className="text-[10px] font-black text-emerald-600 uppercase">PPE Compliant</span>
               </div>
             </div>
-            <div>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-3 opacity-60 border-b pb-1">PPE Compliance Detail</span>
-              <div className="grid grid-cols-2 gap-2">
-                {Object.entries(data.ppe_equipment).map(([key, val]: any) => (
-                  <PPETag key={key} name={key} data={val} />
-                ))}
+            {data.detected_people.map((p: any, i: number) => (
+              <div key={i} className="p-3 border rounded-xl bg-slate-50/50">
+                 <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] font-black text-slate-900 uppercase">Person {p.person_ref}</span>
+                    <span className="px-1.5 py-0.5 bg-white border text-[8px] font-bold text-slate-500 rounded uppercase">{p.role_guess}</span>
+                 </div>
+                 <div className="grid grid-cols-2 gap-2 mb-2">
+                    <DataField label="Action" value={p.activity} />
+                    <DataField label="Target" value={p.interaction_target} />
+                 </div>
+                 <div className="flex flex-wrap gap-1.5 pt-2 border-t border-slate-200/40">
+                    {data.ppe_equipment.filter((ppe: any) => ppe.person_ref === p.person_ref).map((ppe: any, j: number) => (
+                      <span key={j} className={`px-2 py-0.5 text-[8px] font-black uppercase rounded border ${ppe.detected ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-slate-50 text-slate-400 border-slate-200 opacity-50'}`}>
+                        {ppe.item}
+                      </span>
+                    ))}
+                 </div>
               </div>
-            </div>
-            {data.hazard_potential.length > 0 && (
-               <div>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5 opacity-60">Hazard Potential</span>
-                  {data.hazard_potential.map((h: string, i: number) => <span key={i} className="text-xs font-bold text-rose-600">• {h}</span>)}
-               </div>
-            )}
+            ))}
           </div>
         );
       case "environment":
         return (
-          <div className="grid grid-cols-2 gap-4">
-             <DataField label="Size" value={data.size} />
-             <DataField label="Type" value={data.type} />
-             <DataField label="Condition" value={data.condition} fullWidth />
-             <DataField label="Composition" value={data.composition} fullWidth />
+          <div className="space-y-4">
+             <div className="grid grid-cols-2 gap-4">
+                <DataField label="Terrain" value={data.terrain_condition} />
+                <DataField label="Housekeeping" value={data.housekeeping_condition} />
+             </div>
+             <div className="space-y-2">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block opacity-60">Barriers & Signage</span>
+                <div className="flex flex-wrap gap-1.5">
+                   {data.barrier_guarding_present.map((b: string, i: number) => (
+                     <span key={i} className="px-2 py-0.5 bg-amber-50 text-amber-700 text-[9px] font-black uppercase rounded border border-amber-100">{b}</span>
+                   ))}
+                </div>
+             </div>
           </div>
         );
       case "initial_interpretation":
         return (
           <div className="space-y-4">
-            <DataField label="Brief Summary" value={data.brief_summary} fullWidth />
-            <div className="flex items-center justify-between py-2 border-y border-slate-50">
-               <span className="text-[10px] font-bold text-slate-400 uppercase">Risk Level</span>
-               <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-tighter shadow-sm border ${
-                 data.estimated_risk_category === 'critical' ? 'bg-rose-500 text-white border-rose-600' :
-                 data.estimated_risk_category === 'high' ? 'bg-amber-500 text-white border-amber-600' :
-                 'bg-emerald-500 text-white border-emerald-600'
-               }`}>
-                 {data.estimated_risk_category}
-               </span>
-            </div>
-            <div>
-               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5 opacity-60">Main Hazard Potentials</span>
-               <div className="flex flex-wrap gap-1.5">
-                 {data.main_hazard_potentials.map((h: string, i: number) => (
-                   <span key={i} className="px-2 py-0.5 bg-rose-50 text-rose-700 text-[10px] font-bold rounded border border-rose-100">{h}</span>
-                 ))}
+            <div className="p-3 border rounded-xl bg-slate-900 shadow-2xl overflow-hidden relative">
+               <div className="absolute top-0 right-0 w-20 h-20 bg-primary/20 blur-3xl rounded-full" />
+               <span className="text-[10px] font-black text-primary uppercase tracking-widest block mb-1 relative z-10">Reasoning Seeds (PEEPO)</span>
+               <div className="space-y-2 relative z-10">
+                  {Object.entries(data.peepo_seeds).map(([key, val]: any) => (
+                    <div key={key} className="flex gap-2">
+                       <span className="text-[9px] font-black text-slate-500 uppercase min-w-[60px]">{key}</span>
+                       <p className="text-[10px] font-bold text-slate-400 leading-tight">"{val[0]}"</p>
+                    </div>
+                  ))}
                </div>
+            </div>
+            
+            <div className="space-y-2">
+               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1 opacity-60">IPLS Layer Candidates</span>
+               {data.ipls_seeds.map((ipls: any, i: number) => (
+                 <div key={i} className="p-3 border-l-4 border-l-primary bg-slate-50 rounded-r-lg">
+                    <span className="text-[9px] font-black text-primary uppercase">{ipls.layer_candidate}</span>
+                    <p className="text-[11px] font-bold text-slate-700 mt-1">{ipls.deviation_text}</p>
+                 </div>
+               ))}
             </div>
           </div>
         );
@@ -1380,7 +1440,7 @@ function ExtractionTab({ files: evidenceFiles, setFiles: setEvidenceFiles }: { f
         </div>
         
         <div className="flex-1 overflow-auto custom-scrollbar bg-white">
-           {selectedFile?.type === "Image" ? (
+           {selectedFile?.type === "Image" || selectedFile?.type === "Audio" ? (
              <AIAnalysisPanel file={selectedFile} />
            ) : (
              <div className="p-6">
@@ -1901,6 +1961,18 @@ function AdaptiveSourcePreview({ file }: { file: any }) {
 }
 
 function AdaptiveExtractionOutput({ file }: { file: any }) {
+  const [viewMode, setViewMode] = useState<"Structured" | "JSON">("Structured");
+  const [expandedSections, setExpandedSections] = useState<string[]>([]);
+  
+  // Set default expanded sections based on file type
+  useEffect(() => {
+    if (file?.type === "Audio") {
+      setExpandedSections(["Recording Meta", "Interpretation Seeds"]);
+    } else if (file?.type === "Document") {
+      setExpandedSections([]); // Documents use a different internal layout for now
+    }
+  }, [file?.id, file?.type]);
+
   if (!file) return null;
   const ExtractionItem = ({ fact, type, source, conf }: any) => (
     <div className="bg-white border border-slate-200 rounded-lg p-3 hover:border-primary/40 transition-all hover:shadow-md cursor-pointer group mb-3 last:mb-0 relative overflow-hidden">
@@ -2019,8 +2091,6 @@ function AdaptiveExtractionOutput({ file }: { file: any }) {
 
   if (file.type === "Audio") {
      const data = audioExtractionData;
-     const [viewMode, setViewMode] = useState<"Structured" | "JSON">("Structured");
-     const [expandedSections, setExpandedSections] = useState<string[]>(["Recording Properties", "Summary"]);
      
      const toggle = (s: string) => setExpandedSections(p => p.includes(s) ? p.filter(x => x !== s) : [...p, s]);
 
@@ -2045,7 +2115,7 @@ function AdaptiveExtractionOutput({ file }: { file: any }) {
                  <div className={`h-8 w-8 rounded-lg border shadow-sm flex items-center justify-center transition-all ${expandedSections.includes(title) ? 'bg-primary text-white border-primary shadow-primary/20' : 'bg-white text-slate-400'}`}>
                     <Icon className="h-4 w-4" />
                  </div>
-                 <span className={`text-sm font-black transition-colors ${expandedSections.includes(title) ? 'text-slate-900' : 'text-slate-700'}`}>{title}</span>
+                 <span className={`text-sm font-black transition-colors ${expandedSections.includes(title) ? 'text-sm text-slate-900' : 'text-slate-700'}`}>{title}</span>
               </div>
               <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${expandedSections.includes(title) ? 'rotate-180' : ''}`} />
            </button>
@@ -2061,7 +2131,7 @@ function AdaptiveExtractionOutput({ file }: { file: any }) {
         <div className="space-y-3 pb-20">
            {/* Logic Toggle */}
            <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Extraction Console</span>
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Forensic Logic</span>
               <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-lg border shadow-inner">
                  <button onClick={() => setViewMode("Structured")} className={`px-2 py-0.5 text-[8px] font-black uppercase rounded transition-all ${viewMode === "Structured" ? "bg-white text-primary shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>Structured</button>
                  <button onClick={() => setViewMode("JSON")} className={`px-2 py-0.5 text-[8px] font-black uppercase rounded transition-all ${viewMode === "JSON" ? "bg-white text-primary shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>JSON</button>
@@ -2076,122 +2146,75 @@ function AdaptiveExtractionOutput({ file }: { file: any }) {
               </div>
            ) : (
              <>
-               <Section title="Recording Properties" icon={Settings}>
+               <Section title="Recording Meta" icon={Settings}>
                   <div className="divide-y divide-slate-50">
-                     <DataRow label="File Name" value={data.recording_properties.file_name} />
-                     <DataRow label="Duration" value={data.recording_properties.duration} />
-                     <DataRow label="Quality" value={data.recording_properties.audio_quality} badge={{ text: data.recording_properties.audio_quality, className: "bg-emerald-50 text-emerald-700 border-emerald-100" }} />
-                     <DataRow label="Source" value={data.recording_properties.source} />
-                     <DataRow label="Language" value={data.recording_properties.language} />
-                     <DataRow label="Noise Level" value={data.recording_properties.noise_level} />
-                     <DataRow label="Clarity" value={data.recording_properties.clarity} />
+                     <DataRow label="File Name" value={data.recording_meta.file_name} />
+                     <DataRow label="Duration" value={data.recording_meta.duration} />
+                     <DataRow label="Quality" value={data.recording_meta.audio_quality} badge={{ text: data.recording_meta.audio_quality, className: "bg-emerald-50 text-emerald-700 border-emerald-100" }} />
+                     <DataRow label="Type" value={data.recording_meta.recording_type} />
+                     <DataRow label="Language" value={data.recording_meta.language} />
+                     <DataRow label="Noise Level" value={data.recording_meta.noise_level} />
                   </div>
                </Section>
 
-               <Section title="Participants & Tone" icon={Users}>
-                  <div className="space-y-4">
-                     <div className="flex items-center justify-between border-b pb-2">
-                        <span className="text-[10px] font-black text-slate-400 uppercase">Speaker Count</span>
-                        <span className="text-xl font-black text-slate-900">{data.participants.speaker_count}</span>
-                     </div>
-                     {data.participants.speakers.map(s => (
-                        <div key={s.speaker_id} className="p-3 border rounded-xl bg-slate-50/50 hover:bg-slate-50 transition-colors">
-                           <div className="flex items-center justify-between mb-3">
-                              <span className="px-2 py-0.5 bg-slate-900 text-white text-[9px] font-black uppercase rounded tracking-widest">{s.display_name}</span>
-                              <span className="text-[9px] font-bold text-slate-500">{s.probable_role}</span>
-                           </div>
-                           <div className="grid grid-cols-2 gap-x-6 gap-y-2">
-                              <DataRow label="Time" value={s.total_speaking_time} />
-                              <DataRow label="Tone" value={s.tone_summary} />
-                              <DataRow label="Pace" value={s.pace} />
-                              <DataRow label="Stress" value={s.stress_level} badge={s.stress_level === "High" ? { text: "High Stress", className: "bg-rose-50 text-rose-600 border-rose-100" } : null} />
-                           </div>
-                        </div>
+               <Section title="Diarization & Transcript" icon={MessageSquare}>
+                  <div className="space-y-5">
+                     {data.full_diarization.map((seg: any) => (
+                       <div key={seg.segment_id} className="flex flex-col gap-1.5 pl-3 border-l-2 border-slate-100 hover:border-primary/50 transition-colors">
+                          <div className="flex items-center justify-between">
+                             <span className="text-[10px] font-black text-slate-500 uppercase">{seg.speaker_label} · {seg.start_time}</span>
+                             <ConfidenceChip level={seg.confidence.toLowerCase()} />
+                          </div>
+                          <p className="text-[11px] font-black text-slate-800 italic leading-relaxed">"{seg.text}"</p>
+                       </div>
                      ))}
                   </div>
                </Section>
 
-               <Section title="Key Statements" icon={MessageSquare}>
+               <Section title="Speaker Profiles" icon={Users}>
                   <div className="space-y-3">
-                     {data.key_statements.map((ks, i) => (
-                        <div key={i} className="bg-white border-2 border-slate-50 rounded-xl p-4 shadow-sm hover:border-primary/20 transition-all cursor-pointer relative overflow-hidden group">
-                           <div className={`absolute top-0 right-0 w-12 h-12 -mr-6 -mt-6 rounded-full group-hover:scale-110 transition-transform ${ks.severity === "high" ? "bg-rose-50" : "bg-primary/5"}`} />
-                           <div className="flex items-center gap-2 mb-2 relative z-10">
-                              <span className="px-1.5 py-0.5 bg-slate-100 text-[8px] font-black uppercase text-slate-500 rounded border">{ks.type}</span>
-                              <span className="text-[9px] font-black text-primary">{ks.timestamp}</span>
-                              {ks.severity === "high" && <AlertTriangle className="h-3 w-3 text-rose-500" />}
+                     {data.speaker_profiles.map(s => (
+                        <div key={s.speaker_id} className="p-3 border rounded-xl bg-slate-50/40 hover:bg-white transition-all shadow-sm">
+                           <div className="flex items-center justify-between mb-2">
+                              <span className="text-[11px] font-black text-slate-900 uppercase">{s.probable_role}</span>
+                              <span className={`px-2 py-0.5 text-[8px] font-black uppercase rounded ${s.stress_level.includes('High') ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                                 Stress: {s.stress_level.split(' ')[0]}
+                              </span>
                            </div>
-                           <p className="text-xs font-black text-slate-700 italic leading-snug mb-2 relative z-10">"{ks.statement}"</p>
-                           <div className="flex items-center gap-2 relative z-10 pt-2 border-t border-slate-50">
-                              <div className="h-4 w-4 bg-slate-100 rounded-full flex items-center justify-center text-[7px] font-black">{ks.speaker_id.slice(-2)}</div>
-                              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">{ks.evidence_note}</span>
-                           </div>
-                        </div>
-                     ))}
-                  </div>
-               </Section>
-
-               <Section title="Evidence Timeline" icon={Clock}>
-                  <div className="relative pl-6 space-y-6 before:absolute before:top-0 before:bottom-0 before:left-2 before:w-[1.5px] before:bg-slate-100">
-                     {data.timeline_events.map((te, i) => (
-                        <div key={i} className="relative">
-                           <div className="absolute -left-[22.5px] top-1 px-1 bg-white">
-                              <div className={`h-3 w-3 rounded-full border-2 transition-transform hover:scale-125 ${te.importance === "critical" ? "bg-rose-500 border-rose-200" : "bg-primary border-primary/20"}`} />
-                           </div>
-                           <div className="space-y-1">
-                              <div className="flex items-center gap-2">
-                                 <span className="text-[10px] font-black text-primary tabular-nums">{te.timestamp}</span>
-                                 <span className="text-xs font-black text-slate-900">{te.event_title}</span>
-                              </div>
-                              <p className="text-[11px] font-bold text-slate-500 leading-tight">{te.event_detail}</p>
+                           <div className="grid grid-cols-2 gap-2 text-[10px] font-bold text-slate-500">
+                              <div>Assertiveness: <span className="text-slate-800">{s.assertiveness}</span></div>
+                              <div>Escalation: <span className="text-slate-800">{s.escalation_role}</span></div>
                            </div>
                         </div>
                      ))}
                   </div>
                </Section>
 
-               <Section title="Risk & Safety Signals" icon={AlertTriangle}>
-                  <div className="space-y-3">
-                     {data.risk_safety_signals.map((rss, i) => (
-                        <div key={i} className="p-3 border rounded-xl bg-orange-50/20 border-orange-100 flex gap-3">
-                           <div className="h-8 w-8 bg-orange-100 rounded-lg flex items-center justify-center shrink-0">
-                              <AlertCircle className="h-4 w-4 text-orange-600" />
-                           </div>
-                           <div className="space-y-1">
-                              <div className="flex items-center gap-2">
-                                 <span className="text-[10px] font-black text-orange-700 uppercase tracking-tighter">{rss.signal_type}</span>
-                                 <div className="h-1 w-1 bg-orange-200 rounded-full" />
-                                 <span className="text-[9px] font-black text-orange-500">{rss.timestamp}</span>
-                              </div>
-                              <p className="text-[11px] font-bold text-slate-700 leading-snug">{rss.description}</p>
-                           </div>
-                        </div>
-                     ))}
-                  </div>
-               </Section>
-
-               <Section title="Investigation Summary" icon={Brain}>
+               <Section title="Interpretation Seeds" icon={Brain}>
                   <div className="space-y-4">
-                     <p className="text-xs font-bold text-slate-700 leading-relaxed bg-slate-50 p-4 rounded-xl border italic">
-                        {data.summary.brief_summary}
-                     </p>
-                     <div>
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2 opacity-60">Main Findings</span>
-                        <ul className="space-y-2">
-                           {data.summary.main_findings.map((f, i) => (
-                              <li key={i} className="text-[11px] font-bold text-slate-700 flex gap-3">
-                                 <Check className="h-3 w-3 text-emerald-500 mt-0.5 shrink-0" /> {f}
-                              </li>
+                     <div className="bg-rose-50 border border-rose-100 p-3 rounded-xl">
+                        <span className="text-[10px] font-black text-rose-700 uppercase block mb-2">Performance Clues</span>
+                        <div className="space-y-1.5">
+                           {data.human_performance_signals.delayed_reporting.map((sig: string, i: number) => (
+                             <div key={i} className="flex items-center gap-2 text-[10px] font-bold text-rose-800">
+                               <AlertCircle className="h-3 w-3" /> {sig}
+                             </div>
                            ))}
-                        </ul>
-                     </div>
-                     <div className="pt-4 border-t">
-                        <span className="text-[10px] font-black text-primary uppercase tracking-widest block mb-2">Review Focus</span>
-                        <div className="bg-primary/5 rounded-xl p-3 border border-primary/10">
-                           {data.summary.recommended_human_review_focus.map((f, i) => (
-                              <p key={i} className="text-[11px] font-black text-primary leading-tight">{f}</p>
+                           {data.human_performance_signals.supervision_signal.map((sig: string, i: number) => (
+                             <div key={i} className="flex items-center gap-2 text-[10px] font-bold text-rose-800">
+                               <MessageCircle className="h-3 w-3 text-rose-300" /> {sig}
+                             </div>
                            ))}
                         </div>
+                     </div>
+                     <div className="p-3 border rounded-xl bg-slate-900 text-white relative overflow-hidden">
+                        <span className="text-[10px] font-black text-primary uppercase tracking-widest block mb-2 relative z-10">PEEPO Reasoning</span>
+                        {Object.entries(data.peepo_seeds).map(([k, v]: any) => (
+                          <div key={k} className="flex gap-2 mb-1.5 last:mb-0 relative z-10 opacity-90">
+                             <span className="text-[9px] font-black text-slate-500 uppercase min-w-[60px]">{k}</span>
+                             <p className="text-[10px] font-bold text-slate-300 leading-tight">"{v[0]}"</p>
+                          </div>
+                        ))}
                      </div>
                   </div>
                </Section>
