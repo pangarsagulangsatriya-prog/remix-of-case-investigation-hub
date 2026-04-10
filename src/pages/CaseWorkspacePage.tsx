@@ -196,7 +196,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel
 } from "@/components/ui/dropdown-menu";
-import { UploadModal } from "@/components/UploadModal";
+import { UploadModal, CompletedGroup } from "@/components/UploadModal";
 
 // --- Mock Data ---
 
@@ -1142,7 +1142,7 @@ function DeleteConfirmationModal({
   );
 }
 
-function ExtractionTab({ files: evidenceFiles, setFiles: setEvidenceFiles }: { files: any[], setFiles: React.Dispatch<React.SetStateAction<any[]>> }) {
+function ExtractionTab({ files: evidenceFiles, setFiles: setEvidenceFiles, batches, setBatches }: { files: any[], setFiles: React.Dispatch<React.SetStateAction<any[]>>, batches: any[], setBatches: React.Dispatch<React.SetStateAction<any[]>> }) {
   const [selectedFile, setSelectedFile] = useState<any>(evidenceFiles[1]);
   const [activeFilter, setActiveFilter] = useState("All Files");
   const [searchQuery, setSearchQuery] = useState("");
@@ -1154,18 +1154,56 @@ function ExtractionTab({ files: evidenceFiles, setFiles: setEvidenceFiles }: { f
     setExpandedBatches(prev => prev.includes(id) ? prev.filter(b => b !== id) : [...prev, id]);
   };
 
-  const handleUploadComplete = (newFiles: any[]) => {
-    const formattedFiles = newFiles.map(f => ({
-      ...f,
-      batchId: "B2",
-      source: "Manual Upload",
-      uploadedBy: "Current User",
-      extractionStatus: "processing",
-      reviewStatus: "pending",
-      tags: [],
-      linked: 0
-    }));
-    setEvidenceFiles(prev => [...formattedFiles, ...prev]);
+  const handleUploadComplete = (completedGroups: CompletedGroup[]) => {
+    const today = new Date().toISOString().split("T")[0];
+    const newBatches: any[] = [];
+    const newFiles: any[] = [];
+    const newExpandedIds: string[] = [];
+
+    for (const group of completedGroups) {
+      // Determine dominant file type for batch label
+      const counts: Record<string, number> = { Image: 0, Audio: 0, Video: 0, Document: 0 };
+      for (const f of group.files) { if (f.type in counts) counts[f.type]++; }
+      const dominant = Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
+      const batchType = dominant === "Image" ? "Images" : dominant === "Audio" ? "Audio" : dominant === "Video" ? "Video" : "Documents";
+
+      newBatches.push({
+        id: group.batchId,
+        name: group.name,
+        description: group.isFolder ? `Uploaded from folder: ${group.name}` : "Manually uploaded files",
+        type: batchType,
+        fileCount: group.files.length,
+        uploadedBy: "Current User",
+        updated: "Just now",
+        extractionProgress: 0,
+        reviewProgress: 0,
+        keyEvidenceCount: 0,
+        linkedAnalysis: 0,
+      });
+      newExpandedIds.push(group.batchId);
+
+      for (const file of group.files) {
+        newFiles.push({
+          id: file.id,
+          batchId: group.batchId,
+          name: file.name,
+          type: file.type,
+          source: group.isFolder ? "Folder Upload" : "Manual Upload",
+          uploadedBy: "Current User",
+          uploadDate: today,
+          extractionStatus: "processing",
+          reviewStatus: "pending",
+          tags: [],
+          linked: 0,
+          size: file.size,
+          relativePath: file.relativePath,
+        });
+      }
+    }
+
+    setBatches(prev => [...prev, ...newBatches]);
+    setEvidenceFiles(prev => [...newFiles, ...prev]);
+    setExpandedBatches(prev => [...new Set([...prev, ...newExpandedIds])]);
   };
 
   const handleDelete = () => {
@@ -1210,7 +1248,7 @@ function ExtractionTab({ files: evidenceFiles, setFiles: setEvidenceFiles }: { f
     return matchesFilter && matchesSearch;
   });
 
-  const groupedFiles = evidenceBatches.map(batch => ({
+  const groupedFiles = batches.map(batch => ({
     ...batch,
     files: filteredFiles.filter(f => f.batchId === batch.id)
   })).filter(b => b.files.length > 0);
@@ -2793,6 +2831,7 @@ export default function CaseWorkspacePage() {
   const { caseId } = useParams();
   const [activeTab, setActiveTab] = useState("Evidence Review");
   const [files, setFiles] = useState(evidenceFiles);
+  const [batches, setBatches] = useState(evidenceBatches);
 
   return (
     <AppLayout>
@@ -2850,7 +2889,7 @@ export default function CaseWorkspacePage() {
 
         <div className="flex-1 overflow-hidden relative">
           {activeTab === "Overview" && <OverviewTab />}
-          {activeTab === "Evidence Review" && <ExtractionTab files={files} setFiles={setFiles} />}
+          {activeTab === "Evidence Review" && <ExtractionTab files={files} setFiles={setFiles} batches={batches} setBatches={setBatches} />}
           {activeTab === "Analysis" && <AnalysisTab />}
           {activeTab === "Reports" && <ReportsTab />}
           {activeTab === "Review" && <ReviewTab />}
