@@ -1,11 +1,7 @@
-import React, { useState, useEffect, useRef } from "react"; 
+﻿import React, { useState, useEffect, useRef } from "react"; 
 import { useParams } from "react-router-dom";
 import { AppLayout } from "@/components/AppLayout";
 import { StatusChip, SeverityChip, ConfidenceChip } from "@/components/StatusChip";
-import { useCase } from "@/hooks/useCases";
-import { useEvidence, useDeleteFile, useUploadEvidence } from "@/hooks/useEvidence";
-import { supabase } from "@/lib/supabase";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -66,8 +62,7 @@ import {
   Database,
   Ruler,
   MessageCircle,
-  Download,
-  Plus
+  Download
 } from "lucide-react";
 
 interface AgentState {
@@ -137,7 +132,7 @@ const initialAgentsState: AgentState[] = [
            { nama: "Maria Santos", peran: "Maintenance Lead", status_shift: "Remote", tindakan: "Log Review" }
         ],
         relasi: "Gaps found between HSE protocol and manual override speed.",
-        temuan_utama: " احمد (Ahmed) was operating outside standard speed parameters."
+        temuan_utama: " ╪º╪¡┘à╪» (Ahmed) was operating outside standard speed parameters."
      }
   },
   { 
@@ -203,16 +198,51 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { UploadModal, CompletedGroup } from "@/components/UploadModal";
 
-// Mock types removed. Using data from hooks.
+// --- Mock Data ---
+
 const tabs = ["Overview", "Evidence Review", "Analysis", "Reports", "Review", "Audit Trail"];
 
 const progressSteps = [
   { label: "Evidence", done: true },
-  { label: "Extraction", done: false },
-  { label: "Analysis", done: false },
+  { label: "Extraction", done: true },
+  { label: "Analysis", done: true },
   { label: "Report", done: false },
   { label: "Review", done: false },
   { label: "Approved", done: false },
+];
+
+const evidenceBatches = [
+  { id: "B1", name: "Mechanical Inspection - Zone B", description: "Photos and detail logs from conveyor section 14 incident area", type: "Images", fileCount: 12, uploadedBy: "Ahmed Khan", updated: "2h ago", extractionProgress: 100, reviewProgress: 80, keyEvidenceCount: 4, linkedAnalysis: 3 },
+  { id: "B2", name: "Incident Documentation Batch", description: "Initial HSE reports and hazard observation forms", type: "Documents", fileCount: 5, uploadedBy: "Sarah Chen", updated: "4h ago", extractionProgress: 80, reviewProgress: 40, keyEvidenceCount: 2, linkedAnalysis: 5 },
+  { id: "B3", name: "Maintenance & CAL History", description: "Historical telemetry for haul trucks and conveyor drives", type: "Documents", fileCount: 3, uploadedBy: "Maria Santos", updated: "1d ago", extractionProgress: 100, reviewProgress: 0, keyEvidenceCount: 0, linkedAnalysis: 1 },
+  { id: "B4", name: "Witness Statements & Radio", description: "Digital audio recordings from 14:15 - 14:45 incident window", type: "Audio", fileCount: 3, uploadedBy: "John Doe", updated: "1d ago", extractionProgress: 100, reviewProgress: 66, keyEvidenceCount: 2, linkedAnalysis: 2 },
+  { id: "B5", name: "CCTV Storage Export", description: "Footage from Zone B cameras during incident window", type: "Video", fileCount: 1, uploadedBy: "System", updated: "4h ago", extractionProgress: 100, reviewProgress: 0, keyEvidenceCount: 1, linkedAnalysis: 0 },
+];
+
+const evidenceFiles = [
+  // Images
+  { id: "F1", batchId: "B1", name: "pit_overview_west_sector.jpg", type: "Image", source: "Drone-04", uploadedBy: "Ahmed Khan", uploadDate: "2026-04-05", extractionStatus: "completed", reviewStatus: "reviewed", tags: ["key", "site-overview"], linked: 2, size: "4.2 MB", url: "/mining_1.png" },
+  { id: "F2", batchId: "B1", name: "conveyor_roller_failure_macro.jpg", type: "Image", source: "Field-Cam-A1", uploadedBy: "Ahmed Khan", uploadDate: "2026-04-05", extractionStatus: "completed", reviewStatus: "reviewed", tags: ["key", "mechanical"], linked: 1, size: "2.8 MB", url: "/mining_2.png" },
+  { id: "F3", batchId: "B1", name: "worker_ppe_check_pit_3.jpg", type: "Image", source: "Safety Officer", uploadedBy: "Ahmed Khan", uploadDate: "2026-04-06", extractionStatus: "completed", reviewStatus: "pending", tags: ["ppe", "compliance"], linked: 0, size: "3.5 MB", url: "/mining_3.png" },
+  
+  // Documents
+  { id: "F4", batchId: "B2", name: "incident_report_initial.pdf", type: "Document", source: "HSE Portal", uploadedBy: "Sarah Chen", uploadDate: "2026-04-05", extractionStatus: "completed", reviewStatus: "reviewed", tags: ["key"], linked: 5, size: "1.2 MB", snippet: "The belt tore at section 14, causing material spillage across the walkway. Tensioners failed to retract." },
+  { id: "F5", batchId: "B2", name: "hazard_observation_form_04.pdf", type: "Document", source: "Safety Tablet", uploadedBy: "Sarah Chen", uploadDate: "2026-04-05", extractionStatus: "completed", reviewStatus: "pending", tags: ["observation"], linked: 1, size: "850 KB" },
+  { id: "F6", batchId: "B3", name: "maintenance_log_conveyor_C.xlsx", type: "Document", source: "Maintenance Sys", uploadedBy: "Maria Santos", uploadDate: "2026-04-06", extractionStatus: "completed", reviewStatus: "pending", tags: [], linked: 1, size: "450 KB" },
+  
+  // Audio
+  { id: "F7", batchId: "B4", name: "witness_statement_operator_A.wav", type: "Audio", source: "Field Voice Link", uploadedBy: "John Doe", uploadDate: "2026-04-06", extractionStatus: "completed", reviewStatus: "reviewed", tags: ["interview"], linked: 2, size: "12 MB", duration: "04:22" },
+  { id: "F8", batchId: "B4", name: "supervisor_followup_interview.mp3", type: "Audio", source: "Digital Recorder", uploadedBy: "John Doe", uploadDate: "2026-04-06", extractionStatus: "completed", reviewStatus: "partial", tags: ["interview", "management"], linked: 1, size: "8.5 MB", duration: "02:15" },
+  { id: "F9", batchId: "B4", name: "radio_communication_shift_B.m4a", type: "Audio", source: "Radio Link Archiver", uploadedBy: "System", uploadDate: "2026-04-05", extractionStatus: "completed", reviewStatus: "pending", tags: ["radio-log"], linked: 0, size: "4.1 MB", duration: "10:05" },
+  { id: "F10", batchId: "B5", name: "cctv_zone_b_conveyor_1430.mp4", type: "Video", source: "CCTV-Z2", uploadedBy: "System", uploadDate: "2026-04-05", extractionStatus: "completed", reviewStatus: "pending", tags: ["cctv", "incident"], linked: 0, size: "124 MB", url: "https://assets.mixkit.co/videos/preview/mixkit-mechanical-gears-moving-in-a-machine-42409-large.mp4" },
+];
+
+const analysisAgents = [
+  { name: "PEEPO Reasoning", icon: Brain, purpose: "Analyzing high-level safety culture and human factors.", inputReady: true, lastRun: "2h ago", lastStatus: "reviewed" },
+  { name: "IPLS Classification", icon: FileSearch, purpose: "Classifying incident according to enterprise safety standards.", inputReady: true, lastRun: "1h ago", lastStatus: "draft" },
+  { name: "Fact & Chronology", icon: Clock, purpose: "Building a verified timeline from evidence fragments.", inputReady: true, lastRun: "30m ago", lastStatus: "reviewed" },
+  { name: "Prevention Engine", icon: CheckCircle2, purpose: "Generating preventive actions and control recommendations.", inputReady: false, lastRun: "ΓÇö", lastStatus: "not_run" },
+  { name: "Actor Intelligence", icon: DocIcon, purpose: "Analyzing worker profiles, training history and fatigue levels.", inputReady: true, lastRun: "4h ago", lastStatus: "draft" },
 ];
 
 const imageExtractionData = {
@@ -351,8 +381,8 @@ const audioExtractionData = {
     { "segment_id": "S4", "start_time": "00:45", "end_time": "00:50", "speaker_id": "SPK_01", "speaker_label": "Operator A", "text": "[Panic] Woi! Belt-nya robek! E-stop! E-stop sekarang!", "confidence": "High", "inaudible_flag": false }
   ],
   "speaker_profiles": [
-    { "speaker_id": "SPK_01", "speaker_label": "Operator A", "probable_role": "Conveyor Operator", "speaking_time": "05:12", "speaking_style": "Urgent, Informal", "stress_level": "High (Post-failure)", "assertiveness": "High", "hesitation": "Low", "escalation_role": "Reporter", "confidence": "High" },
-    { "speaker_id": "SPK_02", "speaker_label": "Control Room", "probable_role": "Dispatcher", "speaking_time": "03:33", "speaking_style": "Calm, Procedural", "stress_level": "Low", "assertiveness": "Medium", "hesitation": "Medium", "escalation_role": "Supervisor", "confidence": "High" }
+    { "speaker_id": "SPK_01", "probable_role": "Conveyor Operator", "speaking_time": "05:12", "speaking_style": "Urgent, Informal", "stress_level": "High (Post-failure)", "assertiveness": "High", "hesitation": "Low", "escalation_role": "Reporter", "confidence": "High" },
+    { "speaker_id": "SPK_02", "probable_role": "Dispatcher", "speaking_time": "03:33", "speaking_style": "Calm, Procedural", "stress_level": "Low", "assertiveness": "Medium", "hesitation": "Medium", "escalation_role": "Supervisor", "confidence": "High" }
   ],
   "communication_events": [
     { "timestamp": "00:00", "event_type": "Initial Warning", "actor": "Operator A", "target_actor": "Control Room", "content_summary": "Reported unusual vibration in Section 14", "urgency": "Medium", "response_status": "Acknowledged (Delayed Action)", "confidence": "High" },
@@ -376,35 +406,7 @@ const audioExtractionData = {
   },
   "ipls_seeds": [
     { "layer_candidate": "Administrative Controls", "control_area_candidate": "Radio Discipline", "deviation_text": "Dispatcher discouraged immediate inspection due to distractions in Zone C.", "evidence_quote": "'Monitor dulu. Kita lagi handle alarm di Zone C.'", "confidence": "High" }
-  ],
-  "factual_statements": [
-    { "timestamp": "00:03", "speaker": "Operator A", "statement_type": "Observation", "fact_text": "Unusual vibration detected at Belt 14 Section — confirmed by direct auditory inspection.", "observed_or_claimed": "Observed", "confidence": "High", "source_segment": "S1" },
-    { "timestamp": "00:18", "speaker": "Operator A", "statement_type": "Technical Assessment", "fact_text": "Metal-on-metal friction sound heard from conveyor roller — escalating over time.", "observed_or_claimed": "Observed", "confidence": "Medium", "source_segment": "S3" },
-    { "timestamp": "00:47", "speaker": "Operator A", "statement_type": "Emergency Report", "fact_text": "Belt tear confirmed visually. E-stop activation requested immediately.", "observed_or_claimed": "Observed", "confidence": "High", "source_segment": "S4" }
-  ],
-  "timeline_events": [
-    { "timestamp": "00:00", "actor": "Operator A", "event_summary": "First radio contact — vibration anomaly reported to Control Room.", "source_audio_segment": "S1", "confidence": "High" },
-    { "timestamp": "00:06", "actor": "Control Room", "event_summary": "Dispatcher acknowledged but deprioritised report in favour of Zone C alarm.", "source_audio_segment": "S2", "confidence": "High" },
-    { "timestamp": "00:15", "actor": "Operator A", "event_summary": "Operator escalated — sound worsening, requested visual inspection clearance.", "source_audio_segment": "S3", "confidence": "Medium" },
-    { "timestamp": "00:45", "actor": "Operator A", "event_summary": "Emergency escalation — belt tear confirmed, E-stop requested.", "source_audio_segment": "S4", "confidence": "High" }
-  ],
-  "risk_and_procedure_clues": {
-    "procedure_mentions": ["E-Stop protocol referenced at 00:45", "Radio check-in procedure followed at session start"],
-    "equipment_issue_mentions": ["Belt 14 vibration anomaly reported early", "Roller metal-on-metal friction escalating"],
-    "sensor_alarm_mentions": ["Zone C alarm active and competing for dispatcher attention"],
-    "emergency_response_mentions": ["E-Stop activation at 00:45", "Emergency call for belt rupture"],
-    "control_gap_mentions": ["Dispatcher failed to escalate initial vibration warning to supervisor"],
-    "radio_channel_issue_mentions": ["Control room simultaneously managing multi-zone alarm load"]
-  },
-  "contradictions_and_gaps": [
-    { "timestamp": "00:06", "type": "Response Gap", "detail": "Control Room acknowledged vibration but took no action — deprioritised Section 14 in favour of Zone C.", "confidence": "High" },
-    { "timestamp": "00:15", "type": "Information Gap", "detail": "5-minute gap between initial warning (00:00) and second escalation (00:15) — no interim update recorded from Control Room.", "confidence": "Medium" }
-  ],
-  "review_meta": {
-    "low_confidence_segments": ["S3 (00:15–00:22) — Medium confidence due to elevated background engine noise"],
-    "needs_human_review": ["Verify dispatcher response protocol during simultaneous multi-zone alarms", "Confirm whether Zone C alarm was genuine or false positive"],
-    "confidence": "High Overall"
-  }
+  ]
 };
 
 const audioDiarizationData = [
@@ -438,7 +440,7 @@ const videoTimeframesData = [
       "visible_actors": ["Operator A", "Security Guard (Background)"],
       "actions": ["Walking", "Inspecting roller bearings", "Talking on radio"],
       "environment": "Daylight, clear visibility, standard industrial background noise.",
-      "changes": "N/A — Segment Start"
+      "changes": "N/A ΓÇö Segment Start"
     },
     "analysis": {
       "events": ["Visual inspection started"],
@@ -454,7 +456,7 @@ const videoTimeframesData = [
     "id": "TF_02",
     "start_time": "02:00",
     "end_time": "03:59",
-    "summary": "Anomaly Detection — Vibration",
+    "summary": "Anomaly Detection ΓÇö Vibration",
     "importance": "high",
     "badges": ["anomaly", "event"],
     "script": {
@@ -478,7 +480,7 @@ const videoTimeframesData = [
     "id": "TF_03",
     "start_time": "04:00",
     "end_time": "05:59",
-    "summary": "Critical Incident — Belt Tear",
+    "summary": "Critical Incident ΓÇö Belt Tear",
     "importance": "critical",
     "badges": ["hazard", "critical"],
     "script": {
@@ -833,7 +835,7 @@ function AIAnalysisPanel({ file }: { file: any }) {
   const DataField = ({ label, value, fullWidth = false }: { label: string, value: any, fullWidth?: boolean }) => (
     <div className={`${fullWidth ? 'col-span-2' : ''} mb-3 last:mb-0`}>
       <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight block mb-0.5">{label}</span>
-      <div className="text-xs font-bold text-slate-800 leading-snug">{value || "—"}</div>
+      <div className="text-xs font-bold text-slate-800 leading-snug">{value || "ΓÇö"}</div>
     </div>
   );
 
@@ -854,7 +856,7 @@ function AIAnalysisPanel({ file }: { file: any }) {
             {data.map((seg: any) => (
               <div key={seg.segment_id} className="flex flex-col gap-1 relative pl-4 border-l-2 border-slate-100 hover:border-primary/30 transition-colors">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">{seg.speaker_label} · {seg.start_time}</span>
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">{seg.speaker_label} ┬╖ {seg.start_time}</span>
                   <ConfidenceChip level={seg.confidence.toLowerCase()} />
                 </div>
                 <p className="text-[11px] font-black text-slate-800 leading-relaxed italic">"{seg.text}"</p>
@@ -1078,517 +1080,6 @@ function AIAnalysisPanel({ file }: { file: any }) {
   );
 }
 
-// ── Audio Right Panel ────────────────────────────────────────────────────────
-
-function AudioRightPanel({
-  audioCurrentTime,
-  onSeek,
-}: {
-  audioCurrentTime: number;
-  onSeek: (seconds: number) => void;
-}) {
-  const [activeTab, setActiveTab] = useState<'extraction' | 'diary'>('extraction');
-  const [viewMode, setViewMode] = useState<'Structured' | 'JSON'>('Structured');
-  const [expandedSections, setExpandedSections] = useState<string[]>(['audio_session_meta', 'speaker_profiles']);
-
-  const data = audioExtractionData;
-
-  const toSec = (t: string) => {
-    const p = t.split(':').map(Number);
-    return p.length === 3 ? p[0] * 3600 + p[1] * 60 + p[2] : p[0] * 60 + p[1];
-  };
-
-  const isSegActive = (start: string, end: string) =>
-    audioCurrentTime >= toSec(start) && audioCurrentTime <= toSec(end);
-
-  const seek = (t: string) => onSeek(toSec(t));
-
-  const toggle = (id: string) =>
-    setExpandedSections(prev =>
-      prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]
-    );
-
-  // ── Micro components ──────────────────────────────────────────────────────
-
-  const Chip = ({ label, variant = 'default' }: { label: string; variant?: 'default' | 'warn' | 'critical' | 'ok' | 'info' }) => {
-    const cls: Record<string, string> = {
-      default: 'bg-slate-100 text-slate-500 border-slate-200',
-      warn:    'bg-amber-50 text-amber-700 border-amber-100',
-      critical:'bg-rose-50 text-rose-700 border-rose-100',
-      ok:      'bg-emerald-50 text-emerald-700 border-emerald-100',
-      info:    'bg-blue-50 text-blue-700 border-blue-100',
-    };
-    return (
-      <span className={`inline-flex items-center px-1.5 py-0.5 rounded border text-[9px] font-black uppercase tracking-wide ${cls[variant]}`}>
-        {label}
-      </span>
-    );
-  };
-
-  const TsBtn = ({ time }: { time: string }) => (
-    <button
-      onClick={(e) => { e.stopPropagation(); seek(time); }}
-      className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-primary/8 hover:bg-primary/20 text-primary border border-primary/20 rounded text-[9px] font-black tabular-nums transition-colors cursor-pointer flex-shrink-0"
-      title="Seek to this time"
-    >
-      <Clock className="h-2.5 w-2.5" />
-      {time}
-    </button>
-  );
-
-  const AccSection = ({ id, title, icon: Icon, count, children }: any) => {
-    const open = expandedSections.includes(id);
-    return (
-      <div className={`border rounded-lg overflow-hidden transition-all ${open ? 'ring-1 ring-primary/15 shadow-sm' : 'hover:border-slate-200'}`}>
-        <button
-          onClick={() => toggle(id)}
-          className={`w-full flex items-center justify-between px-3 py-2 text-left transition-colors ${open ? 'bg-slate-50/80 border-b border-slate-100' : 'bg-white hover:bg-slate-50/40'}`}
-        >
-          <div className="flex items-center gap-2">
-            <div className={`h-5 w-5 rounded flex items-center justify-center flex-shrink-0 ${open ? 'text-primary' : 'text-slate-400'}`}>
-              <Icon className="h-3.5 w-3.5" />
-            </div>
-            <span className={`text-[10px] font-black uppercase tracking-tight ${open ? 'text-slate-900' : 'text-slate-600'}`}>{title}</span>
-            {count !== undefined && (
-              <span className="px-1 py-0.5 bg-slate-100 text-slate-400 text-[8px] font-black rounded border border-slate-200">{count}</span>
-            )}
-          </div>
-          <ChevronDown className={`h-3 w-3 text-slate-400 flex-shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
-        </button>
-        {open && (
-          <div className="p-3 bg-white">
-            {children}
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  // ── Extraction tab ─────────────────────────────────────────────────────────
-
-  const renderExtraction = () => {
-    if (viewMode === 'JSON') {
-      return (
-        <div className="p-3">
-          <div className="bg-slate-900 rounded-xl p-4 overflow-hidden border border-slate-800">
-            <pre className="text-[10px] font-mono text-emerald-400 leading-relaxed overflow-auto max-h-[700px] custom-scrollbar">
-              {JSON.stringify(data, null, 2)}
-            </pre>
-          </div>
-        </div>
-      );
-    }
-
-    const hps = data.human_performance_signals as any;
-    const rpc = (data as any).risk_and_procedure_clues;
-
-    return (
-      <div className="p-3 space-y-2">
-
-        {/* 1 — Audio Session Meta */}
-        <AccSection id="audio_session_meta" title="Audio Session Meta" icon={Settings}>
-          <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-            {([
-              ['Session', data.recording_meta.file_name],
-              ['Duration', data.recording_meta.duration],
-              ['Quality', data.recording_meta.audio_quality],
-              ['Type', data.recording_meta.recording_type],
-              ['Noise', data.recording_meta.noise_level],
-              ['Channel', data.recording_meta.channel_type],
-              ['Language', data.recording_meta.language],
-              ['Overlap', data.recording_meta.overlap_level],
-            ] as [string, string][]).map(([label, value]) => (
-              <div key={label} className="min-w-0">
-                <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide block">{label}</span>
-                <span className="text-[10px] font-bold text-slate-800 truncate block">{value || '—'}</span>
-              </div>
-            ))}
-          </div>
-        </AccSection>
-
-        {/* 2 — Speaker Profiles */}
-        <AccSection id="speaker_profiles" title="Speaker Profiles" icon={Users} count={data.speaker_profiles.length}>
-          <div className="space-y-2">
-            {data.speaker_profiles.map((s: any) => (
-              <div key={s.speaker_id} className="p-2.5 border rounded-lg bg-slate-50/50 hover:bg-white transition-all">
-                <div className="flex items-start justify-between mb-1.5">
-                  <div>
-                    <span className="text-[10px] font-black text-slate-900 block">{s.speaker_label || s.speaker_id}</span>
-                    <span className="text-[9px] font-bold text-slate-400">{s.probable_role}</span>
-                  </div>
-                  <Chip label={`Stress: ${s.stress_level.split(' ')[0]}`} variant={s.stress_level.includes('High') ? 'critical' : 'ok'} />
-                </div>
-                <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[9px] font-bold text-slate-400">
-                  <span>Speaking: <span className="text-slate-700">{s.speaking_time}</span></span>
-                  <span>Style: <span className="text-slate-700">{s.speaking_style.split(',')[0]}</span></span>
-                  <span>Assert: <span className="text-slate-700">{s.assertiveness}</span></span>
-                  <span>Hesit: <span className="text-slate-700">{s.hesitation}</span></span>
-                  <span>Role: <span className="text-slate-700">{s.escalation_role}</span></span>
-                  <span>Conf: <span className="text-slate-700">{s.confidence}</span></span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </AccSection>
-
-        {/* 3 — Communication Events */}
-        <AccSection id="comm_events" title="Communication Events" icon={MessageCircle} count={data.communication_events.length}>
-          <div className="space-y-2">
-            {data.communication_events.map((ev: any, i: number) => (
-              <div key={i} className="flex gap-2 p-2 border rounded-lg bg-white hover:bg-slate-50/50 transition-all">
-                <TsBtn time={ev.timestamp} />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5 flex-wrap mb-1">
-                    <span className="text-[9px] font-black text-slate-800 truncate">{ev.event_type}</span>
-                    <Chip label={ev.urgency} variant={ev.urgency === 'Critical' ? 'critical' : ev.urgency === 'Medium' ? 'warn' : 'default'} />
-                  </div>
-                  <p className="text-[9px] font-bold text-slate-600 leading-snug mb-1">{ev.content_summary}</p>
-                  <div className="flex items-center gap-1 text-[8px] font-bold text-slate-400 flex-wrap">
-                    <span>{ev.actor}</span><span>→</span><span>{ev.target_actor}</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </AccSection>
-
-        {/* 4 — Factual Statements */}
-        <AccSection id="factual_statements" title="Factual Statements" icon={FileText} count={(data as any).factual_statements?.length || 0}>
-          <div className="space-y-2">
-            {((data as any).factual_statements || []).map((f: any, i: number) => (
-              <div key={i} className="flex gap-2 p-2 border rounded-lg bg-white hover:bg-slate-50/50 transition-all">
-                <TsBtn time={f.timestamp} />
-                <div className="flex-1 min-w-0">
-                  <p className="text-[10px] font-bold text-slate-800 leading-snug mb-1">{f.fact_text}</p>
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="text-[8px] font-bold text-slate-500">{f.speaker}</span>
-                    <Chip label={f.statement_type} />
-                    <Chip label={f.observed_or_claimed} variant={f.observed_or_claimed === 'Observed' ? 'ok' : 'info'} />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </AccSection>
-
-        {/* 5 — Timeline Events */}
-        <AccSection id="timeline_events" title="Timeline Events" icon={Clock} count={(data as any).timeline_events?.length || 0}>
-          <div className="relative">
-            <div className="absolute left-[10px] top-1 bottom-1 w-px bg-slate-100" />
-            <div className="space-y-3">
-              {((data as any).timeline_events || []).map((ev: any, i: number) => (
-                <div key={i} className="flex gap-2.5 items-start relative z-10">
-                  <button
-                    onClick={() => seek(ev.timestamp)}
-                    className="h-[20px] w-[20px] rounded-full border-2 border-white bg-slate-100 flex items-center justify-center hover:bg-primary/15 transition-colors flex-shrink-0 mt-0.5 shadow-sm"
-                    title="Seek to this time"
-                  >
-                    <div className="h-1.5 w-1.5 rounded-full bg-primary/60" />
-                  </button>
-                  <div className="flex-1 min-w-0 pb-1">
-                    <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
-                      <span className="text-[9px] font-black text-primary tabular-nums">{ev.timestamp}</span>
-                      <span className="text-[9px] font-bold text-slate-400">· {ev.actor}</span>
-                    </div>
-                    <p className="text-[9px] font-bold text-slate-700 leading-snug">{ev.event_summary}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </AccSection>
-
-        {/* 6 — Human Performance Signals */}
-        <AccSection id="human_perf" title="Human Performance Signals" icon={Activity}>
-          <div className="space-y-1.5">
-            {([
-              { key: 'communication_positive_or_not', label: 'Communication',     icon: MessageSquare, tone: 'neutral' },
-              { key: 'missed_confirmation',           label: 'Missed Confirmation', icon: AlertCircle,  tone: 'warn' },
-              { key: 'delayed_reporting',             label: 'Delayed Reporting',   icon: Clock,         tone: 'warn' },
-              { key: 'supervision_signal',            label: 'Supervision',         icon: Users,         tone: 'warn' },
-              { key: 'stress_or_confusion',           label: 'Stress / Confusion',  icon: AlertTriangle, tone: 'critical' },
-              { key: 'speak_up_signal',               label: 'Speak-Up',            icon: MessageSquare, tone: 'ok' },
-              { key: 'coordination_gap_signal',       label: 'Coordination Gap',    icon: AlertCircle,   tone: 'warn' },
-            ] as any[]).map(({ key, label, icon: Icon, tone }) => {
-              const raw = hps[key];
-              const arr: string[] = Array.isArray(raw) ? raw : (raw ? [raw] : []);
-              if (arr.length === 0) return null;
-              const dot = tone === 'critical' ? 'bg-rose-400' : tone === 'warn' ? 'bg-amber-400' : tone === 'ok' ? 'bg-emerald-400' : 'bg-slate-300';
-              return (
-                <div key={key} className="p-2 border rounded-lg bg-slate-50/30">
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <Icon className="h-3 w-3 text-slate-400" />
-                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-wide">{label}</span>
-                  </div>
-                  <div className="space-y-0.5">
-                    {arr.map((item: string, i: number) => (
-                      <div key={i} className="flex items-start gap-1.5">
-                        <div className={`h-1.5 w-1.5 rounded-full mt-1 flex-shrink-0 ${dot}`} />
-                        <p className="text-[9px] font-bold text-slate-600 leading-snug">{item}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </AccSection>
-
-        {/* 7 — Risk & Procedure Clues */}
-        <AccSection id="risk_clues" title="Risk & Procedure Clues" icon={AlertTriangle}>
-          <div className="space-y-2.5">
-            {rpc && ([
-              { key: 'procedure_mentions',          label: 'Procedure' },
-              { key: 'equipment_issue_mentions',    label: 'Equipment' },
-              { key: 'sensor_alarm_mentions',       label: 'Sensor / Alarm' },
-              { key: 'emergency_response_mentions', label: 'Emergency' },
-              { key: 'control_gap_mentions',        label: 'Control Gap' },
-              { key: 'radio_channel_issue_mentions',label: 'Radio / Comms' },
-            ] as { key: string; label: string }[]).map(({ key, label }) => {
-              const items: string[] = rpc[key] || [];
-              if (items.length === 0) return null;
-              return (
-                <div key={key}>
-                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide block mb-1">{label}</span>
-                  <div className="space-y-0.5">
-                    {items.map((item, i) => (
-                      <div key={i} className="flex items-start gap-1.5">
-                        <div className="h-1 w-1 rounded-full bg-slate-300 mt-1.5 flex-shrink-0" />
-                        <p className="text-[9px] font-bold text-slate-600 leading-snug">{item}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </AccSection>
-
-        {/* 8 — Contradictions & Gaps */}
-        <AccSection id="contradictions" title="Contradictions & Gaps" icon={AlertCircle} count={(data as any).contradictions_and_gaps?.length || 0}>
-          <div className="space-y-2">
-            {((data as any).contradictions_and_gaps || []).map((c: any, i: number) => (
-              <div key={i} className="p-2.5 border border-amber-100 rounded-lg bg-amber-50/30 hover:bg-amber-50/60 transition-all">
-                <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                  <TsBtn time={c.timestamp} />
-                  <Chip label={c.type} variant="warn" />
-                  <span className="ml-auto text-[8px] font-bold text-slate-400">{c.confidence}</span>
-                </div>
-                <p className="text-[9px] font-bold text-slate-700 leading-snug">{c.detail}</p>
-              </div>
-            ))}
-          </div>
-        </AccSection>
-
-        {/* 9 — PEEPO Seeds */}
-        <AccSection id="peepo" title="PEEPO Seeds" icon={Brain}>
-          <div className="space-y-1.5">
-            {Object.entries(data.peepo_seeds).map(([cat, items]: any) => {
-              const arr: string[] = Array.isArray(items) ? items : [items];
-              return (
-                <div key={cat} className="p-2 rounded-lg border border-slate-100 bg-slate-50/40 hover:bg-white transition-all">
-                  <span className="text-[8px] font-black text-primary uppercase tracking-wider block mb-1">{cat}</span>
-                  {arr.map((item: string, i: number) => (
-                    <div key={i} className="flex items-start gap-1.5">
-                      <div className="h-1 w-1 rounded-full bg-primary/40 mt-1.5 flex-shrink-0" />
-                      <p className="text-[9px] font-bold text-slate-600 leading-snug">{item}</p>
-                    </div>
-                  ))}
-                </div>
-              );
-            })}
-          </div>
-        </AccSection>
-
-        {/* 10 — IPLS Seeds */}
-        <AccSection id="ipls" title="IPLS Seeds" icon={FileSearch} count={data.ipls_seeds.length}>
-          <div className="space-y-2">
-            {data.ipls_seeds.map((ipls: any, i: number) => (
-              <div key={i} className="p-2.5 border-l-2 border-l-primary border border-slate-100 rounded-r-lg bg-slate-50/40">
-                <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                  <span className="text-[9px] font-black text-primary">{ipls.layer_candidate}</span>
-                  <span className="text-[8px] text-slate-300">·</span>
-                  <span className="text-[9px] font-bold text-slate-500">{ipls.control_area_candidate}</span>
-                </div>
-                <p className="text-[9px] font-bold text-slate-700 leading-snug mb-1">{ipls.deviation_text}</p>
-                {ipls.evidence_quote && (
-                  <p className="text-[9px] font-medium text-slate-400 italic leading-snug">"{ipls.evidence_quote}"</p>
-                )}
-              </div>
-            ))}
-          </div>
-        </AccSection>
-
-        {/* 11 — Review Meta */}
-        <AccSection id="review_meta" title="Review Meta" icon={CheckCircle2}>
-          <div className="space-y-2">
-            {((data as any).review_meta?.low_confidence_segments || []).map((seg: string, i: number) => (
-              <div key={i} className="flex items-start gap-1.5">
-                <AlertCircle className="h-3 w-3 text-amber-400 flex-shrink-0 mt-0.5" />
-                <p className="text-[9px] font-bold text-slate-600 leading-snug">{seg}</p>
-              </div>
-            ))}
-            {((data as any).review_meta?.needs_human_review || []).length > 0 && (
-              <div>
-                <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide block mb-1">Needs Human Review</span>
-                {(data as any).review_meta.needs_human_review.map((item: string, i: number) => (
-                  <div key={i} className="flex items-start gap-1.5 mb-1 last:mb-0">
-                    <Eye className="h-3 w-3 text-primary flex-shrink-0 mt-0.5" />
-                    <p className="text-[9px] font-bold text-slate-600 leading-snug">{item}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-            <div className="flex items-center justify-between pt-1.5 border-t border-slate-100">
-              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wide">Overall Confidence</span>
-              <span className="text-[10px] font-black text-emerald-600">{(data as any).review_meta?.confidence || '—'}</span>
-            </div>
-          </div>
-        </AccSection>
-
-      </div>
-    );
-  };
-
-  // ── Diary Session tab ──────────────────────────────────────────────────────
-
-  const renderDiary = () => {
-    const segments = audioDiarizationData;
-    const totalSpeakers = [...new Set(segments.map(s => s.speaker_id))].length;
-    const curMin = Math.floor(audioCurrentTime / 60).toString().padStart(2, '0');
-    const curSec = (audioCurrentTime % 60).toString().padStart(2, '0');
-
-    return (
-      <div className="flex flex-col h-full">
-        {/* Mini header stats */}
-        <div className="px-3 py-1.5 border-b border-slate-100 bg-slate-50/50 flex items-center gap-3 text-[9px] font-bold text-slate-400 uppercase tracking-wide flex-shrink-0">
-          <span>{segments.length} segments</span>
-          <span className="h-3 w-px bg-slate-200" />
-          <span>{totalSpeakers} speakers</span>
-          <span className="h-3 w-px bg-slate-200" />
-          <span>04:22 total</span>
-          <div className="ml-auto flex items-center gap-1.5">
-            <div className={`h-1.5 w-1.5 rounded-full ${audioCurrentTime > 0 ? 'bg-primary animate-pulse' : 'bg-slate-200'}`} />
-            <span className="tabular-nums text-slate-500">{curMin}:{curSec}</span>
-          </div>
-        </div>
-
-        {/* Segment list */}
-        <div className="flex-1 overflow-auto custom-scrollbar divide-y divide-slate-50">
-          {segments.map((seg) => {
-            const active = isSegActive(seg.start_time, seg.end_time);
-            return (
-              <div
-                key={seg.segment_id}
-                onClick={() => seek(seg.start_time)}
-                className={`flex gap-2.5 px-3 py-2.5 cursor-pointer transition-all relative group ${
-                  active
-                    ? 'bg-primary/5 border-l-2 border-l-primary'
-                    : 'border-l-2 border-l-transparent hover:bg-slate-50/80 hover:border-l-slate-200'
-                }`}
-              >
-                {/* Timestamp range */}
-                <div className="w-[72px] flex-shrink-0 pt-0.5">
-                  <span className={`text-[9px] font-black tabular-nums leading-tight block ${active ? 'text-primary' : 'text-slate-400'}`}>
-                    {seg.start_time}
-                  </span>
-                  <span className={`text-[8px] font-bold tabular-nums block ${active ? 'text-primary/60' : 'text-slate-300'}`}>
-                    –{seg.end_time}
-                  </span>
-                </div>
-
-                {/* Content */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                    <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wide border ${
-                      seg.speaker_id === 'SPK_01'
-                        ? 'bg-amber-50 text-amber-700 border-amber-100'
-                        : 'bg-indigo-50 text-indigo-700 border-indigo-100'
-                    }`}>
-                      {seg.speaker_label}
-                    </span>
-                    {seg.flags.includes('critical_evidence') && <span className="h-1.5 w-1.5 rounded-full bg-rose-500" title="Critical evidence" />}
-                    {seg.flags.includes('hazard_alert') && <span className="h-1.5 w-1.5 rounded-full bg-amber-400" title="Hazard alert" />}
-                    {seg.flags.includes('key_observation') && <Star className="h-2.5 w-2.5 text-amber-400 fill-amber-400" />}
-                    {seg.flags.includes('emergency_command') && <span className="h-1.5 w-1.5 rounded-full bg-rose-600 animate-pulse" title="Emergency command" />}
-                  </div>
-                  <p className={`text-[10px] leading-relaxed ${active ? 'text-slate-900 font-medium' : 'text-slate-600 font-medium'}`}>
-                    {seg.text}
-                  </p>
-                </div>
-              </div>
-            );
-          })}
-
-          {/* End marker */}
-          <div className="flex flex-col items-center justify-center py-6 gap-1">
-            <div className="h-px w-8 bg-slate-100" />
-            <span className="text-[8px] font-black uppercase tracking-[0.2em] text-slate-300">End of Recording</span>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // ── Render ─────────────────────────────────────────────────────────────────
-
-  return (
-    <div className="flex flex-col h-full overflow-hidden">
-
-      {/* Sticky tab header */}
-      <div className="px-3 py-2 border-b bg-white flex items-center justify-between flex-shrink-0 gap-2">
-        {/* Tab switcher */}
-        <div className="flex items-center gap-0.5 p-0.5 bg-slate-100 rounded-md border border-slate-200 shadow-inner">
-          {(['extraction', 'diary'] as const).map(tab => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-3 py-1 text-[9px] font-black uppercase tracking-tight rounded transition-all ${
-                activeTab === tab
-                  ? 'bg-white text-primary shadow-sm ring-1 ring-slate-200/60'
-                  : 'text-slate-400 hover:text-slate-600'
-              }`}
-            >
-              {tab === 'extraction' ? 'Extraction' : 'Diary Session'}
-            </button>
-          ))}
-        </div>
-
-        {/* Right controls */}
-        {activeTab === 'extraction' && (
-          <div className="flex items-center gap-0.5 p-0.5 bg-slate-100 rounded border border-slate-200 shadow-inner">
-            {(['Structured', 'JSON'] as const).map(mode => (
-              <button
-                key={mode}
-                onClick={() => setViewMode(mode)}
-                className={`px-2 py-0.5 text-[8px] font-black uppercase rounded transition-all ${
-                  viewMode === mode ? 'bg-white text-primary shadow-sm' : 'text-slate-400 hover:text-slate-600'
-                }`}
-              >
-                {mode}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Tab content area */}
-      <div className="flex-1 min-h-0 overflow-hidden">
-        {activeTab === 'extraction' ? (
-          <div className="h-full overflow-auto custom-scrollbar">
-            {renderExtraction()}
-          </div>
-        ) : (
-          <div className="h-full flex flex-col overflow-hidden">
-            {renderDiary()}
-          </div>
-        )}
-      </div>
-
-    </div>
-  );
-}
-
 // --- Tabs ---
 
 function OverviewTab() {
@@ -1602,7 +1093,7 @@ function OverviewTab() {
                     <div className="h-8 w-8 bg-primary/5 rounded flex items-center justify-center text-primary font-bold text-xs border border-primary/10">IQ</div>
                     <div>
                        <h3 className="text-sm font-bold text-slate-900 border-none">Case Intelligence Summary</h3>
-                       <p className="text-[10px] font-medium text-slate-400 uppercase tracking-widest">AI Generated • Last Updated 12m ago</p>
+                       <p className="text-[10px] font-medium text-slate-400 uppercase tracking-widest">AI Generated ΓÇó Last Updated 12m ago</p>
                     </div>
                  </div>
                  <Button variant="ghost" size="sm" className="h-7 text-xs font-bold gap-2 text-primary hover:bg-primary/5">
@@ -1831,7 +1322,7 @@ function DeleteFolderModal({
     setIsDeleting(true);
     await new Promise(r => setTimeout(r, 450));
     onConfirm();
-    // modal unmounts via onConfirm → setDeleteFolderTarget(null)
+    // modal unmounts via onConfirm ΓåÆ setDeleteFolderTarget(null)
   };
 
   const extraCount = target.fileCount - target.sampleFiles.length;
@@ -1963,7 +1454,7 @@ function DeleteFolderModal({
             {isDeleting ? (
               <span className="flex items-center gap-1.5">
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                Deleting…
+                DeletingΓÇª
               </span>
             ) : (
               "Delete Folder"
@@ -1975,58 +1466,33 @@ function DeleteFolderModal({
   );
 }
 
-function ExtractionTab({ 
-  evidenceFiles, 
-  batches, 
-  selectedFile, 
-  setSelectedFile,
-  caseId,
-  onUploadComplete
-}: { 
-  evidenceFiles: any[], 
-  batches: any[], 
-  selectedFile: any,
-  setSelectedFile: (f: any) => void,
-  caseId: string,
-  onUploadComplete: (groups: CompletedGroup[]) => void
-}) {
+function ExtractionTab({ files: evidenceFiles, setFiles: setEvidenceFiles, batches, setBatches }: { files: any[], setFiles: React.Dispatch<React.SetStateAction<any[]>>, batches: any[], setBatches: React.Dispatch<React.SetStateAction<any[]>> }) {
+  const [selectedFile, setSelectedFile] = useState<any>(evidenceFiles[1]);
   const [activeFilter, setActiveFilter] = useState("All Files");
   const [searchQuery, setSearchQuery] = useState("");
-  const [expandedBatches, setExpandedBatches] = useState<string[]>([]);
+  const [expandedBatches, setExpandedBatches] = useState<string[]>(["B1", "B2", "B4", "B5"]);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-
-  // Lifted audio state — shared between center player and right panel
-  const [audioCurrentTime, setAudioCurrentTime] = useState(0);
-  const [audioIsPlaying, setAudioIsPlaying] = useState(false);
-  const [audioPlaybackSpeed, setAudioPlaybackSpeed] = useState(1);
   const [deleteFolderTarget, setDeleteFolderTarget] = useState<DeleteFolderTarget | null>(null);
-
-  // Auto-expand all batches on load
-  useEffect(() => {
-    if (batches.length > 0 && expandedBatches.length === 0) {
-      setExpandedBatches(batches.map(b => b.id));
-    }
-  }, [batches]);
 
   // Shared Video State
   const [videoCurrentTime, setVideoCurrentTime] = useState(0);
   const [videoIsPlaying, setVideoIsPlaying] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  const deleteFileMutation = useDeleteFile();
-  const insertAuditLog = useInsertAuditLog();
-
   const jumpToVideoTime = (seconds: number) => {
     if (videoRef.current) {
       videoRef.current.currentTime = Math.max(0, seconds);
-      videoRef.current.play().catch(err => console.warn("Play blocked:", err));
+      // Use a promise to handle play() and ensure state is synced
+      videoRef.current.play().catch(err => {
+        console.warn("Autoplay/Play blocked or failed:", err);
+      });
       setVideoIsPlaying(true);
     }
   };
 
   const openDeleteFolderModal = (batch: any) => {
-    const filesInBatch = evidenceFiles.filter(f => f.batch_id === batch.id);
+    const filesInBatch = evidenceFiles.filter(f => f.batchId === batch.id);
     setDeleteFolderTarget({
       id: batch.id,
       name: batch.name,
@@ -2035,208 +1501,263 @@ function ExtractionTab({
     });
   };
 
-  const handleDeleteFolder = async () => {
+  const handleDeleteFolder = () => {
     if (!deleteFolderTarget) return;
-    try {
-      const filesInBatch = evidenceFiles.filter(f => f.batch_id === deleteFolderTarget.id);
-      for (const file of filesInBatch) {
-        await deleteFileMutation.mutateAsync({ id: file.id, url: file.url });
-      }
-      await insertAuditLog.mutateAsync({
-        case_id: caseId!,
-        action: `Deleted folder "${deleteFolderTarget.name}"`,
-        entity_type: "Evidence Batch",
-        entity_name: deleteFolderTarget.name
-      });
-      toast.success(`Folder ${deleteFolderTarget.name} and its items deleted.`);
-      setDeleteFolderTarget(null);
-    } catch (error) {
-      toast.error("Failed to delete folder.");
-    }
+    const targetId = deleteFolderTarget.id;
+    setBatches(prev => prev.filter(b => b.id !== targetId));
+    setEvidenceFiles(prev => prev.filter(f => f.batchId !== targetId));
+    setExpandedBatches(prev => prev.filter(id => id !== targetId));
+    if (selectedFile?.batchId === targetId) setSelectedFile(null);
+    setDeleteFolderTarget(null);
   };
 
   const toggleBatch = (id: string) => {
     setExpandedBatches(prev => prev.includes(id) ? prev.filter(b => b !== id) : [...prev, id]);
   };
 
-  const handleDelete = async () => {
-    if (selectedFile) {
-      try {
-        await deleteFileMutation.mutateAsync({ id: selectedFile.id, url: selectedFile.url });
-        await insertAuditLog.mutateAsync({
-          case_id: caseId!,
-          action: `Deleted file "${selectedFile.name}"`,
-          entity_type: "Evidence File",
-          entity_name: selectedFile.name
+  const handleUploadComplete = (completedGroups: CompletedGroup[]) => {
+    const today = new Date().toISOString().split("T")[0];
+    const newBatches: any[] = [];
+    const newFiles: any[] = [];
+    const newExpandedIds: string[] = [];
+
+    for (const group of completedGroups) {
+      // Determine dominant file type for batch label
+      const counts: Record<string, number> = { Image: 0, Audio: 0, Video: 0, Document: 0 };
+      for (const f of group.files) { if (f.type in counts) counts[f.type]++; }
+      const dominant = Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
+      const batchType = dominant === "Image" ? "Images" : dominant === "Audio" ? "Audio" : dominant === "Video" ? "Video" : "Documents";
+
+      newBatches.push({
+        id: group.batchId,
+        name: group.name,
+        description: group.isFolder ? `Uploaded from folder: ${group.name}` : "Manually uploaded files",
+        type: batchType,
+        fileCount: group.files.length,
+        uploadedBy: "Current User",
+        updated: "Just now",
+        extractionProgress: 0,
+        reviewProgress: 0,
+        keyEvidenceCount: 0,
+        linkedAnalysis: 0,
+      });
+      newExpandedIds.push(group.batchId);
+
+      for (const file of group.files) {
+        newFiles.push({
+          id: file.id,
+          batchId: group.batchId,
+          name: file.name,
+          type: file.type,
+          source: group.isFolder ? "Folder Upload" : "Manual Upload",
+          uploadedBy: "Current User",
+          uploadDate: today,
+          extractionStatus: "processing",
+          reviewStatus: "pending",
+          tags: [],
+          linked: 0,
+          size: file.size,
+          relativePath: file.relativePath,
         });
-        toast.success("File deleted successfully.");
-        setSelectedFile(null);
-        setIsDeleteModalOpen(false);
-      } catch (error) {
-        toast.error("Failed to delete file.");
       }
+    }
+
+    setBatches(prev => [...prev, ...newBatches]);
+    setEvidenceFiles(prev => [...newFiles, ...prev]);
+    setExpandedBatches(prev => [...new Set([...prev, ...newExpandedIds])]);
+  };
+
+  const handleDelete = () => {
+    if (selectedFile) {
+      setEvidenceFiles(prev => prev.filter(f => f.id !== selectedFile.id));
+      setSelectedFile(null);
+      setIsDeleteModalOpen(false);
+    }
+  };
+
+  const goToNext = () => {
+    const allFiles = activeFilter === "All Files" ? groupedFiles.flatMap(b => b.files) : filteredFiles;
+    const currentIndex = allFiles.findIndex(f => f.id === selectedFile?.id);
+    if (currentIndex < allFiles.length - 1) {
+      setSelectedFile(allFiles[currentIndex + 1]);
+    }
+  };
+
+  const goToPrev = () => {
+    const allFiles = activeFilter === "All Files" ? groupedFiles.flatMap(b => b.files) : filteredFiles;
+    const currentIndex = allFiles.findIndex(f => f.id === selectedFile?.id);
+    if (currentIndex > 0) {
+      setSelectedFile(allFiles[currentIndex - 1]);
+    }
+  };
+
+  const handleReview = () => {
+    if (selectedFile) {
+      const updatedFiles = evidenceFiles.map(f => 
+        f.id === selectedFile.id ? { ...f, reviewStatus: "reviewed" } : f
+      );
+      setEvidenceFiles(updatedFiles);
+      setSelectedFile({ ...selectedFile, reviewStatus: "reviewed" });
     }
   };
 
   const filteredFiles = evidenceFiles.filter(f => {
     const matchesFilter = activeFilter === "All Files" 
-      ? true 
-      : f.type === activeFilter;
+      ? f.extractionStatus !== "not_started"
+      : f.type === activeFilter.replace(/s$/, "");
     const matchesSearch = f.name.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesFilter && matchesSearch;
   });
 
   const groupedFiles = batches.map(batch => ({
     ...batch,
-    files: filteredFiles.filter(f => f.batch_id === batch.id)
+    files: filteredFiles.filter(f => f.batchId === batch.id)
   })).filter(b => b.files.length > 0);
 
-  const goToNext = () => {
-    const allFiles = filteredFiles;
-    const currentIndex = allFiles.findIndex(f => f.id === selectedFile?.id);
-    if (currentIndex < allFiles.length - 1) setSelectedFile(allFiles[currentIndex + 1]);
-  };
-
-  const goToPrev = () => {
-    const allFiles = filteredFiles;
-    const currentIndex = allFiles.findIndex(f => f.id === selectedFile?.id);
-    if (currentIndex > 0) setSelectedFile(allFiles[currentIndex - 1]);
-  };
-
-  const handleReview = async () => {
-    if (selectedFile) {
-      const { error } = await supabase
-        .from('evidence_files')
-        .update({ review_status: 'reviewed' })
-        .eq('id', selectedFile.id);
-      
-      if (error) toast.error("Failed to update status.");
-      else {
-        await insertAuditLog.mutateAsync({
-          case_id: caseId!,
-          action: `Marked file "${selectedFile.name}" as reviewed`,
-          entity_type: "Evidence File",
-          entity_name: selectedFile.name
-        });
-        toast.success("Marked as reviewed.");
-      }
-    }
-  };
-
   return (
-    <div className="flex h-full overflow-hidden bg-white border-t relative">
-      {/* Evidence Side Sidebar */}
-      <div className="w-80 border-r bg-white flex flex-col shrink-0 relative z-20 shadow-[2px_0_8px_rgba(0,0,0,0.02)]">
-        <div className="p-5 border-b space-y-4 bg-slate-50/30">
-          <div className="space-y-1.5">
-             <div className="flex items-center justify-between">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Evidence Repository</span>
-                <span className="text-[10px] font-bold text-primary bg-primary/5 px-2 py-0.5 rounded-full">{evidenceFiles.length} Objects</span>
-             </div>
-             <div className="relative group">
-               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 group-focus-within:text-primary transition-colors" />
-               <input 
-                 type="text" 
-                 placeholder="Search identifiers..."
-                 value={searchQuery}
-                 onChange={(e) => setSearchQuery(e.target.value)}
-                 className="w-full bg-white border border-slate-200 rounded-xl py-2.5 pl-9 pr-4 text-xs font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none shadow-sm"
-               />
-             </div>
-          </div>
-          
-          <div className="flex gap-2">
-            {[
-              { id: "All Files", label: "ALL", icon: Grid },
-              { id: "Document", label: "DOCS", icon: DocIcon },
-              { id: "Image", label: "IMAGES", icon: ImageIcon },
-              { id: "Audio", label: "AUDIO", icon: AudioIcon },
-              { id: "Video", label: "VIDEO", icon: VideoIcon }
-            ].map((f) => (
-              <button
+    <div className="flex h-full overflow-hidden">
+      {/* LEFT PANEL ΓÇö Unified Evidence Library */}
+      <div className="w-[320px] min-w-[280px] border-r bg-white flex flex-col shrink-0 z-20 shadow-[1px_0_5px_rgba(0,0,0,0.03)]">
+        <div className="p-4 border-b space-y-3 bg-slate-50/20">
+           <div className="flex items-center justify-between">
+              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Evidence Control</span>
+              <button className="p-1 hover:bg-slate-200 rounded transition-colors"><Settings className="h-3.5 w-3.5 text-slate-400" /></button>
+           </div>
+           
+           <Button 
+            onClick={() => setIsUploadModalOpen(true)}
+            className="w-full h-10 bg-slate-900 hover:bg-slate-800 text-white font-black uppercase tracking-widest text-[10px] gap-2 shadow-lg shadow-slate-900/10 active:scale-[0.98] transition-all"
+           >
+              <Upload className="h-3.5 w-3.5" /> Add New Evidence
+           </Button>
+
+           <div className="relative group">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300 group-focus-within:text-primary transition-colors" />
+              <input 
+                placeholder="Search library..." 
+                className="w-full h-9 pl-9 pr-4 bg-white border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-primary/10 focus:border-primary outline-none transition-all"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+           </div>
+        </div>
+        
+        <div className="px-2.5 py-2 border-b flex gap-1 bg-white shadow-sm">
+           {[
+             { id: "All Files", label: "All", icon: Grid },
+             { id: "Document", label: "Docs", icon: FileText },
+             { id: "Image", label: "Images", icon: ImageIcon },
+             { id: "Audio", label: "Audio", icon: AudioIcon },
+             { id: "Video", label: "Video", icon: VideoIcon },
+           ].map(f => (
+              <button 
                 key={f.id}
                 onClick={() => setActiveFilter(f.id)}
-                className={`flex-1 flex flex-col items-center justify-center py-2.5 rounded-xl border transition-all ${
+                title={f.id}
+                className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-1.5 px-0.5 rounded-md border transition-all ${
                   activeFilter === f.id
-                    ? "bg-[#0f172a] text-white border-[#0f172a] shadow-md scale-[1.02]"
-                    : "bg-white text-slate-400 border-slate-100 hover:bg-slate-50 hover:text-slate-600 hover:border-slate-200"
+                  ? "bg-slate-900 text-white border-slate-900 shadow-sm" 
+                  : "bg-white text-slate-400 border-slate-100 hover:border-slate-300 hover:text-slate-700 hover:bg-slate-50"
                 }`}
               >
-                <f.icon className={`h-4 w-4 mb-1.5 ${activeFilter === f.id ? "text-white" : "text-slate-400"}`} strokeWidth={activeFilter === f.id ? 2.5 : 2} />
-                <span className="text-[9px] font-black uppercase tracking-widest">{f.label}</span>
+                <f.icon className="h-3.5 w-3.5" />
+                <span className="text-[9px] font-bold uppercase tracking-wide">{f.label}</span>
               </button>
-            ))}
-          </div>
+           ))}
         </div>
 
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-6">
-          {groupedFiles.map((batch) => (
-            <div key={batch.id} className="space-y-2">
-              <div className="flex items-center justify-between group/folder">
-                <button 
-                  onClick={() => toggleBatch(batch.id)}
-                  className="flex items-center gap-2 group flex-1"
-                >
-                  <ChevronDown className={`h-3.5 w-3.5 text-slate-400 transition-transform duration-300 ${expandedBatches.includes(batch.id) ? "" : "-rotate-90"}`} />
-                  <div className="flex items-center gap-2">
-                    <Folders className="h-3.5 w-3.5 text-primary" />
-                    <span className="text-[11px] font-black text-slate-900 uppercase tracking-tighter">{batch.name}</span>
+        <div className="flex-1 overflow-auto custom-scrollbar bg-slate-50/30">
+           {activeFilter === "All Files" ? (
+             groupedFiles.map(batch => (
+               <div key={batch.id} className="border-b last:border-b-0 bg-white">
+                  <div
+                    onClick={() => toggleBatch(batch.id)}
+                    className="flex items-center gap-2 px-3 py-2.5 bg-slate-50 cursor-pointer hover:bg-slate-100 transition-colors border-b border-slate-100 group/brow"
+                  >
+                     <div className="shrink-0">
+                       {expandedBatches.includes(batch.id) ? <ChevronDown className="h-3 w-3 text-slate-400" /> : <ChevronRight className="h-3 w-3 text-slate-400" />}
+                     </div>
+                     <Folders className="h-3.5 w-3.5 text-primary/60 shrink-0" />
+                     <span className="text-[10px] font-bold text-slate-600 uppercase tracking-tighter leading-snug flex-1 min-w-0 truncate">{batch.name}</span>
+                     <span className="text-[9px] font-bold text-slate-400 bg-white px-1.5 py-0.5 rounded-full border shrink-0">{batch.files.length}</span>
+                     <button
+                       onClick={(e) => { e.stopPropagation(); openDeleteFolderModal(batch); }}
+                       className="p-1 hover:bg-rose-50 rounded transition-colors opacity-0 group-hover/brow:opacity-100 text-slate-300 hover:text-rose-400 shrink-0"
+                       title="Delete folder"
+                     >
+                       <Trash2 className="h-3 w-3" />
+                     </button>
                   </div>
-                  <span className="text-[9px] font-bold text-slate-300 bg-slate-50 px-1.5 rounded-full ml-1">{batch.files.length}</span>
-                </button>
-                <button 
-                  onClick={() => openDeleteFolderModal(batch)}
-                  className="p-1 hover:bg-rose-50 rounded text-slate-300 hover:text-rose-500 transition-all opacity-0 group-hover/folder:opacity-100"
-                >
-                   <Trash2 className="h-3 w-3" />
-                </button>
-              </div>
-              
-              {expandedBatches.includes(batch.id) && (
-                <div className="space-y-1 ml-4 border-l-2 border-slate-50 pl-2">
-                  {batch.files.map((file: any) => (
-                    <div
+                  {expandedBatches.includes(batch.id) && batch.files.map(file => (
+                    <div 
                       key={file.id}
                       onClick={() => setSelectedFile(file)}
-                      className={`group flex items-center justify-between p-2.5 rounded-xl cursor-pointer transition-all ${
-                        selectedFile?.id === file.id 
-                        ? "bg-primary/5 border-primary/10 shadow-[0_4px_12px_rgba(37,99,235,0.08)]" 
-                        : "hover:bg-slate-50 border-transparent"
-                      } border`}
+                      className={`px-3 py-2.5 pl-7 border-b border-slate-50 cursor-pointer transition-all hover:bg-slate-50/80 relative group ${
+                        selectedFile?.id === file.id ? "bg-primary/5 border-l-[3px] border-l-primary" : "border-l-[3px] border-l-transparent"
+                      }`}
                     >
-                      <div className="flex items-center gap-2.5 overflow-hidden">
-                        <div className={`p-1.5 rounded-lg transition-colors ${selectedFile?.id === file.id ? "bg-white text-primary shadow-sm" : "bg-slate-100 text-slate-400 group-hover:bg-white"}`}>
-                          {getFileIcon(file.type)}
-                        </div>
-                        <div className="overflow-hidden">
-                          <p className={`text-[11px] font-bold truncate leading-none mb-1 ${selectedFile?.id === file.id ? "text-primary" : "text-slate-700"}`}>
-                            {file.name}
-                          </p>
-                          <div className="flex items-center gap-2">
-                            <span className="text-[9px] text-slate-400 font-bold uppercase tracking-tight">{file.type}</span>
-                             {file.review_status === 'reviewed' && <CheckCircle2 className="h-2.5 w-2.5 text-emerald-500" />}
+                       <div className="flex gap-2.5 items-start">
+                          <div className={`h-7 w-7 rounded shrink-0 flex items-center justify-center border mt-0.5 ${
+                            selectedFile?.id === file.id ? "bg-white border-primary/20 shadow-sm" : "bg-white border-slate-100"
+                          }`}>
+                             {getFileIcon(file.type)}
                           </div>
-                        </div>
-                      </div>
+                          <div className="flex-1 min-w-0">
+                             <div className="flex items-center justify-between mb-0.5 gap-2">
+                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter shrink-0">{file.type}</span>
+                                <span className="text-[9px] font-medium text-slate-400 shrink-0">{file.size}</span>
+                             </div>
+                             <p className={`text-[11px] font-bold leading-snug break-all line-clamp-2 ${selectedFile?.id === file.id ? "text-primary" : "text-slate-800"}`}>{file.name}</p>
+                             <div className="flex items-center gap-2 mt-2">
+                                <StatusIndicator status={file.extractionStatus} type="extraction" />
+                                <div className="h-1 w-1 rounded-full bg-slate-200" />
+                                <span className="text-[8px] font-bold text-slate-300 uppercase tracking-widest">{file.uploadDate}</span>
+                                {file.tags.includes("key") && <Star className="h-2.5 w-2.5 fill-amber-400 text-amber-400 ml-auto" />}
+                             </div>
+                          </div>
+                       </div>
                     </div>
                   ))}
-                </div>
-              )}
-            </div>
-          ))}
-          
-          <Button 
-            onClick={() => setIsUploadModalOpen(true)}
-            variant="outline" 
-            className="w-full border-dashed border-2 py-8 rounded-2xl bg-slate-50/50 hover:bg-primary/5 hover:border-primary/30 group transition-all"
-          >
-            <div className="flex flex-col items-center gap-2">
-              <div className="h-8 w-8 rounded-full bg-white flex items-center justify-center text-slate-400 group-hover:text-primary transition-colors shadow-sm">
-                <Plus className="h-4 w-4" />
-              </div>
-              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest group-hover:text-primary transition-colors">Ingest New Objects</span>
-            </div>
-          </Button>
+               </div>
+             ))
+           ) : (
+             filteredFiles.map(file => (
+               <div 
+                 key={file.id}
+                 onClick={() => setSelectedFile(file)}
+                 className={`px-3 py-2.5 border-b border-slate-50 cursor-pointer transition-all hover:bg-slate-50/80 relative group ${
+                   selectedFile?.id === file.id ? "bg-primary/5 border-l-[3px] border-l-primary" : "border-l-[3px] border-l-transparent"
+                 }`}
+               >
+                  <div className="flex gap-2.5 items-start">
+                     <div className={`h-7 w-7 rounded shrink-0 flex items-center justify-center border mt-0.5 ${
+                       selectedFile?.id === file.id ? "bg-white border-primary/20 shadow-sm" : "bg-white border-slate-100"
+                     }`}>
+                        {getFileIcon(file.type)}
+                     </div>
+                     <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-0.5 gap-2">
+                           <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter shrink-0">{file.type}</span>
+                           <span className="text-[9px] font-medium text-slate-400 shrink-0">{file.size}</span>
+                        </div>
+                        <p className={`text-[11px] font-bold leading-snug break-all line-clamp-2 ${selectedFile?.id === file.id ? "text-primary" : "text-slate-800"}`}>{file.name}</p>
+                        <div className="flex items-center gap-2 mt-2">
+                           <StatusIndicator status={file.extractionStatus} type="extraction" />
+                           <div className="h-1 w-1 rounded-full bg-slate-200" />
+                           <span className="text-[8px] font-bold text-slate-300 uppercase tracking-widest">{file.uploadDate}</span>
+                           {file.tags.includes("key") && <Star className="h-2.5 w-2.5 fill-amber-400 text-amber-400 ml-auto" />}
+                        </div>
+                     </div>
+                  </div>
+               </div>
+             ))
+           )}
+           {(activeFilter === "All Files" ? groupedFiles : filteredFiles).length === 0 && (
+               <div className="p-8 text-center text-slate-400">
+                  <Search className="h-8 w-8 mx-auto mb-3 opacity-20" />
+                  <p className="text-xs font-bold uppercase tracking-widest opacity-50">No files found</p>
+               </div>
+            )}
         </div>
       </div>
 
@@ -2267,7 +1788,7 @@ function ExtractionTab({
                    </div>
                    <div className="h-4 w-px bg-slate-200" />
                    <div className="flex items-center gap-3">
-                      <StatusIndicator status={selectedFile.extraction_status || 'pending'} type="extraction" />
+                      <StatusIndicator status={selectedFile.extractionStatus} type="extraction" />
                       <ConfidenceChip level="high" />
                    </div>
                 </div>
@@ -2291,13 +1812,13 @@ function ExtractionTab({
              <div className={`w-full flex ${selectedFile?.type === "Image" ? "max-w-3xl h-full items-center justify-center" : "max-w-5xl items-start justify-center pt-4"}`}>
                {selectedFile ? (
                  <AdaptiveSourcePreview 
-                    file={selectedFile} 
-                    videoCurrentTime={videoCurrentTime}
-                    setVideoCurrentTime={setVideoCurrentTime}
-                    videoIsPlaying={videoIsPlaying}
-                    setVideoIsPlaying={setVideoIsPlaying}
-                    videoRef={videoRef}
-                  />
+                   file={selectedFile} 
+                   videoCurrentTime={videoCurrentTime}
+                   setVideoCurrentTime={setVideoCurrentTime}
+                   videoIsPlaying={videoIsPlaying}
+                   setVideoIsPlaying={setVideoIsPlaying}
+                   videoRef={videoRef}
+                 />
               ) : (
                 <div className="flex flex-col items-center justify-center p-12 text-center">
                    <div className="h-20 w-20 rounded-[2.5rem] bg-white shadow-2xl flex items-center justify-center mb-8 border border-white/50 animate-in fade-in zoom-in duration-700">
@@ -2330,10 +1851,10 @@ function ExtractionTab({
         <div className="flex-1 overflow-auto custom-scrollbar bg-white">
            {selectedFile?.type === "Video" ? (
              <VideoAnalysisPanel 
-                file={selectedFile} 
-                currentTime={videoCurrentTime}
-                onJump={jumpToVideoTime}
-              />
+               file={selectedFile} 
+               currentTime={videoCurrentTime}
+               onJump={jumpToVideoTime}
+             />
            ) : selectedFile?.type === "Image" || selectedFile?.type === "Audio" ? (
              <AIAnalysisPanel file={selectedFile} />
            ) : (
@@ -2345,16 +1866,16 @@ function ExtractionTab({
 
         <div className="px-5 py-4 border-t bg-white shrink-0 shadow-[0_-2px_8px_rgba(0,0,0,0.04)]">
            <div className="flex items-center gap-2">
-              <Button
+              <Button 
                 onClick={handleReview}
-                disabled={selectedFile?.review_status === "reviewed"}
+                disabled={selectedFile?.reviewStatus === "reviewed"}
                 className={`flex-1 h-9 text-xs font-black uppercase tracking-widest shadow-sm transition-all ${
-                  selectedFile?.review_status === "reviewed"
-                  ? "bg-emerald-500 hover:bg-emerald-600 text-white"
+                  selectedFile?.reviewStatus === "reviewed" 
+                  ? "bg-emerald-500 hover:bg-emerald-600 text-white" 
                   : "bg-slate-900 hover:bg-slate-800 text-white"
                 }`}
               >
-                 {selectedFile?.review_status === "reviewed" ? (
+                 {selectedFile?.reviewStatus === "reviewed" ? (
                    <span className="flex items-center gap-2 tracking-tighter"><CheckCircle className="h-4 w-4" /> Review Complete</span>
                  ) : "Verify & Mark Reviewed"}
               </Button>
@@ -2378,7 +1899,7 @@ function ExtractionTab({
         onUploadComplete={handleUploadComplete}
       />
 
-      <DeleteFolderModal 
+      <DeleteFolderModal
         key={deleteFolderTarget?.id ?? "none"}
         target={deleteFolderTarget}
         onClose={() => setDeleteFolderTarget(null)}
@@ -2387,11 +1908,6 @@ function ExtractionTab({
     </div>
   );
 }
-
-
-
-
-
 
 function AdaptiveSourcePreview({ 
   file, 
@@ -2470,7 +1986,7 @@ function AdaptiveSourcePreview({
                 { title: "Equipment Specification", type: "Asset Detail", conf: "High", page: "Page 2, Table 1.1", detail: "Belt model 'Titan-X 4000' installed Jan 2024. Last maintenance recorded 14 days prior to failure." },
                 { title: "Observed Hazard", type: "Safety Deviation", conf: "Medium", page: "Page 1, Para 4", detail: "Material spillage blocked critical walkway, impeding emergency response path for approximately 12 minutes." },
                 { title: "Witness Statement", type: "Actor Statement", conf: "High", page: "Page 3, Section A", detail: "Shift supervisor reported unusual vibration patterns 5 minutes before the structural tear happened." },
-                { title: "Environmental Context", type: "Climate Detail", conf: "Med", page: "Page 4, Footer", detail: "Ambient temperature recorded at 38°C with 85% humidity at time of incident." },
+                { title: "Environmental Context", type: "Climate Detail", conf: "Med", page: "Page 4, Footer", detail: "Ambient temperature recorded at 38┬░C with 85% humidity at time of incident." },
               ].map((fact, i) => (
                  <div key={i} className="bg-white border rounded-xl p-4 shadow-sm hover:border-primary/40 transition-all group relative overflow-hidden">
                     <div className="absolute top-0 left-0 w-1 h-full bg-slate-100 group-hover:bg-primary/50 transition-all" />
@@ -2532,7 +2048,7 @@ function AdaptiveSourcePreview({
                       <div className="flex items-center gap-3 mt-1">
                         <p className="text-[11px] text-slate-400 font-black uppercase tracking-[0.2em]">Source: {file.source || "External"}</p>
                         <div className="h-1 w-1 bg-slate-300 rounded-full" />
-                        <p className="text-[11px] text-slate-400 font-black uppercase tracking-[0.2em]">{file.duration} · High Fidelity</p>
+                        <p className="text-[11px] text-slate-400 font-black uppercase tracking-[0.2em]">{file.duration} ┬╖ High Fidelity</p>
                       </div>
                    </div>
                 </div>
@@ -2638,7 +2154,7 @@ function AdaptiveSourcePreview({
                           <div className={`absolute top-0 bottom-0 left-0 w-1 transition-all ${active ? "bg-primary" : "bg-transparent group-hover:bg-slate-200"}`} />
                           <div className="w-24 shrink-0 pt-0.5">
                              <span className={`text-[11px] font-bold tabular-nums transition-colors ${active ? "text-primary" : "text-slate-400"}`}>
-                               {seg.start_time} — {seg.end_time}
+                               {seg.start_time} ΓÇö {seg.end_time}
                              </span>
                           </div>
                           <div className="flex-1 space-y-2 pl-6">
@@ -2698,7 +2214,7 @@ function AdaptiveSourcePreview({
                    <div>
                       <h3 className="text-lg font-black text-slate-900 leading-tight uppercase tracking-tight">{file.name}</h3>
                       <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-none mt-1">
-                        {file.source} · High Fidelity Visual Stream · 1080p
+                        {file.source} ┬╖ High Fidelity Visual Stream ┬╖ 1080p
                       </p>
                    </div>
                 </div>
@@ -2796,7 +2312,7 @@ function AdaptiveExtractionOutput({ file }: { file: any }) {
         {badge ? (
           <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border ${badge.className}`}>{badge.text}</span>
         ) : (
-          <span className="text-[11px] font-black text-slate-700">{value || "—"}</span>
+          <span className="text-[11px] font-black text-slate-700">{value || "ΓÇö"}</span>
         )}
      </div>
   );
@@ -2850,7 +2366,7 @@ function AdaptiveExtractionOutput({ file }: { file: any }) {
                     <div className="space-y-4">
                        {data.full_diarization.map((seg: any) => (
                          <div key={seg.segment_id} className="flex flex-col gap-1.5 pl-3 border-l-2 border-slate-100">
-                            <span className="text-[10px] font-black text-slate-500 uppercase">{seg.speaker_label} · {seg.start_time}</span>
+                            <span className="text-[10px] font-black text-slate-500 uppercase">{seg.speaker_label} ┬╖ {seg.start_time}</span>
                             <p className="text-[11px] font-bold text-slate-800 italic leading-relaxed">"{seg.text}"</p>
                          </div>
                        ))}
@@ -2997,13 +2513,13 @@ function AnalysisTab() {
              content: {
                 summary: agent.results.ringkasan?.deskripsi || "No summary available.",
                 metadata: [
-                   { label: 'Incident Date', value: agent.results.ringkasan?.tanggal || "—" },
-                   { label: 'Incident Time', value: agent.results.ringkasan?.jam || "—" },
-                   { label: 'Location', value: agent.results.ringkasan?.lokasi || "—" },
-                   { label: 'Incident Type', value: agent.results.ringkasan?.jenis || "—" },
-                   { label: 'Department', value: agent.results.ringkasan?.departemen || "—" },
-                   { label: 'Evidence Source', value: agent.results.ringkasan?.sumber_bukti || "—" },
-                   { label: 'Severity', value: agent.results.ringkasan?.severity || "—" }
+                   { label: 'Incident Date', value: agent.results.ringkasan?.tanggal || "ΓÇö" },
+                   { label: 'Incident Time', value: agent.results.ringkasan?.jam || "ΓÇö" },
+                   { label: 'Location', value: agent.results.ringkasan?.lokasi || "ΓÇö" },
+                   { label: 'Incident Type', value: agent.results.ringkasan?.jenis || "ΓÇö" },
+                   { label: 'Department', value: agent.results.ringkasan?.departemen || "ΓÇö" },
+                   { label: 'Evidence Source', value: agent.results.ringkasan?.sumber_bukti || "ΓÇö" },
+                   { label: 'Severity', value: agent.results.ringkasan?.severity || "ΓÇö" }
                 ],
                 timeline: agent.results.timeline || { praKontak: [], kontak: [], pascaKontak: [] }
              }
@@ -3383,7 +2899,7 @@ function AnalysisTab() {
                             </div>
                             <div className="flex flex-col">
                                <span className="text-[9px] font-black text-slate-400 uppercase mb-1">Last Run</span>
-                               <span className="text-[11px] font-black text-slate-800 uppercase tabular-nums">{selectedAgent?.lastRunTimestamp || "—"}</span>
+                               <span className="text-[11px] font-black text-slate-800 uppercase tabular-nums">{selectedAgent?.lastRunTimestamp || "ΓÇö"}</span>
                             </div>
                          </div>
                       </div>
@@ -3529,7 +3045,7 @@ function ReviewTab() {
                  { role: "Investigator", user: "Sarah Chen", status: "submitted", date: "Apr 8, 10:12" },
                  { role: "Site Reviewer", user: "John Doe", status: "reviewed", date: "Apr 8, 14:45" },
                  { role: "HSE Board", user: "Director Smith", status: "pending", date: "Present" },
-                 { role: "Regulatory", user: "Inspector G", status: "waiting", date: "—" },
+                 { role: "Regulatory", user: "Inspector G", status: "waiting", date: "ΓÇö" },
                ].map((step, i) => (
                 <div key={step.role} className="flex flex-col items-center gap-3 relative z-10 w-48 text-center">
                    <div className={`h-10 w-10 rounded-full border-4 flex items-center justify-center transition-all ${
@@ -3554,10 +3070,13 @@ function ReviewTab() {
 }
 
 function AuditTrailTab() {
-  const { caseId } = useParams<{ caseId: string }>();
-  const { data: realLogs, isLoading } = useAuditLogs(caseId!);
-
-  if (isLoading) return <div className="p-8 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Loading Audit Trail...</div>;
+  const auditEntries = [
+    { timestamp: "2026-04-08 10:15", user: "System", role: "AI Agent", action: "Analysis Completed", objectType: "Analysis", objectName: "PEEPO Reasoning - RUN-046", prevState: "running", newState: "completed" },
+    { timestamp: "2026-04-08 10:12", user: "System", role: "AI Agent", action: "Analysis Started", objectType: "Analysis", objectName: "PEEPO Reasoning - RUN-046", prevState: "ΓÇö", newState: "running" },
+    { timestamp: "2026-04-08 10:11", user: "Sarah Chen", role: "Investigator", action: "Extraction Accepted", objectType: "Evidence", objectName: "6 items accepted", prevState: "pending", newState: "reviewed" },
+    { timestamp: "2026-04-08 09:45", user: "System", role: "AI Agent", action: "Extraction Metadata Sync", objectType: "Evidence", objectName: "incident_report_initial.pdf", prevState: "ΓÇö", newState: "synced" },
+    { timestamp: "2026-04-08 09:30", user: "System", role: "AI Agent", action: "Extraction Completed", objectType: "Evidence", objectName: "incident_report_initial.pdf", prevState: "processing", newState: "extracted" },
+  ];
 
   return (
     <div className="flex flex-col h-full bg-slate-50/10 h-screen overflow-hidden">
@@ -3572,34 +3091,25 @@ function AuditTrailTab() {
                   <th className="p-4 text-[10px] font-black uppercase text-slate-400">Timestamp</th>
                   <th className="p-4 text-[10px] font-black uppercase text-slate-400">User</th>
                   <th className="p-4 text-[10px] font-black uppercase text-slate-400">Action</th>
-                  <th className="p-4 text-[10px] font-black uppercase text-slate-400">Entity</th>
+                  <th className="p-4 text-[10px] font-black uppercase text-slate-400">Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-50">
-                {(realLogs || []).map((log, idx) => (
-                  <tr key={log.id} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="p-4 text-[10px] font-mono text-slate-500">
-                      {new Date(log.created_at).toLocaleString()}
-                    </td>
+              <tbody className="divide-y">
+                {auditEntries.map((e, i) => (
+                  <tr key={i} className="hover:bg-slate-50">
+                    <td className="p-4 text-[10px] font-mono text-slate-400">{e.timestamp}</td>
                     <td className="p-4">
-                       <div className="text-xs font-bold text-slate-800">{log.user_name}</div>
-                       <div className="text-[9px] text-slate-400 uppercase">System Auditor</div>
+                       <div className="text-xs font-bold text-slate-800">{e.user}</div>
+                       <div className="text-[9px] text-slate-400 uppercase">{e.role}</div>
                     </td>
-                    <td className="p-4 text-[11px] font-bold text-slate-900">{log.action}</td>
+                    <td className="p-4 text-[11px] font-bold text-slate-900">{e.action}</td>
                     <td className="p-4">
-                       <span className="px-2 py-0.5 rounded text-[9px] font-bold border bg-slate-50 border-slate-100 text-slate-400">
-                          {log.entity_type}: {log.entity_name}
+                       <span className={`px-2 py-0.5 rounded text-[9px] font-bold border ${e.newState === 'completed' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-slate-50 border-slate-100 text-slate-400'}`}>
+                          {e.newState}
                        </span>
                     </td>
                   </tr>
                 ))}
-                {(!realLogs || realLogs.length === 0) && (
-                  <tr>
-                    <td colSpan={4} className="p-12 text-center text-[10px] font-black text-slate-300 uppercase tracking-widest">
-                      No logs recorded for this case
-                    </td>
-                  </tr>
-                )}
               </tbody>
             </table>
          </div>
@@ -3694,7 +3204,7 @@ function VideoExtractionStructured({ data, onJump }: { data: typeof videoExtract
   const MetadataField = ({ label, value }: { label: string, value: any }) => (
     <div className="flex flex-col gap-0.5">
       <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">{label}</span>
-      <span className="text-[11px] font-bold text-slate-800 leading-tight">{value || "—"}</span>
+      <span className="text-[11px] font-bold text-slate-800 leading-tight">{value || "ΓÇö"}</span>
     </div>
   );
 
@@ -3952,7 +3462,7 @@ function VideoSceneSession({ currentTime, onJump }: { currentTime: number, onJum
                       <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Action</span>
                       <ul className="space-y-0.5">
                          {seg.actions.map((a: string, i: number) => (
-                           <li key={i} className={`text-[9px] font-bold ${isActive ? "text-slate-700" : "text-slate-400"}`}>• {a}</li>
+                           <li key={i} className={`text-[9px] font-bold ${isActive ? "text-slate-700" : "text-slate-400"}`}>ΓÇó {a}</li>
                          ))}
                       </ul>
                    </div>
@@ -3992,54 +3502,11 @@ function VideoSceneSession({ currentTime, onJump }: { currentTime: number, onJum
   );
 }
 
-
-
 export default function CaseWorkspacePage() {
-  const { caseId } = useParams<{ caseId: string }>();
+  const { caseId } = useParams();
   const [activeTab, setActiveTab] = useState("Evidence Review");
-  const [selectedFile, setSelectedFile] = useState<any>(null);
-
-  // Real Data Hooks
-  const { data: caseData, isLoading: caseLoading, refetch: refetchCase } = useCase(caseId!);
-  const { data: evidence, isLoading: evidenceLoading, refetch: refetchEvidence } = useEvidence(caseId!);
-
-  const uploadEvidence = useUploadEvidence();
-
-  const handleUploadComplete = async (groups: CompletedGroup[]) => {
-    try {
-      await uploadEvidence.mutateAsync({ caseId: caseId!, groups });
-      await refetchEvidence();
-      toast.success("Evidence library updated with new uploads.");
-    } catch (error) {
-      console.error("Upload error:", error);
-      toast.error("Failed to save evidence to database.");
-    }
-  };
-
-  const evidenceFiles = evidence?.files || [];
-  const batches = evidence?.batches || [];
-
-  // Auto-select first file when data loads
-  useEffect(() => {
-    if (evidenceFiles.length > 0 && !selectedFile) {
-      setSelectedFile(evidenceFiles[0]);
-    }
-  }, [evidenceFiles, selectedFile]);
-
-
-
-  if (caseLoading || evidenceLoading) {
-    return (
-      <AppLayout>
-        <div className="flex h-screen items-center justify-center bg-slate-50/50">
-          <div className="flex flex-col items-center gap-4">
-            <Loader2 className="h-10 w-10 text-primary animate-spin" />
-            <p className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Synchronizing Intelligence Case…</p>
-          </div>
-        </div>
-      </AppLayout>
-    );
-  }
+  const [files, setFiles] = useState(evidenceFiles);
+  const [batches, setBatches] = useState(evidenceBatches);
 
   return (
     <AppLayout>
@@ -4052,11 +3519,11 @@ export default function CaseWorkspacePage() {
             <div>
               <div className="flex items-center gap-2 mb-0.5">
                 <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">Safety Investigation Case</span>
-                <StatusChip status={caseData?.status || "in_progress"} />
-                <SeverityChip severity={caseData?.severity || "high"} />
+                <StatusChip status="in_progress" />
+                <SeverityChip severity="high" />
               </div>
               <h1 className="text-xl font-bold tracking-tight text-slate-900 border-none p-0 flex items-center gap-2 leading-none">
-                {caseData?.title || "Loading Case..."} <span className="text-slate-400 font-mono text-sm leading-none ml-1">#{caseData?.case_number || caseId}</span>
+                Conveyor Belt Failure - Zone B <span className="text-slate-400 font-mono text-sm leading-none ml-1">#{caseId || "CS-2026-0147"}</span>
               </h1>
             </div>
           </div>
@@ -4090,25 +3557,14 @@ export default function CaseWorkspacePage() {
           <div className="flex items-center gap-6">
              <div className="flex items-center gap-2 border-l pl-6 border-slate-100">
                 <Clock className="h-3.5 w-3.5 text-slate-400" />
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                  {caseData?.created_at ? new Date(caseData.created_at).toLocaleDateString() : 'Now'}
-                </span>
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">3 Days Remaining</span>
              </div>
           </div>
         </div>
 
         <div className="flex-1 overflow-hidden relative">
           {activeTab === "Overview" && <OverviewTab />}
-          {activeTab === "Evidence Review" && (
-            <ExtractionTab 
-              evidenceFiles={evidenceFiles} 
-              batches={batches} 
-              selectedFile={selectedFile}
-              setSelectedFile={setSelectedFile}
-              caseId={caseId!}
-              onUploadComplete={handleUploadComplete}
-            />
-          )}
+          {activeTab === "Evidence Review" && <ExtractionTab files={files} setFiles={setFiles} batches={batches} setBatches={setBatches} />}
           {activeTab === "Analysis" && <AnalysisTab />}
           {activeTab === "Reports" && <ReportsTab />}
           {activeTab === "Review" && <ReviewTab />}
@@ -4118,4 +3574,3 @@ export default function CaseWorkspacePage() {
     </AppLayout>
   );
 }
-
