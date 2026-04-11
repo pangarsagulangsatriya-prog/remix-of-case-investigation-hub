@@ -2375,7 +2375,7 @@ function ExtractionTab({
       <UploadModal
         isOpen={isUploadModalOpen}
         onClose={() => setIsUploadModalOpen(false)}
-        onUploadComplete={handleUploadComplete}
+        onUploadComplete={onUploadComplete}
       />
 
       <DeleteFolderModal 
