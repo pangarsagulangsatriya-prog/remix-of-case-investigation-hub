@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/AppLayout";
 import { StatusChip, SeverityChip } from "@/components/StatusChip";
+import { useCases } from "@/hooks/useCases";
+import { Loader2, AlertCircle } from "lucide-react";
 import { 
   Plus, 
   Download, 
@@ -29,33 +31,8 @@ import {
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
 
-type Case = {
-  id: string;
-  title: string;
-  site: string;
-  incidentDate: string;
-  severity: "critical" | "high" | "medium" | "low";
-  status: "draft" | "in_progress" | "in_review" | "approved" | "closed";
-  owner: string;
-  evidenceCount: number;
-  reportsCount: number;
-  pendingReview: number;
-  updated: string;
-  summary?: string;
-};
-
-const cases: Case[] = [
-  { id: "CS-2026-0147", title: "Conveyor belt failure - Zone B", site: "Site Alpha", incidentDate: "2026-04-05", severity: "critical", status: "in_progress", owner: "Sarah Chen", evidenceCount: 12, reportsCount: 1, pendingReview: 3, updated: "2h ago", summary: "Mechanical failure in main conveyor roller #14. High risk of extended downtime." },
-  { id: "CS-2026-0146", title: "Near miss - haul truck intersection", site: "Site Alpha", incidentDate: "2026-04-04", severity: "high", status: "in_review", owner: "John Doe", evidenceCount: 8, reportsCount: 2, pendingReview: 0, updated: "4h ago", summary: "Haul truck narrowly avoided collision with light vehicle at North intersection." },
-  { id: "CS-2026-0145", title: "Chemical spill - processing plant", site: "Site Beta", incidentDate: "2026-04-03", severity: "high", status: "in_progress", owner: "Maria Santos", evidenceCount: 15, reportsCount: 0, pendingReview: 5, updated: "6h ago", summary: "200L hydraulic fluid leakage from pressure vessel. Containment protocols initiated." },
-  { id: "CS-2026-0144", title: "Scaffolding collapse - Pit 3", site: "Site Alpha", incidentDate: "2026-04-02", severity: "critical", status: "draft", owner: "Ahmed Khan", evidenceCount: 6, reportsCount: 0, pendingReview: 0, updated: "1d ago", summary: "Unsupported scaffolding structure gave way during shift change. No injuries reported." },
-  { id: "CS-2026-0143", title: "Electrical arc flash incident", site: "Site Gamma", incidentDate: "2026-04-01", severity: "medium", status: "approved", owner: "Lisa Park", evidenceCount: 10, reportsCount: 3, pendingReview: 0, updated: "1d ago", summary: "Minor arc flash during scheduled maintenance on LV Switchroom C." },
-  { id: "CS-2026-0142", title: "Ground control failure", site: "Site Beta", incidentDate: "2026-03-30", severity: "high", status: "in_review", owner: "John Doe", evidenceCount: 9, reportsCount: 1, pendingReview: 2, updated: "2d ago", summary: "Unexpected movement in highwall section 4B. Stability sensors triggered." },
-  { id: "CS-2026-0141", title: "Vehicle rollover - access road", site: "Site Alpha", incidentDate: "2026-03-28", severity: "critical", status: "in_review", owner: "Sarah Chen", evidenceCount: 20, reportsCount: 2, pendingReview: 1, updated: "3d ago", summary: "Light vehicle rollover on unsealed access road. Driver sustained minor injuries." },
-  { id: "CS-2026-0140", title: "Dust exposure exceedance", site: "Site Gamma", incidentDate: "2026-03-27", severity: "medium", status: "approved", owner: "Lisa Park", evidenceCount: 5, reportsCount: 1, pendingReview: 0, updated: "4d ago", summary: "Personal dust monitors exceeded TWA limit in processing plant secondary crusher." },
-  { id: "CS-2026-0139", title: "Crane load drop near miss", site: "Site Alpha", incidentDate: "2026-03-25", severity: "high", status: "closed", owner: "Ahmed Khan", evidenceCount: 14, reportsCount: 2, pendingReview: 0, updated: "5d ago", summary: "Rigging failure during lift. Load dropped 2m into restricted area." },
-  { id: "CS-2026-0138", title: "Fatigue-related driving incident", site: "Site Beta", incidentDate: "2026-03-24", severity: "medium", status: "approved", owner: "Maria Santos", evidenceCount: 7, reportsCount: 1, pendingReview: 0, updated: "6d ago", summary: "Operator self-reported micro-sleep during return journey from site." },
-];
+// Mock types for legacy compatibility if needed, but we'll use Case from hook
+import type { Case } from "@/hooks/useCases";
 
 type ViewMode = "table" | "grid-compact" | "grid-expanded";
 
@@ -63,6 +40,9 @@ export default function CaseListPage() {
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<ViewMode>("table");
   const [selectedCase, setSelectedCase] = useState<Case | null>(null);
+
+  const { data: casesData, isLoading, error } = useCases();
+  const cases = casesData || [];
 
   return (
     <AppLayout>
@@ -154,7 +134,32 @@ export default function CaseListPage() {
         <div className="flex flex-1 overflow-hidden">
           {/* Main Content Area */}
           <div className="flex-1 overflow-auto bg-slate-50/20 p-4">
-            {viewMode === "table" ? (
+            {isLoading ? (
+              <div className="flex flex-col items-center justify-center h-64 bg-white border rounded-lg shadow-sm">
+                <Loader2 className="h-8 w-8 text-primary animate-spin mb-3" />
+                <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">Synchronizing Workspace...</p>
+              </div>
+            ) : error ? (
+              <div className="flex flex-col items-center justify-center h-64 bg-white border rounded-lg shadow-sm p-8 text-center">
+                <div className="h-12 w-12 bg-rose-50 rounded-full flex items-center justify-center mb-4">
+                  <AlertCircle className="h-6 w-6 text-rose-500" />
+                </div>
+                <h3 className="text-sm font-black text-slate-900 uppercase mb-2">Sync Error</h3>
+                <p className="text-xs text-slate-500 font-medium mb-4 max-w-xs ">{(error as Error).message}</p>
+                <Button variant="outline" size="sm" onClick={() => window.location.reload()}>Retry Connection</Button>
+              </div>
+            ) : cases.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-64 bg-white border rounded-lg shadow-sm p-8 text-center border-dashed">
+                <div className="h-16 w-16 bg-slate-50 rounded-2xl flex items-center justify-center mb-4 border border-slate-100 shadow-sm">
+                  <FileText className="h-8 w-8 text-slate-300" />
+                </div>
+                <h3 className="text-base font-black text-slate-900 border-none p-0 mb-1">No Cases Found</h3>
+                <p className="text-xs text-slate-500 font-medium mb-6 max-w-sm ml-auto mr-auto">Your investigation workspace is empty. Create a new case to start extracting intelligence from evidence.</p>
+                <Button size="sm" className="h-9 px-6 font-black uppercase tracking-widest bg-primary" onClick={() => navigate("/cases/new")}>
+                  <Plus className="h-4 w-4 mr-2" /> Start New Case
+                </Button>
+              </div>
+            ) : viewMode === "table" ? (
               <div className="bg-white border rounded-lg shadow-sm overflow-hidden">
                 <table className="w-full enterprise-table border-none">
                   <thead>
@@ -180,23 +185,19 @@ export default function CaseListPage() {
                         onClick={() => setSelectedCase(c)}
                         onDoubleClick={() => navigate(`/cases/${c.id}`)}
                       >
-                        <td className="pl-4 font-mono text-xs text-primary font-semibold">{c.id}</td>
+                        <td className="pl-4 font-mono text-xs text-primary font-semibold">{c.case_number || c.id.slice(0, 8)}</td>
                         <td className="text-xs font-medium text-slate-900 truncate max-w-[200px]">{c.title}</td>
-                        <td className="text-xs text-slate-600 font-medium">{c.site}</td>
-                        <td className="text-xs text-slate-500 font-medium">{c.incidentDate}</td>
-                        <td className="py-2.5"><SeverityChip severity={c.severity} /></td>
-                        <td className="py-2.5"><StatusChip status={c.status} /></td>
-                        <td className="text-xs text-slate-700 font-medium">{c.owner}</td>
-                        <td className="text-xs text-center font-medium text-slate-600">{c.evidenceCount}</td>
-                        <td className="text-xs text-center font-medium text-slate-600">{c.reportsCount}</td>
+                        <td className="text-xs text-slate-600 font-medium">Site Alpha</td>
+                        <td className="text-xs text-slate-500 font-medium">{new Date(c.created_at).toLocaleDateString()}</td>
+                        <td className="py-2.5"><SeverityChip severity={c.severity.toLowerCase() as any} /></td>
+                        <td className="py-2.5"><StatusChip status={c.status as any} /></td>
+                        <td className="text-xs text-slate-700 font-medium">Admin</td>
+                        <td className="text-xs text-center font-medium text-slate-600">0</td>
+                        <td className="text-xs text-center font-medium text-slate-600">0</td>
                         <td className="text-xs text-center">
-                          {c.pendingReview > 0 ? (
-                            <span className="text-status-review font-bold">{c.pendingReview}</span>
-                          ) : (
-                            <span className="text-slate-300">—</span>
-                          )}
+                          <span className="text-slate-300">—</span>
                         </td>
-                        <td className="pr-4 text-xs text-slate-500 font-medium">{c.updated}</td>
+                        <td className="pr-4 text-xs text-slate-500 font-medium">{new Date(c.updated_at).toLocaleDateString()}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -369,12 +370,12 @@ function CaseGridCard({
       {/* Card Header */}
       <div className="px-4 py-3 border-b border-transparent flex items-start justify-between">
         <div className="flex flex-col">
-          <span className="font-mono text-[10px] text-primary font-bold tracking-widest">{caseData.id}</span>
+          <span className="font-mono text-[10px] text-primary font-bold tracking-widest">{caseData.case_number || caseData.id.slice(0, 8)}</span>
           <div className="flex items-center gap-1.5 mt-0.5">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{caseData.site}</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Site Alpha</span>
           </div>
         </div>
-        <StatusChip status={caseData.status} />
+        <StatusChip status={caseData.status as any} />
       </div>
 
       {/* Card Body */}
@@ -385,10 +386,10 @@ function CaseGridCard({
         
         {/* Severity & Date Row */}
         <div className="flex items-center justify-between mb-4">
-          <SeverityChip severity={caseData.severity} />
+          <SeverityChip severity={caseData.severity.toLowerCase() as any} />
           <div className="flex items-center gap-1.5 text-slate-400">
             <Clock className="h-3 w-3" />
-            <span className="text-[11px] font-bold">{caseData.incidentDate}</span>
+            <span className="text-[11px] font-bold">{new Date(caseData.created_at).toLocaleDateString()}</span>
           </div>
         </div>
 
@@ -396,7 +397,7 @@ function CaseGridCard({
         {mode === "grid-expanded" && (
           <div className="mb-4 p-2.5 rounded bg-slate-50 border border-slate-100">
              <p className="text-[11px] text-slate-600 line-clamp-3 font-medium italic italic">
-               {caseData.summary}
+               {caseData.description}
              </p>
           </div>
         )}
@@ -406,27 +407,27 @@ function CaseGridCard({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="h-5 w-5 bg-slate-100 rounded-full flex items-center justify-center border border-slate-200">
-                <span className="text-[9px] font-bold text-slate-600">{caseData.owner.split(' ').map(n => n[0]).join('')}</span>
+                <span className="text-[9px] font-bold text-slate-600">A</span>
               </div>
-              <span className="text-xs font-bold text-slate-700">{caseData.owner}</span>
+              <span className="text-xs font-bold text-slate-700">Admin</span>
             </div>
-            <span className="text-[11px] font-bold text-slate-400">{caseData.updated}</span>
+            <span className="text-[11px] font-bold text-slate-400">{new Date(caseData.updated_at).toLocaleDateString()}</span>
           </div>
 
           {/* Metrics Grid */}
           <div className="flex items-center gap-4 border-t border-slate-100 pt-3">
             <div className="flex items-center gap-1.5" title="Evidence Count">
               <Paperclip className="h-3.5 w-3.5 text-slate-400" />
-              <span className="text-xs font-bold text-slate-700">{caseData.evidenceCount}</span>
+              <span className="text-xs font-bold text-slate-700">0</span>
             </div>
             <div className="flex items-center gap-1.5" title="Reports Count">
               <FileText className="h-3.5 w-3.5 text-slate-400" />
-              <span className="text-xs font-bold text-slate-700">{caseData.reportsCount}</span>
+              <span className="text-xs font-bold text-slate-700">0</span>
             </div>
-            {caseData.pendingReview > 0 && (
+            {false && (
               <div className="flex items-center gap-1.5" title="Pending Reviews">
                 <MessageSquare className="h-3.5 w-3.5 text-status-review" />
-                <span className="text-xs font-bold text-status-review">{caseData.pendingReview}</span>
+                <span className="text-xs font-bold text-status-review">0</span>
               </div>
             )}
           </div>

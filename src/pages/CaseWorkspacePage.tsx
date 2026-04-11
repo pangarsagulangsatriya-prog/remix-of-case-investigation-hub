@@ -2,6 +2,10 @@ import React, { useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { AppLayout } from "@/components/AppLayout";
 import { StatusChip, SeverityChip, ConfidenceChip } from "@/components/StatusChip";
+import { useCase } from "@/hooks/useCases";
+import { useEvidence, useDeleteFile } from "@/hooks/useEvidence";
+import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -198,51 +202,16 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { UploadModal, CompletedGroup } from "@/components/UploadModal";
 
-// --- Mock Data ---
-
+// Mock types removed. Using data from hooks.
 const tabs = ["Overview", "Evidence Review", "Analysis", "Reports", "Review", "Audit Trail"];
 
 const progressSteps = [
   { label: "Evidence", done: true },
-  { label: "Extraction", done: true },
-  { label: "Analysis", done: true },
+  { label: "Extraction", done: false },
+  { label: "Analysis", done: false },
   { label: "Report", done: false },
   { label: "Review", done: false },
   { label: "Approved", done: false },
-];
-
-const evidenceBatches = [
-  { id: "B1", name: "Mechanical Inspection - Zone B", description: "Photos and detail logs from conveyor section 14 incident area", type: "Images", fileCount: 12, uploadedBy: "Ahmed Khan", updated: "2h ago", extractionProgress: 100, reviewProgress: 80, keyEvidenceCount: 4, linkedAnalysis: 3 },
-  { id: "B2", name: "Incident Documentation Batch", description: "Initial HSE reports and hazard observation forms", type: "Documents", fileCount: 5, uploadedBy: "Sarah Chen", updated: "4h ago", extractionProgress: 80, reviewProgress: 40, keyEvidenceCount: 2, linkedAnalysis: 5 },
-  { id: "B3", name: "Maintenance & CAL History", description: "Historical telemetry for haul trucks and conveyor drives", type: "Documents", fileCount: 3, uploadedBy: "Maria Santos", updated: "1d ago", extractionProgress: 100, reviewProgress: 0, keyEvidenceCount: 0, linkedAnalysis: 1 },
-  { id: "B4", name: "Witness Statements & Radio", description: "Digital audio recordings from 14:15 - 14:45 incident window", type: "Audio", fileCount: 3, uploadedBy: "John Doe", updated: "1d ago", extractionProgress: 100, reviewProgress: 66, keyEvidenceCount: 2, linkedAnalysis: 2 },
-  { id: "B5", name: "CCTV Storage Export", description: "Footage from Zone B cameras during incident window", type: "Video", fileCount: 1, uploadedBy: "System", updated: "4h ago", extractionProgress: 100, reviewProgress: 0, keyEvidenceCount: 1, linkedAnalysis: 0 },
-];
-
-const evidenceFiles = [
-  // Images
-  { id: "F1", batchId: "B1", name: "pit_overview_west_sector.jpg", type: "Image", source: "Drone-04", uploadedBy: "Ahmed Khan", uploadDate: "2026-04-05", extractionStatus: "completed", reviewStatus: "reviewed", tags: ["key", "site-overview"], linked: 2, size: "4.2 MB", url: "/mining_1.png" },
-  { id: "F2", batchId: "B1", name: "conveyor_roller_failure_macro.jpg", type: "Image", source: "Field-Cam-A1", uploadedBy: "Ahmed Khan", uploadDate: "2026-04-05", extractionStatus: "completed", reviewStatus: "reviewed", tags: ["key", "mechanical"], linked: 1, size: "2.8 MB", url: "/mining_2.png" },
-  { id: "F3", batchId: "B1", name: "worker_ppe_check_pit_3.jpg", type: "Image", source: "Safety Officer", uploadedBy: "Ahmed Khan", uploadDate: "2026-04-06", extractionStatus: "completed", reviewStatus: "pending", tags: ["ppe", "compliance"], linked: 0, size: "3.5 MB", url: "/mining_3.png" },
-  
-  // Documents
-  { id: "F4", batchId: "B2", name: "incident_report_initial.pdf", type: "Document", source: "HSE Portal", uploadedBy: "Sarah Chen", uploadDate: "2026-04-05", extractionStatus: "completed", reviewStatus: "reviewed", tags: ["key"], linked: 5, size: "1.2 MB", snippet: "The belt tore at section 14, causing material spillage across the walkway. Tensioners failed to retract." },
-  { id: "F5", batchId: "B2", name: "hazard_observation_form_04.pdf", type: "Document", source: "Safety Tablet", uploadedBy: "Sarah Chen", uploadDate: "2026-04-05", extractionStatus: "completed", reviewStatus: "pending", tags: ["observation"], linked: 1, size: "850 KB" },
-  { id: "F6", batchId: "B3", name: "maintenance_log_conveyor_C.xlsx", type: "Document", source: "Maintenance Sys", uploadedBy: "Maria Santos", uploadDate: "2026-04-06", extractionStatus: "completed", reviewStatus: "pending", tags: [], linked: 1, size: "450 KB" },
-  
-  // Audio
-  { id: "F7", batchId: "B4", name: "witness_statement_operator_A.wav", type: "Audio", source: "Field Voice Link", uploadedBy: "John Doe", uploadDate: "2026-04-06", extractionStatus: "completed", reviewStatus: "reviewed", tags: ["interview"], linked: 2, size: "12 MB", duration: "04:22" },
-  { id: "F8", batchId: "B4", name: "supervisor_followup_interview.mp3", type: "Audio", source: "Digital Recorder", uploadedBy: "John Doe", uploadDate: "2026-04-06", extractionStatus: "completed", reviewStatus: "partial", tags: ["interview", "management"], linked: 1, size: "8.5 MB", duration: "02:15" },
-  { id: "F9", batchId: "B4", name: "radio_communication_shift_B.m4a", type: "Audio", source: "Radio Link Archiver", uploadedBy: "System", uploadDate: "2026-04-05", extractionStatus: "completed", reviewStatus: "pending", tags: ["radio-log"], linked: 0, size: "4.1 MB", duration: "10:05" },
-  { id: "F10", batchId: "B5", name: "cctv_zone_b_conveyor_1430.mp4", type: "Video", source: "CCTV-Z2", uploadedBy: "System", uploadDate: "2026-04-05", extractionStatus: "completed", reviewStatus: "pending", tags: ["cctv", "incident"], linked: 0, size: "124 MB", url: "https://assets.mixkit.co/videos/preview/mixkit-mechanical-gears-moving-in-a-machine-42409-large.mp4" },
-];
-
-const analysisAgents = [
-  { name: "PEEPO Reasoning", icon: Brain, purpose: "Analyzing high-level safety culture and human factors.", inputReady: true, lastRun: "2h ago", lastStatus: "reviewed" },
-  { name: "IPLS Classification", icon: FileSearch, purpose: "Classifying incident according to enterprise safety standards.", inputReady: true, lastRun: "1h ago", lastStatus: "draft" },
-  { name: "Fact & Chronology", icon: Clock, purpose: "Building a verified timeline from evidence fragments.", inputReady: true, lastRun: "30m ago", lastStatus: "reviewed" },
-  { name: "Prevention Engine", icon: CheckCircle2, purpose: "Generating preventive actions and control recommendations.", inputReady: false, lastRun: "—", lastStatus: "not_run" },
-  { name: "Actor Intelligence", icon: DocIcon, purpose: "Analyzing worker profiles, training history and fatigue levels.", inputReady: true, lastRun: "4h ago", lastStatus: "draft" },
 ];
 
 const imageExtractionData = {
@@ -2005,11 +1974,24 @@ function DeleteFolderModal({
   );
 }
 
-function ExtractionTab({ files: evidenceFiles, setFiles: setEvidenceFiles, batches, setBatches }: { files: any[], setFiles: React.Dispatch<React.SetStateAction<any[]>>, batches: any[], setBatches: React.Dispatch<React.SetStateAction<any[]>> }) {
-  const [selectedFile, setSelectedFile] = useState<any>(evidenceFiles[1]);
+function ExtractionTab({ 
+  evidenceFiles, 
+  batches, 
+  selectedFile, 
+  setSelectedFile,
+  caseId,
+  onUploadComplete
+}: { 
+  evidenceFiles: any[], 
+  batches: any[], 
+  selectedFile: any,
+  setSelectedFile: (f: any) => void,
+  caseId: string,
+  onUploadComplete: (groups: CompletedGroup[]) => void
+}) {
   const [activeFilter, setActiveFilter] = useState("All Files");
   const [searchQuery, setSearchQuery] = useState("");
-  const [expandedBatches, setExpandedBatches] = useState<string[]>(["B1", "B2", "B4", "B5"]);
+  const [expandedBatches, setExpandedBatches] = useState<string[]>([]);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
 
@@ -2019,24 +2001,30 @@ function ExtractionTab({ files: evidenceFiles, setFiles: setEvidenceFiles, batch
   const [audioPlaybackSpeed, setAudioPlaybackSpeed] = useState(1);
   const [deleteFolderTarget, setDeleteFolderTarget] = useState<DeleteFolderTarget | null>(null);
 
+  // Auto-expand all batches on load
+  useEffect(() => {
+    if (batches.length > 0 && expandedBatches.length === 0) {
+      setExpandedBatches(batches.map(b => b.id));
+    }
+  }, [batches]);
+
   // Shared Video State
   const [videoCurrentTime, setVideoCurrentTime] = useState(0);
   const [videoIsPlaying, setVideoIsPlaying] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
+  const deleteFileMutation = useDeleteFile();
+
   const jumpToVideoTime = (seconds: number) => {
     if (videoRef.current) {
       videoRef.current.currentTime = Math.max(0, seconds);
-      // Use a promise to handle play() and ensure state is synced
-      videoRef.current.play().catch(err => {
-        console.warn("Autoplay/Play blocked or failed:", err);
-      });
+      videoRef.current.play().catch(err => console.warn("Play blocked:", err));
       setVideoIsPlaying(true);
     }
   };
 
   const openDeleteFolderModal = (batch: any) => {
-    const filesInBatch = evidenceFiles.filter(f => f.batchId === batch.id);
+    const filesInBatch = evidenceFiles.filter(f => f.batch_id === batch.id);
     setDeleteFolderTarget({
       id: batch.id,
       name: batch.name,
@@ -2045,263 +2033,182 @@ function ExtractionTab({ files: evidenceFiles, setFiles: setEvidenceFiles, batch
     });
   };
 
-  const handleDeleteFolder = () => {
+  const handleDeleteFolder = async () => {
     if (!deleteFolderTarget) return;
-    const targetId = deleteFolderTarget.id;
-    setBatches(prev => prev.filter(b => b.id !== targetId));
-    setEvidenceFiles(prev => prev.filter(f => f.batchId !== targetId));
-    setExpandedBatches(prev => prev.filter(id => id !== targetId));
-    if (selectedFile?.batchId === targetId) setSelectedFile(null);
-    setDeleteFolderTarget(null);
+    try {
+      // In a real app, we'd have a useDeleteBatch hook. For now, we delete individual files.
+      const filesInBatch = evidenceFiles.filter(f => f.batch_id === deleteFolderTarget.id);
+      for (const file of filesInBatch) {
+        await deleteFileMutation.mutateAsync(file.id);
+      }
+      toast.success(`Folder ${deleteFolderTarget.name} and its items deleted.`);
+      setDeleteFolderTarget(null);
+    } catch (error) {
+      toast.error("Failed to delete folder.");
+    }
   };
 
   const toggleBatch = (id: string) => {
     setExpandedBatches(prev => prev.includes(id) ? prev.filter(b => b !== id) : [...prev, id]);
   };
 
-  const handleUploadComplete = (completedGroups: CompletedGroup[]) => {
-    const today = new Date().toISOString().split("T")[0];
-    const newBatches: any[] = [];
-    const newFiles: any[] = [];
-    const newExpandedIds: string[] = [];
-
-    for (const group of completedGroups) {
-      // Determine dominant file type for batch label
-      const counts: Record<string, number> = { Image: 0, Audio: 0, Video: 0, Document: 0 };
-      for (const f of group.files) { if (f.type in counts) counts[f.type]++; }
-      const dominant = Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
-      const batchType = dominant === "Image" ? "Images" : dominant === "Audio" ? "Audio" : dominant === "Video" ? "Video" : "Documents";
-
-      newBatches.push({
-        id: group.batchId,
-        name: group.name,
-        description: group.isFolder ? `Uploaded from folder: ${group.name}` : "Manually uploaded files",
-        type: batchType,
-        fileCount: group.files.length,
-        uploadedBy: "Current User",
-        updated: "Just now",
-        extractionProgress: 0,
-        reviewProgress: 0,
-        keyEvidenceCount: 0,
-        linkedAnalysis: 0,
-      });
-      newExpandedIds.push(group.batchId);
-
-      for (const file of group.files) {
-        newFiles.push({
-          id: file.id,
-          batchId: group.batchId,
-          name: file.name,
-          type: file.type,
-          source: group.isFolder ? "Folder Upload" : "Manual Upload",
-          uploadedBy: "Current User",
-          uploadDate: today,
-          extractionStatus: "processing",
-          reviewStatus: "pending",
-          tags: [],
-          linked: 0,
-          size: file.size,
-          relativePath: file.relativePath,
-        });
+  const handleDelete = async () => {
+    if (selectedFile) {
+      try {
+        await deleteFileMutation.mutateAsync(selectedFile.id);
+        toast.success("File deleted successfully.");
+        setSelectedFile(null);
+        setIsDeleteModalOpen(false);
+      } catch (error) {
+        toast.error("Failed to delete file.");
       }
-    }
-
-    setBatches(prev => [...prev, ...newBatches]);
-    setEvidenceFiles(prev => [...newFiles, ...prev]);
-    setExpandedBatches(prev => [...new Set([...prev, ...newExpandedIds])]);
-  };
-
-  const handleDelete = () => {
-    if (selectedFile) {
-      setEvidenceFiles(prev => prev.filter(f => f.id !== selectedFile.id));
-      setSelectedFile(null);
-      setIsDeleteModalOpen(false);
-    }
-  };
-
-  const goToNext = () => {
-    const allFiles = activeFilter === "All Files" ? groupedFiles.flatMap(b => b.files) : filteredFiles;
-    const currentIndex = allFiles.findIndex(f => f.id === selectedFile?.id);
-    if (currentIndex < allFiles.length - 1) {
-      setSelectedFile(allFiles[currentIndex + 1]);
-    }
-  };
-
-  const goToPrev = () => {
-    const allFiles = activeFilter === "All Files" ? groupedFiles.flatMap(b => b.files) : filteredFiles;
-    const currentIndex = allFiles.findIndex(f => f.id === selectedFile?.id);
-    if (currentIndex > 0) {
-      setSelectedFile(allFiles[currentIndex - 1]);
-    }
-  };
-
-  const handleReview = () => {
-    if (selectedFile) {
-      const updatedFiles = evidenceFiles.map(f => 
-        f.id === selectedFile.id ? { ...f, reviewStatus: "reviewed" } : f
-      );
-      setEvidenceFiles(updatedFiles);
-      setSelectedFile({ ...selectedFile, reviewStatus: "reviewed" });
     }
   };
 
   const filteredFiles = evidenceFiles.filter(f => {
     const matchesFilter = activeFilter === "All Files" 
-      ? f.extractionStatus !== "not_started"
-      : f.type === activeFilter.replace(/s$/, "");
+      ? true 
+      : f.type === activeFilter;
     const matchesSearch = f.name.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesFilter && matchesSearch;
   });
 
   const groupedFiles = batches.map(batch => ({
     ...batch,
-    files: filteredFiles.filter(f => f.batchId === batch.id)
+    files: filteredFiles.filter(f => f.batch_id === batch.id)
   })).filter(b => b.files.length > 0);
 
-  return (
-    <div className="flex h-full overflow-hidden">
-      {/* LEFT PANEL — Unified Evidence Library */}
-      <div className="w-[320px] min-w-[280px] border-r bg-white flex flex-col shrink-0 z-20 shadow-[1px_0_5px_rgba(0,0,0,0.03)]">
-        <div className="p-4 border-b space-y-3 bg-slate-50/20">
-           <div className="flex items-center justify-between">
-              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Evidence Control</span>
-              <button className="p-1 hover:bg-slate-200 rounded transition-colors"><Settings className="h-3.5 w-3.5 text-slate-400" /></button>
-           </div>
-           
-           <Button 
-            onClick={() => setIsUploadModalOpen(true)}
-            className="w-full h-10 bg-slate-900 hover:bg-slate-800 text-white font-black uppercase tracking-widest text-[10px] gap-2 shadow-lg shadow-slate-900/10 active:scale-[0.98] transition-all"
-           >
-              <Upload className="h-3.5 w-3.5" /> Add New Evidence
-           </Button>
+  const goToNext = () => {
+    const allFiles = filteredFiles;
+    const currentIndex = allFiles.findIndex(f => f.id === selectedFile?.id);
+    if (currentIndex < allFiles.length - 1) setSelectedFile(allFiles[currentIndex + 1]);
+  };
 
-           <div className="relative group">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300 group-focus-within:text-primary transition-colors" />
-              <input 
-                placeholder="Search library..." 
-                className="w-full h-9 pl-9 pr-4 bg-white border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-primary/10 focus:border-primary outline-none transition-all"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-           </div>
-        </div>
-        
-        <div className="px-2.5 py-2 border-b flex gap-1 bg-white shadow-sm">
-           {[
-             { id: "All Files", label: "All", icon: Grid },
-             { id: "Document", label: "Docs", icon: FileText },
-             { id: "Image", label: "Images", icon: ImageIcon },
-             { id: "Audio", label: "Audio", icon: AudioIcon },
-             { id: "Video", label: "Video", icon: VideoIcon },
-           ].map(f => (
-              <button 
-                key={f.id}
-                onClick={() => setActiveFilter(f.id)}
-                title={f.id}
-                className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-1.5 px-0.5 rounded-md border transition-all ${
-                  activeFilter === f.id
-                  ? "bg-slate-900 text-white border-slate-900 shadow-sm" 
-                  : "bg-white text-slate-400 border-slate-100 hover:border-slate-300 hover:text-slate-700 hover:bg-slate-50"
+  const goToPrev = () => {
+    const allFiles = filteredFiles;
+    const currentIndex = allFiles.findIndex(f => f.id === selectedFile?.id);
+    if (currentIndex > 0) setSelectedFile(allFiles[currentIndex - 1]);
+  };
+
+  const handleReview = async () => {
+    if (selectedFile) {
+      const { error } = await supabase
+        .from('evidence_files')
+        .update({ review_status: 'reviewed' })
+        .eq('id', selectedFile.id);
+      
+      if (error) toast.error("Failed to update status.");
+      else toast.success("Marked as reviewed.");
+    }
+  };
+
+  return (
+    <div className="flex h-full overflow-hidden bg-white border-t relative">
+      {/* Evidence Side Sidebar */}
+      <div className="w-80 border-r bg-white flex flex-col shrink-0 relative z-20 shadow-[2px_0_8px_rgba(0,0,0,0.02)]">
+        <div className="p-5 border-b space-y-4 bg-slate-50/30">
+          <div className="space-y-1.5">
+             <div className="flex items-center justify-between">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Evidence Repository</span>
+                <span className="text-[10px] font-bold text-primary bg-primary/5 px-2 py-0.5 rounded-full">{evidenceFiles.length} Objects</span>
+             </div>
+             <div className="relative group">
+               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 group-focus-within:text-primary transition-colors" />
+               <input 
+                 type="text" 
+                 placeholder="Search identifiers..."
+                 value={searchQuery}
+                 onChange={(e) => setSearchQuery(e.target.value)}
+                 className="w-full bg-white border border-slate-200 rounded-xl py-2.5 pl-9 pr-4 text-xs font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none shadow-sm"
+               />
+             </div>
+          </div>
+          
+          <div className="flex gap-1.5 p-1 bg-white border rounded-xl shadow-inner">
+            {["All Files", "Image", "Video", "Audio"].map((filter) => (
+              <button
+                key={filter}
+                onClick={() => setActiveFilter(filter)}
+                className={`flex-1 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${
+                  activeFilter === filter 
+                  ? "bg-slate-900 text-white shadow-lg shadow-slate-900/10 scale-[1.02]" 
+                  : "text-slate-400 hover:bg-slate-50 hover:text-slate-600"
                 }`}
               >
-                <f.icon className="h-3.5 w-3.5" />
-                <span className="text-[9px] font-bold uppercase tracking-wide">{f.label}</span>
+                {filter === "All Files" ? "All" : filter}
               </button>
-           ))}
+            ))}
+          </div>
         </div>
 
-        <div className="flex-1 overflow-auto custom-scrollbar bg-slate-50/30">
-           {activeFilter === "All Files" ? (
-             groupedFiles.map(batch => (
-               <div key={batch.id} className="border-b last:border-b-0 bg-white">
-                  <div
-                    onClick={() => toggleBatch(batch.id)}
-                    className="flex items-center gap-2 px-3 py-2.5 bg-slate-50 cursor-pointer hover:bg-slate-100 transition-colors border-b border-slate-100 group/brow"
-                  >
-                     <div className="shrink-0">
-                       {expandedBatches.includes(batch.id) ? <ChevronDown className="h-3 w-3 text-slate-400" /> : <ChevronRight className="h-3 w-3 text-slate-400" />}
-                     </div>
-                     <Folders className="h-3.5 w-3.5 text-primary/60 shrink-0" />
-                     <span className="text-[10px] font-bold text-slate-600 uppercase tracking-tighter leading-snug flex-1 min-w-0 truncate">{batch.name}</span>
-                     <span className="text-[9px] font-bold text-slate-400 bg-white px-1.5 py-0.5 rounded-full border shrink-0">{batch.files.length}</span>
-                     <button
-                       onClick={(e) => { e.stopPropagation(); openDeleteFolderModal(batch); }}
-                       className="p-1 hover:bg-rose-50 rounded transition-colors opacity-0 group-hover/brow:opacity-100 text-slate-300 hover:text-rose-400 shrink-0"
-                       title="Delete folder"
-                     >
-                       <Trash2 className="h-3 w-3" />
-                     </button>
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-6">
+          {groupedFiles.map((batch) => (
+            <div key={batch.id} className="space-y-2">
+              <div className="flex items-center justify-between group/folder">
+                <button 
+                  onClick={() => toggleBatch(batch.id)}
+                  className="flex items-center gap-2 group flex-1"
+                >
+                  <ChevronDown className={`h-3.5 w-3.5 text-slate-400 transition-transform duration-300 ${expandedBatches.includes(batch.id) ? "" : "-rotate-90"}`} />
+                  <div className="flex items-center gap-2">
+                    <Folders className="h-3.5 w-3.5 text-primary" />
+                    <span className="text-[11px] font-black text-slate-900 uppercase tracking-tighter">{batch.name}</span>
                   </div>
-                  {expandedBatches.includes(batch.id) && batch.files.map(file => (
-                    <div 
+                  <span className="text-[9px] font-bold text-slate-300 bg-slate-50 px-1.5 rounded-full ml-1">{batch.files.length}</span>
+                </button>
+                <button 
+                  onClick={() => openDeleteFolderModal(batch)}
+                  className="p-1 hover:bg-rose-50 rounded text-slate-300 hover:text-rose-500 transition-all opacity-0 group-hover/folder:opacity-100"
+                >
+                   <Trash2 className="h-3 w-3" />
+                </button>
+              </div>
+              
+              {expandedBatches.includes(batch.id) && (
+                <div className="space-y-1 ml-4 border-l-2 border-slate-50 pl-2">
+                  {batch.files.map((file: any) => (
+                    <div
                       key={file.id}
                       onClick={() => setSelectedFile(file)}
-                      className={`px-3 py-2.5 pl-7 border-b border-slate-50 cursor-pointer transition-all hover:bg-slate-50/80 relative group ${
-                        selectedFile?.id === file.id ? "bg-primary/5 border-l-[3px] border-l-primary" : "border-l-[3px] border-l-transparent"
-                      }`}
+                      className={`group flex items-center justify-between p-2.5 rounded-xl cursor-pointer transition-all ${
+                        selectedFile?.id === file.id 
+                        ? "bg-primary/5 border-primary/10 shadow-[0_4px_12px_rgba(37,99,235,0.08)]" 
+                        : "hover:bg-slate-50 border-transparent"
+                      } border`}
                     >
-                       <div className="flex gap-2.5 items-start">
-                          <div className={`h-7 w-7 rounded shrink-0 flex items-center justify-center border mt-0.5 ${
-                            selectedFile?.id === file.id ? "bg-white border-primary/20 shadow-sm" : "bg-white border-slate-100"
-                          }`}>
-                             {getFileIcon(file.type)}
+                      <div className="flex items-center gap-2.5 overflow-hidden">
+                        <div className={`p-1.5 rounded-lg transition-colors ${selectedFile?.id === file.id ? "bg-white text-primary shadow-sm" : "bg-slate-100 text-slate-400 group-hover:bg-white"}`}>
+                          {getFileIcon(file.type)}
+                        </div>
+                        <div className="overflow-hidden">
+                          <p className={`text-[11px] font-bold truncate leading-none mb-1 ${selectedFile?.id === file.id ? "text-primary" : "text-slate-700"}`}>
+                            {file.name}
+                          </p>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[9px] text-slate-400 font-bold uppercase tracking-tight">{file.type}</span>
+                             {file.review_status === 'reviewed' && <CheckCircle2 className="h-2.5 w-2.5 text-emerald-500" />}
                           </div>
-                          <div className="flex-1 min-w-0">
-                             <div className="flex items-center justify-between mb-0.5 gap-2">
-                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter shrink-0">{file.type}</span>
-                                <span className="text-[9px] font-medium text-slate-400 shrink-0">{file.size}</span>
-                             </div>
-                             <p className={`text-[11px] font-bold leading-snug break-all line-clamp-2 ${selectedFile?.id === file.id ? "text-primary" : "text-slate-800"}`}>{file.name}</p>
-                             <div className="flex items-center gap-2 mt-2">
-                                <StatusIndicator status={file.extractionStatus} type="extraction" />
-                                <div className="h-1 w-1 rounded-full bg-slate-200" />
-                                <span className="text-[8px] font-bold text-slate-300 uppercase tracking-widest">{file.uploadDate}</span>
-                                {file.tags.includes("key") && <Star className="h-2.5 w-2.5 fill-amber-400 text-amber-400 ml-auto" />}
-                             </div>
-                          </div>
-                       </div>
+                        </div>
+                      </div>
                     </div>
                   ))}
-               </div>
-             ))
-           ) : (
-             filteredFiles.map(file => (
-               <div 
-                 key={file.id}
-                 onClick={() => setSelectedFile(file)}
-                 className={`px-3 py-2.5 border-b border-slate-50 cursor-pointer transition-all hover:bg-slate-50/80 relative group ${
-                   selectedFile?.id === file.id ? "bg-primary/5 border-l-[3px] border-l-primary" : "border-l-[3px] border-l-transparent"
-                 }`}
-               >
-                  <div className="flex gap-2.5 items-start">
-                     <div className={`h-7 w-7 rounded shrink-0 flex items-center justify-center border mt-0.5 ${
-                       selectedFile?.id === file.id ? "bg-white border-primary/20 shadow-sm" : "bg-white border-slate-100"
-                     }`}>
-                        {getFileIcon(file.type)}
-                     </div>
-                     <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-0.5 gap-2">
-                           <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter shrink-0">{file.type}</span>
-                           <span className="text-[9px] font-medium text-slate-400 shrink-0">{file.size}</span>
-                        </div>
-                        <p className={`text-[11px] font-bold leading-snug break-all line-clamp-2 ${selectedFile?.id === file.id ? "text-primary" : "text-slate-800"}`}>{file.name}</p>
-                        <div className="flex items-center gap-2 mt-2">
-                           <StatusIndicator status={file.extractionStatus} type="extraction" />
-                           <div className="h-1 w-1 rounded-full bg-slate-200" />
-                           <span className="text-[8px] font-bold text-slate-300 uppercase tracking-widest">{file.uploadDate}</span>
-                           {file.tags.includes("key") && <Star className="h-2.5 w-2.5 fill-amber-400 text-amber-400 ml-auto" />}
-                        </div>
-                     </div>
-                  </div>
-               </div>
-             ))
-           )}
-           {(activeFilter === "All Files" ? groupedFiles : filteredFiles).length === 0 && (
-               <div className="p-8 text-center text-slate-400">
-                  <Search className="h-8 w-8 mx-auto mb-3 opacity-20" />
-                  <p className="text-xs font-bold uppercase tracking-widest opacity-50">No files found</p>
-               </div>
-            )}
+                </div>
+              )}
+            </div>
+          ))}
+          
+          <Button 
+            onClick={() => setIsUploadModalOpen(true)}
+            variant="outline" 
+            className="w-full border-dashed border-2 py-8 rounded-2xl bg-slate-50/50 hover:bg-primary/5 hover:border-primary/30 group transition-all"
+          >
+            <div className="flex flex-col items-center gap-2">
+              <div className="h-8 w-8 rounded-full bg-white flex items-center justify-center text-slate-400 group-hover:text-primary transition-colors shadow-sm">
+                <Plus className="h-4 w-4" />
+              </div>
+              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest group-hover:text-primary transition-colors">Ingest New Objects</span>
+            </div>
+          </Button>
         </div>
       </div>
 
@@ -2332,7 +2239,7 @@ function ExtractionTab({ files: evidenceFiles, setFiles: setEvidenceFiles, batch
                    </div>
                    <div className="h-4 w-px bg-slate-200" />
                    <div className="flex items-center gap-3">
-                      <StatusIndicator status={selectedFile.extractionStatus} type="extraction" />
+                      <StatusIndicator status={selectedFile.extraction_status || 'pending'} type="extraction" />
                       <ConfidenceChip level="high" />
                    </div>
                 </div>
@@ -2356,13 +2263,13 @@ function ExtractionTab({ files: evidenceFiles, setFiles: setEvidenceFiles, batch
              <div className={`w-full flex ${selectedFile?.type === "Image" ? "max-w-3xl h-full items-center justify-center" : "max-w-5xl items-start justify-center pt-4"}`}>
                {selectedFile ? (
                  <AdaptiveSourcePreview 
-                   file={selectedFile} 
-                   videoCurrentTime={videoCurrentTime}
-                   setVideoCurrentTime={setVideoCurrentTime}
-                   videoIsPlaying={videoIsPlaying}
-                   setVideoIsPlaying={setVideoIsPlaying}
-                   videoRef={videoRef}
-                 />
+                    file={selectedFile} 
+                    videoCurrentTime={videoCurrentTime}
+                    setVideoCurrentTime={setVideoCurrentTime}
+                    videoIsPlaying={videoIsPlaying}
+                    setVideoIsPlaying={setVideoIsPlaying}
+                    videoRef={videoRef}
+                  />
               ) : (
                 <div className="flex flex-col items-center justify-center p-12 text-center">
                    <div className="h-20 w-20 rounded-[2.5rem] bg-white shadow-2xl flex items-center justify-center mb-8 border border-white/50 animate-in fade-in zoom-in duration-700">
@@ -2395,10 +2302,10 @@ function ExtractionTab({ files: evidenceFiles, setFiles: setEvidenceFiles, batch
         <div className="flex-1 overflow-auto custom-scrollbar bg-white">
            {selectedFile?.type === "Video" ? (
              <VideoAnalysisPanel 
-               file={selectedFile} 
-               currentTime={videoCurrentTime}
-               onJump={jumpToVideoTime}
-             />
+                file={selectedFile} 
+                currentTime={videoCurrentTime}
+                onJump={jumpToVideoTime}
+              />
            ) : selectedFile?.type === "Image" || selectedFile?.type === "Audio" ? (
              <AIAnalysisPanel file={selectedFile} />
            ) : (
@@ -2412,14 +2319,14 @@ function ExtractionTab({ files: evidenceFiles, setFiles: setEvidenceFiles, batch
            <div className="flex items-center gap-2">
               <Button
                 onClick={handleReview}
-                disabled={selectedFile?.reviewStatus === "reviewed"}
+                disabled={selectedFile?.review_status === "reviewed"}
                 className={`flex-1 h-9 text-xs font-black uppercase tracking-widest shadow-sm transition-all ${
-                  selectedFile?.reviewStatus === "reviewed"
+                  selectedFile?.review_status === "reviewed"
                   ? "bg-emerald-500 hover:bg-emerald-600 text-white"
                   : "bg-slate-900 hover:bg-slate-800 text-white"
                 }`}
               >
-                 {selectedFile?.reviewStatus === "reviewed" ? (
+                 {selectedFile?.review_status === "reviewed" ? (
                    <span className="flex items-center gap-2 tracking-tighter"><CheckCircle className="h-4 w-4" /> Review Complete</span>
                  ) : "Verify & Mark Reviewed"}
               </Button>
@@ -2443,7 +2350,7 @@ function ExtractionTab({ files: evidenceFiles, setFiles: setEvidenceFiles, batch
         onUploadComplete={handleUploadComplete}
       />
 
-      <DeleteFolderModal
+      <DeleteFolderModal 
         key={deleteFolderTarget?.id ?? "none"}
         target={deleteFolderTarget}
         onClose={() => setDeleteFolderTarget(null)}
@@ -2452,6 +2359,11 @@ function ExtractionTab({ files: evidenceFiles, setFiles: setEvidenceFiles, batch
     </div>
   );
 }
+
+
+
+
+
 
 function AdaptiveSourcePreview({ 
   file, 
@@ -4046,11 +3958,45 @@ function VideoSceneSession({ currentTime, onJump }: { currentTime: number, onJum
   );
 }
 
+const tabs = ["Overview", "Evidence Review", "Analysis", "Reports", "Review", "Audit Trail"];
+
 export default function CaseWorkspacePage() {
-  const { caseId } = useParams();
+  const { caseId } = useParams<{ caseId: string }>();
   const [activeTab, setActiveTab] = useState("Evidence Review");
-  const [files, setFiles] = useState(evidenceFiles);
-  const [batches, setBatches] = useState(evidenceBatches);
+  const [selectedFile, setSelectedFile] = useState<any>(null);
+
+  // Real Data Hooks
+  const { data: caseData, isLoading: caseLoading, refetch: refetchCase } = useCase(caseId!);
+  const { data: evidence, isLoading: evidenceLoading, refetch: refetchEvidence } = useEvidence(caseId!);
+
+  const evidenceFiles = evidence?.files || [];
+  const batches = evidence?.batches || [];
+
+  // Auto-select first file when data loads
+  useEffect(() => {
+    if (evidenceFiles.length > 0 && !selectedFile) {
+      setSelectedFile(evidenceFiles[0]);
+    }
+  }, [evidenceFiles, selectedFile]);
+
+  const handleUploadComplete = async (groups: CompletedGroup[]) => {
+    // Refetch to get new files and batches
+    await refetchEvidence();
+    toast.success("Evidence library updated with new uploads.");
+  };
+
+  if (caseLoading || evidenceLoading) {
+    return (
+      <AppLayout>
+        <div className="flex h-screen items-center justify-center bg-slate-50/50">
+          <div className="flex flex-col items-center gap-4">
+            <Loader2 className="h-10 w-10 text-primary animate-spin" />
+            <p className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Synchronizing Intelligence Case…</p>
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>
@@ -4063,11 +4009,11 @@ export default function CaseWorkspacePage() {
             <div>
               <div className="flex items-center gap-2 mb-0.5">
                 <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">Safety Investigation Case</span>
-                <StatusChip status="in_progress" />
-                <SeverityChip severity="high" />
+                <StatusChip status={caseData?.status || "in_progress"} />
+                <SeverityChip severity={caseData?.severity || "high"} />
               </div>
               <h1 className="text-xl font-bold tracking-tight text-slate-900 border-none p-0 flex items-center gap-2 leading-none">
-                Conveyor Belt Failure - Zone B <span className="text-slate-400 font-mono text-sm leading-none ml-1">#{caseId || "CS-2026-0147"}</span>
+                {caseData?.title || "Loading Case..."} <span className="text-slate-400 font-mono text-sm leading-none ml-1">#{caseData?.case_number || caseId}</span>
               </h1>
             </div>
           </div>
@@ -4101,14 +4047,25 @@ export default function CaseWorkspacePage() {
           <div className="flex items-center gap-6">
              <div className="flex items-center gap-2 border-l pl-6 border-slate-100">
                 <Clock className="h-3.5 w-3.5 text-slate-400" />
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">3 Days Remaining</span>
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                  {caseData?.created_at ? new Date(caseData.created_at).toLocaleDateString() : 'Now'}
+                </span>
              </div>
           </div>
         </div>
 
         <div className="flex-1 overflow-hidden relative">
           {activeTab === "Overview" && <OverviewTab />}
-          {activeTab === "Evidence Review" && <ExtractionTab files={files} setFiles={setFiles} batches={batches} setBatches={setBatches} />}
+          {activeTab === "Evidence Review" && (
+            <ExtractionTab 
+              evidenceFiles={evidenceFiles} 
+              batches={batches} 
+              selectedFile={selectedFile}
+              setSelectedFile={setSelectedFile}
+              caseId={caseId!}
+              onUploadComplete={handleUploadComplete}
+            />
+          )}
           {activeTab === "Analysis" && <AnalysisTab />}
           {activeTab === "Reports" && <ReportsTab />}
           {activeTab === "Review" && <ReviewTab />}
@@ -4118,3 +4075,4 @@ export default function CaseWorkspacePage() {
     </AppLayout>
   );
 }
+
