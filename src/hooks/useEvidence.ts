@@ -117,7 +117,9 @@ export function useUploadEvidence() {
             const { error: uploadError } = await supabase.storage
               .from("evidence")
               .upload(filePath, file, {
-                 upsert: true
+                 upsert: true,
+                 contentType: file.type || 'application/octet-stream',
+                 cacheControl: '3600'
               });
 
             if (uploadError) {
