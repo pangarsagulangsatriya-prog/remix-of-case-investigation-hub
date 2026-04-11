@@ -35,7 +35,8 @@ import {
   ExternalLink,
   Search,
   Grid,
-  LayoutGrid
+  LayoutGrid,
+  Plus
 } from "lucide-react";
 
 // Mock types for legacy compatibility if needed, but we'll use Case from hook

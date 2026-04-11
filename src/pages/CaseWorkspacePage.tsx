@@ -3970,6 +3970,11 @@ export default function CaseWorkspacePage() {
   const { data: caseData, isLoading: caseLoading, refetch: refetchCase } = useCase(caseId!);
   const { data: evidence, isLoading: evidenceLoading, refetch: refetchEvidence } = useEvidence(caseId!);
 
+  const handleUploadComplete = async (groups: CompletedGroup[]) => {
+    await refetchEvidence();
+    toast.success("Evidence library updated with new uploads.");
+  };
+
   const evidenceFiles = evidence?.files || [];
   const batches = evidence?.batches || [];
 
@@ -3981,11 +3986,6 @@ export default function CaseWorkspacePage() {
   }, [evidenceFiles, selectedFile]);
 
 
-  const handleUploadComplete = async (groups: CompletedGroup[]) => {
-    // Refetch to get new files and batches
-    await refetchEvidence();
-    toast.success("Evidence library updated with new uploads.");
-  };
 
   if (caseLoading || evidenceLoading) {
     return (
