@@ -2394,6 +2394,58 @@ function ExtractionTab({
 
 
 
+function useMediaBlob(url: string | null) {
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!url || url.startsWith('blob:')) {
+      setBlobUrl(url);
+      return;
+    }
+
+    let isMounted = true;
+    setIsLoading(true);
+    setError(null);
+
+    // Add version parameter to bypass cache if needed, but fetch usually handles it
+    const fetchUrl = url.includes('?') ? url : `${url}?v=${Date.now()}`;
+
+    fetch(fetchUrl)
+      .then(async (response) => {
+        if (!response.ok) {
+           // Fallback to standard URL if blob fetch fails (e.g. CORS issues)
+           if (isMounted) setBlobUrl(url);
+           return;
+        }
+        const blob = await response.blob();
+        if (isMounted) {
+          const localUrl = URL.createObjectURL(blob);
+          setBlobUrl(localUrl);
+        }
+      })
+      .catch(err => {
+        if (isMounted) {
+          console.warn("Media blob load failed, falling back to direct URL:", err);
+          setBlobUrl(url); // Fallback
+          setError(err.message);
+        }
+      })
+      .finally(() => {
+        if (isMounted) setIsLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+      // We don't revoke immediately to avoid flickering during minor re-renders, 
+      // but in a real case we should manage this carefully.
+    };
+  }, [url]);
+
+  return { blobUrl: blobUrl || url, isLoading, error };
+}
+
 function AdaptiveSourcePreview({ 
   file, 
   videoCurrentTime, 
@@ -2413,6 +2465,7 @@ function AdaptiveSourcePreview({
   const [audioIsPlaying, setAudioIsPlaying] = useState(false);
   const [audioPlaybackSpeed, setAudioPlaybackSpeed] = useState(1);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const { blobUrl: mediaBlobUrl, isLoading: mediaLoading } = useMediaBlob(file.url);
 
   useEffect(() => {
     if (!audioRef.current) return;
@@ -2439,83 +2492,69 @@ function AdaptiveSourcePreview({
   
   if (file.type === "Document") {
     return (
-      <div className="flex flex-col gap-6 w-full max-w-4xl pb-20">
-        <div className="bg-white border border-slate-200 rounded-lg shadow-xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-500">
-           <div className="h-10 bg-slate-50 border-b flex items-center justify-between px-4">
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Digital Evidence / PDF Source</span>
-              <div className="flex items-center gap-4">
-                <span className="text-[10px] font-bold text-slate-400">Page 1 of 4</span>
-                <div className="flex items-center gap-1">
-                   <Button variant="ghost" size="sm" className="h-7 w-7 p-0 hover:bg-slate-200"><ChevronLeft className="h-4 w-4" /></Button>
-                   <Button variant="ghost" size="sm" className="h-7 w-7 p-0 hover:bg-slate-200"><ChevronRight className="h-4 w-4" /></Button>
+      <div className="flex flex-col gap-6 w-full max-w-5xl pb-20">
+        <div className="bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-500 h-[850px]">
+           <div className="h-12 bg-slate-50 border-b flex items-center justify-between px-6">
+              <div className="flex items-center gap-3">
+                <div className="h-7 w-7 bg-primary/10 rounded-lg flex items-center justify-center">
+                  <DocIcon className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <h3 className="text-[11px] font-black text-slate-900 uppercase tracking-widest">{file.name}</h3>
+                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">REAL-TIME DOCUMENT PREVIEW</p>
                 </div>
               </div>
-           </div>
-           <div className="flex-1 p-12 min-h-[600px] space-y-6 relative overflow-hidden bg-white">
-              <div className="absolute top-48 left-0 right-0 h-8 bg-amber-100/30 border-y border-amber-200/50 mix-blend-multiply" />
-              <div className="absolute top-[320px] left-0 right-0 h-6 bg-primary/10 border-y border-primary/20 mix-blend-multiply" />
-              <h1 className="text-2xl font-bold text-slate-900 border-none p-0">HSE Incident Report - Initial Findings</h1>
-              <div className="h-px bg-slate-100 w-full" />
-              <div className="space-y-4">
-                 {[1, 2, 3, 4, 5, 2, 4, 3, 1, 5, 4, 2].map((w, i) => (
-                    <div key={i} className="flex gap-2">
-                       <div className="h-3 bg-slate-100 rounded" style={{ width: `${w * 10 + 20}%` }} />
-                       <div className="h-3 bg-slate-50 rounded" style={{ width: `${(10 - w) * 5 + 10}%` }} />
-                    </div>
-                 ))}
-                 <p className="text-sm text-slate-800 leading-relaxed font-medium bg-amber-50 p-3 rounded border border-amber-100 shadow-sm relative z-10 transition-colors hover:bg-amber-100/50">
-                   "The conveyor belt tore at section 14 at approximately 14:35, causing material spillage across the walkway which blocked emergency access."
-                 </p>
-                 {[4, 2, 5, 3, 4, 1, 2].map((w, i) => (
-                    <div key={i+20} className="flex gap-2">
-                       <div className="h-3 bg-slate-100 rounded" style={{ width: `${w * 12}%` }} />
-                       <div className="h-3 bg-slate-50 rounded" style={{ width: `${(6 - w) * 8}%` }} />
-                    </div>
-                 ))}
+              <div className="flex items-center gap-3">
+                <Button variant="ghost" size="sm" className="h-8 text-[10px] font-bold uppercase tracking-widest gap-2" onClick={() => window.open(file.url, '_blank')}>
+                  <ExternalLink className="h-3.5 w-3.5" /> Fullscreen
+                </Button>
+                <div className="h-4 w-px bg-slate-200" />
+                <Button variant="outline" size="sm" className="h-8 text-[10px] font-bold uppercase tracking-widest gap-2 bg-white" onClick={() => window.open(file.url, '_blank')}>
+                  <Download className="h-3.5 w-3.5" /> Download
+                </Button>
               </div>
+           </div>
+           <div className="flex-1 bg-slate-100 flex items-center justify-center overflow-hidden relative">
+              {file.url ? (
+                <iframe 
+                  src={`${file.url}#toolbar=0&navpanes=0`} 
+                  className="w-full h-full border-none bg-white" 
+                  title={file.name}
+                />
+              ) : (
+                <div className="text-center space-y-4">
+                  <AlertCircle className="h-12 w-12 text-slate-300 mx-auto" />
+                  <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Document Source Unavailable</p>
+                </div>
+              )}
            </div>
         </div>
 
         <div className="space-y-4">
            <div className="flex items-center justify-between border-b pb-2 px-1">
               <div className="flex items-center gap-2">
-                 <FileSearch className="h-4 w-4 text-primary" />
-                 <h2 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.2em]">Thematic Investigation Facts</h2>
+                 <Brain className="h-4 w-4 text-primary" />
+                 <h2 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.2em]">Automated Intelligence Output</h2>
               </div>
               <div className="flex items-center gap-2">
-                 <span className="text-[10px] font-bold text-slate-400">Showing 8 findings across 4 pages</span>
+                 <span className="text-[10px] font-bold text-slate-400">Analysis pending extraction refresh</span>
               </div>
            </div>
-
-           <div className="grid gap-3">
-              {[
-                { title: "Incident Timeline", type: "Timeline Event", conf: "High", page: "Page 1, Para 2", detail: "Conveyor belt segment 14 identified as initial failure point at 14:35 during standard operation." },
-                { title: "Equipment Specification", type: "Asset Detail", conf: "High", page: "Page 2, Table 1.1", detail: "Belt model 'Titan-X 4000' installed Jan 2024. Last maintenance recorded 14 days prior to failure." },
-                { title: "Observed Hazard", type: "Safety Deviation", conf: "Medium", page: "Page 1, Para 4", detail: "Material spillage blocked critical walkway, impeding emergency response path for approximately 12 minutes." },
-                { title: "Witness Statement", type: "Actor Statement", conf: "High", page: "Page 3, Section A", detail: "Shift supervisor reported unusual vibration patterns 5 minutes before the structural tear happened." },
-                { title: "Environmental Context", type: "Climate Detail", conf: "Med", page: "Page 4, Footer", detail: "Ambient temperature recorded at 38°C with 85% humidity at time of incident." },
-              ].map((fact, i) => (
-                 <div key={i} className="bg-white border rounded-xl p-4 shadow-sm hover:border-primary/40 transition-all group relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-1 h-full bg-slate-100 group-hover:bg-primary/50 transition-all" />
-                    <div className="flex items-start justify-between mb-2">
-                       <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-black text-slate-900 uppercase tracking-tight">{fact.title}</span>
-                          <span className="px-1.5 py-0.5 bg-slate-100 border text-[8px] font-bold text-slate-500 rounded-full uppercase tracking-widest">{fact.type}</span>
-                       </div>
-                       <ConfidenceChip level={fact.conf.toLowerCase() as any} />
-                    </div>
-                    <p className="text-[12px] font-medium text-slate-700 leading-relaxed mb-3 pr-4">{fact.detail}</p>
-                    <div className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase tracking-[0.1em] border-t pt-3 border-slate-50">
-                       <Navigation className="h-2.5 w-2.5 text-primary" />
-                       Source: {fact.page}
-                    </div>
-                 </div>
-              ))}
+           
+           <div className="bg-slate-50 border border-dashed border-slate-200 rounded-xl p-12 text-center">
+              <div className="h-12 w-12 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
+                 <RefreshCcw className="h-5 w-5 text-slate-400 animate-spin-slow" />
+              </div>
+              <h3 className="text-sm font-black text-slate-700 uppercase tracking-widest mb-2">Extraction in Progress</h3>
+              <p className="text-[11px] text-slate-500 font-medium max-w-sm mx-auto leading-relaxed">
+                The intelligence engine is currently parsing this document for thematic findings. Extracted facts will appear here once processed.
+              </p>
            </div>
         </div>
       </div>
     );
   }
+
 
   if (file.type === "Image") {
     return (
@@ -2544,15 +2583,18 @@ function AdaptiveSourcePreview({
             ref={audioRef}
             crossOrigin="anonymous"
             preload="auto"
+            src={mediaBlobUrl || file.url}
             onTimeUpdate={(e) => setAudioCurrentTime(Math.floor(e.currentTarget.currentTime))}
             onEnded={() => setAudioIsPlaying(false)}
             className="hidden"
-          >
-            <source 
-              src={file.url?.startsWith("blob:") ? file.url : `${file.url}?v=${file.updated_at || Date.now()}`} 
-              type={file.name?.endsWith('.m4a') ? 'audio/mp4' : file.name?.endsWith('.mp3') ? 'audio/mpeg' : 'audio/wav'} 
-            />
-          </audio>
+          />
+          
+          {mediaLoading && (
+            <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center gap-3">
+              <RefreshCcw className="h-6 w-6 text-primary animate-spin" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Buffering Intelligence Stream...</span>
+            </div>
+          )}
           <div className="bg-white border-2 border-slate-100 rounded-lg shadow-xl p-8 space-y-8 relative overflow-hidden group">
              <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none group-hover:opacity-20 transition-opacity">
                 <AudioIcon className="h-32 w-32 -mr-10 -mt-10 rotate-12" />
@@ -2758,15 +2800,18 @@ function AdaptiveSourcePreview({
                   crossOrigin="anonymous"
                   preload="auto"
                   className="w-full h-full object-contain"
+                  src={mediaBlobUrl || file.url}
                   onTimeUpdate={(e) => setVideoCurrentTime?.(e.currentTarget.currentTime)}
                   onPlay={() => setVideoIsPlaying?.(true)}
                   onPause={() => setVideoIsPlaying?.(false)}
-                >
-                  <source 
-                    src={file.url?.startsWith("blob:") ? file.url : `${file.url}?v=${file.updated_at || Date.now()}`} 
-                    type="video/mp4" 
-                  />
-                </video>
+                />
+                
+                {mediaLoading && (
+                  <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-50 flex flex-col items-center justify-center gap-3">
+                    <RefreshCcw className="h-8 w-8 text-primary animate-spin" />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-white/70">Optimizing Visual Frame Stream...</span>
+                  </div>
+                )}
 
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity" />
                 
