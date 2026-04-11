@@ -2125,18 +2125,25 @@ function ExtractionTab({
              </div>
           </div>
           
-          <div className="flex gap-1.5 p-1 bg-white border rounded-xl shadow-inner">
-            {["All Files", "Image", "Video", "Audio"].map((filter) => (
+          <div className="flex gap-2">
+            {[
+              { id: "All Files", label: "ALL", icon: Grid },
+              { id: "Document", label: "DOCS", icon: DocIcon },
+              { id: "Image", label: "IMAGES", icon: ImageIcon },
+              { id: "Audio", label: "AUDIO", icon: AudioIcon },
+              { id: "Video", label: "VIDEO", icon: VideoIcon }
+            ].map((f) => (
               <button
-                key={filter}
-                onClick={() => setActiveFilter(filter)}
-                className={`flex-1 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${
-                  activeFilter === filter 
-                  ? "bg-slate-900 text-white shadow-lg shadow-slate-900/10 scale-[1.02]" 
-                  : "text-slate-400 hover:bg-slate-50 hover:text-slate-600"
+                key={f.id}
+                onClick={() => setActiveFilter(f.id)}
+                className={`flex-1 flex flex-col items-center justify-center py-2.5 rounded-xl border transition-all ${
+                  activeFilter === f.id
+                    ? "bg-[#0f172a] text-white border-[#0f172a] shadow-md scale-[1.02]"
+                    : "bg-white text-slate-400 border-slate-100 hover:bg-slate-50 hover:text-slate-600 hover:border-slate-200"
                 }`}
               >
-                {filter === "All Files" ? "All" : filter}
+                <f.icon className={`h-4 w-4 mb-1.5 ${activeFilter === f.id ? "text-white" : "text-slate-400"}`} strokeWidth={activeFilter === f.id ? 2.5 : 2} />
+                <span className="text-[9px] font-black uppercase tracking-widest">{f.label}</span>
               </button>
             ))}
           </div>
