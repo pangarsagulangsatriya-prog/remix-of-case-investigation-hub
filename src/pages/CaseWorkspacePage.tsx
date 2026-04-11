@@ -381,8 +381,8 @@ const audioExtractionData = {
     { "segment_id": "S4", "start_time": "00:45", "end_time": "00:50", "speaker_id": "SPK_01", "speaker_label": "Operator A", "text": "[Panic] Woi! Belt-nya robek! E-stop! E-stop sekarang!", "confidence": "High", "inaudible_flag": false }
   ],
   "speaker_profiles": [
-    { "speaker_id": "SPK_01", "probable_role": "Conveyor Operator", "speaking_time": "05:12", "speaking_style": "Urgent, Informal", "stress_level": "High (Post-failure)", "assertiveness": "High", "hesitation": "Low", "escalation_role": "Reporter", "confidence": "High" },
-    { "speaker_id": "SPK_02", "probable_role": "Dispatcher", "speaking_time": "03:33", "speaking_style": "Calm, Procedural", "stress_level": "Low", "assertiveness": "Medium", "hesitation": "Medium", "escalation_role": "Supervisor", "confidence": "High" }
+    { "speaker_id": "SPK_01", "speaker_label": "Operator A", "probable_role": "Conveyor Operator", "speaking_time": "05:12", "speaking_style": "Urgent, Informal", "stress_level": "High (Post-failure)", "assertiveness": "High", "hesitation": "Low", "escalation_role": "Reporter", "confidence": "High" },
+    { "speaker_id": "SPK_02", "speaker_label": "Control Room", "probable_role": "Dispatcher", "speaking_time": "03:33", "speaking_style": "Calm, Procedural", "stress_level": "Low", "assertiveness": "Medium", "hesitation": "Medium", "escalation_role": "Supervisor", "confidence": "High" }
   ],
   "communication_events": [
     { "timestamp": "00:00", "event_type": "Initial Warning", "actor": "Operator A", "target_actor": "Control Room", "content_summary": "Reported unusual vibration in Section 14", "urgency": "Medium", "response_status": "Acknowledged (Delayed Action)", "confidence": "High" },
@@ -406,7 +406,35 @@ const audioExtractionData = {
   },
   "ipls_seeds": [
     { "layer_candidate": "Administrative Controls", "control_area_candidate": "Radio Discipline", "deviation_text": "Dispatcher discouraged immediate inspection due to distractions in Zone C.", "evidence_quote": "'Monitor dulu. Kita lagi handle alarm di Zone C.'", "confidence": "High" }
-  ]
+  ],
+  "factual_statements": [
+    { "timestamp": "00:03", "speaker": "Operator A", "statement_type": "Observation", "fact_text": "Unusual vibration detected at Belt 14 Section — confirmed by direct auditory inspection.", "observed_or_claimed": "Observed", "confidence": "High", "source_segment": "S1" },
+    { "timestamp": "00:18", "speaker": "Operator A", "statement_type": "Technical Assessment", "fact_text": "Metal-on-metal friction sound heard from conveyor roller — escalating over time.", "observed_or_claimed": "Observed", "confidence": "Medium", "source_segment": "S3" },
+    { "timestamp": "00:47", "speaker": "Operator A", "statement_type": "Emergency Report", "fact_text": "Belt tear confirmed visually. E-stop activation requested immediately.", "observed_or_claimed": "Observed", "confidence": "High", "source_segment": "S4" }
+  ],
+  "timeline_events": [
+    { "timestamp": "00:00", "actor": "Operator A", "event_summary": "First radio contact — vibration anomaly reported to Control Room.", "source_audio_segment": "S1", "confidence": "High" },
+    { "timestamp": "00:06", "actor": "Control Room", "event_summary": "Dispatcher acknowledged but deprioritised report in favour of Zone C alarm.", "source_audio_segment": "S2", "confidence": "High" },
+    { "timestamp": "00:15", "actor": "Operator A", "event_summary": "Operator escalated — sound worsening, requested visual inspection clearance.", "source_audio_segment": "S3", "confidence": "Medium" },
+    { "timestamp": "00:45", "actor": "Operator A", "event_summary": "Emergency escalation — belt tear confirmed, E-stop requested.", "source_audio_segment": "S4", "confidence": "High" }
+  ],
+  "risk_and_procedure_clues": {
+    "procedure_mentions": ["E-Stop protocol referenced at 00:45", "Radio check-in procedure followed at session start"],
+    "equipment_issue_mentions": ["Belt 14 vibration anomaly reported early", "Roller metal-on-metal friction escalating"],
+    "sensor_alarm_mentions": ["Zone C alarm active and competing for dispatcher attention"],
+    "emergency_response_mentions": ["E-Stop activation at 00:45", "Emergency call for belt rupture"],
+    "control_gap_mentions": ["Dispatcher failed to escalate initial vibration warning to supervisor"],
+    "radio_channel_issue_mentions": ["Control room simultaneously managing multi-zone alarm load"]
+  },
+  "contradictions_and_gaps": [
+    { "timestamp": "00:06", "type": "Response Gap", "detail": "Control Room acknowledged vibration but took no action — deprioritised Section 14 in favour of Zone C.", "confidence": "High" },
+    { "timestamp": "00:15", "type": "Information Gap", "detail": "5-minute gap between initial warning (00:00) and second escalation (00:15) — no interim update recorded from Control Room.", "confidence": "Medium" }
+  ],
+  "review_meta": {
+    "low_confidence_segments": ["S3 (00:15–00:22) — Medium confidence due to elevated background engine noise"],
+    "needs_human_review": ["Verify dispatcher response protocol during simultaneous multi-zone alarms", "Confirm whether Zone C alarm was genuine or false positive"],
+    "confidence": "High Overall"
+  }
 };
 
 const audioDiarizationData = [
@@ -958,6 +986,517 @@ function AIAnalysisPanel({ file }: { file: any }) {
   );
 }
 
+// ── Audio Right Panel ────────────────────────────────────────────────────────
+
+function AudioRightPanel({
+  audioCurrentTime,
+  onSeek,
+}: {
+  audioCurrentTime: number;
+  onSeek: (seconds: number) => void;
+}) {
+  const [activeTab, setActiveTab] = useState<'extraction' | 'diary'>('extraction');
+  const [viewMode, setViewMode] = useState<'Structured' | 'JSON'>('Structured');
+  const [expandedSections, setExpandedSections] = useState<string[]>(['audio_session_meta', 'speaker_profiles']);
+
+  const data = audioExtractionData;
+
+  const toSec = (t: string) => {
+    const p = t.split(':').map(Number);
+    return p.length === 3 ? p[0] * 3600 + p[1] * 60 + p[2] : p[0] * 60 + p[1];
+  };
+
+  const isSegActive = (start: string, end: string) =>
+    audioCurrentTime >= toSec(start) && audioCurrentTime <= toSec(end);
+
+  const seek = (t: string) => onSeek(toSec(t));
+
+  const toggle = (id: string) =>
+    setExpandedSections(prev =>
+      prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]
+    );
+
+  // ── Micro components ──────────────────────────────────────────────────────
+
+  const Chip = ({ label, variant = 'default' }: { label: string; variant?: 'default' | 'warn' | 'critical' | 'ok' | 'info' }) => {
+    const cls: Record<string, string> = {
+      default: 'bg-slate-100 text-slate-500 border-slate-200',
+      warn:    'bg-amber-50 text-amber-700 border-amber-100',
+      critical:'bg-rose-50 text-rose-700 border-rose-100',
+      ok:      'bg-emerald-50 text-emerald-700 border-emerald-100',
+      info:    'bg-blue-50 text-blue-700 border-blue-100',
+    };
+    return (
+      <span className={`inline-flex items-center px-1.5 py-0.5 rounded border text-[9px] font-black uppercase tracking-wide ${cls[variant]}`}>
+        {label}
+      </span>
+    );
+  };
+
+  const TsBtn = ({ time }: { time: string }) => (
+    <button
+      onClick={(e) => { e.stopPropagation(); seek(time); }}
+      className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-primary/8 hover:bg-primary/20 text-primary border border-primary/20 rounded text-[9px] font-black tabular-nums transition-colors cursor-pointer flex-shrink-0"
+      title="Seek to this time"
+    >
+      <Clock className="h-2.5 w-2.5" />
+      {time}
+    </button>
+  );
+
+  const AccSection = ({ id, title, icon: Icon, count, children }: any) => {
+    const open = expandedSections.includes(id);
+    return (
+      <div className={`border rounded-lg overflow-hidden transition-all ${open ? 'ring-1 ring-primary/15 shadow-sm' : 'hover:border-slate-200'}`}>
+        <button
+          onClick={() => toggle(id)}
+          className={`w-full flex items-center justify-between px-3 py-2 text-left transition-colors ${open ? 'bg-slate-50/80 border-b border-slate-100' : 'bg-white hover:bg-slate-50/40'}`}
+        >
+          <div className="flex items-center gap-2">
+            <div className={`h-5 w-5 rounded flex items-center justify-center flex-shrink-0 ${open ? 'text-primary' : 'text-slate-400'}`}>
+              <Icon className="h-3.5 w-3.5" />
+            </div>
+            <span className={`text-[10px] font-black uppercase tracking-tight ${open ? 'text-slate-900' : 'text-slate-600'}`}>{title}</span>
+            {count !== undefined && (
+              <span className="px-1 py-0.5 bg-slate-100 text-slate-400 text-[8px] font-black rounded border border-slate-200">{count}</span>
+            )}
+          </div>
+          <ChevronDown className={`h-3 w-3 text-slate-400 flex-shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
+        </button>
+        {open && (
+          <div className="p-3 bg-white">
+            {children}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // ── Extraction tab ─────────────────────────────────────────────────────────
+
+  const renderExtraction = () => {
+    if (viewMode === 'JSON') {
+      return (
+        <div className="p-3">
+          <div className="bg-slate-900 rounded-xl p-4 overflow-hidden border border-slate-800">
+            <pre className="text-[10px] font-mono text-emerald-400 leading-relaxed overflow-auto max-h-[700px] custom-scrollbar">
+              {JSON.stringify(data, null, 2)}
+            </pre>
+          </div>
+        </div>
+      );
+    }
+
+    const hps = data.human_performance_signals as any;
+    const rpc = (data as any).risk_and_procedure_clues;
+
+    return (
+      <div className="p-3 space-y-2">
+
+        {/* 1 — Audio Session Meta */}
+        <AccSection id="audio_session_meta" title="Audio Session Meta" icon={Settings}>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+            {([
+              ['Session', data.recording_meta.file_name],
+              ['Duration', data.recording_meta.duration],
+              ['Quality', data.recording_meta.audio_quality],
+              ['Type', data.recording_meta.recording_type],
+              ['Noise', data.recording_meta.noise_level],
+              ['Channel', data.recording_meta.channel_type],
+              ['Language', data.recording_meta.language],
+              ['Overlap', data.recording_meta.overlap_level],
+            ] as [string, string][]).map(([label, value]) => (
+              <div key={label} className="min-w-0">
+                <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide block">{label}</span>
+                <span className="text-[10px] font-bold text-slate-800 truncate block">{value || '—'}</span>
+              </div>
+            ))}
+          </div>
+        </AccSection>
+
+        {/* 2 — Speaker Profiles */}
+        <AccSection id="speaker_profiles" title="Speaker Profiles" icon={Users} count={data.speaker_profiles.length}>
+          <div className="space-y-2">
+            {data.speaker_profiles.map((s: any) => (
+              <div key={s.speaker_id} className="p-2.5 border rounded-lg bg-slate-50/50 hover:bg-white transition-all">
+                <div className="flex items-start justify-between mb-1.5">
+                  <div>
+                    <span className="text-[10px] font-black text-slate-900 block">{s.speaker_label || s.speaker_id}</span>
+                    <span className="text-[9px] font-bold text-slate-400">{s.probable_role}</span>
+                  </div>
+                  <Chip label={`Stress: ${s.stress_level.split(' ')[0]}`} variant={s.stress_level.includes('High') ? 'critical' : 'ok'} />
+                </div>
+                <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[9px] font-bold text-slate-400">
+                  <span>Speaking: <span className="text-slate-700">{s.speaking_time}</span></span>
+                  <span>Style: <span className="text-slate-700">{s.speaking_style.split(',')[0]}</span></span>
+                  <span>Assert: <span className="text-slate-700">{s.assertiveness}</span></span>
+                  <span>Hesit: <span className="text-slate-700">{s.hesitation}</span></span>
+                  <span>Role: <span className="text-slate-700">{s.escalation_role}</span></span>
+                  <span>Conf: <span className="text-slate-700">{s.confidence}</span></span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </AccSection>
+
+        {/* 3 — Communication Events */}
+        <AccSection id="comm_events" title="Communication Events" icon={MessageCircle} count={data.communication_events.length}>
+          <div className="space-y-2">
+            {data.communication_events.map((ev: any, i: number) => (
+              <div key={i} className="flex gap-2 p-2 border rounded-lg bg-white hover:bg-slate-50/50 transition-all">
+                <TsBtn time={ev.timestamp} />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                    <span className="text-[9px] font-black text-slate-800 truncate">{ev.event_type}</span>
+                    <Chip label={ev.urgency} variant={ev.urgency === 'Critical' ? 'critical' : ev.urgency === 'Medium' ? 'warn' : 'default'} />
+                  </div>
+                  <p className="text-[9px] font-bold text-slate-600 leading-snug mb-1">{ev.content_summary}</p>
+                  <div className="flex items-center gap-1 text-[8px] font-bold text-slate-400 flex-wrap">
+                    <span>{ev.actor}</span><span>→</span><span>{ev.target_actor}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </AccSection>
+
+        {/* 4 — Factual Statements */}
+        <AccSection id="factual_statements" title="Factual Statements" icon={FileText} count={(data as any).factual_statements?.length || 0}>
+          <div className="space-y-2">
+            {((data as any).factual_statements || []).map((f: any, i: number) => (
+              <div key={i} className="flex gap-2 p-2 border rounded-lg bg-white hover:bg-slate-50/50 transition-all">
+                <TsBtn time={f.timestamp} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-bold text-slate-800 leading-snug mb-1">{f.fact_text}</p>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-[8px] font-bold text-slate-500">{f.speaker}</span>
+                    <Chip label={f.statement_type} />
+                    <Chip label={f.observed_or_claimed} variant={f.observed_or_claimed === 'Observed' ? 'ok' : 'info'} />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </AccSection>
+
+        {/* 5 — Timeline Events */}
+        <AccSection id="timeline_events" title="Timeline Events" icon={Clock} count={(data as any).timeline_events?.length || 0}>
+          <div className="relative">
+            <div className="absolute left-[10px] top-1 bottom-1 w-px bg-slate-100" />
+            <div className="space-y-3">
+              {((data as any).timeline_events || []).map((ev: any, i: number) => (
+                <div key={i} className="flex gap-2.5 items-start relative z-10">
+                  <button
+                    onClick={() => seek(ev.timestamp)}
+                    className="h-[20px] w-[20px] rounded-full border-2 border-white bg-slate-100 flex items-center justify-center hover:bg-primary/15 transition-colors flex-shrink-0 mt-0.5 shadow-sm"
+                    title="Seek to this time"
+                  >
+                    <div className="h-1.5 w-1.5 rounded-full bg-primary/60" />
+                  </button>
+                  <div className="flex-1 min-w-0 pb-1">
+                    <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
+                      <span className="text-[9px] font-black text-primary tabular-nums">{ev.timestamp}</span>
+                      <span className="text-[9px] font-bold text-slate-400">· {ev.actor}</span>
+                    </div>
+                    <p className="text-[9px] font-bold text-slate-700 leading-snug">{ev.event_summary}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </AccSection>
+
+        {/* 6 — Human Performance Signals */}
+        <AccSection id="human_perf" title="Human Performance Signals" icon={Activity}>
+          <div className="space-y-1.5">
+            {([
+              { key: 'communication_positive_or_not', label: 'Communication',     icon: MessageSquare, tone: 'neutral' },
+              { key: 'missed_confirmation',           label: 'Missed Confirmation', icon: AlertCircle,  tone: 'warn' },
+              { key: 'delayed_reporting',             label: 'Delayed Reporting',   icon: Clock,         tone: 'warn' },
+              { key: 'supervision_signal',            label: 'Supervision',         icon: Users,         tone: 'warn' },
+              { key: 'stress_or_confusion',           label: 'Stress / Confusion',  icon: AlertTriangle, tone: 'critical' },
+              { key: 'speak_up_signal',               label: 'Speak-Up',            icon: MessageSquare, tone: 'ok' },
+              { key: 'coordination_gap_signal',       label: 'Coordination Gap',    icon: AlertCircle,   tone: 'warn' },
+            ] as any[]).map(({ key, label, icon: Icon, tone }) => {
+              const raw = hps[key];
+              const arr: string[] = Array.isArray(raw) ? raw : (raw ? [raw] : []);
+              if (arr.length === 0) return null;
+              const dot = tone === 'critical' ? 'bg-rose-400' : tone === 'warn' ? 'bg-amber-400' : tone === 'ok' ? 'bg-emerald-400' : 'bg-slate-300';
+              return (
+                <div key={key} className="p-2 border rounded-lg bg-slate-50/30">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <Icon className="h-3 w-3 text-slate-400" />
+                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-wide">{label}</span>
+                  </div>
+                  <div className="space-y-0.5">
+                    {arr.map((item: string, i: number) => (
+                      <div key={i} className="flex items-start gap-1.5">
+                        <div className={`h-1.5 w-1.5 rounded-full mt-1 flex-shrink-0 ${dot}`} />
+                        <p className="text-[9px] font-bold text-slate-600 leading-snug">{item}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </AccSection>
+
+        {/* 7 — Risk & Procedure Clues */}
+        <AccSection id="risk_clues" title="Risk & Procedure Clues" icon={AlertTriangle}>
+          <div className="space-y-2.5">
+            {rpc && ([
+              { key: 'procedure_mentions',          label: 'Procedure' },
+              { key: 'equipment_issue_mentions',    label: 'Equipment' },
+              { key: 'sensor_alarm_mentions',       label: 'Sensor / Alarm' },
+              { key: 'emergency_response_mentions', label: 'Emergency' },
+              { key: 'control_gap_mentions',        label: 'Control Gap' },
+              { key: 'radio_channel_issue_mentions',label: 'Radio / Comms' },
+            ] as { key: string; label: string }[]).map(({ key, label }) => {
+              const items: string[] = rpc[key] || [];
+              if (items.length === 0) return null;
+              return (
+                <div key={key}>
+                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide block mb-1">{label}</span>
+                  <div className="space-y-0.5">
+                    {items.map((item, i) => (
+                      <div key={i} className="flex items-start gap-1.5">
+                        <div className="h-1 w-1 rounded-full bg-slate-300 mt-1.5 flex-shrink-0" />
+                        <p className="text-[9px] font-bold text-slate-600 leading-snug">{item}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </AccSection>
+
+        {/* 8 — Contradictions & Gaps */}
+        <AccSection id="contradictions" title="Contradictions & Gaps" icon={AlertCircle} count={(data as any).contradictions_and_gaps?.length || 0}>
+          <div className="space-y-2">
+            {((data as any).contradictions_and_gaps || []).map((c: any, i: number) => (
+              <div key={i} className="p-2.5 border border-amber-100 rounded-lg bg-amber-50/30 hover:bg-amber-50/60 transition-all">
+                <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                  <TsBtn time={c.timestamp} />
+                  <Chip label={c.type} variant="warn" />
+                  <span className="ml-auto text-[8px] font-bold text-slate-400">{c.confidence}</span>
+                </div>
+                <p className="text-[9px] font-bold text-slate-700 leading-snug">{c.detail}</p>
+              </div>
+            ))}
+          </div>
+        </AccSection>
+
+        {/* 9 — PEEPO Seeds */}
+        <AccSection id="peepo" title="PEEPO Seeds" icon={Brain}>
+          <div className="space-y-1.5">
+            {Object.entries(data.peepo_seeds).map(([cat, items]: any) => {
+              const arr: string[] = Array.isArray(items) ? items : [items];
+              return (
+                <div key={cat} className="p-2 rounded-lg border border-slate-100 bg-slate-50/40 hover:bg-white transition-all">
+                  <span className="text-[8px] font-black text-primary uppercase tracking-wider block mb-1">{cat}</span>
+                  {arr.map((item: string, i: number) => (
+                    <div key={i} className="flex items-start gap-1.5">
+                      <div className="h-1 w-1 rounded-full bg-primary/40 mt-1.5 flex-shrink-0" />
+                      <p className="text-[9px] font-bold text-slate-600 leading-snug">{item}</p>
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
+          </div>
+        </AccSection>
+
+        {/* 10 — IPLS Seeds */}
+        <AccSection id="ipls" title="IPLS Seeds" icon={FileSearch} count={data.ipls_seeds.length}>
+          <div className="space-y-2">
+            {data.ipls_seeds.map((ipls: any, i: number) => (
+              <div key={i} className="p-2.5 border-l-2 border-l-primary border border-slate-100 rounded-r-lg bg-slate-50/40">
+                <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                  <span className="text-[9px] font-black text-primary">{ipls.layer_candidate}</span>
+                  <span className="text-[8px] text-slate-300">·</span>
+                  <span className="text-[9px] font-bold text-slate-500">{ipls.control_area_candidate}</span>
+                </div>
+                <p className="text-[9px] font-bold text-slate-700 leading-snug mb-1">{ipls.deviation_text}</p>
+                {ipls.evidence_quote && (
+                  <p className="text-[9px] font-medium text-slate-400 italic leading-snug">"{ipls.evidence_quote}"</p>
+                )}
+              </div>
+            ))}
+          </div>
+        </AccSection>
+
+        {/* 11 — Review Meta */}
+        <AccSection id="review_meta" title="Review Meta" icon={CheckCircle2}>
+          <div className="space-y-2">
+            {((data as any).review_meta?.low_confidence_segments || []).map((seg: string, i: number) => (
+              <div key={i} className="flex items-start gap-1.5">
+                <AlertCircle className="h-3 w-3 text-amber-400 flex-shrink-0 mt-0.5" />
+                <p className="text-[9px] font-bold text-slate-600 leading-snug">{seg}</p>
+              </div>
+            ))}
+            {((data as any).review_meta?.needs_human_review || []).length > 0 && (
+              <div>
+                <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide block mb-1">Needs Human Review</span>
+                {(data as any).review_meta.needs_human_review.map((item: string, i: number) => (
+                  <div key={i} className="flex items-start gap-1.5 mb-1 last:mb-0">
+                    <Eye className="h-3 w-3 text-primary flex-shrink-0 mt-0.5" />
+                    <p className="text-[9px] font-bold text-slate-600 leading-snug">{item}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="flex items-center justify-between pt-1.5 border-t border-slate-100">
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wide">Overall Confidence</span>
+              <span className="text-[10px] font-black text-emerald-600">{(data as any).review_meta?.confidence || '—'}</span>
+            </div>
+          </div>
+        </AccSection>
+
+      </div>
+    );
+  };
+
+  // ── Diary Session tab ──────────────────────────────────────────────────────
+
+  const renderDiary = () => {
+    const segments = audioDiarizationData;
+    const totalSpeakers = [...new Set(segments.map(s => s.speaker_id))].length;
+    const curMin = Math.floor(audioCurrentTime / 60).toString().padStart(2, '0');
+    const curSec = (audioCurrentTime % 60).toString().padStart(2, '0');
+
+    return (
+      <div className="flex flex-col h-full">
+        {/* Mini header stats */}
+        <div className="px-3 py-1.5 border-b border-slate-100 bg-slate-50/50 flex items-center gap-3 text-[9px] font-bold text-slate-400 uppercase tracking-wide flex-shrink-0">
+          <span>{segments.length} segments</span>
+          <span className="h-3 w-px bg-slate-200" />
+          <span>{totalSpeakers} speakers</span>
+          <span className="h-3 w-px bg-slate-200" />
+          <span>04:22 total</span>
+          <div className="ml-auto flex items-center gap-1.5">
+            <div className={`h-1.5 w-1.5 rounded-full ${audioCurrentTime > 0 ? 'bg-primary animate-pulse' : 'bg-slate-200'}`} />
+            <span className="tabular-nums text-slate-500">{curMin}:{curSec}</span>
+          </div>
+        </div>
+
+        {/* Segment list */}
+        <div className="flex-1 overflow-auto custom-scrollbar divide-y divide-slate-50">
+          {segments.map((seg) => {
+            const active = isSegActive(seg.start_time, seg.end_time);
+            return (
+              <div
+                key={seg.segment_id}
+                onClick={() => seek(seg.start_time)}
+                className={`flex gap-2.5 px-3 py-2.5 cursor-pointer transition-all relative group ${
+                  active
+                    ? 'bg-primary/5 border-l-2 border-l-primary'
+                    : 'border-l-2 border-l-transparent hover:bg-slate-50/80 hover:border-l-slate-200'
+                }`}
+              >
+                {/* Timestamp range */}
+                <div className="w-[72px] flex-shrink-0 pt-0.5">
+                  <span className={`text-[9px] font-black tabular-nums leading-tight block ${active ? 'text-primary' : 'text-slate-400'}`}>
+                    {seg.start_time}
+                  </span>
+                  <span className={`text-[8px] font-bold tabular-nums block ${active ? 'text-primary/60' : 'text-slate-300'}`}>
+                    –{seg.end_time}
+                  </span>
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                    <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wide border ${
+                      seg.speaker_id === 'SPK_01'
+                        ? 'bg-amber-50 text-amber-700 border-amber-100'
+                        : 'bg-indigo-50 text-indigo-700 border-indigo-100'
+                    }`}>
+                      {seg.speaker_label}
+                    </span>
+                    {seg.flags.includes('critical_evidence') && <span className="h-1.5 w-1.5 rounded-full bg-rose-500" title="Critical evidence" />}
+                    {seg.flags.includes('hazard_alert') && <span className="h-1.5 w-1.5 rounded-full bg-amber-400" title="Hazard alert" />}
+                    {seg.flags.includes('key_observation') && <Star className="h-2.5 w-2.5 text-amber-400 fill-amber-400" />}
+                    {seg.flags.includes('emergency_command') && <span className="h-1.5 w-1.5 rounded-full bg-rose-600 animate-pulse" title="Emergency command" />}
+                  </div>
+                  <p className={`text-[10px] leading-relaxed ${active ? 'text-slate-900 font-medium' : 'text-slate-600 font-medium'}`}>
+                    {seg.text}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
+
+          {/* End marker */}
+          <div className="flex flex-col items-center justify-center py-6 gap-1">
+            <div className="h-px w-8 bg-slate-100" />
+            <span className="text-[8px] font-black uppercase tracking-[0.2em] text-slate-300">End of Recording</span>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // ── Render ─────────────────────────────────────────────────────────────────
+
+  return (
+    <div className="flex flex-col h-full overflow-hidden">
+
+      {/* Sticky tab header */}
+      <div className="px-3 py-2 border-b bg-white flex items-center justify-between flex-shrink-0 gap-2">
+        {/* Tab switcher */}
+        <div className="flex items-center gap-0.5 p-0.5 bg-slate-100 rounded-md border border-slate-200 shadow-inner">
+          {(['extraction', 'diary'] as const).map(tab => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-3 py-1 text-[9px] font-black uppercase tracking-tight rounded transition-all ${
+                activeTab === tab
+                  ? 'bg-white text-primary shadow-sm ring-1 ring-slate-200/60'
+                  : 'text-slate-400 hover:text-slate-600'
+              }`}
+            >
+              {tab === 'extraction' ? 'Extraction' : 'Diary Session'}
+            </button>
+          ))}
+        </div>
+
+        {/* Right controls */}
+        {activeTab === 'extraction' && (
+          <div className="flex items-center gap-0.5 p-0.5 bg-slate-100 rounded border border-slate-200 shadow-inner">
+            {(['Structured', 'JSON'] as const).map(mode => (
+              <button
+                key={mode}
+                onClick={() => setViewMode(mode)}
+                className={`px-2 py-0.5 text-[8px] font-black uppercase rounded transition-all ${
+                  viewMode === mode ? 'bg-white text-primary shadow-sm' : 'text-slate-400 hover:text-slate-600'
+                }`}
+              >
+                {mode}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Tab content area */}
+      <div className="flex-1 min-h-0 overflow-hidden">
+        {activeTab === 'extraction' ? (
+          <div className="h-full overflow-auto custom-scrollbar">
+            {renderExtraction()}
+          </div>
+        ) : (
+          <div className="h-full flex flex-col overflow-hidden">
+            {renderDiary()}
+          </div>
+        )}
+      </div>
+
+    </div>
+  );
+}
+
 // --- Tabs ---
 
 function OverviewTab() {
@@ -1351,6 +1890,11 @@ function ExtractionTab({ files: evidenceFiles, setFiles: setEvidenceFiles, batch
   const [expandedBatches, setExpandedBatches] = useState<string[]>(["B1", "B2", "B4", "B5"]);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+
+  // Lifted audio state — shared between center player and right panel
+  const [audioCurrentTime, setAudioCurrentTime] = useState(0);
+  const [audioIsPlaying, setAudioIsPlaying] = useState(false);
+  const [audioPlaybackSpeed, setAudioPlaybackSpeed] = useState(1);
   const [deleteFolderTarget, setDeleteFolderTarget] = useState<DeleteFolderTarget | null>(null);
 
   const openDeleteFolderModal = (batch: any) => {
@@ -1673,7 +2217,15 @@ function ExtractionTab({ files: evidenceFiles, setFiles: setEvidenceFiles, batch
         <div className="flex-1 overflow-auto bg-[#f0f2f4] p-6 flex flex-col items-center custom-scrollbar" style={{ minWidth: 0 }}>
              <div className={`w-full flex ${selectedFile?.type === "Image" ? "max-w-3xl h-full items-center justify-center" : "max-w-5xl items-start justify-center pt-4"}`}>
                {selectedFile ? (
-                 <AdaptiveSourcePreview file={selectedFile} />
+                 <AdaptiveSourcePreview
+                   file={selectedFile}
+                   audioCurrentTime={audioCurrentTime}
+                   setAudioCurrentTime={setAudioCurrentTime}
+                   audioIsPlaying={audioIsPlaying}
+                   setAudioIsPlaying={setAudioIsPlaying}
+                   audioPlaybackSpeed={audioPlaybackSpeed}
+                   setAudioPlaybackSpeed={setAudioPlaybackSpeed}
+                 />
               ) : (
                 <div className="flex flex-col items-center justify-center p-12 text-center">
                    <div className="h-20 w-20 rounded-[2.5rem] bg-white shadow-2xl flex items-center justify-center mb-8 border border-white/50 animate-in fade-in zoom-in duration-700">
@@ -1690,37 +2242,51 @@ function ExtractionTab({ files: evidenceFiles, setFiles: setEvidenceFiles, batch
       </div>
 
       <div className="w-[460px] min-w-[380px] border-l bg-white flex flex-col shrink-0 z-20 shadow-[-2px_0_6px_rgba(0,0,0,0.04)]">
-        <div className="h-12 border-b flex items-center justify-between px-4 shrink-0 bg-slate-50/50">
-           <div className="flex items-center gap-2">
-              <Brain className="h-4 w-4 text-primary" />
-              <span className="text-[10px] font-bold text-slate-700 uppercase tracking-widest">Extraction Console</span>
-           </div>
-           <div className="flex items-center gap-1.5">
-              <Button variant="ghost" size="sm" className="h-7 w-7 p-0 rounded-full hover:bg-slate-200">
-                 <History className="h-3.5 w-3.5 text-slate-400" />
-              </Button>
-              <Button variant="ghost" size="sm" className="h-7 px-2 text-[10px] font-bold text-primary hover:bg-primary/5">Rerun Engine</Button>
-           </div>
-        </div>
-        
-        <div className="flex-1 overflow-auto custom-scrollbar bg-white">
-           {selectedFile?.type === "Image" || selectedFile?.type === "Audio" ? (
-             <AIAnalysisPanel file={selectedFile} />
-           ) : (
-             <div className="p-6">
-               <AdaptiveExtractionOutput file={selectedFile} />
-             </div>
-           )}
-        </div>
+
+        {selectedFile?.type === "Audio" ? (
+          /* ── Audio: new 2-tab panel (Extraction + Diary Session) ── */
+          <div className="flex-1 min-h-0 overflow-hidden">
+            <AudioRightPanel
+              audioCurrentTime={audioCurrentTime}
+              onSeek={(sec) => { setAudioCurrentTime(sec); setAudioIsPlaying(true); }}
+            />
+          </div>
+        ) : (
+          /* ── Non-Audio: existing extraction console ── */
+          <>
+            <div className="h-12 border-b flex items-center justify-between px-4 shrink-0 bg-slate-50/50">
+               <div className="flex items-center gap-2">
+                  <Brain className="h-4 w-4 text-primary" />
+                  <span className="text-[10px] font-bold text-slate-700 uppercase tracking-widest">Extraction Console</span>
+               </div>
+               <div className="flex items-center gap-1.5">
+                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0 rounded-full hover:bg-slate-200">
+                     <History className="h-3.5 w-3.5 text-slate-400" />
+                  </Button>
+                  <Button variant="ghost" size="sm" className="h-7 px-2 text-[10px] font-bold text-primary hover:bg-primary/5">Rerun Engine</Button>
+               </div>
+            </div>
+
+            <div className="flex-1 overflow-auto custom-scrollbar bg-white">
+               {selectedFile?.type === "Image" ? (
+                 <AIAnalysisPanel file={selectedFile} />
+               ) : (
+                 <div className="p-6">
+                   <AdaptiveExtractionOutput file={selectedFile} />
+                 </div>
+               )}
+            </div>
+          </>
+        )}
 
         <div className="px-5 py-4 border-t bg-white shrink-0 shadow-[0_-2px_8px_rgba(0,0,0,0.04)]">
            <div className="flex items-center gap-2">
-              <Button 
+              <Button
                 onClick={handleReview}
                 disabled={selectedFile?.reviewStatus === "reviewed"}
                 className={`flex-1 h-9 text-xs font-black uppercase tracking-widest shadow-sm transition-all ${
-                  selectedFile?.reviewStatus === "reviewed" 
-                  ? "bg-emerald-500 hover:bg-emerald-600 text-white" 
+                  selectedFile?.reviewStatus === "reviewed"
+                  ? "bg-emerald-500 hover:bg-emerald-600 text-white"
                   : "bg-slate-900 hover:bg-slate-800 text-white"
                 }`}
               >
@@ -1758,10 +2324,33 @@ function ExtractionTab({ files: evidenceFiles, setFiles: setEvidenceFiles, batch
   );
 }
 
-function AdaptiveSourcePreview({ file }: { file: any }) {
-  const [audioCurrentTime, setAudioCurrentTime] = useState(0);
-  const [audioIsPlaying, setAudioIsPlaying] = useState(false);
-  const [audioPlaybackSpeed, setAudioPlaybackSpeed] = useState(1);
+function AdaptiveSourcePreview({
+  file,
+  audioCurrentTime: externalAudioCurrentTime,
+  setAudioCurrentTime: setExternalAudioCurrentTime,
+  audioIsPlaying: externalAudioIsPlaying,
+  setAudioIsPlaying: setExternalAudioIsPlaying,
+  audioPlaybackSpeed: externalAudioPlaybackSpeed,
+  setAudioPlaybackSpeed: setExternalAudioPlaybackSpeed,
+}: {
+  file: any;
+  audioCurrentTime?: number;
+  setAudioCurrentTime?: (t: number) => void;
+  audioIsPlaying?: boolean;
+  setAudioIsPlaying?: (p: boolean) => void;
+  audioPlaybackSpeed?: number;
+  setAudioPlaybackSpeed?: (s: number) => void;
+}) {
+  const [localAudioCurrentTime, setLocalAudioCurrentTime] = useState(0);
+  const [localAudioIsPlaying, setLocalAudioIsPlaying] = useState(false);
+  const [localAudioPlaybackSpeed, setLocalAudioPlaybackSpeed] = useState(1);
+
+  const audioCurrentTime    = externalAudioCurrentTime    ?? localAudioCurrentTime;
+  const setAudioCurrentTime = setExternalAudioCurrentTime ?? setLocalAudioCurrentTime;
+  const audioIsPlaying      = externalAudioIsPlaying      ?? localAudioIsPlaying;
+  const setAudioIsPlaying   = setExternalAudioIsPlaying   ?? setLocalAudioIsPlaying;
+  const audioPlaybackSpeed  = externalAudioPlaybackSpeed  ?? localAudioPlaybackSpeed;
+  const setAudioPlaybackSpeed = setExternalAudioPlaybackSpeed ?? setLocalAudioPlaybackSpeed;
   
   const [videoCurrentTime, setVideoCurrentTime] = useState(0);
   const [videoIsPlaying, setVideoIsPlaying] = useState(false);
