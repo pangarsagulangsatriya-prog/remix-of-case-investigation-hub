@@ -3958,7 +3958,7 @@ function VideoSceneSession({ currentTime, onJump }: { currentTime: number, onJum
   );
 }
 
-const tabs = ["Overview", "Evidence Review", "Analysis", "Reports", "Review", "Audit Trail"];
+
 
 export default function CaseWorkspacePage() {
   const { caseId } = useParams<{ caseId: string }>();
