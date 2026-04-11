@@ -63,3 +63,21 @@ export function useCreateCase() {
     },
   });
 }
+export function useDeleteCase() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("cases")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+      return true;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["cases"] });
+    },
+  });
+}

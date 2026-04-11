@@ -2,34 +2,30 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/AppLayout";
 import { StatusChip, SeverityChip } from "@/components/StatusChip";
-import { useCases } from "@/hooks/useCases";
-import { Loader2, AlertCircle } from "lucide-react";
-import { 
-  Plus, 
-  Download, 
-  Filter, 
-  X, 
-  ChevronRight, 
-  LayoutGrid, 
-  List, 
-  MoreVertical, 
-  FileText, 
-  MessageSquare, 
-  Paperclip,
-  Clock,
-  ExternalLink,
-  History,
-  Globe,
-  Search
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
   DropdownMenuItem, 
-  DropdownMenuTrigger 
+  DropdownMenuTrigger,
+  DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogDescription, 
+  DialogFooter 
+} from "@/components/ui/dialog";
+import { useCases, useDeleteCase } from "@/hooks/useCases";
+import { toast } from "sonner";
+import { 
+  Loader2, 
+  AlertCircle, 
+  Trash2, 
+  AlertTriangle,
+  Info
+} from "lucide-react";
 
 // Mock types for legacy compatibility if needed, but we'll use Case from hook
 import type { Case } from "@/hooks/useCases";
@@ -40,8 +36,10 @@ export default function CaseListPage() {
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<ViewMode>("table");
   const [selectedCase, setSelectedCase] = useState<Case | null>(null);
+  const [caseToDelete, setCaseToDelete] = useState<Case | null>(null);
 
   const { data: casesData, isLoading, error } = useCases();
+  const deleteCaseMutation = useDeleteCase();
   const cases = casesData || [];
 
   return (
@@ -197,7 +195,33 @@ export default function CaseListPage() {
                         <td className="text-xs text-center">
                           <span className="text-slate-300">—</span>
                         </td>
-                        <td className="pr-4 text-xs text-slate-500 font-medium">{new Date(c.updated_at).toLocaleDateString()}</td>
+                        <td className="pr-4 py-2.5">
+                          <div className="flex items-center justify-end gap-2">
+                            <span className="text-xs text-slate-500 font-medium mr-4">{new Date(c.updated_at).toLocaleDateString()}</span>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                                <Button variant="ghost" size="sm" className="h-7 w-7 p-0 hover:bg-slate-200">
+                                  <MoreVertical className="h-3.5 w-3.5" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-40">
+                                <DropdownMenuItem onClick={() => navigate(`/cases/${c.id}`)}>
+                                  <ExternalLink className="mr-2 h-3.5 w-3.5" /> Open Workspace
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem 
+                                  className="text-rose-600 focus:text-rose-600 focus:bg-rose-50"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setCaseToDelete(c);
+                                  }}
+                                >
+                                  <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete Case
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -252,13 +276,15 @@ export default function CaseListPage() {
                   {/* Operational Data */}
                   <div className="grid grid-cols-1 gap-1 border-y border-slate-100 py-4">
                     {[
-                      { label: "Site", value: selectedCase.site, icon: Globe },
-                      { label: "Incident Date", value: selectedCase.incidentDate, icon: Clock },
-                      { label: "Owner", value: selectedCase.owner, icon: List },
-                      { label: "Updated", value: selectedCase.updated, icon: History },
+                      { label: "Case ID", value: selectedCase.case_number, icon: FileText },
+                      { label: "Site", value: "Site Alpha", icon: Globe },
+                      { label: "Created", value: new Date(selectedCase.created_at).toLocaleDateString(), icon: Clock },
+                      { label: "Updated", value: new Date(selectedCase.updated_at).toLocaleDateString(), icon: History },
+                      { label: "Status", value: selectedCase.status.toUpperCase(), icon: List },
                     ].map((item) => (
                       <div key={item.label} className="flex items-center justify-between py-1.5 px-1 rounded-md hover:bg-slate-50 transition-colors">
                         <div className="flex items-center gap-2">
+                          <item.icon className="h-3 w-3 text-slate-400" />
                           <span className="text-xs text-slate-500 font-medium">{item.label}</span>
                         </div>
                         <span className="text-xs font-bold text-slate-800">{item.value}</span>
@@ -327,8 +353,12 @@ export default function CaseListPage() {
                   <Button variant="outline" className="flex-1 h-8 text-xs font-bold bg-white border-slate-200">
                     Analysis
                   </Button>
-                  <Button variant="outline" className="flex-1 h-8 text-xs font-bold bg-white border-slate-200">
-                    Reports
+                  <Button 
+                    variant="outline" 
+                    className="flex-1 h-8 text-xs font-bold bg-white border-slate-200 text-rose-600 hover:bg-rose-50 hover:border-rose-200 transition-all"
+                    onClick={() => setCaseToDelete(selectedCase)}
+                  >
+                    <Trash2 className="h-3 w-3 mr-2" /> Delete
                   </Button>
                 </div>
               </div>
@@ -336,7 +366,109 @@ export default function CaseListPage() {
           )}
         </div>
       </div>
+
+      <DeleteCaseDialog 
+        caseData={caseToDelete}
+        isOpen={!!caseToDelete}
+        onClose={() => setCaseToDelete(null)}
+        onConfirm={async () => {
+          if (caseToDelete) {
+            try {
+              await deleteCaseMutation.mutateAsync(caseToDelete.id);
+              toast.success("Case deleted successfully");
+              setCaseToDelete(null);
+              if (selectedCase?.id === caseToDelete.id) setSelectedCase(null);
+            } catch (err) {
+              toast.error("Failed to delete case");
+            }
+          }
+        }}
+        isDeleting={deleteCaseMutation.isPending}
+      />
     </AppLayout>
+  );
+}
+
+function DeleteCaseDialog({ 
+  caseData, 
+  isOpen, 
+  onClose, 
+  onConfirm,
+  isDeleting
+}: { 
+  caseData: Case | null; 
+  isOpen: boolean; 
+  onClose: () => void; 
+  onConfirm: () => void;
+  isDeleting: boolean;
+}) {
+  const [captcha, setCaptcha] = useState("");
+  const expectedCaptcha = caseData?.case_number || "";
+
+  if (!caseData) return null;
+
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-[420px] p-0 overflow-hidden border-none shadow-2xl">
+        <div className="bg-rose-600 px-6 py-8 text-white relative">
+          <AlertTriangle className="h-12 w-12 text-rose-200/40 absolute top-4 right-4" />
+          <h2 className="text-lg font-black uppercase tracking-widest mb-1">Confirm Deletion</h2>
+          <p className="text-rose-100 text-xs font-bold uppercase tracking-wider opacity-80">Irreversible Action Protocol</p>
+        </div>
+        
+        <div className="p-6 space-y-6 bg-white">
+          <div className="flex gap-4 p-4 bg-slate-50 rounded-xl border border-slate-100">
+            <div className="h-10 w-10 bg-white rounded-lg border shadow-sm flex items-center justify-center shrink-0">
+               <div className="h-6 w-6 bg-rose-50 rounded flex items-center justify-center">
+                  <FileText className="h-3.5 w-3.5 text-rose-500" />
+               </div>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] font-black text-rose-600 uppercase tracking-widest mb-0.5">{caseData.case_number}</p>
+              <h4 className="text-sm font-bold text-slate-900 truncate">{caseData.title}</h4>
+              <p className="text-2xs text-slate-400 font-bold uppercase mt-1">Severity: {caseData.severity} • Status: {caseData.status}</p>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-rose-600">
+              <Info className="h-3.5 w-3.5" />
+              <span className="text-[10px] font-black uppercase tracking-widest">Pre-deletion Audit</span>
+            </div>
+            <p className="text-xs text-slate-500 leading-relaxed font-medium">
+              Deleting this case will permanently erase all associated 0 evidence files, 0 reports, and all extraction metadata. This operation cannot be undone.
+            </p>
+          </div>
+
+          <div className="space-y-2 pt-2 border-t">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Security Verification</label>
+            <p className="text-xs font-bold text-slate-700 mb-2">
+              Please type <span className="text-rose-600 select-all font-black">{expectedCaptcha}</span> below to confirm.
+            </p>
+            <Input 
+              value={captcha}
+              onChange={(e) => setCaptcha(e.target.value)}
+              placeholder="Confirm case ID..."
+              className="h-10 text-sm font-bold bg-slate-50 border-slate-200 focus:bg-white transition-all text-center tracking-widest"
+              autoFocus
+            />
+          </div>
+        </div>
+
+        <DialogFooter className="p-4 bg-slate-50 border-t gap-2 sm:gap-0">
+          <Button variant="ghost" onClick={onClose} disabled={isDeleting} className="text-xs font-bold uppercase tracking-widest">Cancel</Button>
+          <Button 
+            variant="destructive" 
+            onClick={onConfirm}
+            disabled={captcha !== expectedCaptcha || isDeleting}
+            className="h-9 px-6 text-xs font-black uppercase tracking-widest bg-rose-600 hover:bg-rose-700 shadow-lg shadow-rose-200 transition-all gap-2"
+          >
+            {isDeleting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+            Confirm Deletion
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -458,9 +590,15 @@ function CaseGridCard({
               <FileText className="mr-2 h-3.5 w-3.5" />
               View reports
             </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Paperclip className="mr-2 h-3.5 w-3.5" />
-              View evidence
+            <DropdownMenuItem 
+              className="text-rose-600 focus:text-rose-600 focus:bg-rose-50"
+              onClick={(e) => {
+                e.stopPropagation();
+                setCaseToDelete(caseData);
+              }}
+            >
+              <Trash2 className="mr-2 h-3.5 w-3.5" />
+              Delete Case
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

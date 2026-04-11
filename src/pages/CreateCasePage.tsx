@@ -1,12 +1,17 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { CheckCircle2, Upload } from "lucide-react";
+import { CheckCircle2, Upload, Plus, Brain, Loader2 } from "lucide-react";
+import { useCreateCase } from "@/hooks/useCases";
+import { toast } from "sonner";
 
 export default function CreateCasePage() {
   const navigate = useNavigate();
+  const createCaseMutation = useCreateCase();
+  const [isInitializing, setIsInitializing] = useState(false);
 
   const [formData, setFormData] = useState({
      title: "",
@@ -25,6 +30,33 @@ export default function CreateCasePage() {
   ];
 
   const completion = (progressSteps.filter(s => s.done).length / progressSteps.filter(s => s.required).length) * 100;
+
+  const handleInitialize = async () => {
+    try {
+      setIsInitializing(true);
+      
+      // Generate unique case number
+      const year = new Date().getFullYear();
+      const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+      const caseNumber = `CS-${year}-${randomSuffix}`;
+
+      const result = await createCaseMutation.mutateAsync({
+        title: formData.title,
+        description: formData.description,
+        severity: formData.severity as any,
+        status: "open",
+        case_number: caseNumber
+      });
+
+      toast.success("Case initialized successfully");
+      navigate(`/cases/${result.id}`);
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to initialize case");
+    } finally {
+      setIsInitializing(false);
+    }
+  };
 
   return (
     <AppLayout>
@@ -46,7 +78,13 @@ export default function CreateCasePage() {
                  </div>
               </div>
               <Button variant="ghost" size="sm" className="text-xs font-bold text-slate-500" onClick={() => navigate("/cases")}>Discard</Button>
-              <Button size="sm" className="h-8 text-xs font-bold px-6 bg-slate-900" onClick={() => navigate("/cases/CS-2026-0148")}>
+              <Button 
+                size="sm" 
+                className="h-8 text-xs font-bold px-6 bg-slate-900 gap-2" 
+                disabled={completion < 100 || isInitializing}
+                onClick={handleInitialize}
+              >
+                 {isInitializing ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
                  Initialize Workspace
               </Button>
            </div>
