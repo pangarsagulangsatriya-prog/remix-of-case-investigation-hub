@@ -77,17 +77,26 @@ const LOOSE_GROUP_ID = "__loose__";
 // ---- Pure helpers ----
 
 function categorizeFile(file: File): FileCategory {
-  if (file.type.startsWith("image/")) return "Image";
-  if (file.type.startsWith("audio/")) return "Audio";
-  if (file.type.startsWith("video/")) return "Video";
+  const type = file.type.toLowerCase();
   const name = file.name.toLowerCase();
+
+  if (type.startsWith("image/") || name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".png") || name.endsWith(".gif") || name.endsWith(".webp")) {
+    return "Image";
+  }
+  if (type.startsWith("audio/") || name.endsWith(".mp3") || name.endsWith(".m4a") || name.endsWith(".wav") || name.endsWith(".ogg") || name.endsWith(".aac")) {
+    return "Audio";
+  }
+  if (type.startsWith("video/") || name.endsWith(".mp4") || name.endsWith(".mov") || name.endsWith(".avi") || name.endsWith(".webm") || name.endsWith(".mkv")) {
+    return "Video";
+  }
+  
   if (
-    file.type.includes("pdf") ||
-    file.type.includes("word") ||
-    file.type.includes("spreadsheet") ||
-    file.type.includes("excel") ||
-    file.type === "text/plain" ||
-    file.type === "text/csv" ||
+    type.includes("pdf") ||
+    type.includes("word") ||
+    type.includes("spreadsheet") ||
+    type.includes("excel") ||
+    type === "text/plain" ||
+    type === "text/csv" ||
     name.endsWith(".pdf") ||
     name.endsWith(".doc") ||
     name.endsWith(".docx") ||
