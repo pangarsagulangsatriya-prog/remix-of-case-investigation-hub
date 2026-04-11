@@ -1597,7 +1597,7 @@ function OverviewTab() {
     <div className="flex flex-col h-full bg-slate-50/10 overflow-auto">
       <div className="p-6 grid grid-cols-3 gap-6">
         <div className="col-span-2 space-y-6">
-           <div className="bg-white border rounded-xl shadow-sm p-5">
+           <div className="bg-white border rounded-lg shadow-sm p-5">
               <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-50">
                  <div className="flex items-center gap-2">
                     <div className="h-8 w-8 bg-primary/5 rounded flex items-center justify-center text-primary font-bold text-xs border border-primary/10">IQ</div>
@@ -1637,7 +1637,7 @@ function OverviewTab() {
               </div>
            </div>
 
-           <div className="bg-white border rounded-xl shadow-sm p-5">
+           <div className="bg-white border rounded-lg shadow-sm p-5">
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] block mb-4">Event Chronology Visualization</span>
               <div className="relative h-32 w-full flex items-end justify-between px-4 pb-8">
                  <div className="absolute bottom-6 left-0 right-0 h-px bg-slate-200" />
@@ -1680,7 +1680,7 @@ function OverviewTab() {
               </div>
            </div>
 
-           <div className="bg-white border rounded-xl shadow-sm p-4">
+           <div className="bg-white border rounded-lg shadow-sm p-4">
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-3 border-b pb-2">Investigation Team</span>
               <div className="space-y-3">
                  {[
@@ -1730,7 +1730,7 @@ function DeleteConfirmationModal({
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300" onClick={onClose} />
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md relative z-10 overflow-hidden animate-in zoom-in-95 duration-300 border border-slate-200">
+      <div className="bg-white rounded-lg shadow-2xl w-full max-w-md relative z-10 overflow-hidden animate-in zoom-in-95 duration-300 border border-slate-200">
         <div className="p-6">
           <div className="h-12 w-12 rounded-xl bg-rose-50 flex items-center justify-center mb-4">
              <Trash2 className="h-6 w-6 text-rose-500" />
@@ -1843,7 +1843,7 @@ function DeleteFolderModal({
         className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200"
         onClick={!isDeleting ? onClose : undefined}
       />
-      <div className="relative z-10 bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 animate-in zoom-in-95 duration-200">
+      <div className="relative z-10 bg-white rounded-lg shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 animate-in zoom-in-95 duration-200">
 
         {/* Header */}
         <div className="px-6 pt-6 pb-5">
@@ -2157,7 +2157,7 @@ function ExtractionTab({
               <button
                 key={f.id}
                 onClick={() => setActiveFilter(f.id)}
-                className={`flex-1 flex flex-col items-center justify-center py-2.5 rounded-xl border transition-all ${
+                className={`flex-1 flex flex-col items-center justify-center py-2.5 rounded-lg border-2 transition-all ${
                   activeFilter === f.id
                     ? "bg-[#0f172a] text-white border-[#0f172a] shadow-md scale-[1.02]"
                     : "bg-white text-slate-400 border-slate-100 hover:bg-slate-50 hover:text-slate-600 hover:border-slate-200"
@@ -2229,7 +2229,7 @@ function ExtractionTab({
           <Button 
             onClick={() => setIsUploadModalOpen(true)}
             variant="outline" 
-            className="w-full border-dashed border-2 py-8 rounded-2xl bg-slate-50/50 hover:bg-primary/5 hover:border-primary/30 group transition-all"
+            className="w-full border-dashed border-2 py-8 rounded-lg bg-slate-50/50 hover:bg-primary/5 hover:border-primary/30 group transition-all"
           >
             <div className="flex flex-col items-center gap-2">
               <div className="h-8 w-8 rounded-full bg-white flex items-center justify-center text-slate-400 group-hover:text-primary transition-colors shadow-sm">
@@ -2518,14 +2518,14 @@ function AdaptiveSourcePreview({
 
     return (
        <div className="w-full max-w-4xl space-y-6 animate-in slide-in-from-bottom-4 duration-500 pb-20">
-          <div className="bg-white border-2 border-slate-100 rounded-2xl shadow-xl p-8 space-y-8 relative overflow-hidden group">
+          <div className="bg-white border-2 border-slate-100 rounded-lg shadow-xl p-8 space-y-8 relative overflow-hidden group">
              <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none group-hover:opacity-20 transition-opacity">
                 <AudioIcon className="h-32 w-32 -mr-10 -mt-10 rotate-12" />
              </div>
              
              <div className="flex items-center justify-between relative z-10">
                 <div className="flex items-center gap-4">
-                   <div className="h-14 w-14 bg-slate-900 rounded-2xl flex items-center justify-center text-white shadow-2xl shadow-slate-900/20 group-hover:scale-105 transition-transform">
+                   <div className="h-14 w-14 bg-slate-900 rounded-lg flex items-center justify-center text-white shadow-2xl shadow-slate-900/20 group-hover:scale-105 transition-transform">
                       <AudioIcon className="h-7 w-7" />
                    </div>
                    <div>
@@ -2575,7 +2575,7 @@ function AdaptiveSourcePreview({
                 </div>
              </div>
 
-             <div className="flex items-center justify-between bg-slate-50/50 p-2 rounded-2xl border border-slate-100 shadow-inner">
+             <div className="flex items-center justify-between bg-slate-50/50 p-2 rounded-lg border border-slate-100 shadow-inner">
                 <div className="flex items-center gap-1">
                    <Button variant="ghost" size="sm" className="h-9 w-9 p-0 text-slate-500" onClick={() => setAudioCurrentTime(prev => Math.max(0, prev - 10))}><RefreshCcw className="h-4 w-4 -scale-x-100" /></Button>
                    <Button 
@@ -2608,7 +2608,7 @@ function AdaptiveSourcePreview({
              </div>
           </div>
 
-          <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col">
+          <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden flex flex-col">
              <div className="px-6 py-4 border-b flex items-center justify-between bg-white relative z-10">
                 <div className="flex items-center gap-3">
                    <div className="h-8 w-8 bg-primary/5 rounded-lg flex items-center justify-center border border-primary/10">
@@ -2712,7 +2712,7 @@ function AdaptiveSourcePreview({
                 </div>
              </div>
 
-             <div className="aspect-video bg-slate-950 border border-slate-800 rounded-2xl shadow-2xl relative overflow-hidden group">
+             <div className="aspect-video bg-slate-950 border border-slate-800 rounded-lg shadow-2xl relative overflow-hidden group">
                 <div className="absolute top-4 left-4 z-50 flex items-center gap-2">
                    <div className="h-2 w-2 rounded-full bg-rose-500 animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.6)]" />
                    <span className="text-[9px] font-black text-white uppercase tracking-[0.2em] bg-black/60 backdrop-blur px-2.5 py-1 rounded border border-white/10">ARCHIVE RECORDING</span>
@@ -2832,7 +2832,7 @@ function AdaptiveExtractionOutput({ file }: { file: any }) {
            </div>
 
            {viewMode === "JSON" ? (
-              <div className="bg-slate-900 rounded-2xl p-6 overflow-hidden border border-slate-800 shadow-2xl">
+              <div className="bg-slate-900 rounded-lg p-6 overflow-hidden border border-slate-800 shadow-2xl">
                  <pre className="text-[10.5px] font-mono text-emerald-400 leading-relaxed overflow-auto max-h-[800px] custom-scrollbar">
                     {JSON.stringify(data, null, 2)}
                  </pre>
@@ -3307,7 +3307,7 @@ function AnalysisTab() {
                                 ) : (
                                    <div className="flex flex-col h-full">
                                       <h2 className="text-[32px] font-black text-slate-800 mb-8 tracking-tighter uppercase">{slides[activeSlide]?.title}</h2>
-                                      <div className="flex-1 bg-[#1a1c23] rounded-2xl p-6 overflow-hidden border border-slate-700 shadow-2xl relative">
+                                      <div className="flex-1 bg-[#1a1c23] rounded-lg p-6 overflow-hidden border border-slate-700 shadow-2xl relative">
                                          <pre className="text-[12px] font-mono text-emerald-400/90 leading-tight h-full overflow-auto custom-scrollbar">
                                             {JSON.stringify(slides[activeSlide]?.content, null, 2)}
                                          </pre>
@@ -3503,7 +3503,7 @@ function ReviewTab() {
     <div className="flex h-full bg-slate-50/10">
       <div className="flex-1 overflow-auto p-8">
         <div className="max-w-4xl mx-auto space-y-8">
-          <div className="bg-white border rounded-2xl shadow-sm p-8 flex items-center justify-between">
+          <div className="bg-white border rounded-lg shadow-sm p-8 flex items-center justify-between">
              <div className="flex items-center gap-4">
                 <div className="h-12 w-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100 shadow-sm">
                    <CheckCircle2 className="h-6 w-6" />
@@ -3519,7 +3519,7 @@ function ReviewTab() {
              </div>
           </div>
 
-          <div className="bg-white border rounded-2xl shadow-sm overflow-hidden">
+          <div className="bg-white border rounded-lg shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b bg-slate-50/50 flex items-center justify-between">
                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Formal Approval Chain</span>
                <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-100 uppercase">Board Review In-Progress</span>
@@ -3566,7 +3566,7 @@ function AuditTrailTab() {
          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Audit Logs</span>
       </div>
       <div className="flex-1 overflow-auto p-4">
-         <div className="bg-white border rounded-xl shadow-sm overflow-hidden overflow-x-auto">
+         <div className="bg-white border rounded-lg shadow-sm overflow-hidden overflow-x-auto">
             <table className="w-full text-left">
               <thead>
                 <tr className="bg-slate-50 border-b">
