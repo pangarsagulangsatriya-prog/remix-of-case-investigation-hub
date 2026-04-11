@@ -2542,13 +2542,17 @@ function AdaptiveSourcePreview({
        <div className="w-full max-w-4xl space-y-6 animate-in slide-in-from-bottom-4 duration-500 pb-20">
           <audio 
             ref={audioRef}
-            src={file.url?.startsWith("blob:") ? file.url : `${file.url}?v=${file.updated_at || '1'}`}
             crossOrigin="anonymous"
             preload="auto"
             onTimeUpdate={(e) => setAudioCurrentTime(Math.floor(e.currentTarget.currentTime))}
             onEnded={() => setAudioIsPlaying(false)}
             className="hidden"
-          />
+          >
+            <source 
+              src={file.url?.startsWith("blob:") ? file.url : `${file.url}?v=${file.updated_at || Date.now()}`} 
+              type={file.name?.endsWith('.m4a') ? 'audio/mp4' : file.name?.endsWith('.mp3') ? 'audio/mpeg' : 'audio/wav'} 
+            />
+          </audio>
           <div className="bg-white border-2 border-slate-100 rounded-lg shadow-xl p-8 space-y-8 relative overflow-hidden group">
              <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none group-hover:opacity-20 transition-opacity">
                 <AudioIcon className="h-32 w-32 -mr-10 -mt-10 rotate-12" />
@@ -2751,12 +2755,18 @@ function AdaptiveSourcePreview({
                 
                 <video
                   ref={videoRef}
-                  src={file.url}
+                  crossOrigin="anonymous"
+                  preload="auto"
                   className="w-full h-full object-contain"
                   onTimeUpdate={(e) => setVideoCurrentTime?.(e.currentTarget.currentTime)}
                   onPlay={() => setVideoIsPlaying?.(true)}
                   onPause={() => setVideoIsPlaying?.(false)}
-                />
+                >
+                  <source 
+                    src={file.url?.startsWith("blob:") ? file.url : `${file.url}?v=${file.updated_at || Date.now()}`} 
+                    type="video/mp4" 
+                  />
+                </video>
 
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity" />
                 
