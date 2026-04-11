@@ -2728,7 +2728,7 @@ function AdaptiveSourcePreview({
                    <div>
                       <h3 className="text-lg font-black text-slate-900 leading-tight uppercase tracking-tight">{file.name}</h3>
                       <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-none mt-1">
-                        {file.source} · High Fidelity Visual Stream · 1080p
+                        {file.source || "External Intake"} • High Fidelity Visual Stream • 1080p
                       </p>
                    </div>
                 </div>
