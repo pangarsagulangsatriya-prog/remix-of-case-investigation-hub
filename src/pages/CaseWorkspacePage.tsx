@@ -66,7 +66,8 @@ import {
   Database,
   Ruler,
   MessageCircle,
-  Download
+  Download,
+  Plus
 } from "lucide-react";
 
 interface AgentState {
