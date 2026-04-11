@@ -179,7 +179,7 @@ function buildFileItem(
     groupId,
     relativePath,
     category,
-    previewUrl: category === "Image" ? URL.createObjectURL(file) : undefined,
+    previewUrl: (category === "Image" || category === "Audio" || category === "Video") ? URL.createObjectURL(file) : undefined,
     progress: 0,
     status: "idle",
     error: category === "Unsupported" ? "Unsupported file type" : undefined,
@@ -936,13 +936,13 @@ export function UploadModal({
                           </div>
                           <audio
                             controls
-                            src={URL.createObjectURL(selectedFile.file)}
+                            src={selectedFile.previewUrl}
                             className="w-full max-w-sm"
                           />
                         </div>
                       ) : selectedFile.category === "Video" ? (
                         <video
-                          src={URL.createObjectURL(selectedFile.file)}
+                          src={selectedFile.previewUrl}
                           controls
                           className="h-full w-full object-contain"
                         />
