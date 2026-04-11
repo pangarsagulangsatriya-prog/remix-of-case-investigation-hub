@@ -2542,8 +2542,9 @@ function AdaptiveSourcePreview({
        <div className="w-full max-w-4xl space-y-6 animate-in slide-in-from-bottom-4 duration-500 pb-20">
           <audio 
             ref={audioRef}
-            src={`${file.url}?v=${file.updated_at || '1'}`}
+            src={file.url?.startsWith("blob:") ? file.url : `${file.url}?v=${file.updated_at || '1'}`}
             crossOrigin="anonymous"
+            preload="auto"
             onTimeUpdate={(e) => setAudioCurrentTime(Math.floor(e.currentTarget.currentTime))}
             onEnded={() => setAudioIsPlaying(false)}
             className="hidden"
