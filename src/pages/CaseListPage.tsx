@@ -24,7 +24,16 @@ import {
   AlertCircle, 
   Trash2, 
   AlertTriangle,
-  Info
+  Info,
+  List,
+  FileText,
+  Globe,
+  Clock,
+  History,
+  MoreVertical,
+  ExternalLink,
+  Search,
+  Grid
 } from "lucide-react";
 
 // Mock types for legacy compatibility if needed, but we'll use Case from hook
