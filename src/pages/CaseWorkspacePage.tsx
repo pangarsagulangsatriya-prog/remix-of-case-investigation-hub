@@ -3980,6 +3980,7 @@ export default function CaseWorkspacePage() {
     }
   }, [evidenceFiles, selectedFile]);
 
+
   const handleUploadComplete = async (groups: CompletedGroup[]) => {
     // Refetch to get new files and batches
     await refetchEvidence();

@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { useCases, useDeleteCase } from "@/hooks/useCases";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import { 
   Loader2, 
   AlertCircle, 
