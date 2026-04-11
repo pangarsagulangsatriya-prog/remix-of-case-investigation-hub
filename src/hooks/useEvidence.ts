@@ -143,11 +143,14 @@ export function useUploadEvidence() {
               type: fileItem.type || "Document",
               size: fileItem.size || "0 KB",
               url: publicUrl,
+              source: "External Intake",
               extraction_status: "pending",
               review_status: "pending",
               metadata: {
                  relativePath: fileItem.relativePath,
-                 simulated: publicUrl.startsWith("blob:")
+                 simulated: publicUrl.startsWith("blob:"),
+                 originalName: file.name,
+                 uploadedAt: new Date().toISOString()
               }
             });
 
