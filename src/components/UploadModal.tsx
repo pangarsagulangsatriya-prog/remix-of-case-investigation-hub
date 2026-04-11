@@ -54,6 +54,7 @@ export interface CompletedFile {
   status: string;
   groupId: string;
   groupName: string;
+  file: File;
 }
 
 export interface CompletedGroup {
@@ -540,6 +541,7 @@ export function UploadModal({
               status: "UPLOADED",
               groupId: group.id,
               groupName: group.name,
+              file: f.file,
             })),
         }))
         .filter((g) => g.files.length > 0);

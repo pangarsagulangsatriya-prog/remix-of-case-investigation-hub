@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import { AppLayout } from "@/components/AppLayout";
 import { StatusChip, SeverityChip, ConfidenceChip } from "@/components/StatusChip";
 import { useCase } from "@/hooks/useCases";
-import { useEvidence, useDeleteFile } from "@/hooks/useEvidence";
+import { useEvidence, useDeleteFile, useUploadEvidence } from "@/hooks/useEvidence";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -3970,9 +3970,17 @@ export default function CaseWorkspacePage() {
   const { data: caseData, isLoading: caseLoading, refetch: refetchCase } = useCase(caseId!);
   const { data: evidence, isLoading: evidenceLoading, refetch: refetchEvidence } = useEvidence(caseId!);
 
+  const uploadEvidence = useUploadEvidence();
+
   const handleUploadComplete = async (groups: CompletedGroup[]) => {
-    await refetchEvidence();
-    toast.success("Evidence library updated with new uploads.");
+    try {
+      await uploadEvidence.mutateAsync({ caseId: caseId!, groups });
+      await refetchEvidence();
+      toast.success("Evidence library updated with new uploads.");
+    } catch (error) {
+      console.error("Upload error:", error);
+      toast.error("Failed to save evidence to database.");
+    }
   };
 
   const evidenceFiles = evidence?.files || [];

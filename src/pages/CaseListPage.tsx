@@ -20,6 +20,7 @@ import {
 import { useCases, useDeleteCase } from "@/hooks/useCases";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { 
   Loader2, 
   AlertCircle, 
@@ -36,7 +37,11 @@ import {
   Search,
   Grid,
   LayoutGrid,
-  Plus
+  Plus,
+  ChevronRight,
+  MessageSquare,
+  Paperclip,
+  X
 } from "lucide-react";
 
 // Mock types for legacy compatibility if needed, but we'll use Case from hook
@@ -415,7 +420,7 @@ function DeleteCaseDialog({
   isDeleting: boolean;
 }) {
   const [captcha, setCaptcha] = useState("");
-  const expectedCaptcha = caseData?.case_number || "";
+  const [expectedCaptcha] = useState(() => Math.floor(1000 + Math.random() * 9000).toString());
 
   if (!caseData) return null;
 
@@ -436,7 +441,7 @@ function DeleteCaseDialog({
                </div>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-[10px] font-black text-rose-600 uppercase tracking-widest mb-0.5">{caseData.case_number}</p>
+              <p className="text-[10px] font-black text-rose-600 uppercase tracking-widest mb-0.5">{caseData.case_number || caseData.id.slice(0, 8)}</p>
               <h4 className="text-sm font-bold text-slate-900 truncate">{caseData.title}</h4>
               <p className="text-2xs text-slate-400 font-bold uppercase mt-1">Severity: {caseData.severity} • Status: {caseData.status}</p>
             </div>
@@ -448,20 +453,21 @@ function DeleteCaseDialog({
               <span className="text-[10px] font-black uppercase tracking-widest">Pre-deletion Audit</span>
             </div>
             <p className="text-xs text-slate-500 leading-relaxed font-medium">
-              Deleting this case will permanently erase all associated 0 evidence files, 0 reports, and all extraction metadata. This operation cannot be undone.
+              Deleting this case will permanently erase all associated evidence files, reports, and all extraction metadata. This operation cannot be undone.
             </p>
           </div>
 
           <div className="space-y-2 pt-2 border-t">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Security Verification</label>
-            <p className="text-xs font-bold text-slate-700 mb-2">
-              Please type <span className="text-rose-600 select-all font-black">{expectedCaptcha}</span> below to confirm.
-            </p>
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-4 flex flex-col items-center">
+               <span className="text-[10px] text-slate-400 uppercase font-black mb-1">Type the code to confirm deletion</span>
+               <span className="text-3xl font-extrabold text-slate-300 tracking-[0.5em]">{expectedCaptcha}</span>
+            </div>
             <Input 
               value={captcha}
               onChange={(e) => setCaptcha(e.target.value)}
-              placeholder="Confirm case ID..."
-              className="h-10 text-sm font-bold bg-slate-50 border-slate-200 focus:bg-white transition-all text-center tracking-widest"
+              placeholder="0000"
+              maxLength={4}
+              className="h-12 text-xl font-bold bg-slate-50 border-slate-200 focus:bg-white transition-all text-center tracking-[0.2em]"
               autoFocus
             />
           </div>
