@@ -2,7 +2,8 @@ import { cn } from "@/lib/utils";
 
 type StatusType = "draft" | "in_progress" | "in_review" | "approved" | "rejected" | "overdue" | "closed";
 
-const statusConfig: Record<StatusType, { label: string; className: string }> = {
+const statusConfig: Record<string, { label: string; className: string }> = {
+  open: { label: "Open", className: "bg-emerald-500/10 text-emerald-600" },
   draft: { label: "Draft", className: "bg-muted text-status-draft" },
   in_progress: { label: "In Progress", className: "bg-status-inprogress/10 text-status-inprogress" },
   in_review: { label: "In Review", className: "bg-status-review/10 text-status-review" },
@@ -10,10 +11,14 @@ const statusConfig: Record<StatusType, { label: string; className: string }> = {
   rejected: { label: "Rejected", className: "bg-status-rejected/10 text-status-rejected" },
   overdue: { label: "Overdue", className: "bg-destructive/10 text-destructive" },
   closed: { label: "Closed", className: "bg-muted text-muted-foreground" },
+  pending: { label: "Pending", className: "bg-status-review/10 text-status-review" },
+  archived: { label: "Archived", className: "bg-slate-100 text-slate-500" },
 };
 
-export function StatusChip({ status }: { status: StatusType }) {
-  const config = statusConfig[status];
+export function StatusChip({ status }: { status: string }) {
+  const normalizedStatus = status?.toLowerCase() || "draft";
+  const config = statusConfig[normalizedStatus] || statusConfig.draft;
+  
   return (
     <span className={cn("status-chip", config.className)}>
       {config.label}
@@ -30,8 +35,10 @@ const severityConfig: Record<SeverityType, { label: string; className: string }>
   low: { label: "Low", className: "bg-severity-low/10 text-severity-low" },
 };
 
-export function SeverityChip({ severity }: { severity: SeverityType }) {
-  const config = severityConfig[severity];
+export function SeverityChip({ severity }: { severity: string }) {
+  const normalizedSeverity = (severity?.toLowerCase() || "medium") as SeverityType;
+  const config = severityConfig[normalizedSeverity] || severityConfig.medium;
+
   return (
     <span className={cn("severity-chip", config.className)}>
       {config.label}
