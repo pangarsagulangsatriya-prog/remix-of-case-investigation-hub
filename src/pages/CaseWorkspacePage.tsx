@@ -2412,6 +2412,28 @@ function AdaptiveSourcePreview({
   const [audioCurrentTime, setAudioCurrentTime] = useState(0);
   const [audioIsPlaying, setAudioIsPlaying] = useState(false);
   const [audioPlaybackSpeed, setAudioPlaybackSpeed] = useState(1);
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  useEffect(() => {
+    if (!audioRef.current) return;
+    if (audioIsPlaying) {
+      audioRef.current.play().catch(() => setAudioIsPlaying(false));
+    } else {
+      audioRef.current.pause();
+    }
+  }, [audioIsPlaying]);
+
+  useEffect(() => {
+    if (!audioRef.current) return;
+    audioRef.current.playbackRate = audioPlaybackSpeed;
+  }, [audioPlaybackSpeed]);
+
+  useEffect(() => {
+    if (!audioRef.current) return;
+    if (Math.abs(audioRef.current.currentTime - audioCurrentTime) > 1.5) {
+      audioRef.current.currentTime = audioCurrentTime;
+    }
+  }, [audioCurrentTime]);
 
   if (!file) return <div className="p-20 text-center text-slate-400 font-bold uppercase tracking-[0.2em] opacity-50">Select evidence for preview</div>;
   
@@ -2518,6 +2540,13 @@ function AdaptiveSourcePreview({
 
     return (
        <div className="w-full max-w-4xl space-y-6 animate-in slide-in-from-bottom-4 duration-500 pb-20">
+          <audio 
+            ref={audioRef}
+            src={file.url}
+            onTimeUpdate={(e) => setAudioCurrentTime(Math.floor(e.currentTarget.currentTime))}
+            onEnded={() => setAudioIsPlaying(false)}
+            className="hidden"
+          />
           <div className="bg-white border-2 border-slate-100 rounded-lg shadow-xl p-8 space-y-8 relative overflow-hidden group">
              <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none group-hover:opacity-20 transition-opacity">
                 <AudioIcon className="h-32 w-32 -mr-10 -mt-10 rotate-12" />
