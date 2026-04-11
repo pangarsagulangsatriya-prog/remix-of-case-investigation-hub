@@ -122,19 +122,15 @@ export function useUploadEvidence() {
                  cacheControl: '3600'
               });
 
-            if (uploadError) {
-              console.warn("Upload failed (bucket might not exist), falling back to local simulation.", uploadError);
-              // Fallback to local simulation
-              publicUrl = URL.createObjectURL(file);
-            } else {
-              const { data: publicUrlData } = supabase.storage
-                .from("evidence")
-                .getPublicUrl(filePath);
-              publicUrl = publicUrlData.publicUrl;
-            }
+            if (uploadError) throw uploadError;
+
+            const { data: publicUrlData } = supabase.storage
+              .from("evidence")
+              .getPublicUrl(filePath);
+            publicUrl = publicUrlData.publicUrl;
           } catch (e) {
-            console.warn("Storage exception, falling back.", e);
-            publicUrl = URL.createObjectURL(file);
+            console.error("Storage error:", e);
+            throw e; // Rethrow to let the UI handle the error
           }
 
           const { error: fileError } = await supabase
