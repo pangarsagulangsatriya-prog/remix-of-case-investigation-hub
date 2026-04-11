@@ -546,6 +546,128 @@ const videoExtractionData = {
   }
 };
 
+const videoExtractionRefined = {
+  video_session_meta: {
+    session_name: "Conveyor Belt Failure - CCTV-Z2",
+    duration: "14:30",
+    fps: "30 fps",
+    quality: "1080p (Full HD)",
+    source_type: "Fixed CCTV (Security Network)",
+    camera_type: "Axis P3245-LVE (Fixed IP)",
+    extraction_status: "completed",
+    review_status: "pending",
+    confidence: "94% (Combined)"
+  },
+  scene_timeline: [
+    { 
+      id: "S1", 
+      timestamp: "00:00", 
+      duration: "01:59", 
+      seconds: 0, 
+      scene_label: "Routine Op", 
+      summary: "Normal conveyor operation with single operator present.", 
+      actor: "Operator A", 
+      location: "Section 14 Drive", 
+      confidence: "High",
+      actions: ["Walking", "Inspecting roller bearings", "Talking on radio"],
+      key_analysis: ["Visual inspection started", "Standard procedure followed"],
+      accuracy: 98
+    },
+    { 
+      id: "S2", 
+      timestamp: "02:00", 
+      duration: "01:59", 
+      seconds: 120, 
+      scene_label: "Early Oscillation", 
+      summary: "Visible vertical vibration detected on belt surface.", 
+      actor: "Operator A", 
+      location: "Section 14 Mid", 
+      confidence: "High",
+      actions: ["Pointing at belt", "Backing away from machinery"],
+      key_analysis: ["Structural Anomaly detected", "Mechanical oscillation increased"],
+      accuracy: 92
+    },
+    { 
+      id: "S3", 
+      timestamp: "04:00", 
+      duration: "01:59", 
+      seconds: 240, 
+      scene_label: "Structural Failure", 
+      summary: "Major belt tear initiated. Sparks and smoke visible.", 
+      actor: "Operator A", 
+      location: "Section 14 Roller Bank", 
+      confidence: "Critical",
+      actions: ["Running towards E-Stop", "Alerting via radio"],
+      key_analysis: ["Conveyor failure", "E-Stop activated", "Fire hazard detected"],
+      accuracy: 99
+    },
+    { 
+      id: "S4", 
+      timestamp: "06:00", 
+      duration: "02:30", 
+      seconds: 360, 
+      scene_label: "Emergency Response", 
+      summary: "Manual E-Stop triggered. Site evacuated.", 
+      actor: "Site Safety Team", 
+      location: "Zone B Perimeter", 
+      confidence: "High",
+      actions: ["Establishing perimeter", "Shutting down Zone B drives"],
+      key_analysis: ["Isolation successful", "Personnel accounted for"],
+      accuracy: 95
+    }
+  ],
+  actor_profiles: [
+    { actor_id: "ACT-01", actor_label: "Operator A", probable_role: "Field Technician", screen_time: "08:45", activity: "Inspection", behavior: "Correct response observed", stress: "High at 04:10", interaction: "Solo", confidence: "High" },
+    { actor_id: "ACT-02", actor_label: "Safety Lead", probable_role: "Emergency Responder", screen_time: "02:15", activity: "Evacuation", behavior: "Directive", stress: "Moderate", interaction: "Team Coord", confidence: "Medium" }
+  ],
+  action_events: [
+    { timestamp: "04:12", seconds: 252, event_type: "Mechanical Failure", actor: "Equipment", object: "Conveyor Belt 14", summary: "Longitudinal tear detected across entire belt width.", severity: "Critical", status: "Manual Stop" },
+    { timestamp: "04:15", seconds: 255, event_type: "HazMat Event", actor: "Equipment", object: "Heat/Sparks", summary: "Friction sparks detected due to seized roller #022.", severity: "High", status: "Alarm Active" },
+    { timestamp: "04:18", seconds: 258, event_type: "Immediate Action", actor: "Operator A", object: "E-Stop #4", summary: "Emergency stop button manually depressed.", severity: "High", status: "Successful" }
+  ],
+  environmental_observations: [
+    { timestamp: "04:20", seconds: 260, summary: "Heavy smoke accumulation visibility reduced to <5m", visibility: "Low", lighting: "Artificial", obstruction: "Smoke/Dust", access: "Blocked by Spillage", hazard: "Tripping Risk", confidence: "High" },
+    { timestamp: "00:10", seconds: 10, summary: "Clean floor, standard industrial lighting conditions", visibility: "High", lighting: "Standard", obstruction: "None", access: "Clear", hazard: "Nominal", confidence: "High" }
+  ],
+  equipment_and_object_signals: [
+    { timestamp: "02:15", seconds: 135, object: "Roller #022", condition: "Skewed", context: "Support Frame", anomaly: "Internal bearing failure suspected", actor: "Operator A", confidence: "High" },
+    { timestamp: "04:05", seconds: 245, object: "Safety Mesh Guard", condition: "Removed", context: "Drive Housing", anomaly: "Exposed moving parts during operation", actor: "Unknown", confidence: "Medium" }
+  ],
+  factual_observations: [
+    { timestamp: "02:10", seconds: 130, type: "Visual Anomaly", text: "Vertical belt oscillation exceeds 40mm amplitude.", observed: "Observed", confidence: "High" },
+    { timestamp: "04:30", seconds: 270, type: "Material State", text: "Approx. 2.4 tons of iron ore spilled on walkway.", inferred: "Inferred", confidence: "Medium" }
+  ],
+  human_performance_signals: {
+    delayed_response: [{ category: "Response", detail: "30s delay between vibration detection and radio call", timestamp: "02:30", seconds: 150 }],
+    unsafe_positioning: [{ category: "Positioning", detail: "Operator remained within 1.5m of failing belt", timestamp: "04:05", seconds: 245 }],
+    PPE_non_compliance: [{ category: "PPE", detail: "Gloves not worn during manual sensor placement", timestamp: "01:15", seconds: 75 }],
+    speak_up_signal: [{ category: "Comm", detail: "Operator correctly challenged dispatcher's delay", timestamp: "02:45", seconds: 165 }]
+  },
+  risk_and_procedure_clues: {
+    equipment_issue_mentions: [{ item: "Roller #022 bearing seizure", timestamp: "02:15", seconds: 135 }],
+    unsafe_access_or_path: [{ item: "Section 14 walkway blocked by spillage", timestamp: "04:25", seconds: 265 }],
+    barricade_or_isolation_issue: [{ item: "Warning tape not deployed correctly in Zone B", timestamp: "05:00", seconds: 300 }]
+  },
+  contradictions_and_gaps: [
+    { timestamp: "03:15", seconds: 195, type: "State Mismatch", detail: "Operator reports 'normal' while belt oscillation is visible", confidence: "High" }
+  ],
+  peepo_seeds: [
+    { category: "People", items: ["Training on vibration identification needed", "Operator fatigue review required"] },
+    { category: "Environment", items: ["Dust accumulation impacted sensor accuracy", "High ambient heat levels"] },
+    { category: "Equipment", items: ["Titan-X roller bracket fatigue", "Retrofit needed for e-stop proximity"] },
+    { category: "Procedures", items: ["Lockout-tagout verification gap found", "Alarm prioritization protocol"] }
+  ],
+  ipls_seeds: [
+    { layer: "Engineering Controls", area: "Auto-Shutdown", text: "Vibration threshold logic failed to trigger stop.", summary: "Sensor F-14 detected anomaly but logic was bypassed.", confidence: "High" },
+    { layer: "Admin Controls", area: "Field Inspection", text: "Pre-shift inspection missed the loose support bracket.", summary: "Inspection log shows 'checked' but failure was imminent.", confidence: "Medium" }
+  ],
+  review_meta: {
+    low_confidence: ["Segment 04:30 - Smoke obscuration", "Segment 01:15 - Background actors identification"],
+    needs_review: ["Verify if Operator A saw the sparks at 04:12"],
+    overall_confidence: "High"
+  }
+};
+
 // --- Components ---
 
 function StatusIndicator({ status, type }: { status: string, type: 'extraction' | 'review' }) {
@@ -1353,6 +1475,22 @@ function ExtractionTab({ files: evidenceFiles, setFiles: setEvidenceFiles, batch
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [deleteFolderTarget, setDeleteFolderTarget] = useState<DeleteFolderTarget | null>(null);
 
+  // Shared Video State
+  const [videoCurrentTime, setVideoCurrentTime] = useState(0);
+  const [videoIsPlaying, setVideoIsPlaying] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  const jumpToVideoTime = (seconds: number) => {
+    if (videoRef.current) {
+      videoRef.current.currentTime = Math.max(0, seconds);
+      // Use a promise to handle play() and ensure state is synced
+      videoRef.current.play().catch(err => {
+        console.warn("Autoplay/Play blocked or failed:", err);
+      });
+      setVideoIsPlaying(true);
+    }
+  };
+
   const openDeleteFolderModal = (batch: any) => {
     const filesInBatch = evidenceFiles.filter(f => f.batchId === batch.id);
     setDeleteFolderTarget({
@@ -1673,7 +1811,14 @@ function ExtractionTab({ files: evidenceFiles, setFiles: setEvidenceFiles, batch
         <div className="flex-1 overflow-auto bg-[#f0f2f4] p-6 flex flex-col items-center custom-scrollbar" style={{ minWidth: 0 }}>
              <div className={`w-full flex ${selectedFile?.type === "Image" ? "max-w-3xl h-full items-center justify-center" : "max-w-5xl items-start justify-center pt-4"}`}>
                {selectedFile ? (
-                 <AdaptiveSourcePreview file={selectedFile} />
+                 <AdaptiveSourcePreview 
+                   file={selectedFile} 
+                   videoCurrentTime={videoCurrentTime}
+                   setVideoCurrentTime={setVideoCurrentTime}
+                   videoIsPlaying={videoIsPlaying}
+                   setVideoIsPlaying={setVideoIsPlaying}
+                   videoRef={videoRef}
+                 />
               ) : (
                 <div className="flex flex-col items-center justify-center p-12 text-center">
                    <div className="h-20 w-20 rounded-[2.5rem] bg-white shadow-2xl flex items-center justify-center mb-8 border border-white/50 animate-in fade-in zoom-in duration-700">
@@ -1704,7 +1849,13 @@ function ExtractionTab({ files: evidenceFiles, setFiles: setEvidenceFiles, batch
         </div>
         
         <div className="flex-1 overflow-auto custom-scrollbar bg-white">
-           {selectedFile?.type === "Image" || selectedFile?.type === "Audio" ? (
+           {selectedFile?.type === "Video" ? (
+             <VideoAnalysisPanel 
+               file={selectedFile} 
+               currentTime={videoCurrentTime}
+               onJump={jumpToVideoTime}
+             />
+           ) : selectedFile?.type === "Image" || selectedFile?.type === "Audio" ? (
              <AIAnalysisPanel file={selectedFile} />
            ) : (
              <div className="p-6">
@@ -1758,14 +1909,24 @@ function ExtractionTab({ files: evidenceFiles, setFiles: setEvidenceFiles, batch
   );
 }
 
-function AdaptiveSourcePreview({ file }: { file: any }) {
+function AdaptiveSourcePreview({ 
+  file, 
+  videoCurrentTime, 
+  setVideoCurrentTime, 
+  videoIsPlaying, 
+  setVideoIsPlaying, 
+  videoRef 
+}: { 
+  file: any,
+  videoCurrentTime?: number,
+  setVideoCurrentTime?: (t: number) => void,
+  videoIsPlaying?: boolean,
+  setVideoIsPlaying?: (p: boolean) => void,
+  videoRef?: React.RefObject<HTMLVideoElement>
+}) {
   const [audioCurrentTime, setAudioCurrentTime] = useState(0);
   const [audioIsPlaying, setAudioIsPlaying] = useState(false);
   const [audioPlaybackSpeed, setAudioPlaybackSpeed] = useState(1);
-  
-  const [videoCurrentTime, setVideoCurrentTime] = useState(0);
-  const [videoIsPlaying, setVideoIsPlaying] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
 
   if (!file) return <div className="p-20 text-center text-slate-400 font-bold uppercase tracking-[0.2em] opacity-50">Select evidence for preview</div>;
   
@@ -2029,16 +2190,16 @@ function AdaptiveSourcePreview({ file }: { file: any }) {
   if (file.type === "Video") {
      const activeSegment = videoTimeframesData.find(tf => {
         const getS = (s: string) => s.split(':').map(Number)[0] * 60 + s.split(':').map(Number)[1];
-        return videoCurrentTime >= getS(tf.start_time) && videoCurrentTime <= getS(tf.end_time);
+        return (videoCurrentTime || 0) >= getS(tf.start_time) && (videoCurrentTime || 0) <= getS(tf.end_time);
      });
 
      const jumpTo = (timeStr: string) => {
         const parts = timeStr.split(':').map(Number);
         const seconds = parts[0] * 60 + parts[1];
-        if (videoRef.current) {
+        if (videoRef?.current) {
           videoRef.current.currentTime = seconds;
           videoRef.current.play();
-          setVideoIsPlaying(true);
+          setVideoIsPlaying?.(true);
         }
      };
 
@@ -2076,133 +2237,26 @@ function AdaptiveSourcePreview({ file }: { file: any }) {
                   ref={videoRef}
                   src={file.url}
                   className="w-full h-full object-contain"
-                  onTimeUpdate={(e) => setVideoCurrentTime(e.currentTarget.currentTime)}
-                  onPlay={() => setVideoIsPlaying(true)}
-                  onPause={() => setVideoIsPlaying(false)}
+                  onTimeUpdate={(e) => setVideoCurrentTime?.(e.currentTarget.currentTime)}
+                  onPlay={() => setVideoIsPlaying?.(true)}
+                  onPause={() => setVideoIsPlaying?.(false)}
                 />
 
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity" />
                 
                 <div className="absolute bottom-0 left-0 right-0 p-6 flex flex-col gap-4 opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0">
                    <div className="flex items-center gap-4">
-                      <button onClick={() => videoIsPlaying ? videoRef.current?.pause() : videoRef.current?.play()} className="h-10 w-10 bg-white rounded-full flex items-center justify-center text-slate-900 shadow-xl hover:scale-110 active:scale-95 transition-all">
+                      <button onClick={() => videoIsPlaying ? videoRef?.current?.pause() : videoRef?.current?.play()} className="h-10 w-10 bg-white rounded-full flex items-center justify-center text-slate-900 shadow-xl hover:scale-110 active:scale-95 transition-all">
                         {videoIsPlaying ? <div className="h-3 w-3 bg-slate-900 rounded-sm" /> : <Play className="h-4 w-4 fill-slate-900 ml-0.5" />}
                       </button>
                       <div className="flex-1 h-1 bg-white/20 rounded-full overflow-hidden cursor-pointer">
-                         <div className="h-full bg-primary" style={{ width: `${(videoCurrentTime / (14*60+30)) * 100}%` }} />
+                         <div className="h-full bg-primary" style={{ width: `${((videoCurrentTime || 0) / (14*60+30)) * 100}%` }} />
                       </div>
                       <span className="text-[10px] font-black text-white tabular-nums tracking-widest">
-                        {Math.floor(videoCurrentTime/60).toString().padStart(2,'0')}:{(Math.floor(videoCurrentTime%60)).toString().padStart(2,'0')} / {file.duration}
+                        {Math.floor((videoCurrentTime || 0)/60).toString().padStart(2,'0')}:{(Math.floor((videoCurrentTime || 0)%60)).toString().padStart(2,'0')} / {file.duration}
                       </span>
                    </div>
                 </div>
-             </div>
-          </div>
-
-          <div className="space-y-4">
-             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <div className="flex items-center gap-3">
-                   <div className="h-8 w-8 bg-slate-900 rounded-lg flex items-center justify-center text-white border border-slate-700">
-                      <LayoutGrid className="h-4 w-4" />
-                   </div>
-                   <h3 className="text-sm font-black text-slate-900 uppercase tracking-[0.1em]">Timeframe Investigative Feed</h3>
-                </div>
-                <div className="flex items-center gap-4">
-                   <div className="flex items-center gap-2">
-                       <span className="text-[10px] font-black text-slate-400 uppercase">Interval</span>
-                       <span className="px-2 py-0.5 bg-slate-100 text-[10px] font-black rounded border">2:00</span>
-                   </div>
-                </div>
-             </div>
-
-             <div className="space-y-4">
-                {videoTimeframesData.map((tf) => {
-                  const isActive = activeSegment?.id === tf.id;
-                  return (
-                    <div key={tf.id} className={`border rounded-2xl overflow-hidden shadow-sm transition-all duration-500 cursor-pointer ${isActive ? "ring-2 ring-primary shadow-2xl scale-[1.01] bg-white translate-x-2" : "bg-white hover:border-slate-300 translate-x-0 opacity-80 hover:opacity-100"}`} onClick={() => jumpTo(tf.start_time)}>
-                       <div className={`px-5 py-3 flex items-center justify-between border-b transition-colors ${isActive ? "bg-primary/5 border-primary/10" : "bg-slate-50/50"}`}>
-                          <div className="flex items-center gap-3">
-                             <div className={`text-[11px] font-black tabular-nums tracking-widest ${isActive ? "text-primary" : "text-slate-500"}`}>
-                               {tf.start_time} — {tf.end_time}
-                             </div>
-                             <div className="h-1 w-1 bg-slate-300 rounded-full" />
-                             <span className="text-xs font-black text-slate-800 uppercase tracking-tight">{tf.summary}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                             {tf.badges.map(b => (
-                               <span key={b} className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border transition-all ${
-                                 b === 'critical' || b === 'hazard' ? 'bg-rose-50 text-rose-600 border-rose-100' :
-                                 b === 'anomaly' ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                                 'bg-slate-100 text-slate-400 border-slate-200'
-                               }`}>{b}</span>
-                             ))}
-                          </div>
-                       </div>
-                       
-                       <div className="p-8 grid grid-cols-2 gap-10 relative">
-                          <div className="space-y-4 relative">
-                             <div className="flex items-center gap-2 mb-2 pb-1 border-b border-slate-50">
-                                <FileText className="h-3.5 w-3.5 text-slate-400" />
-                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Script / Timeline</span>
-                             </div>
-                             <div className="space-y-4">
-                                <div>
-                                   <p className="text-sm font-bold text-slate-900 leading-relaxed italic pr-4">"{tf.script.scene_overview}"</p>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                   <div>
-                                      <span className="text-[9px] font-black text-slate-400 uppercase block mb-1">Actors</span>
-                                      <ul className="text-[11px] font-bold text-slate-600 space-y-1">
-                                         {tf.script.visible_actors.map(a => <li key={a}>• {a}</li>)}
-                                      </ul>
-                                   </div>
-                                   <div>
-                                      <span className="text-[9px] font-black text-slate-400 uppercase block mb-1">Actions</span>
-                                      <ul className="text-[11px] font-bold text-slate-600 space-y-1">
-                                         {tf.script.actions.map(a => <li key={a}>• {a}</li>)}
-                                      </ul>
-                                   </div>
-                                </div>
-                             </div>
-                          </div>
-
-                          <div className="bg-slate-50/50 rounded-2xl p-6 border border-slate-100 space-y-4 shadow-inner">
-                             <div className="flex items-center gap-2 mb-2 pb-1 border-b border-slate-100">
-                                <Brain className="h-3.5 w-3.5 text-primary" />
-                                <span className="text-[10px] font-black text-primary uppercase tracking-widest">Key Analysis</span>
-                             </div>
-                             <div className="space-y-4">
-                                <div className="flex flex-wrap gap-1.5">
-                                   {tf.analysis.events.map(e => (
-                                     <span key={e} className="px-2 py-0.5 bg-primary/10 text-primary text-[9px] font-black uppercase rounded border border-primary/20">{e}</span>
-                                   ))}
-                                </div>
-                                <div className="space-y-3">
-                                   <div className="flex items-start gap-3">
-                                      <div className={`h-2 w-2 mt-1 rounded-full ${tf.analysis.hazards[0] === 'None' ? 'bg-emerald-500' : 'bg-rose-500 animate-pulse'}`} />
-                                      <div>
-                                         <span className="text-[9px] font-black text-slate-400 uppercase block">Hazard Control</span>
-                                         <p className="text-[11px] font-bold text-slate-700">{tf.analysis.hazards[0]}</p>
-                                      </div>
-                                   </div>
-                                   <div className="flex items-start gap-3">
-                                      <div className="h-2 w-2 mt-1 rounded-full bg-amber-500" />
-                                      <div>
-                                         <span className="text-[9px] font-black text-slate-400 uppercase block">Equipment Condition</span>
-                                         <p className="text-[11px] font-bold text-slate-700">{tf.analysis.assets}</p>
-                                      </div>
-                                   </div>
-                                </div>
-                                <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
-                                   <span className="text-[10px] font-black text-slate-400 uppercase">Analysis Confidence</span>
-                                   <span className="text-[10px] font-black text-slate-900">{tf.analysis.confidence}</span>
-                                </div>
-                             </div>
-                          </div>
-                       </div>
-                    </div>
-                  );
-                })}
              </div>
           </div>
        </div>
@@ -3058,6 +3112,390 @@ function AuditTrailTab() {
                 ))}
               </tbody>
             </table>
+         </div>
+      </div>
+    </div>
+  );
+}
+
+// --- New Video Analysis Components ---
+
+function VideoAnalysisPanel({ file, currentTime, onJump }: { file: any, currentTime: number, onJump: (s: number) => void }) {
+  const [activeTab, setActiveTab] = useState<"Extraction" | "Scene Session">("Extraction");
+  const [viewMode, setViewMode] = useState<"Structured" | "JSON">("Structured");
+
+  return (
+    <div className="flex flex-col h-full bg-white">
+      {/* Sticky Tab Switcher */}
+      <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-sm border-b px-4 py-2 flex items-center gap-1 shrink-0">
+        {(["Extraction", "Scene Session"] as const).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`flex-1 py-1.5 px-3 text-[10px] font-black uppercase tracking-widest rounded-md transition-all ${
+              activeTab === tab
+              ? "bg-primary text-white shadow-sm"
+              : "text-slate-400 hover:text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            {tab}
+          </button>
+        ))}
+      </div>
+
+      <div className="flex-1 overflow-auto custom-scrollbar">
+        {activeTab === "Extraction" ? (
+          <div className="p-4 space-y-4">
+             <div className="flex items-center justify-between mb-4">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Intelligence Layer</span>
+                <div className="flex items-center gap-1 p-0.5 bg-slate-100 rounded-md border shadow-inner">
+                   <button onClick={() => setViewMode("Structured")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "Structured" ? "bg-white text-primary shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>Structured</button>
+                   <button onClick={() => setViewMode("JSON")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "JSON" ? "bg-white text-primary shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>JSON</button>
+                </div>
+             </div>
+             {viewMode === "Structured" ? (
+               <VideoExtractionStructured data={videoExtractionRefined} onJump={onJump} />
+             ) : (
+               <div className="bg-slate-900 rounded-xl p-4 overflow-hidden border border-slate-800 shadow-2xl mt-4">
+                  <pre className="text-[10px] font-mono text-emerald-400 leading-relaxed overflow-auto max-h-[1000px] custom-scrollbar">
+                     {JSON.stringify(videoExtractionRefined, null, 2)}
+                  </pre>
+               </div>
+             )}
+          </div>
+        ) : (
+          <VideoSceneSession currentTime={currentTime} onJump={onJump} />
+        )}
+      </div>
+    </div>
+  );
+}
+
+function VideoExtractionStructured({ data, onJump }: { data: typeof videoExtractionRefined, onJump: (s: number) => void }) {
+  const [expandedSections, setExpandedSections] = useState<string[]>(["Video Session Meta", "Scene Timeline"]);
+
+  const toggle = (s: string) => setExpandedSections(p => p.includes(s) ? p.filter(x => x !== s) : [...p, s]);
+
+  const ExtractionSection = ({ title, icon: Icon, count, children }: any) => (
+    <div className={`border border-slate-100 rounded-xl overflow-hidden mb-2 transition-all duration-300 ${expandedSections.includes(title) ? 'shadow-sm border-primary/10' : 'hover:border-slate-200'}`}>
+      <button 
+        onClick={() => toggle(title)}
+        className={`w-full flex items-center justify-between px-3 py-2.5 transition-colors ${expandedSections.includes(title) ? 'bg-slate-50/50 border-b border-slate-50' : 'bg-white'}`}
+      >
+        <div className="flex items-center gap-2.5">
+          <div className={`p-1.5 rounded-lg border shadow-sm ${expandedSections.includes(title) ? 'bg-primary text-white border-primary' : 'bg-white text-slate-400'}`}>
+            <Icon className="h-3.5 w-3.5" />
+          </div>
+          <span className={`text-[11px] font-black uppercase tracking-tight transition-colors ${expandedSections.includes(title) ? 'text-slate-900' : 'text-slate-600'}`}>
+            {title}
+            {count !== undefined && <span className="ml-2 opacity-40">({count})</span>}
+          </span>
+        </div>
+        <ChevronDown className={`h-3 w-3 text-slate-300 transition-transform ${expandedSections.includes(title) ? 'rotate-180' : ''}`} />
+      </button>
+      {expandedSections.includes(title) && (
+        <div className="p-3 bg-white space-y-3 animate-in fade-in slide-in-from-top-1 duration-200">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+
+  const MetadataField = ({ label, value }: { label: string, value: any }) => (
+    <div className="flex flex-col gap-0.5">
+      <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">{label}</span>
+      <span className="text-[11px] font-bold text-slate-800 leading-tight">{value || "—"}</span>
+    </div>
+  );
+
+  return (
+    <div className="space-y-1">
+      <ExtractionSection title="Video Session Meta" icon={VideoIcon}>
+        <div className="grid grid-cols-2 gap-y-3 gap-x-4">
+          <MetadataField label="Session" value={data.video_session_meta.session_name} />
+          <MetadataField label="Duration" value={data.video_session_meta.duration} />
+          <MetadataField label="Quality" value={data.video_session_meta.quality} />
+          <MetadataField label="FPS" value={data.video_session_meta.fps} />
+          <MetadataField label="Source" value={data.video_session_meta.camera_type} />
+          <MetadataField label="Confidence" value={data.video_session_meta.confidence} />
+        </div>
+      </ExtractionSection>
+
+      <ExtractionSection title="Scene Timeline" icon={LayoutGrid} count={data.scene_timeline.length}>
+        <div className="space-y-2">
+          {data.scene_timeline.map((s) => (
+            <div 
+              key={s.id} 
+              onClick={() => onJump(s.seconds)}
+              className="p-2.5 rounded-lg border border-slate-50 bg-slate-50/30 hover:bg-white hover:border-primary/20 hover:shadow-sm cursor-pointer transition-all group"
+            >
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[10px] font-black text-primary bg-primary/5 px-1.5 py-0.5 rounded tabular-nums">{s.timestamp}</span>
+                <ConfidenceChip level={s.confidence.toLowerCase() as any} />
+              </div>
+              <p className="text-[11px] font-black text-slate-900 group-hover:text-primary transition-colors leading-snug">{s.scene_label}</p>
+              <p className="text-[10px] font-medium text-slate-500 line-clamp-2 mt-1 italic leading-relaxed">"{s.summary}"</p>
+              <div className="flex items-center gap-2 mt-2 opacity-60">
+                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{s.actor}</span>
+                <div className="h-0.5 w-0.5 rounded-full bg-slate-300" />
+                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{s.location}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </ExtractionSection>
+
+      <ExtractionSection title="Actor Profiles" icon={Users} count={data.actor_profiles.length}>
+        <div className="space-y-2">
+          {data.actor_profiles.map((a) => (
+            <div key={a.actor_id} className="p-3 rounded-xl border border-slate-100 bg-white shadow-sm">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[11px] font-black text-slate-900 uppercase tracking-tight">{a.actor_label}</span>
+                <ConfidenceChip level={a.confidence.toLowerCase() as any} />
+              </div>
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                <MetadataField label="Role" value={a.probable_role} />
+                <MetadataField label="Screen Time" value={a.screen_time} />
+              </div>
+              <div className="p-2 rounded-lg bg-slate-50 border border-slate-100 space-y-1.5">
+                 <div className="flex items-center justify-between text-[9px] font-bold">
+                    <span className="text-slate-400">Activity:</span>
+                    <span className="text-slate-700">{a.activity}</span>
+                 </div>
+                 <div className="flex items-center justify-between text-[9px] font-bold">
+                    <span className="text-slate-400">Behavior:</span>
+                    <span className="text-slate-700">{a.behavior}</span>
+                 </div>
+                 <div className="flex items-center justify-between text-[9px] font-bold">
+                    <span className="text-slate-400">Stress:</span>
+                    <span className={`px-1 rounded ${a.stress.includes('High') ? 'bg-rose-100 text-rose-700' : 'text-slate-700'}`}>{a.stress}</span>
+                 </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </ExtractionSection>
+
+      <ExtractionSection title="Action / Event Detection" icon={Activity} count={data.action_events.length}>
+        <div className="space-y-1.5">
+          {data.action_events.map((e, i) => (
+            <div 
+              key={i} 
+              onClick={() => onJump(e.seconds)}
+              className="flex gap-3 p-2 rounded-lg hover:bg-slate-50 cursor-pointer group"
+            >
+              <span className="text-[10px] font-black text-slate-400 tabular-nums pt-0.5">{e.timestamp}</span>
+              <div className="flex-1 space-y-1">
+                 <div className="flex items-center gap-2">
+                    <span className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded border ${
+                      e.severity === 'Critical' ? 'bg-rose-50 text-rose-700 border-rose-100' : 'bg-amber-50 text-amber-700 border-amber-100'
+                    }`}>{e.event_type}</span>
+                    <span className="text-[9px] font-bold text-slate-400 truncate">{e.object}</span>
+                 </div>
+                 <p className="text-[11px] font-bold text-slate-800 leading-snug group-hover:text-primary transition-colors">{e.summary}</p>
+                 <div className="flex items-center gap-1.5 text-[9px] font-bold text-slate-400">
+                    <span className="uppercase">{e.actor}</span>
+                    <div className="h-0.5 w-0.5 bg-slate-300 rounded-full" />
+                    <span>Status: {e.status}</span>
+                 </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </ExtractionSection>
+
+      <ExtractionSection title="Environmental Observations" icon={Wind}>
+        <div className="space-y-3">
+          {data.environmental_observations.map((o, i) => (
+            <div key={i} onClick={() => onJump(o.seconds)} className="p-2 border-l-2 border-slate-100 hover:border-primary/40 cursor-pointer">
+              <span className="text-[10px] font-black text-slate-300 tabular-nums">{o.timestamp}</span>
+              <p className="text-[11px] font-bold text-slate-700 leading-snug mb-2 mt-0.5">{o.summary}</p>
+              <div className="flex flex-wrap gap-1.5">
+                 <span className="px-1.5 py-0.5 bg-slate-100 text-[8px] font-black uppercase rounded text-slate-500">Vis: {o.visibility}</span>
+                 <span className="px-1.5 py-0.5 bg-slate-100 text-[8px] font-black uppercase rounded text-slate-500">Hazard: {o.hazard}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </ExtractionSection>
+
+      <ExtractionSection title="Equipment & Object Signals" icon={Cpu}>
+        <div className="grid gap-2">
+          {data.equipment_and_object_signals.map((o, i) => (
+            <div key={i} onClick={() => onJump(o.seconds)} className="p-2.5 rounded-lg bg-slate-50 border border-transparent hover:bg-white hover:border-slate-100 hover:shadow-sm cursor-pointer group">
+              <div className="flex items-center justify-between mb-1.5">
+                 <span className="text-[11px] font-black text-slate-900 uppercase tracking-tight">{o.object}</span>
+                 <span className="text-[9px] font-black text-primary bg-primary/5 px-1.5 py-0.5 rounded">{o.timestamp}</span>
+              </div>
+              <div className="flex items-center gap-2 mb-2">
+                 <span className={`px-1.5 py-0.5 text-[8px] font-black uppercase rounded ${o.condition === 'Removed' || o.condition === 'Skewed' ? 'bg-rose-50 text-rose-600' : 'bg-slate-100 text-slate-500'}`}>{o.condition}</span>
+                 <span className="text-[9px] font-bold text-slate-400 italic">"{o.anomaly}"</span>
+              </div>
+              <div className="flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase">
+                 <span>Actor: {o.actor}</span>
+                 <ConfidenceChip level={o.confidence.toLowerCase() as any} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </ExtractionSection>
+
+      <ExtractionSection title="Human Performance Signals" icon={Footprints}>
+        <div className="space-y-3">
+          {Object.entries(data.human_performance_signals).map(([key, items]: [string, any]) => (
+            <div key={key}>
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.1em] mb-1.5 block">{key.replace(/_/g, ' ')}</span>
+              <div className="space-y-1.5">
+                {items.map((item: any, i: number) => (
+                  <div key={i} onClick={() => onJump(item.seconds)} className="p-2 bg-rose-50/50 border border-rose-100 rounded-lg group cursor-pointer">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[9px] font-black text-rose-700 tracking-tight uppercase">{item.category}</span>
+                      <span className="text-[9px] font-bold text-rose-300 tabular-nums">{item.timestamp}</span>
+                    </div>
+                    <p className="text-[11px] font-bold text-rose-900 leading-tight">"{item.detail}"</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </ExtractionSection>
+
+      <ExtractionSection title="PEEPO Seeds" icon={Brain}>
+        <div className="space-y-3">
+          {data.peepo_seeds.map((category) => (
+            <div key={category.category} className="space-y-1.5">
+              <span className="text-[10px] font-black text-slate-800 uppercase tracking-widest">{category.category}</span>
+              <ul className="space-y-1">
+                {category.items.map((item, i) => (
+                  <li key={i} className="flex gap-2">
+                    <div className="h-1 w-1 rounded-full bg-primary/40 mt-1.5 shrink-0" />
+                    <span className="text-[11px] font-medium text-slate-600 leading-snug italic">"{item}"</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </ExtractionSection>
+
+      <ExtractionSection title="Review Meta" icon={CheckCircle2}>
+        <div className="space-y-4">
+          <div className="space-y-2">
+             <span className="text-[10px] font-black text-slate-400 uppercase block">Needs Human Review</span>
+             <ul className="space-y-1.5">
+                {data.review_meta.needs_review.map((r, i) => (
+                  <li key={i} className="flex items-center gap-2 p-2 bg-amber-50 border border-amber-100 rounded-lg border-dashed">
+                    <AlertCircle className="h-3.5 w-3.5 text-amber-500" />
+                    <span className="text-[11px] font-bold text-amber-800 leading-tight">{r}</span>
+                  </li>
+                ))}
+             </ul>
+          </div>
+          <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+             <span className="text-[11px] font-black text-slate-900 uppercase">Overall Readiness</span>
+             <span className="text-[11px] font-black text-emerald-600 uppercase tracking-widest">{data.review_meta.overall_confidence} READY</span>
+          </div>
+        </div>
+      </ExtractionSection>
+    </div>
+  );
+}
+
+function VideoSceneSession({ currentTime, onJump }: { currentTime: number, onJump: (s: number) => void }) {
+  const data = videoExtractionRefined.scene_timeline;
+  
+  return (
+    <div className="flex flex-col h-full bg-slate-50/30">
+      <div className="px-4 py-3 border-b bg-white flex items-center justify-between">
+         <div className="flex items-center gap-2">
+            <LayoutGrid className="h-3.5 w-3.5 text-slate-400" />
+            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Active Sequence Session</span>
+         </div>
+         <span className="text-[10px] font-black text-slate-900 uppercase bg-slate-100 px-2 py-0.5 rounded">{data.length} Segments</span>
+      </div>
+
+      <div className="flex-1 overflow-auto custom-scrollbar p-3 space-y-2">
+        {data.map((seg) => {
+          const isActive = currentTime >= seg.seconds && (currentTime < (seg.seconds + (parseInt(seg.duration.split(':')[0]) * 60 + parseInt(seg.duration.split(':')[1]))));
+          
+          return (
+            <div
+              key={seg.id}
+              onClick={() => onJump(seg.seconds)}
+              className={`group flex items-start gap-4 p-4 rounded-xl border transition-all duration-300 cursor-pointer relative overflow-hidden active:scale-[0.98] ${
+                isActive 
+                ? "bg-white border-primary ring-1 ring-primary/20 shadow-xl translate-x-1" 
+                : "bg-white border-slate-100 hover:border-primary/30 hover:shadow-md hover:bg-slate-50/50"
+              }`}
+            >
+              {isActive && <div className="absolute top-0 left-0 w-1.5 h-full bg-primary" />}
+              {!isActive && <div className="absolute top-0 right-0 px-2 py-0.5 bg-slate-100 text-[8px] font-black text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity rounded-bl-lg border-l border-b border-slate-200">SEEK TO TIMESTAMP</div>}
+              
+              <div className="w-16 shrink-0 flex flex-col items-center gap-1.5 pt-0.5">
+                <div className={`text-[10px] font-black tabular-nums tracking-tighter transition-colors ${isActive ? "text-primary" : "text-slate-400 group-hover:text-primary/70"}`}>
+                  {seg.timestamp}
+                </div>
+                <div className={`w-full aspect-video rounded flex items-center justify-center border transition-all duration-300 overflow-hidden relative ${
+                  isActive ? "bg-primary/5 border-primary/20" : "bg-slate-50 border-slate-200 group-hover:border-primary/20 group-hover:bg-white"
+                }`}>
+                   <Play className={`h-3 w-3 transition-all duration-300 ${isActive ? "text-primary animate-pulse scale-125" : "text-slate-300 opacity-0 group-hover:opacity-100 group-hover:text-primary/50"}`} />
+                </div>
+                <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest">{seg.duration}</span>
+              </div>
+              <div className="flex-1 space-y-3">
+                <div className="flex items-center justify-between">
+                   <div className="flex items-center gap-2">
+                      <span className={`text-[11px] font-black uppercase transition-colors ${isActive ? "text-primary" : "text-slate-900"}`}>{seg.scene_label}</span>
+                      <div className="h-1 w-1 rounded-full bg-slate-200" />
+                      <span className="text-[10px] font-black text-slate-400 tabular-nums">{seg.accuracy}% ACC</span>
+                   </div>
+                   <ConfidenceChip level={seg.confidence.toLowerCase() as any} />
+                </div>
+                
+                <p className={`text-[11px] leading-relaxed transition-colors ${isActive ? "text-slate-800 font-bold" : "text-slate-500 font-medium"}`}>
+                   {seg.summary}
+                </p>
+
+                <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-50">
+                   <div className="space-y-1">
+                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Action</span>
+                      <ul className="space-y-0.5">
+                         {seg.actions.map((a: string, i: number) => (
+                           <li key={i} className={`text-[9px] font-bold ${isActive ? "text-slate-700" : "text-slate-400"}`}>• {a}</li>
+                         ))}
+                      </ul>
+                   </div>
+                   <div className="space-y-1">
+                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Key Analysis</span>
+                      <div className="flex flex-wrap gap-1">
+                         {seg.key_analysis.map((e: string, i: number) => (
+                           <span key={i} className={`px-1.5 py-0.5 rounded-[4px] border text-[8px] font-black uppercase transition-all ${
+                             isActive ? "bg-primary/5 text-primary border-primary/10" : "bg-slate-50 text-slate-400 border-slate-100"
+                           }`}>{e}</span>
+                         ))}
+                      </div>
+                   </div>
+                </div>
+
+                <div className="flex items-center gap-2 mt-2 opacity-50 group-hover:opacity-100 transition-opacity">
+                   <span className="px-1.5 py-0.5 bg-slate-100 text-[8px] font-bold text-slate-500 uppercase rounded">{seg.actor}</span>
+                   <span className="px-1.5 py-0.5 bg-slate-100 text-[8px] font-bold text-slate-500 uppercase rounded">{seg.location}</span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      
+      <div className="p-4 border-t bg-white flex flex-col gap-2">
+         <div className="flex items-center justify-between">
+            <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest italic">Visual Narrative Chain</span>
+            <div className="flex items-center gap-1">
+               <div className="h-1 w-1 rounded-full bg-slate-200" />
+               <div className="h-1 w-1 rounded-full bg-slate-200" />
+               <div className="h-1 w-1 rounded-full bg-slate-200" />
+            </div>
          </div>
       </div>
     </div>
