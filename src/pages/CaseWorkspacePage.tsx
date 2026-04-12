@@ -2394,57 +2394,7 @@ function ExtractionTab({
 
 
 
-function useMediaBlob(url: string | null) {
-  const [blobUrl, setBlobUrl] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!url || url.startsWith('blob:')) {
-      setBlobUrl(url);
-      return;
-    }
-
-    let isMounted = true;
-    setIsLoading(true);
-    setError(null);
-
-    // Add version parameter to bypass cache if needed, but fetch usually handles it
-    const fetchUrl = url.includes('?') ? url : `${url}?v=${Date.now()}`;
-
-    fetch(fetchUrl)
-      .then(async (response) => {
-        if (!response.ok) {
-           // Fallback to standard URL if blob fetch fails (e.g. CORS issues)
-           if (isMounted) setBlobUrl(url);
-           return;
-        }
-        const blob = await response.blob();
-        if (isMounted) {
-          const localUrl = URL.createObjectURL(blob);
-          setBlobUrl(localUrl);
-        }
-      })
-      .catch(err => {
-        if (isMounted) {
-          console.warn("Media blob load failed, falling back to direct URL:", err);
-          setBlobUrl(url); // Fallback
-          setError(err.message);
-        }
-      })
-      .finally(() => {
-        if (isMounted) setIsLoading(false);
-      });
-
-    return () => {
-      isMounted = false;
-      // We don't revoke immediately to avoid flickering during minor re-renders, 
-      // but in a real case we should manage this carefully.
-    };
-  }, [url]);
-
-  return { blobUrl: blobUrl || url, isLoading, error };
-}
+// Removed unscalable useMediaBlob hook
 
 function AdaptiveSourcePreview({ 
   file, 
@@ -2465,7 +2415,6 @@ function AdaptiveSourcePreview({
   const [audioIsPlaying, setAudioIsPlaying] = useState(false);
   const [audioPlaybackSpeed, setAudioPlaybackSpeed] = useState(1);
   const audioRef = useRef<HTMLAudioElement>(null);
-  const { blobUrl: mediaBlobUrl, isLoading: mediaLoading } = useMediaBlob(file.url);
 
   useEffect(() => {
     if (!audioRef.current) return;
@@ -2517,7 +2466,7 @@ function AdaptiveSourcePreview({
            <div className="flex-1 bg-slate-100 flex items-center justify-center overflow-hidden relative">
               {file.url ? (
                 <iframe 
-                  src={`${file.url}#toolbar=0&navpanes=0`} 
+                  src={file.name?.toLowerCase().endsWith(".pdf") ? `${file.url}#toolbar=0&navpanes=0` : `https://docs.google.com/viewer?url=${encodeURIComponent(file.url)}&embedded=true`} 
                   className="w-full h-full border-none bg-white" 
                   title={file.name}
                 />
@@ -2581,20 +2530,12 @@ function AdaptiveSourcePreview({
        <div className="w-full max-w-4xl space-y-6 animate-in slide-in-from-bottom-4 duration-500 pb-20">
           <audio 
             ref={audioRef}
-            crossOrigin="anonymous"
             preload="auto"
-            src={mediaBlobUrl || file.url}
+            src={file.url}
             onTimeUpdate={(e) => setAudioCurrentTime(Math.floor(e.currentTarget.currentTime))}
             onEnded={() => setAudioIsPlaying(false)}
             className="hidden"
           />
-          
-          {mediaLoading && (
-            <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center gap-3">
-              <RefreshCcw className="h-6 w-6 text-primary animate-spin" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Buffering Intelligence Stream...</span>
-            </div>
-          )}
           <div className="bg-white border-2 border-slate-100 rounded-lg shadow-xl p-8 space-y-8 relative overflow-hidden group">
              <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none group-hover:opacity-20 transition-opacity">
                 <AudioIcon className="h-32 w-32 -mr-10 -mt-10 rotate-12" />
@@ -2797,21 +2738,13 @@ function AdaptiveSourcePreview({
                 
                 <video
                   ref={videoRef}
-                  crossOrigin="anonymous"
                   preload="auto"
                   className="w-full h-full object-contain"
-                  src={mediaBlobUrl || file.url}
+                  src={file.url}
                   onTimeUpdate={(e) => setVideoCurrentTime?.(e.currentTarget.currentTime)}
                   onPlay={() => setVideoIsPlaying?.(true)}
                   onPause={() => setVideoIsPlaying?.(false)}
                 />
-                
-                {mediaLoading && (
-                  <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-50 flex flex-col items-center justify-center gap-3">
-                    <RefreshCcw className="h-8 w-8 text-primary animate-spin" />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-white/70">Optimizing Visual Frame Stream...</span>
-                  </div>
-                )}
 
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity" />
                 

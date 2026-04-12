@@ -67,7 +67,7 @@ export interface CompletedGroup {
 interface UploadModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onUploadComplete: (groups: CompletedGroup[]) => void;
+  onUploadComplete: (groups: CompletedGroup[]) => Promise<void> | void;
 }
 
 // ---- Constants ----
@@ -509,56 +509,46 @@ export function UploadModal({
     if (valid.length === 0) return;
 
     setIsUploading(true);
+    setFileItems((prev) => prev.map((f) => !f.error ? { ...f, status: "uploading", progress: 50 } : f));
 
-    for (const item of valid) {
-      setFileItems((prev) =>
-        prev.map((f) =>
-          f.id === item.id ? { ...f, status: "uploading" } : f
-        )
-      );
-      for (let p = 0; p <= 100; p += 25) {
-        await new Promise((r) => setTimeout(r, 70));
-        setFileItems((prev) =>
-          prev.map((f) => (f.id === item.id ? { ...f, progress: p } : f))
-        );
-      }
-      setFileItems((prev) =>
-        prev.map((f) =>
-          f.id === item.id ? { ...f, status: "success", progress: 100 } : f
-        )
-      );
+    const today = new Date().toISOString().split("T")[0];
+    const completed: CompletedGroup[] = groups
+      .map((group) => ({
+        batchId: group.id,
+        name: group.name,
+        isFolder: group.isFolder,
+        files: valid
+          .filter((f) => f.groupId === group.id)
+          .map((f) => ({
+            id: "F-" + Math.random().toString(36).substr(2, 6),
+            name: f.file.name,
+            type: f.category,
+            size: formatBytes(f.file.size),
+            relativePath: f.relativePath,
+            uploadDate: today,
+            status: "UPLOADED",
+            groupId: group.id,
+            groupName: group.name,
+            file: f.file,
+          })),
+      }))
+      .filter((g) => g.files.length > 0);
+
+    try {
+      await onUploadComplete(completed);
+      
+      setFileItems((prev) => prev.map((f) => !f.error ? { ...f, status: "success", progress: 100 } : f));
+      
+      setTimeout(() => {
+        setIsUploading(false);
+        resetState();
+        onClose();
+      }, 500);
+    } catch (err: any) {
+      setIsUploading(false);
+      setWarnings([err?.message || "Upload failed"]);
+      setFileItems((prev) => prev.map((f) => !f.error ? { ...f, status: "error", progress: 0, error: err?.message || "Upload failed" } : f));
     }
-
-    setIsUploading(false);
-
-    setTimeout(() => {
-      const today = new Date().toISOString().split("T")[0];
-      const completed: CompletedGroup[] = groups
-        .map((group) => ({
-          batchId: group.id,
-          name: group.name,
-          isFolder: group.isFolder,
-          files: valid
-            .filter((f) => f.groupId === group.id)
-            .map((f) => ({
-              id: "F-" + Math.random().toString(36).substr(2, 6),
-              name: f.file.name,
-              type: f.category,
-              size: formatBytes(f.file.size),
-              relativePath: f.relativePath,
-              uploadDate: today,
-              status: "UPLOADED",
-              groupId: group.id,
-              groupName: group.name,
-              file: f.file,
-            })),
-        }))
-        .filter((g) => g.files.length > 0);
-
-      onUploadComplete(completed);
-      resetState();
-      onClose();
-    }, 500);
   }, [fileItems, groups, onUploadComplete, resetState, onClose]);
 
   // ---- Derived values ----

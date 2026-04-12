@@ -1,6 +1,31 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 
+function getFallbackMimeType(fileName: string): string {
+  const ext = fileName.split('.').pop()?.toLowerCase();
+  switch (ext) {
+    case 'pdf': return 'application/pdf';
+    case 'doc': return 'application/msword';
+    case 'docx': return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    case 'xls': return 'application/vnd.ms-excel';
+    case 'xlsx': return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    case 'ppt': return 'application/vnd.ms-powerpoint';
+    case 'pptx': return 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+    case 'png': return 'image/png';
+    case 'jpg':
+    case 'jpeg': return 'image/jpeg';
+    case 'gif': return 'image/gif';
+    case 'webp': return 'image/webp';
+    case 'mp4': return 'video/mp4';
+    case 'webm': return 'video/webm';
+    case 'mp3': return 'audio/mpeg';
+    case 'wav': return 'audio/wav';
+    case 'txt': return 'text/plain';
+    case 'csv': return 'text/csv';
+    default: return 'application/octet-stream';
+  }
+}
+
 export type EvidenceBatch = {
   id: string;
   case_id: string;
@@ -108,7 +133,8 @@ export function useUploadEvidence() {
         // 2. Upload files and create records
         for (const fileItem of group.files) {
           const file = fileItem.file; // The actual File object
-          const fileName = `${Date.now()}-${file.name}`;
+          const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+          const fileName = `${Date.now()}-${sanitizedFileName}`;
           const filePath = `${caseId}/${batchData.id}/${fileName}`;
           
           let publicUrl = "";
@@ -118,7 +144,7 @@ export function useUploadEvidence() {
               .from("evidence")
               .upload(filePath, file, {
                  upsert: true,
-                 contentType: file.type || 'application/octet-stream',
+                 contentType: file.type || getFallbackMimeType(file.name),
                  cacheControl: '3600'
               });
 
