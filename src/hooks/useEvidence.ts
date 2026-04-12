@@ -18,8 +18,15 @@ function getFallbackMimeType(fileName: string): string {
     case 'webp': return 'image/webp';
     case 'mp4': return 'video/mp4';
     case 'webm': return 'video/webm';
+    case 'mov': return 'video/quicktime';
+    case 'mkv': return 'video/x-matroska';
+    case 'avi': return 'video/x-msvideo';
     case 'mp3': return 'audio/mpeg';
     case 'wav': return 'audio/wav';
+    case 'm4a': return 'audio/mp4';
+    case 'aac': return 'audio/aac';
+    case 'ogg': return 'audio/ogg';
+    case 'flac': return 'audio/flac';
     case 'txt': return 'text/plain';
     case 'csv': return 'text/csv';
     default: return 'application/octet-stream';
