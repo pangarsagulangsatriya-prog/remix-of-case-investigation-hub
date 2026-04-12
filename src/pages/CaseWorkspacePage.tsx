@@ -2416,14 +2416,7 @@ function AdaptiveSourcePreview({
   const [audioPlaybackSpeed, setAudioPlaybackSpeed] = useState(1);
   const audioRef = useRef<HTMLAudioElement>(null);
 
-  useEffect(() => {
-    if (!audioRef.current) return;
-    if (audioIsPlaying) {
-      audioRef.current.play().catch(() => setAudioIsPlaying(false));
-    } else {
-      audioRef.current.pause();
-    }
-  }, [audioIsPlaying]);
+
 
   useEffect(() => {
     if (!audioRef.current) return;
@@ -2517,8 +2510,11 @@ function AdaptiveSourcePreview({
     const jumpTo = (timeStr: string) => {
       const parts = timeStr.split(':').map(Number);
       const seconds = parts[0] * 60 + parts[1];
+      if (audioRef.current) {
+        audioRef.current.currentTime = seconds;
+        audioRef.current.play().catch(console.error);
+      }
       setAudioCurrentTime(seconds);
-      setAudioIsPlaying(true);
     };
 
     const isSegmentActive = (start: string, end: string) => {
@@ -2533,6 +2529,8 @@ function AdaptiveSourcePreview({
             preload="auto"
             src={file.url}
             onTimeUpdate={(e) => setAudioCurrentTime(Math.floor(e.currentTarget.currentTime))}
+            onPlay={() => setAudioIsPlaying(true)}
+            onPause={() => setAudioIsPlaying(false)}
             onEnded={() => setAudioIsPlaying(false)}
             className="hidden"
           />
@@ -2598,7 +2596,15 @@ function AdaptiveSourcePreview({
                    <Button variant="ghost" size="sm" className="h-9 w-9 p-0 text-slate-500" onClick={() => setAudioCurrentTime(prev => Math.max(0, prev - 10))}><RefreshCcw className="h-4 w-4 -scale-x-100" /></Button>
                    <Button 
                       className="h-12 w-12 bg-slate-900 rounded-xl flex items-center justify-center text-white shadow-xl hover:bg-slate-800 transition-all hover:scale-105 active:scale-95"
-                      onClick={() => setAudioIsPlaying(!audioIsPlaying)}>
+                      onClick={() => {
+                        if (audioRef.current) {
+                          if (audioRef.current.paused) {
+                            audioRef.current.play().catch(console.error);
+                          } else {
+                            audioRef.current.pause();
+                          }
+                        }
+                      }}>
                       {audioIsPlaying ? <div className="h-4 w-4 bg-white rounded-sm" /> : <Play className="h-5 w-5 fill-white ml-1" />}
                    </Button>
                    <Button variant="ghost" size="sm" className="h-9 w-9 p-0 text-slate-500" onClick={() => setAudioCurrentTime(prev => prev + 10)}><RefreshCcw className="h-4 w-4" /></Button>
