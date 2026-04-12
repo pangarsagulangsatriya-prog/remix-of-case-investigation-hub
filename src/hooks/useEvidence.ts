@@ -105,9 +105,13 @@ export function useDeleteFile() {
 
       // 2. Delete from storage if URL is a Supabase storage URL
       if (url && url.includes("storage/v1/object/public")) {
-         const path = url.split("/").slice(-2).join("/"); // bucket/filename
-         const [bucket, filename] = path.split("/");
-         await supabase.storage.from(bucket).remove([filename]);
+         // URL pattern usually is: .../public/evidence/path/to/file
+         const parts = url.split("/storage/v1/object/public/")[1]?.split("/");
+         if (parts && parts.length >= 2) {
+           const bucket = parts[0];
+           const path = parts.slice(1).join("/");
+           await supabase.storage.from(bucket).remove([path]);
+         }
       }
     },
     onSuccess: () => {

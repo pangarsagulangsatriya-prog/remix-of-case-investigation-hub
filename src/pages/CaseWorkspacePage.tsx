@@ -2394,7 +2394,55 @@ function ExtractionTab({
 
 
 
-// Removed unscalable useMediaBlob hook
+// Smart Media Hook to workaround 416 Range issues for Audio/Images
+function useSmartMedia(url: string | null, type: string) {
+  const [mediaUrl, setMediaUrl] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (!url) {
+      setMediaUrl(null);
+      return;
+    }
+
+    // Only use Blob strategy for Audio to bypass flaky Range requests
+    // Images/Videos are better off direct or handled by browser
+    if (type !== "Audio") {
+      setMediaUrl(`${url}${url.includes('?') ? '&' : '?'}t=${Date.now()}`);
+      return;
+    }
+
+    let isMounted = true;
+    setIsLoading(true);
+
+    const busterUrl = `${url}${url.includes('?') ? '&' : '?'}t=${Date.now()}`;
+
+    fetch(busterUrl)
+      .then(async (res) => {
+        if (!res.ok) throw new Error("Fetch failed");
+        const blob = await res.blob();
+        if (isMounted) {
+          const localUrl = URL.createObjectURL(blob);
+          setMediaUrl(localUrl);
+        }
+      })
+      .catch((err) => {
+        console.warn("SmartMedia fallback to direct URL:", err);
+        if (isMounted) setMediaUrl(url);
+      })
+      .finally(() => {
+        if (isMounted) setIsLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+      // Note: We don't revoke immediately to prevent flickering during rapid selection,
+      // browsers will GC these eventually, but in high-res apps we'd track and revoke.
+    };
+  }, [url, type]);
+
+  return { mediaUrl, isLoading };
+}
 
 function AdaptiveSourcePreview({ 
   file, 
@@ -2415,9 +2463,19 @@ function AdaptiveSourcePreview({
   const [audioIsPlaying, setAudioIsPlaying] = useState(false);
   const [audioPlaybackSpeed, setAudioPlaybackSpeed] = useState(1);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const { mediaUrl, isLoading: mediaLoading } = useSmartMedia(file.url, file.type);
 
-
-
+  useEffect(() => {
+    if (!audioRef.current) return;
+    if (audioIsPlaying) {
+      audioRef.current.play().catch(err => {
+        console.error("Playback error:", err);
+        setAudioIsPlaying(false);
+      });
+    } else {
+      audioRef.current.pause();
+    }
+  }, [audioIsPlaying, mediaUrl]);
   useEffect(() => {
     if (!audioRef.current) return;
     audioRef.current.playbackRate = audioPlaybackSpeed;
@@ -2512,7 +2570,9 @@ function AdaptiveSourcePreview({
       const seconds = parts[0] * 60 + parts[1];
       if (audioRef.current) {
         audioRef.current.currentTime = seconds;
-        audioRef.current.play().catch(console.error);
+        if (!audioIsPlaying) {
+          setAudioIsPlaying(true);
+        }
       }
       setAudioCurrentTime(seconds);
     };
@@ -2527,13 +2587,20 @@ function AdaptiveSourcePreview({
           <audio 
             ref={audioRef}
             preload="auto"
-            src={file.url}
+            src={mediaUrl || file.url}
             onTimeUpdate={(e) => setAudioCurrentTime(Math.floor(e.currentTarget.currentTime))}
             onPlay={() => setAudioIsPlaying(true)}
             onPause={() => setAudioIsPlaying(false)}
             onEnded={() => setAudioIsPlaying(false)}
             className="hidden"
           />
+          
+          {mediaLoading && (
+            <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center gap-3">
+              <RefreshCcw className="h-6 w-6 text-primary animate-spin" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Decrypting Audio Stream...</span>
+            </div>
+          )}
           <div className="bg-white border-2 border-slate-100 rounded-lg shadow-xl p-8 space-y-8 relative overflow-hidden group">
              <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none group-hover:opacity-20 transition-opacity">
                 <AudioIcon className="h-32 w-32 -mr-10 -mt-10 rotate-12" />
@@ -2596,15 +2663,7 @@ function AdaptiveSourcePreview({
                    <Button variant="ghost" size="sm" className="h-9 w-9 p-0 text-slate-500" onClick={() => setAudioCurrentTime(prev => Math.max(0, prev - 10))}><RefreshCcw className="h-4 w-4 -scale-x-100" /></Button>
                    <Button 
                       className="h-12 w-12 bg-slate-900 rounded-xl flex items-center justify-center text-white shadow-xl hover:bg-slate-800 transition-all hover:scale-105 active:scale-95"
-                      onClick={() => {
-                        if (audioRef.current) {
-                          if (audioRef.current.paused) {
-                            audioRef.current.play().catch(console.error);
-                          } else {
-                            audioRef.current.pause();
-                          }
-                        }
-                      }}>
+                      onClick={() => setAudioIsPlaying(!audioIsPlaying)}>
                       {audioIsPlaying ? <div className="h-4 w-4 bg-white rounded-sm" /> : <Play className="h-5 w-5 fill-white ml-1" />}
                    </Button>
                    <Button variant="ghost" size="sm" className="h-9 w-9 p-0 text-slate-500" onClick={() => setAudioCurrentTime(prev => prev + 10)}><RefreshCcw className="h-4 w-4" /></Button>
