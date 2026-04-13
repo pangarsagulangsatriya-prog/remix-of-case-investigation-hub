@@ -1,3 +1,9 @@
-# Welcome to your Lovable project
+# Berau Coal Investigation Intelligence Hub
 
-TODO: Document your project here
+Enterprise Investigation Intelligence platform for Industrial Safety operations. 
+
+## Features
+- Evidence Ingestion & Management
+- AI-driven Extraction Review
+- Industrial Safety Compliance Monitoring
+- Automated Intelligence Reports
