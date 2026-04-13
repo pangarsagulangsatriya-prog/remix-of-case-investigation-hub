@@ -2001,19 +2001,24 @@ function ExtractionTab({
   const [audioCurrentTime, setAudioCurrentTime] = useState(0);
   const [audioIsPlaying, setAudioIsPlaying] = useState(false);
   const [audioPlaybackSpeed, setAudioPlaybackSpeed] = useState(1);
+  const audioRef = useRef<HTMLAudioElement>(null);
   const [deleteFolderTarget, setDeleteFolderTarget] = useState<DeleteFolderTarget | null>(null);
-
-  // Auto-expand all batches on load
-  useEffect(() => {
-    if (batches.length > 0 && expandedBatches.length === 0) {
-      setExpandedBatches(batches.map(b => b.id));
-    }
-  }, [batches]);
 
   // Shared Video State
   const [videoCurrentTime, setVideoCurrentTime] = useState(0);
   const [videoIsPlaying, setVideoIsPlaying] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
+
+  const jumpToAudioTime = (seconds: number) => {
+    if (audioRef.current) {
+      audioRef.current.currentTime = Math.max(0, seconds);
+      if (!audioIsPlaying) {
+        setAudioIsPlaying(true);
+      }
+      audioRef.current.play().catch(err => console.warn("Audio play blocked:", err));
+    }
+    setAudioCurrentTime(seconds);
+  };
 
   const deleteFileMutation = useDeleteFile();
   const insertAuditLog = useInsertAuditLog();
@@ -2298,6 +2303,13 @@ function ExtractionTab({
                     videoIsPlaying={videoIsPlaying}
                     setVideoIsPlaying={setVideoIsPlaying}
                     videoRef={videoRef}
+                    audioCurrentTime={audioCurrentTime}
+                    setAudioCurrentTime={setAudioCurrentTime}
+                    audioIsPlaying={audioIsPlaying}
+                    setAudioIsPlaying={setAudioIsPlaying}
+                    audioPlaybackSpeed={audioPlaybackSpeed}
+                    setAudioPlaybackSpeed={setAudioPlaybackSpeed}
+                    audioRef={audioRef}
                   />
               ) : (
                 <div className="flex flex-col items-center justify-center p-12 text-center">
@@ -2335,7 +2347,13 @@ function ExtractionTab({
                 currentTime={videoCurrentTime}
                 onJump={jumpToVideoTime}
               />
-           ) : selectedFile?.type === "Image" || selectedFile?.type === "Audio" ? (
+           ) : selectedFile?.type === "Audio" ? (
+             <AudioAnalysisPanel 
+                file={selectedFile} 
+                currentTime={audioCurrentTime}
+                onJump={jumpToAudioTime}
+             />
+           ) : selectedFile?.type === "Image" ? (
              <AIAnalysisPanel file={selectedFile} />
            ) : (
              <div className="p-6">
@@ -2432,19 +2450,29 @@ function AdaptiveSourcePreview({
   setVideoCurrentTime, 
   videoIsPlaying, 
   setVideoIsPlaying, 
-  videoRef 
+  videoRef,
+  audioCurrentTime = 0,
+  setAudioCurrentTime = () => {},
+  audioIsPlaying = false,
+  setAudioIsPlaying = () => {},
+  audioPlaybackSpeed = 1,
+  setAudioPlaybackSpeed = () => {},
+  audioRef
 }: { 
   file: any,
   videoCurrentTime?: number,
   setVideoCurrentTime?: (t: number) => void,
   videoIsPlaying?: boolean,
   setVideoIsPlaying?: (p: boolean) => void,
-  videoRef?: React.RefObject<HTMLVideoElement>
+  videoRef?: React.RefObject<HTMLVideoElement>,
+  audioCurrentTime?: number,
+  setAudioCurrentTime?: (t: number) => void,
+  audioIsPlaying?: boolean,
+  setAudioIsPlaying?: (p: boolean) => void,
+  audioPlaybackSpeed?: number,
+  setAudioPlaybackSpeed?: (s: number) => void,
+  audioRef?: React.RefObject<HTMLAudioElement>
 }) {
-  const [audioCurrentTime, setAudioCurrentTime] = useState(0);
-  const [audioIsPlaying, setAudioIsPlaying] = useState(false);
-  const [audioPlaybackSpeed, setAudioPlaybackSpeed] = useState(1);
-  const audioRef = useRef<HTMLAudioElement>(null);
   const { mediaUrl, isLoading: mediaLoading } = useSmartMedia(file.url, file.type);
 
   useEffect(() => {
@@ -2676,68 +2704,8 @@ function AdaptiveSourcePreview({
              </div>
           </div>
 
-          <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden flex flex-col">
-             <div className="px-6 py-4 border-b flex items-center justify-between bg-white relative z-10">
-                <div className="flex items-center gap-3">
-                   <div className="h-8 w-8 bg-primary/5 rounded-lg flex items-center justify-center border border-primary/10">
-                      <FileText className="h-4 w-4 text-primary" />
-                   </div>
-                   <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Full Diarization Transcript</h3>
-                </div>
-                <div className="flex items-center gap-3">
-                   <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 mr-2">
-                      <div className="h-2 w-2 rounded-full bg-primary" /> Current Seg: {audioCurrentTime}s
-                   </div>
-                   <Button variant="outline" size="sm" className="h-7 text-[10px] font-bold gap-1.5 px-3 border-slate-200 hover:bg-slate-50">
-                      <Copy className="h-3 w-3" /> Sync Export
-                   </Button>
-                </div>
-             </div>
-             
-             <div className="flex-1 overflow-auto max-h-[1200px] custom-scrollbar bg-slate-50/20">
-                <div className="divide-y divide-slate-100">
-                   {audioDiarizationData.map((seg) => {
-                     const active = isSegmentActive(seg.start_time, seg.end_time);
-                     return (
-                        <div 
-                          key={seg.segment_id} 
-                          id={seg.segment_id}
-                          className={`group flex items-start p-6 transition-all cursor-pointer relative overflow-hidden ${active ? "bg-white shadow-[inset_0_0_20px_rgba(37,99,235,0.03)]" : "hover:bg-white"}`}
-                          onClick={() => jumpTo(seg.start_time)}>
-                          <div className={`absolute top-0 bottom-0 left-0 w-1 transition-all ${active ? "bg-primary" : "bg-transparent group-hover:bg-slate-200"}`} />
-                          <div className="w-24 shrink-0 pt-0.5">
-                             <span className={`text-[11px] font-bold tabular-nums transition-colors ${active ? "text-primary" : "text-slate-400"}`}>
-                               {seg.start_time} — {seg.end_time}
-                             </span>
-                          </div>
-                          <div className="flex-1 space-y-2 pl-6">
-                             <div className="flex items-center gap-3">
-                                <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider border transition-all ${
-                                  seg.speaker_id === "SPK_01" 
-                                  ? "bg-amber-50 text-amber-700 border-amber-100 shadow-sm" 
-                                  : "bg-indigo-50 text-indigo-700 border-indigo-100 shadow-sm"
-                                }`}>
-                                   {seg.speaker_label}
-                                </span>
-                                {seg.flags.includes("key_observation") && <span className="h-1.5 w-1.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.6)]" />}
-                                {seg.flags.includes("critical_evidence") && <span className="h-1.5 w-1.5 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]" />}
-                             </div>
-                             <p className={`text-sm leading-relaxed transition-colors ${active ? "text-slate-900 font-medium" : "text-slate-600 font-medium"}`}>
-                                {seg.text}
-                             </p>
-                          </div>
-                        </div>
-                     );
-                   })}
-                </div>
-                <div className="p-12 flex flex-col items-center justify-center text-slate-300 space-y-4 opacity-50">
-                    <div className="h-px w-20 bg-slate-200" />
-                    <span className="text-[10px] font-black uppercase tracking-[0.3em]">Recording Termination</span>
-                </div>
-             </div>
-          </div>
-       </div>
-    );
+        </div>
+     );
   }
 
   if (file.type === "Video") {
@@ -3673,6 +3641,179 @@ function AuditTrailTab() {
               </tbody>
             </table>
          </div>
+      </div>
+    </div>
+  );
+}
+
+// --- Audio Analysis Components ---
+
+function AudioAnalysisPanel({ file, currentTime, onJump }: { file: any, currentTime: number, onJump: (s: number) => void }) {
+  const [activeTab, setActiveTab] = useState<"Extraction" | "Scene Session">("Extraction");
+  const [viewMode, setViewMode] = useState<"Structured" | "JSON">("Structured");
+
+  return (
+    <div className="flex flex-col h-full bg-white">
+      <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-sm border-b px-4 py-2 flex items-center gap-1 shrink-0">
+        {(["Extraction", "Scene Session"] as const).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`flex-1 py-1.5 px-3 text-[10px] font-black uppercase tracking-widest rounded-md transition-all ${
+              activeTab === tab
+              ? "bg-primary text-white shadow-sm"
+              : "text-slate-400 hover:text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            {tab}
+          </button>
+        ))}
+      </div>
+
+      <div className="flex-1 overflow-auto custom-scrollbar">
+        {activeTab === "Extraction" ? (
+          <div className="p-4 space-y-4">
+             <div className="flex items-center justify-between mb-4">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Intelligence Layer</span>
+                <div className="flex items-center gap-1 p-0.5 bg-slate-100 rounded-md border shadow-inner">
+                   <button onClick={() => setViewMode("Structured")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "Structured" ? "bg-white text-primary shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>Structured</button>
+                   <button onClick={() => setViewMode("JSON")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "JSON" ? "bg-white text-primary shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>JSON</button>
+                </div>
+             </div>
+             {viewMode === "Structured" ? (
+               <AudioExtractionStructured data={audioExtractionData} onJump={onJump} />
+             ) : (
+               <div className="bg-slate-900 rounded-xl p-4 overflow-hidden border border-slate-800 shadow-2xl mt-4">
+                  <pre className="text-[10px] font-mono text-emerald-400 leading-relaxed overflow-auto max-h-[1000px] custom-scrollbar">
+                     {JSON.stringify(audioExtractionData, null, 2)}
+                  </pre>
+               </div>
+             )}
+          </div>
+        ) : (
+          <AudioTranscriptSession currentTime={currentTime} onJump={onJump} />
+        )}
+      </div>
+    </div>
+  );
+}
+
+function AudioExtractionStructured({ data, onJump }: { data: any, onJump: (s: number) => void }) {
+  const [expandedSections, setExpandedSections] = useState<string[]>(["Audio Meta", "Intelligence Seeds"]);
+  const toggle = (s: string) => setExpandedSections(p => p.includes(s) ? p.filter(x => x !== s) : [...p, s]);
+
+  const ExtractionSection = ({ title, icon: Icon, children }: any) => (
+    <div className={`border border-slate-100 rounded-xl overflow-hidden mb-2 transition-all duration-300 ${expandedSections.includes(title) ? 'shadow-sm border-primary/10' : 'hover:border-slate-200'}`}>
+      <button onClick={() => toggle(title)} className={`w-full flex items-center justify-between px-3 py-2.5 transition-colors ${expandedSections.includes(title) ? 'bg-slate-50/50 border-b border-slate-50' : 'bg-white'}`}>
+        <div className="flex items-center gap-2.5">
+          <div className={`p-1.5 rounded-lg border shadow-sm ${expandedSections.includes(title) ? 'bg-primary text-white border-primary' : 'bg-white text-slate-400'}`}>
+            <Icon className="h-3.5 w-3.5" />
+          </div>
+          <span className={`text-[11px] font-black uppercase tracking-tight transition-colors ${expandedSections.includes(title) ? 'text-slate-900' : 'text-slate-600'}`}>{title}</span>
+        </div>
+        <ChevronDown className={`h-3 w-3 text-slate-300 transition-transform ${expandedSections.includes(title) ? 'rotate-180' : ''}`} />
+      </button>
+      {expandedSections.includes(title) && <div className="p-3 bg-white space-y-3">{children}</div>}
+    </div>
+  );
+
+  return (
+    <div className="space-y-1">
+      <ExtractionSection title="Audio Meta" icon={History}>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="flex flex-col gap-0.5"><span className="text-[9px] font-black text-slate-400 uppercase">Duration</span><span className="text-[11px] font-bold text-slate-800">{data.recording_meta.duration}</span></div>
+          <div className="flex flex-col gap-0.5"><span className="text-[9px] font-black text-slate-400 uppercase">Quality</span><span className="text-[11px] font-bold text-emerald-600">{data.recording_meta.audio_quality}</span></div>
+          <div className="flex flex-col gap-0.5"><span className="text-[9px] font-black text-slate-400 uppercase">Noise Level</span><span className="text-[11px] font-bold text-slate-800">{data.recording_meta.noise_level}</span></div>
+          <div className="flex flex-col gap-0.5"><span className="text-[9px] font-black text-slate-400 uppercase">Lang</span><span className="text-[11px] font-bold text-slate-800">{data.recording_meta.language}</span></div>
+        </div>
+      </ExtractionSection>
+      
+      <ExtractionSection title="Speaker Profiles" icon={Users}>
+        <div className="space-y-2">
+          {data.speaker_profiles.map((s: any) => (
+            <div key={s.speaker_id} className="p-3 border rounded-xl bg-slate-50/50">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] font-black text-slate-900 uppercase">{s.probable_role}</span>
+                <span className={`px-1.5 py-0.5 text-[8px] font-black uppercase rounded ${s.stress_level.includes('High') ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}`}>Stress: {s.stress_level.split(' ')[0]}</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-[9px] font-bold text-slate-500">
+                <div>Assertiveness: <span className="text-slate-800">{s.assertiveness}</span></div>
+                <div>Style: <span className="text-slate-800">{s.speaking_style}</span></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </ExtractionSection>
+
+      <ExtractionSection title="Intelligence Seeds" icon={Brain}>
+        <div className="space-y-3">
+           <div className="bg-rose-50 border border-rose-100 p-3 rounded-xl">
+              <span className="text-[9px] font-black text-rose-700 uppercase block mb-2">Human Performance Signals</span>
+              <ul className="space-y-1.5">
+                 {data.human_performance_signals.delayed_reporting.map((sig: string, i: number) => <li key={i} className="flex items-center gap-2 text-[10px] font-bold text-rose-800 leading-tight"><AlertCircle className="h-3 w-3 shrink-0" /> {sig}</li>)}
+              </ul>
+           </div>
+           <div className="p-3 border rounded-xl bg-slate-900 text-white">
+              <span className="text-[9px] font-black text-primary uppercase block mb-2">PEEPO Reasoning</span>
+              {Object.entries(data.peepo_seeds).map(([k, v]: any) => (
+                <div key={k} className="flex gap-2 mb-1.5 last:mb-0 opacity-90"><span className="text-[8px] font-black text-slate-500 uppercase min-w-[50px]">{k}</span><p className="text-[10px] font-bold text-slate-300 leading-tight italic">"{v[0]}"</p></div>
+              ))}
+           </div>
+        </div>
+      </ExtractionSection>
+    </div>
+  );
+}
+
+function AudioTranscriptSession({ currentTime, onJump }: { currentTime: number, onJump: (s: number) => void }) {
+  const isSegmentActive = (start: string, end: string) => {
+    const getS = (s: string) => s.split(':').map(Number)[0] * 60 + s.split(':').map(Number)[1];
+    return currentTime >= getS(start) && currentTime <= getS(end);
+  };
+
+  return (
+    <div className="flex flex-col h-full bg-slate-50/30">
+      <div className="px-4 py-3 border-b bg-white flex items-center justify-between shadow-sm">
+         <div className="flex items-center gap-2">
+            <MessageSquare className="h-3.5 w-3.5 text-slate-400" />
+            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Diarization Log</span>
+         </div>
+         <Button variant="ghost" size="sm" className="h-6 px-2 text-[9px] font-black text-primary hover:bg-primary/5 uppercase"><Copy className="h-3 w-3 mr-1" /> Export</Button>
+      </div>
+
+      <div className="flex-1 overflow-auto custom-scrollbar p-3 space-y-2">
+        {audioDiarizationData.map((seg) => {
+          const active = isSegmentActive(seg.start_time, seg.end_time);
+          return (
+            <div
+              key={seg.segment_id}
+              onClick={() => {
+                const parts = seg.start_time.split(':').map(Number);
+                onJump(parts[0] * 60 + parts[1]);
+              }}
+              className={`group flex flex-col gap-2.5 p-4 rounded-xl border transition-all duration-300 cursor-pointer relative overflow-hidden active:scale-[0.98] ${
+                active 
+                ? "bg-white border-primary ring-1 ring-primary/20 shadow-xl" 
+                : "bg-white border-slate-100 hover:border-primary/30 hover:shadow-md hover:bg-slate-50/50"
+              }`}
+            >
+              {active && <div className="absolute top-0 left-0 w-1 h-full bg-primary" />}
+              <div className="flex items-center justify-between">
+                 <div className="flex items-center gap-2">
+                    <span className={`text-[10px] font-black tabular-nums transition-colors ${active ? "text-primary" : "text-slate-400"}`}>{seg.start_time} — {seg.end_time}</span>
+                    <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase border ${
+                      seg.speaker_id === "SPK_01" ? "bg-amber-50 text-amber-600 border-amber-100" : "bg-indigo-50 text-indigo-600 border-indigo-100"
+                    }`}>{seg.speaker_label}</span>
+                 </div>
+                 <ConfidenceChip level={seg.confidence.toLowerCase() as any} />
+              </div>
+              <p className={`text-[11px] leading-relaxed transition-colors ${active ? "text-slate-900 font-bold" : "text-slate-500 font-medium"} italic`}>"{seg.text}"</p>
+              <div className="flex items-center gap-1.5 opacity-40 group-hover:opacity-100 transition-opacity">
+                 {seg.flags.map((f: string) => <span key={f} className="h-1.5 w-1.5 rounded-full bg-primary shadow-sm" title={f} />)}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
