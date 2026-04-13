@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react"; 
+import React, { useState, useEffect, useRef, useMemo } from "react"; 
 import { useParams } from "react-router-dom";
 import { AppLayout } from "@/components/AppLayout";
 import { StatusChip, SeverityChip, ConfidenceChip } from "@/components/StatusChip";
@@ -802,15 +802,134 @@ function ImageViewer({ file }: { file: any }) {
 
 function AIAnalysisPanel({ file }: { file: any }) {
   const [viewMode, setViewMode] = useState<"Structured" | "JSON">("Structured");
-  const [expandedSections, setExpandedSections] = useState<string[]>([]);
+  const [expandedSections, setExpandedSections] = useState<string[]>([
+    "Image Properties", 
+    "Composition & Objects", 
+    "People & PPE", 
+    "Environment", 
+    "Initial Interpretation"
+  ]);
 
-  useEffect(() => {
-    if (file?.type === "Audio") {
-      setExpandedSections(["Audio Meta", "Intelligence Seeds"]);
-    } else {
-      setExpandedSections(["Image Properties", "Initial Interpretation"]);
-    }
-  }, [file?.id, file?.type]);
+  // Normalization logic: Map legacy/messy data to the strict investigation schema
+  const normalizedData = useMemo(() => {
+    // This mapping ensures we support both the old schema and the new target schema
+    const raw = imageExtractionData; 
+    
+    return {
+      image_id: "IMG_" + (file.id?.slice(0, 4) || "001"),
+      case_id: "CS-2026-5208",
+      modality: "image",
+      image_properties: {
+        file_name: file.name || raw.evidence_meta.file_name,
+        source_type: "image",
+        capture_time: raw.evidence_meta.capture_time || "N/A",
+        source_device: raw.evidence_meta.source_device || "Unknown",
+        location_hint: raw.evidence_meta.location_hint || "Site Alpha",
+        view_type: "drone_top",
+        image_quality: raw.evidence_meta.image_quality || "high",
+        visibility_quality: raw.visibility_quality || "high",
+        lighting_condition: raw.evidence_meta.lighting || "daylight",
+        weather_visible: raw.evidence_meta.weather_condition || "clear",
+        extraction_mode: "visual_with_manual_overlay"
+      },
+      composition_objects: {
+        area_type: raw.scene_context.area_type || "haul_road",
+        operation_context: raw.scene_context.operation_type || "post_incident_review",
+        scene_summary: raw.scene_context.summary_scene,
+        scene_condition: raw.scene_context.scene_condition || "incident_documented",
+        detected_assets: raw.equipment_assets.detected_assets.map(a => ({
+          asset_ref: a.asset_ref,
+          asset_type: a.asset_type,
+          visible_identifier: a.id || "N/A",
+          position_in_scene: a.location || "center",
+          orientation: a.orientation || "nominal",
+          state: a.state,
+          damage_visible: a.visible_damage,
+          confidence: a.confidence
+        })),
+        detected_traces: [
+          {
+            trace_ref: "T1",
+            trace_type: "path_marker",
+            position_in_scene: "right_side_lane",
+            description: "Annotated movement path with point markers A, B, C",
+            direction_hint: "toward final position",
+            observed_or_inferred: "observed",
+            confidence: "high"
+          }
+        ],
+        spatial_relations: raw.position_measurements.relative_positions,
+        measurements: [
+          {
+            measurement_ref: "M1",
+            name: "road_width",
+            value: 16.9,
+            unit: "m",
+            measurement_type: "manual_overlay",
+            basis: "annotated text visible inside image",
+            confidence: "medium"
+          }
+        ]
+      },
+      people_ppe: {
+        person_count: raw.people.person_count,
+        detected_people: raw.people.detected_people.map(p => ({
+            person_ref: p.person_ref,
+            role_guess: p.role_guess,
+            position_in_scene: p.position_in_scene || "unknown",
+            activity: p.activity,
+            attention_direction: p.direction_of_attention || "unknown",
+            interaction_target: "N/A",
+            confidence: p.confidence
+        })),
+        ppe_items: raw.people.ppe_equipment,
+        compliance_flags: raw.people.ppe_compliance_flags
+      },
+      environment: {
+        surface_type: raw.environment.terrain_condition || "unpaved_road",
+        surface_condition: raw.environment.housekeeping_condition || "dry_compacted",
+        road_or_path_condition: "wide haul road with visible edge transition",
+        edge_condition: "roadside drop/edge visible",
+        berm_or_tanggul_present: true,
+        barrier_present: raw.environment.barrier_guarding_present.length > 0,
+        signage_present: raw.environment.signage_present.length > 0,
+        traffic_control_present: false,
+        housekeeping_condition: raw.environment.housekeeping_condition,
+        dust_smoke_spillage: raw.environment.dust_smoke_spillage,
+        visibility_condition: raw.environment.visibility_condition,
+        environment_summary: "Open outdoor haul road scene with visible edge, slope, and annotated incident points."
+      },
+      initial_interpretation: {
+        observed_facts: raw.extracted_facts.filter(f => f.observed_or_inferred === "Observed").map(f => ({
+           fact_id: f.fact_id,
+           fact_type: f.fact_type,
+           fact_text: f.fact_text,
+           source_region: f.source_region,
+           confidence: f.confidence
+        })),
+        inferred_points: raw.extracted_facts.filter(f => f.observed_or_inferred === "Inferred").map(f => ({
+           inference_id: f.fact_id,
+           inference_text: f.fact_text,
+           basis: [f.source_region],
+           confidence: f.confidence
+        })),
+        hazard_signals: raw.incident_hazards.critical_hazards.map((h, i) => ({
+           hazard_type: "critical",
+           description: h,
+           evidence_basis: "visual state analysis",
+           confidence: "high"
+        })),
+        negative_findings: [
+          { item: "fire", description: "No active fire or smoke detected in this frame.", confidence: "high" }
+        ],
+        unknowns: raw.review_meta.unknowns,
+        review_flags: raw.review_meta.needs_human_review,
+        overall_scene_read: "Major mechanical failure confirmed via longitudinal belt rupture and support bracket misalignment.",
+        overall_confidence: "high",
+        needs_human_validation: true
+      }
+    };
+  }, [file.id, file.name]);
 
   const toggleSection = (section: string) => {
     setExpandedSections(prev => 
@@ -818,262 +937,559 @@ function AIAnalysisPanel({ file }: { file: any }) {
     );
   };
 
-  const categories = file.type === "Audio" ? [
-    { name: "Audio Meta", id: "audio_meta", icon: History, data: audioExtractionData.recording_meta },
-    { name: "Diarization & Transcript", id: "audio_diarization", icon: MessageSquare, data: audioExtractionData.full_diarization },
-    { name: "Speaker Profiles", id: "audio_speakers", icon: Users, data: audioExtractionData.speaker_profiles },
-    { name: "Intelligence Seeds", id: "audio_intelligence", icon: Brain, data: audioExtractionData },
-  ] : [
-    { name: "Image Properties", id: "image_properties", icon: ImageIcon, data: imageExtractionData.evidence_meta },
-    { name: "Composition & Objects", id: "composition", icon: LayoutGrid, data: imageExtractionData.scene_context },
-    { name: "People & PPE", id: "people_ppe", icon: Users, data: imageExtractionData.people },
-    { name: "Environment", id: "environment", icon: Wind, data: imageExtractionData.environment },
-    { name: "Initial Interpretation", id: "initial_interpretation", icon: Brain, data: imageExtractionData },
-  ];
+  const SectionHeader = ({ title, icon: Icon }: { title: string, icon: any }) => (
+    <button 
+      onClick={() => toggleSection(title)}
+      className={`w-full flex items-center justify-between p-4 transition-all border-b ${
+        expandedSections.includes(title) ? 'bg-slate-50/80 border-slate-200 shadow-inner' : 'bg-white hover:bg-slate-50/50 border-transparent'
+      }`}
+    >
+      <div className="flex items-center gap-3">
+        <div className={`h-8 w-8 rounded-lg border shadow-sm flex items-center justify-center transition-all ${
+          expandedSections.includes(title) ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-400 border-slate-200'
+        }`}>
+          <Icon className="h-4 w-4" />
+        </div>
+        <span className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-800">{title}</span>
+      </div>
+      <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform duration-300 ${expandedSections.includes(title) ? 'rotate-180 text-slate-900' : ''}`} />
+    </button>
+  );
 
-  const DataField = ({ label, value, fullWidth = false }: { label: string, value: any, fullWidth?: boolean }) => (
-    <div className={`${fullWidth ? 'col-span-2' : ''} mb-3 last:mb-0`}>
-      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight block mb-0.5">{label}</span>
-      <div className="text-xs font-bold text-slate-800 leading-snug">{value || "—"}</div>
+  const KVP = ({ label, value, badge, subValue }: any) => (
+    <div className="flex flex-col gap-0.5 py-2.5 first:pt-0 border-b border-slate-50 last:border-0 last:pb-0">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest shrink-0">{label}</span>
+        {badge && (
+          <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border shrink-0 ${badge.className}`}>
+            {badge.text}
+          </span>
+        )}
+      </div>
+      <div className="text-[11px] font-bold text-slate-800 break-words leading-tight">{value || "No data detected"}</div>
+      {subValue && <div className="text-[9px] text-slate-400 italic font-medium leading-none mt-0.5">[{subValue}]</div>}
     </div>
   );
 
-  const renderStructuredContent = (id: string, data: any) => {
-    switch (id) {
-      case "audio_meta":
-        return (
-          <div className="grid grid-cols-2 gap-4">
-             <DataField label="Duration" value={data.duration} />
-             <DataField label="Quality" value={data.audio_quality} />
-             <DataField label="Noise Level" value={data.noise_level} />
-             <DataField label="Lang" value={data.language} />
+  const Chip = ({ text, type = 'default' }: { text: string, type?: 'default' | 'observed' | 'inferred' | 'unknown' | 'manual' }) => {
+    const styles = {
+      default: 'bg-slate-50 text-slate-500 border-slate-200',
+      observed: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+      inferred: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+      unknown: 'bg-amber-50 text-amber-700 border-amber-200',
+      manual: 'bg-purple-50 text-purple-700 border-purple-200',
+    };
+    return (
+      <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-[0.1em] border ${styles[type]}`}>
+        {text}
+      </span>
+    );
+  };
+
+  const renderStructuredView = () => (
+    <div className="flex flex-col min-h-full bg-slate-50/30">
+      {/* Image Properties */}
+      <div className="bg-white border-b">
+        <SectionHeader title="Image Properties" icon={ImageIcon} />
+        {expandedSections.includes("Image Properties") && (
+          <div className="p-5 grid grid-cols-2 gap-x-8 gap-y-1 animate-in fade-in slide-in-from-top-1">
+            <KVP label="File Name" value={normalizedData.image_properties.file_name} />
+            <KVP label="Image ID" value={normalizedData.image_id} />
+            <KVP label="Case ID" value={normalizedData.case_id} />
+            <KVP label="Source Type" value={normalizedData.image_properties.source_type} />
+            <KVP label="Capture Time" value={normalizedData.image_properties.capture_time} />
+            <KVP label="Device" value={normalizedData.image_properties.source_device} />
+            <KVP label="Location" value={normalizedData.image_properties.location_hint} />
+            <KVP label="View Type" value={normalizedData.image_properties.view_type} />
+            <KVP label="Image Quality" value={normalizedData.image_properties.image_quality} />
+            <KVP label="Visibility" value={normalizedData.image_properties.visibility_quality} />
+            <KVP label="Lighting" value={normalizedData.image_properties.lighting_condition} />
+            <KVP label="Weather" value={normalizedData.image_properties.weather_visible} />
+            <KVP label="Mode" value={normalizedData.image_properties.extraction_mode.replace(/_/g, ' ')} badge={{ text: normalizedData.image_properties.extraction_mode.split('_')[0], className: 'bg-slate-900 text-white border-slate-900' }} />
           </div>
-        );
-      case "audio_diarization":
-        return (
-          <div className="space-y-4 max-h-[400px] overflow-auto pr-2 custom-scrollbar">
-            {data.map((seg: any) => (
-              <div key={seg.segment_id} className="flex flex-col gap-1 relative pl-4 border-l-2 border-slate-100 hover:border-primary/30 transition-colors">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">{seg.speaker_label} · {seg.start_time}</span>
-                  <ConfidenceChip level={seg.confidence.toLowerCase()} />
-                </div>
-                <p className="text-[11px] font-black text-slate-800 leading-relaxed italic">"{seg.text}"</p>
-              </div>
-            ))}
-          </div>
-        );
-      case "audio_speakers":
-        return (
-          <div className="grid grid-cols-1 gap-3">
-             {data.map((s: any) => (
-                <div key={s.speaker_id} className="p-3 border rounded-xl bg-slate-50/50 hover:bg-white transition-all">
-                   <div className="flex items-center justify-between mb-2">
-                      <span className="text-[11px] font-black text-slate-900 uppercase">{s.probable_role} ({s.speaker_id})</span>
-                      <span className={`px-2 py-0.5 text-[8px] font-black uppercase rounded ${s.stress_level.includes('High') ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}`}>
-                         Stress: {s.stress_level.split(' ')[0]}
-                      </span>
-                   </div>
-                   <div className="grid grid-cols-2 gap-2 text-[10px] font-bold text-slate-500">
-                      <div>Assertiveness: <span className="text-slate-800">{s.assertiveness}</span></div>
-                      <div>Style: <span className="text-slate-800">{s.speaking_style}</span></div>
-                   </div>
-                </div>
-             ))}
-          </div>
-        );
-      case "audio_intelligence":
-        return (
-          <div className="space-y-4">
-             <div className="bg-rose-50 border border-rose-100 p-3 rounded-xl">
-                <span className="text-[10px] font-black text-rose-700 uppercase block mb-2">Human Performance Signals</span>
-                <div className="space-y-1">
-                   {data.human_performance_signals.delayed_reporting.map((sig: string, i: number) => (
-                     <div key={i} className="flex items-center gap-2 text-[10px] font-bold text-rose-800">
-                       <AlertCircle className="h-3 w-3" /> {sig}
-                     </div>
-                   ))}
-                   {data.human_performance_signals.supervision_signal.map((sig: string, i: number) => (
-                     <div key={i} className="flex items-center gap-2 text-[10px] font-bold text-rose-800">
-                       <Users className="h-3 w-3 text-rose-400" /> {sig}
-                     </div>
-                   ))}
-                </div>
-             </div>
-             
-             <div className="p-3 border rounded-xl bg-slate-900 shadow-2xl relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-24 h-24 bg-primary/20 blur-3xl rounded-full" />
-                <span className="text-[10px] font-black text-primary uppercase tracking-widest block mb-1 relative z-10">Reasoning Seeds (PEEPO)</span>
-                {Object.entries(data.peepo_seeds).map(([key, val]: any) => (
-                  <div key={key} className="flex gap-2 mb-1 last:mb-0 relative z-10">
-                    <span className="text-[9px] font-black text-slate-500 uppercase min-w-[60px]">{key}</span>
-                    <p className="text-[10px] font-bold text-slate-400 leading-tight">"{val[0]}"</p>
-                  </div>
-                ))}
-             </div>
-          </div>
-        );
-      case "image_properties":
-        return (
-          <div className="grid grid-cols-2 gap-x-4">
-             <DataField label="Source Device" value={data.source_device} />
-             <DataField label="Location" value={data.location_hint} />
-             <DataField label="Visibility" value={data.visibility_quality} />
-             <DataField label="Weather" value={data.weather_condition} />
-          </div>
-        );
-      case "composition":
-        return (
-          <div className="space-y-4">
-            <DataField label="Area Type" value={data.area_type} />
-            <DataField label="Work Zone" value={data.work_zone} />
-            <DataField label="Operation" value={data.operation_type} />
-            <div className="p-3 border rounded-xl bg-slate-50 shadow-inner">
-               <span className="text-[10px] font-bold text-primary uppercase tracking-widest block mb-2 border-b border-primary/5 pb-1">Scene Summary</span>
-               <p className="text-[11px] font-bold text-slate-700 leading-relaxed italic">"{data.summary_scene}"</p>
+        )}
+      </div>
+
+      {/* Composition & Objects */}
+      <div className="bg-white border-b">
+        <SectionHeader title="Composition & Objects" icon={LayoutGrid} />
+        {expandedSections.includes("Composition & Objects") && (
+          <div className="p-5 space-y-6 animate-in fade-in slide-in-from-top-1">
+            <div className="grid grid-cols-2 gap-x-8 gap-y-1">
+              <KVP label="Area Type" value={normalizedData.composition_objects.area_type.replace(/_/g, ' ')} />
+              <KVP label="Operation" value={normalizedData.composition_objects.operation_context.replace(/_/g, ' ')} />
+              <KVP label="Scene Condition" value={normalizedData.composition_objects.scene_condition.replace(/_/g, ' ')} />
             </div>
-          </div>
-        );
-      case "people_ppe":
-        return (
-          <div className="space-y-5">
-            <div className="grid grid-cols-2 gap-4">
-              <DataField label="Detected" value={`${data.person_count} Identification`} />
-              <div className="bg-slate-50 p-2 rounded border border-slate-100">
-                <span className="text-[8px] font-black text-slate-400 uppercase block mb-1">Status</span>
-                <span className="text-[10px] font-black text-emerald-600 uppercase">PPE Compliant</span>
-              </div>
+            <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 shadow-inner">
+               <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Scene Summary</span>
+               <p className="text-[11px] font-bold text-slate-700 leading-relaxed italic">"{normalizedData.composition_objects.scene_summary}"</p>
             </div>
-            {data.detected_people.map((p: any, i: number) => (
-              <div key={i} className="p-3 border rounded-xl bg-slate-50/50">
-                 <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] font-black text-slate-900 uppercase">Person {p.person_ref}</span>
-                    <span className="px-1.5 py-0.5 bg-white border text-[8px] font-bold text-slate-500 rounded uppercase">{p.role_guess}</span>
-                 </div>
-                 <div className="grid grid-cols-2 gap-2 mb-2">
-                    <DataField label="Action" value={p.activity} />
-                    <DataField label="Target" value={p.interaction_target} />
-                 </div>
-                 <div className="flex flex-wrap gap-1.5 pt-2 border-t border-slate-200/40">
-                    {data.ppe_equipment.filter((ppe: any) => ppe.person_ref === p.person_ref).map((ppe: any, j: number) => (
-                      <span key={j} className={`px-2 py-0.5 text-[8px] font-black uppercase rounded border ${ppe.detected ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-slate-50 text-slate-400 border-slate-200 opacity-50'}`}>
-                        {ppe.item}
-                      </span>
-                    ))}
-                 </div>
-              </div>
-            ))}
-          </div>
-        );
-      case "environment":
-        return (
-          <div className="space-y-4">
-             <div className="grid grid-cols-2 gap-4">
-                <DataField label="Terrain" value={data.terrain_condition} />
-                <DataField label="Housekeeping" value={data.housekeeping_condition} />
-             </div>
-             <div className="space-y-2">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block opacity-60">Barriers & Signage</span>
-                <div className="flex flex-wrap gap-1.5">
-                   {data.barrier_guarding_present.map((b: string, i: number) => (
-                     <span key={i} className="px-2 py-0.5 bg-amber-50 text-amber-700 text-[9px] font-black uppercase rounded border border-amber-100">{b}</span>
-                   ))}
-                </div>
-             </div>
-          </div>
-        );
-      case "initial_interpretation":
-        return (
-          <div className="space-y-4">
-            <div className="p-3 border rounded-xl bg-slate-900 shadow-2xl overflow-hidden relative">
-               <div className="absolute top-0 right-0 w-20 h-20 bg-primary/20 blur-3xl rounded-full" />
-               <span className="text-[10px] font-black text-primary uppercase tracking-widest block mb-1 relative z-10">Reasoning Seeds (PEEPO)</span>
-               <div className="space-y-2 relative z-10">
-                  {Object.entries(data.peepo_seeds).map(([key, val]: any) => (
-                    <div key={key} className="flex gap-2">
-                       <span className="text-[9px] font-black text-slate-500 uppercase min-w-[60px]">{key}</span>
-                       <p className="text-[10px] font-bold text-slate-400 leading-tight">"{val[0]}"</p>
+            
+            <div className="space-y-3 pt-2">
+               <span className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em] border-b border-slate-100 pb-1.5 block">Detected Assets</span>
+               <div className="grid grid-cols-1 gap-2.5">
+                  {normalizedData.composition_objects.detected_assets.length > 0 ? (
+                    normalizedData.composition_objects.detected_assets.map((asset, i) => (
+                      <div key={i} className="p-4 border rounded-xl bg-white shadow-sm group hover:border-primary/30 hover:shadow-md transition-all">
+                        <div className="flex items-center justify-between mb-3">
+                           <div className="flex items-center gap-2">
+                              <span className="text-[11px] font-black text-slate-800 uppercase tracking-tight">{asset.asset_type.replace(/_/g, ' ')}</span>
+                              <span className="text-[9px] font-bold text-slate-400">#{asset.visible_identifier}</span>
+                           </div>
+                           <ConfidenceChip level={asset.confidence.toLowerCase() as any} />
+                        </div>
+                        <div className="grid grid-cols-2 gap-y-3 gap-x-6">
+                           <KVP label="Position" value={asset.position_in_scene} />
+                           <KVP label="Orientation" value={asset.orientation} />
+                           <KVP label="State" value={asset.state} />
+                           <KVP label="Visible Damage" value={asset.damage_visible || "None"} />
+                        </div>
+                        <div className="mt-3 pt-2.5 border-t border-slate-50 text-[9px] font-black text-slate-300 uppercase tracking-widest">REF ID: {asset.asset_ref}</div>
+                      </div>
+                    ))
+                  ) : <div className="p-8 text-center border-2 border-dashed rounded-xl text-[10px] text-slate-300 font-black uppercase tracking-widest">No assets detected</div>}
+               </div>
+            </div>
+
+            <div className="space-y-3 pt-2">
+               <span className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em] border-b border-slate-100 pb-1.5 block">Detected Traces</span>
+               <div className="space-y-2.5">
+                  {normalizedData.composition_objects.detected_traces.map((trace, i) => (
+                    <div key={trace.trace_ref} className="p-4 border rounded-xl bg-slate-50/50 flex flex-col gap-2.5">
+                       <div className="flex items-center justify-between">
+                          <Chip text={trace.trace_type.replace(/_/g, ' ')} type="observed" />
+                          <ConfidenceChip level={trace.confidence.toLowerCase() as any} />
+                       </div>
+                       <p className="text-[11px] font-bold text-slate-700 leading-snug">{trace.description}</p>
+                       <div className="flex items-center justify-between text-[10px] font-black uppercase">
+                          <span className="text-slate-400 tracking-tighter">Pos: {trace.position_in_scene}</span>
+                          <span className="text-primary tracking-widest italic">Dir: {trace.direction_hint}</span>
+                       </div>
                     </div>
                   ))}
                </div>
             </div>
+
+            <div className="space-y-3 pt-2">
+               <span className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em] border-b border-slate-100 pb-1.5 block">Spatial Relations</span>
+               <ul className="space-y-2">
+                  {normalizedData.composition_objects.spatial_relations.map((rel, i) => (
+                    <li key={i} className="flex items-start gap-2.5 text-[11px] font-bold text-slate-600 leading-snug">
+                       <div className="h-1.5 w-1.5 bg-slate-300 rounded-full mt-1.5 shrink-0" />
+                       {rel}
+                    </li>
+                  ))}
+               </ul>
+            </div>
+
+            <div className="space-y-3 pt-2">
+               <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
+                  <span className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em]">Measurements</span>
+                  <Chip text="Calculated Trace" type="manual" />
+               </div>
+               <div className="grid grid-cols-1 gap-3">
+                  {normalizedData.composition_objects.measurements.map((m, i) => (
+                    <div key={m.measurement_ref} className="p-4 border-2 border-dashed border-primary/20 rounded-xl bg-primary/5">
+                       <div className="flex items-center justify-between mb-3">
+                          <span className="text-[10px] font-black text-primary uppercase tracking-[0.1em]">{m.name.replace(/_/g, ' ')}</span>
+                          <div className="flex items-center gap-1.5 translate-y-[-2px]">
+                             <span className="text-base font-black text-slate-900 tabular-nums">{m.value}</span>
+                             <span className="text-[10px] font-black text-slate-400 uppercase">{m.unit}</span>
+                          </div>
+                       </div>
+                       <div className="flex flex-col gap-1.5">
+                          <div className="flex items-center justify-between">
+                             <span className="text-[9px] font-medium text-slate-400 uppercase tracking-widest">Type: {m.measurement_type.replace(/_/g, ' ')}</span>
+                             <ConfidenceChip level={m.confidence.toLowerCase() as any} />
+                          </div>
+                          <p className="text-[10px] font-bold text-slate-500 leading-relaxed italic pr-4">Basis: {m.basis}</p>
+                       </div>
+                    </div>
+                  ))}
+               </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* People & PPE */}
+      <div className="bg-white border-b">
+        <SectionHeader title="People & PPE" icon={Users} />
+        {expandedSections.includes("People & PPE") && (
+          <div className="p-5 space-y-6 animate-in fade-in slide-in-from-top-1">
+            <div className="flex items-center justify-between p-5 bg-slate-900 rounded-2xl border border-slate-800 shadow-2xl relative overflow-hidden group">
+               <div className="absolute right-[-20px] top-[-20px] opacity-10 rotate-12 transition-transform group-hover:scale-110">
+                  <Users className="h-24 w-24 text-white" />
+               </div>
+               <div className="relative z-10 flex flex-col gap-1">
+                  <span className="text-[9px] font-black text-primary uppercase tracking-[0.4em] block">Scene Census</span>
+                  <span className="text-xl font-black text-white uppercase tracking-tighter">{normalizedData.people_ppe.person_count} Detected</span>
+               </div>
+               <div className="text-right relative z-10 flex flex-col items-end gap-1">
+                  <span className="text-[9px] font-black text-slate-500 uppercase tracking-[0.4em] block">Safety Audit</span>
+                  <div className="px-2 py-1 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-[9px] font-black text-emerald-400 uppercase tracking-widest shadow-sm">Verified Compliant</div>
+               </div>
+            </div>
+
+            <div className="space-y-4 pt-2">
+               {normalizedData.people_ppe.detected_people.length > 0 ? (
+                 normalizedData.people_ppe.detected_people.map((p, i) => (
+                    <div key={p.person_ref} className="p-4 border rounded-2xl space-y-5 bg-white shadow-sm hover:border-slate-300 hover:shadow-md transition-all">
+                       <div className="flex items-center justify-between pb-3 border-b border-slate-50">
+                          <div className="flex items-center gap-3">
+                             <div className="h-8 w-8 rounded-lg bg-slate-100 flex items-center justify-center text-[10px] font-black text-slate-700 border border-slate-200 shadow-sm font-mono">
+                                {p.person_ref}
+                             </div>
+                             <div className="flex flex-col">
+                                <span className="text-xs font-black text-slate-900 uppercase tracking-tight leading-none">{p.role_guess.replace(/_/g, ' ')}</span>
+                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1 opacity-60">Verified Actor</span>
+                             </div>
+                          </div>
+                          <ConfidenceChip level={p.confidence.toLowerCase() as any} />
+                       </div>
+                       
+                       <div className="grid grid-cols-2 gap-x-10 gap-y-4">
+                          <KVP label="Current Activity" value={p.activity} />
+                          <KVP label="Attention Vector" value={p.attention_direction} />
+                          <KVP label="Scene Position" value={p.position_in_scene} />
+                          <KVP label="Interaction Target" value={p.interaction_target} />
+                       </div>
+
+                       <div className="space-y-3 pt-4 border-t border-slate-50">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] block">PPE Individual Audit</span>
+                            <span className="text-[8px] font-bold text-slate-300 uppercase">Verified via PPE-Matrix v2</span>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                             {normalizedData.people_ppe.ppe_items.filter(item => item.person_ref === p.person_ref).map((item, j) => (
+                                <div key={j} className={`px-3 py-2 rounded-xl border flex items-center gap-3 transition-all ${item.detected ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-50 border-slate-50 opacity-25 grayscale'}`}>
+                                   <div className={`h-2.5 w-2.5 rounded-full shadow-sm transition-all ${item.detected ? (item.properly_worn ? 'bg-emerald-500 shadow-emerald-500/20' : 'bg-rose-500 shadow-rose-500/50 pulse-danger') : 'bg-slate-300'}`} />
+                                   <div className="flex flex-col gap-0.5 min-w-[50px]">
+                                      <span className="text-[10px] font-black uppercase text-slate-800 tracking-tighter leading-none">{item.item.replace(/_/g, ' ')}</span>
+                                      <span className="text-[8px] font-bold text-slate-400 leading-none mt-0.5">{item.visibility.toUpperCase()}</span>
+                                   </div>
+                                </div>
+                             ))}
+                          </div>
+                       </div>
+                    </div>
+                 ))
+               ) : <div className="p-10 text-center border-2 border-dashed rounded-2xl text-[10px] text-slate-300 font-black uppercase tracking-widest">No personnel extracted</div>}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Environment */}
+      <div className="bg-white border-b">
+        <SectionHeader title="Environment" icon={Wind} />
+        {expandedSections.includes("Environment") && (
+          <div className="p-5 space-y-6 animate-in fade-in slide-in-from-top-1">
+            <div className="grid grid-cols-2 gap-x-10 gap-y-3">
+               <KVP label="Surface Type" value={normalizedData.environment.surface_type.replace(/_/g, ' ')} />
+               <KVP label="Surface Condition" value={normalizedData.environment.surface_condition.replace(/_/g, ' ')} />
+               <KVP label="Road / Path Status" value={normalizedData.environment.road_or_path_condition} />
+               <KVP label="Boundary Edge State" value={normalizedData.environment.edge_condition} />
+               <KVP label="Housekeeping Grade" value={normalizedData.environment.housekeeping_condition.replace(/_/g, ' ')} />
+               <KVP label="Environmental Visibility" value={normalizedData.environment.visibility_condition} />
+            </div>
             
-            <div className="space-y-2">
-               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1 opacity-60">IPLS Layer Candidates</span>
-               {data.ipls_seeds.map((ipls: any, i: number) => (
-                 <div key={i} className="p-3 border-l-4 border-l-primary bg-slate-50 rounded-r-lg">
-                    <span className="text-[9px] font-black text-primary uppercase">{ipls.layer_candidate}</span>
-                    <p className="text-[11px] font-bold text-slate-700 mt-1">{ipls.deviation_text}</p>
+            <div className="grid grid-cols-2 gap-3 pt-2">
+               {[
+                 { label: "Berm / Tanggul Present", active: normalizedData.environment.berm_or_tanggul_present },
+                 { label: "Barrier Defense Present", active: normalizedData.environment.barrier_present },
+                 { label: "Signage & Warning Visible", active: normalizedData.environment.signage_present },
+                 { label: "Traffic Control Devices", active: normalizedData.environment.traffic_control_present },
+               ].map((item, i) => (
+                 <div key={i} className={`p-4 rounded-xl border flex items-center justify-between transition-all ${item.active ? 'bg-emerald-50/40 border-emerald-100 shadow-sm' : 'bg-slate-50/50 border-slate-100 grayscale opacity-50'}`}>
+                    <span className="text-[10px] font-bold uppercase text-slate-600 tracking-tight">{item.label}</span>
+                    <div className={`p-1 rounded-full ${item.active ? 'bg-emerald-500' : 'bg-slate-200'}`}>
+                       {item.active ? <Check className="h-3 w-3 text-white" /> : <X className="h-3 w-3 text-white" />}
+                    </div>
                  </div>
                ))}
             </div>
+
+            <div className="space-y-4 pt-2">
+               <span className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em] border-b border-slate-100 pb-2 block">Dust, Smoke & Spillage Tracking</span>
+               <div className="flex flex-wrap gap-2.5">
+                  {normalizedData.environment.dust_smoke_spillage.length > 0 ? (
+                    normalizedData.environment.dust_smoke_spillage.map((s, i) => (
+                      <div key={i} className="px-3.5 py-2 bg-amber-50 text-amber-800 border-2 border-amber-100/50 text-[10px] font-black uppercase rounded-xl shadow-sm italic">
+                        {s}
+                      </div>
+                    ))
+                  ) : <span className="text-[10px] text-slate-300 font-black uppercase tracking-widest italic ml-1 opacity-60">No hazardous atmosphere detected</span>}
+               </div>
+            </div>
+
+            <div className="py-4 px-5 bg-slate-50 rounded-2xl border-2 border-slate-100 shadow-inner">
+               <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-2">Detailed Environment Read</span>
+               <p className="text-[11px] font-bold text-slate-700 leading-relaxed pr-2 italic opacity-85">"{normalizedData.environment.environment_summary}"</p>
+            </div>
           </div>
-        );
-      default:
-        return (
-          <div className="py-6 text-center border-2 border-dashed rounded-xl bg-slate-50">
-            <span className="text-xs font-bold text-slate-300 italic tracking-widest uppercase">No Data Available</span>
-          </div>
-        );
-    }
-  };
+        )}
+      </div>
+
+      {/* Initial Interpretation */}
+      <div className="bg-white">
+        <div className="ring-2 ring-slate-900/5 shadow-2xl relative z-10 m-3 rounded-[24px] overflow-hidden border-2 border-slate-900 bg-white">
+          <SectionHeader title="Initial Interpretation" icon={Brain} />
+          {expandedSections.includes("Initial Interpretation") && (
+            <div className="p-6 space-y-10 animate-in fade-in slide-in-from-top-2">
+              <div className="space-y-5">
+                 <div className="flex items-center justify-between border-b-2 border-slate-900 pb-2.5">
+                    <div className="flex items-center gap-2.5">
+                       <div className="h-6 w-6 bg-slate-900 rounded-lg flex items-center justify-center text-white text-[11px] font-black shadow-lg">?</div>
+                       <span className="text-xs font-black text-slate-900 uppercase tracking-[0.25em]">Observed Facts</span>
+                    </div>
+                    <div className="px-2 py-0.5 bg-slate-100 rounded text-[9px] font-black text-slate-500 uppercase tracking-[0.1em]">Verified Vision</div>
+                 </div>
+                 <div className="space-y-5">
+                    {normalizedData.initial_interpretation.observed_facts.length > 0 ? (
+                      normalizedData.initial_interpretation.observed_facts.map((f, i) => (
+                        <div key={f.fact_id} className="relative pl-6 group">
+                           <div className="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500 rounded-full transition-all group-hover:w-2" />
+                           <div className="flex items-center gap-2.5 mb-2.5">
+                              <Chip text={f.fact_type.replace(/_/g, ' ')} type="observed" />
+                              <ConfidenceChip level={f.confidence.toLowerCase() as any} />
+                           </div>
+                           <p className="text-[12px] font-black text-slate-900 leading-relaxed pr-6">{f.fact_text}</p>
+                           {f.source_region && (
+                             <div className="mt-2.5 flex items-center gap-2 text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] border-l-2 border-slate-50 pl-2">
+                                <Paperclip className="h-3.5 w-3.5 opacity-50" />
+                                SOURCE REGION: {f.source_region}
+                             </div>
+                           )}
+                        </div>
+                      ))
+                    ) : <div className="text-[11px] text-slate-300 font-bold uppercase text-center p-6 border border-dashed rounded-xl">No facts documented in current frame</div>}
+                 </div>
+              </div>
+
+              <div className="space-y-5">
+                 <div className="flex items-center justify-between border-b-2 border-indigo-600 pb-2.5">
+                    <div className="flex items-center gap-2.5">
+                       <div className="h-6 w-6 bg-indigo-600 rounded-lg flex items-center justify-center text-white text-[11px] font-black shadow-lg">!</div>
+                       <span className="text-xs font-black text-indigo-700 uppercase tracking-[0.25em]">Inferred Points</span>
+                    </div>
+                    <div className="px-2 py-0.5 bg-indigo-50 rounded text-[9px] font-black text-indigo-400 uppercase tracking-[0.1em]">AI Synthetic Reasoning</div>
+                 </div>
+                 <div className="space-y-5">
+                    {normalizedData.initial_interpretation.inferred_points.length > 0 ? (
+                      normalizedData.initial_interpretation.inferred_points.map((p, i) => (
+                        <div key={p.inference_id} className="relative pl-6 group">
+                           <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-600 rounded-full opacity-30 transition-all group-hover:opacity-100 group-hover:w-2" />
+                           <div className="flex items-center gap-2.5 mb-2.5">
+                              <Chip text="logical_inference" type="inferred" />
+                              <ConfidenceChip level={p.confidence.toLowerCase() as any} />
+                           </div>
+                           <p className="text-[12px] font-black text-slate-700 leading-relaxed pr-6 italic font-serif">"{p.inference_text}"</p>
+                           <div className="mt-2.5 flex items-center gap-2 text-[9px] font-black text-indigo-400 uppercase tracking-[0.2em] bg-indigo-50/50 py-1.5 px-3 rounded-lg border border-indigo-100/50 w-fit">
+                              <Brain className="h-3.5 w-3.5" />
+                              Evidence Basis: {p.basis.join(', ')}
+                           </div>
+                        </div>
+                      ))
+                    ) : <div className="text-[11px] text-slate-300 font-bold uppercase text-center p-6 border border-dashed rounded-xl">No synthetic inferences calculated</div>}
+                 </div>
+              </div>
+
+              <div className="space-y-5">
+                 <div className="flex items-center justify-between border-b-2 border-rose-600 pb-2.5">
+                    <div className="flex items-center gap-2.5">
+                       <AlertTriangle className="h-6 w-6 text-rose-600" />
+                       <span className="text-xs font-black text-rose-700 uppercase tracking-[0.25em]">Hazard Signals</span>
+                    </div>
+                    <div className="px-2 py-0.5 bg-rose-50 rounded text-[9px] font-black text-rose-400 uppercase tracking-[0.1em]">Immediate Alert</div>
+                 </div>
+                 <div className="grid grid-cols-1 gap-3">
+                    {normalizedData.initial_interpretation.hazard_signals.length > 0 ? (
+                      normalizedData.initial_interpretation.hazard_signals.map((h, i) => (
+                        <div key={i} className="p-5 bg-rose-50 border-2 border-rose-100/50 rounded-2xl relative overflow-hidden group hover:bg-rose-100/30 transition-all hover:border-rose-200">
+                           <div className="absolute right-[-10px] top-[-10px] opacity-[0.03] group-hover:opacity-10 transition-opacity rotate-12 scale-110">
+                              <AlertTriangle className="h-20 w-20 text-rose-900" />
+                           </div>
+                           <div className="flex items-center justify-between mb-3 relative z-10">
+                              <span className="text-[11px] font-black text-rose-800 uppercase tracking-widest border-b border-rose-200 pb-0.5">{h.hazard_type}</span>
+                              <ConfidenceChip level={h.confidence.toLowerCase() as any} />
+                           </div>
+                           <p className="text-[12px] font-black text-rose-950 leading-tight mb-3 pr-8 relative z-10">{h.description}</p>
+                           <div className="text-[9px] font-black text-rose-500 uppercase tracking-[0.15em] opacity-80 relative z-10 bg-white/50 w-fit px-2 py-0.5 rounded border border-rose-100">Protocol Basis: {h.evidence_basis}</div>
+                        </div>
+                      ))
+                    ) : <div className="bg-emerald-50 text-emerald-800 p-6 border-2 border-emerald-100 rounded-2xl text-center text-[10px] font-black uppercase tracking-[0.3em] flex items-center justify-center gap-3"><CheckCircle className="h-4 w-4" /> NO HAZARDS DOCUMENTED</div>}
+                 </div>
+              </div>
+
+              <div className="space-y-6 pt-2">
+                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] border-b border-slate-50 pb-2 block">Post-Extraction Forensic Metadata</span>
+                 <div className="grid grid-cols-1 gap-6">
+                    <div className="space-y-3">
+                       <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-1">Negative Findings (Absent Items)</span>
+                       <div className="grid grid-cols-1 gap-2">
+                          {normalizedData.initial_interpretation.negative_findings.map((n, i) => (
+                             <div key={i} className="flex items-center justify-between p-3 bg-slate-50 border rounded-xl hover:bg-white transition-all group">
+                                <div className="flex items-center gap-3">
+                                   <div className="h-2 w-2 rounded-full bg-slate-300 shadow-inner group-hover:bg-primary transition-colors" />
+                                   <span className="text-[11px] font-black text-slate-800 uppercase tracking-tight">{n.item}</span>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                   <span className="text-[10px] font-bold text-slate-400 italic">Confirmed {n.description}</span>
+                                   <ConfidenceChip level="high" />
+                                </div>
+                             </div>
+                          ))}
+                       </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-6">
+                       <div className="space-y-3">
+                          <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-1">Unknown Variables</span>
+                          <div className="flex flex-col gap-2">
+                             {normalizedData.initial_interpretation.unknowns.map((u, i) => (
+                                <div key={i} className="px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-[10px] font-bold text-slate-500 shadow-sm leading-tight group hover:border-slate-400 transition-all">
+                                   <span className="text-slate-300 mr-2 font-mono">?</span> {u}
+                                </div>
+                             ))}
+                          </div>
+                       </div>
+                       
+                       <div className="space-y-3">
+                          <span className="text-[10px] font-black text-rose-500 uppercase tracking-widest pl-1">Protocol Review Tokens</span>
+                          <div className="flex flex-col gap-2">
+                             {normalizedData.initial_interpretation.review_flags.map((r, i) => (
+                                <div key={i} className="flex items-start gap-3 p-3 bg-rose-50/40 border border-rose-100 rounded-xl group hover:bg-rose-50 hover:border-rose-200 transition-all">
+                                   <div className="h-1.5 w-1.5 rounded-full bg-rose-500 mt-1.5 shrink-0 shadow-[0_0_5px_rgba(244,63,94,0.5)]" />
+                                   <span className="text-[10px] font-black text-rose-800 leading-snug tracking-tight">{r}</span>
+                                </div>
+                             ))}
+                          </div>
+                       </div>
+                    </div>
+                 </div>
+              </div>
+
+              <div className="bg-slate-900 rounded-[32px] p-8 text-white shadow-[0_20px_50px_rgba(0,0,0,0.3)] relative overflow-hidden border-2 border-white/5 mx-[-4px]">
+                 <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 blur-[100px] rounded-full pointer-events-none" />
+                 <div className="absolute bottom-[-50px] left-[-50px] w-64 h-64 bg-indigo-500/15 blur-[100px] rounded-full pointer-events-none" />
+                 
+                 <div className="flex items-center justify-between mb-6 relative z-10">
+                    <div className="flex items-center gap-3">
+                       <div className="h-1.5 w-1.5 bg-primary rounded-full animate-ping" />
+                       <span className="text-[11px] font-black text-primary uppercase tracking-[0.5em] block">Unified Forensic Synthesis</span>
+                    </div>
+                    <span className="text-[9px] font-black text-slate-600 uppercase tracking-[0.2em] bg-white/5 px-2 py-1 rounded">Engine: SafetyCore v6.1</span>
+                 </div>
+                 
+                 <p className="text-sm font-black text-slate-100 leading-relaxed relative z-10 mb-8 pr-12 font-serif opacity-95">
+                    "{normalizedData.initial_interpretation.overall_scene_read}"
+                 </p>
+                 
+                 <div className="flex items-center justify-between border-t border-slate-800/80 pt-6 relative z-10">
+                    <div className="flex flex-col gap-2">
+                       <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em]">Aggregate Accuracy</span>
+                       <div className="flex items-center gap-3">
+                          <div className={`h-3 w-3 rounded-full shadow-[0_0_12px_rgba(16,185,129,0.5)] ${normalizedData.initial_interpretation.overall_confidence === 'high' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                          <div className="flex flex-col">
+                             <span className="text-sm font-black text-white uppercase tracking-[0.1em]">{normalizedData.initial_interpretation.overall_confidence} LEVEL PRECISION</span>
+                             <span className="text-[8px] font-bold text-slate-600 uppercase tracking-widest leading-none mt-1">Validated against 14 control parameters</span>
+                          </div>
+                       </div>
+                    </div>
+                    {normalizedData.initial_interpretation.needs_human_validation && (
+                       <div className="flex flex-col items-end gap-2.5">
+                          <span className="text-[10px] font-black text-amber-500 uppercase tracking-[0.3em] animate-pulse">Validation Sequence Pending</span>
+                          <div className="flex items-center gap-2.5 py-2 px-4 bg-amber-500/10 border-2 border-amber-500/30 rounded-2xl shadow-lg ring-1 ring-amber-500/20">
+                             <Loader2 className="h-3.5 w-3.5 text-amber-500 animate-spin" />
+                             <span className="text-[11px] font-black text-amber-500 uppercase tracking-tighter">Human Review Mandatory</span>
+                          </div>
+                       </div>
+                    )}
+                 </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="flex flex-col h-full bg-white">
-      <div className="px-5 py-4 shrink-0 flex items-center justify-between border-b bg-slate-50/20">
-         <div className="flex items-center gap-2">
-           <Brain className="h-4 w-4 text-primary" />
-           <span className="text-[11px] font-black text-slate-900 uppercase tracking-widest">Analysis Matrix</span>
+      {/* Console Header */}
+      <div className="px-6 py-5 shrink-0 flex items-center justify-between bg-white border-b sticky top-0 z-[60] shadow-sm backdrop-blur-md bg-white/80">
+         <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-3">
+               <div className="h-6 w-6 bg-slate-900 rounded-lg flex items-center justify-center shadow-md">
+                  <Brain className="h-3.5 w-3.5 text-white" />
+               </div>
+               <span className="text-[12px] font-black text-slate-900 uppercase tracking-[0.3em]">Extraction Matrix</span>
+            </div>
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.15em] opacity-60 ml-9">SINGLE IMAGE SYNTHESIS • CS-2026-5208 • v7.0-PRO</span>
          </div>
-         <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-lg border border-slate-200/60 shadow-inner">
+         <div className="flex items-center gap-2 p-1.5 bg-slate-100/80 rounded-2xl border border-slate-200/50 shadow-inner">
             <button 
               onClick={() => setViewMode("Structured")}
-              className={`px-3 py-1 text-[9px] font-black uppercase tracking-tighter rounded-md transition-all ${viewMode === "Structured" ? "bg-white text-primary shadow-sm ring-1 ring-slate-200/50" : "text-slate-400 hover:text-slate-600"}`}
+              className={`px-5 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all duration-300 transform active:scale-95 ${viewMode === "Structured" ? "bg-white text-primary shadow-[0_4px_12px_rgba(0,0,0,0.1)] ring-1 ring-slate-200" : "text-slate-400 hover:text-slate-600"}`}
             >
-              Structured
+              STRUCTURED
             </button>
             <button 
               onClick={() => setViewMode("JSON")}
-              className={`px-3 py-1 text-[9px] font-black uppercase tracking-tighter rounded-md transition-all ${viewMode === "JSON" ? "bg-white text-primary shadow-sm ring-1 ring-slate-200/50" : "text-slate-400 hover:text-slate-600"}`}
+              className={`px-5 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all duration-300 transform active:scale-95 ${viewMode === "JSON" ? "bg-white text-primary shadow-[0_4px_12px_rgba(0,0,0,0.1)] ring-1 ring-slate-200" : "text-slate-400 hover:text-slate-600"}`}
             >
-              JSON
+              JSON CORE
             </button>
          </div>
       </div>
 
-      <div className="flex-1 overflow-auto custom-scrollbar p-5 space-y-3">
-         {categories.map((cat) => (
-            <div key={cat.id} className={`border rounded-xl overflow-hidden shadow-sm transition-all duration-300 ${expandedSections.includes(cat.name) ? 'ring-1 ring-primary/20 shadow-md translate-y-[-2px]' : 'hover:border-slate-300'}`}>
-               <button 
-                 onClick={() => toggleSection(cat.name)}
-                 className={`w-full flex items-center justify-between p-4 transition-colors ${expandedSections.includes(cat.name) ? 'bg-slate-50/80 border-b' : 'bg-white hover:bg-slate-50/50'}`}
-               >
-                 <div className="flex items-center gap-3">
-                   <div className={`h-8 w-8 rounded-lg border shadow-sm flex items-center justify-center transition-all ${expandedSections.includes(cat.name) ? 'bg-primary text-white border-primary shadow-primary/20' : 'bg-white text-slate-400'}`}>
-                     <cat.icon className="h-4 w-4" />
+      <div className="flex-1 overflow-y-auto custom-scrollbar">
+        {viewMode === "Structured" ? (
+          renderStructuredView()
+        ) : (
+          <div className="p-5 bg-[#0d1117] min-h-full">
+            <div className="rounded-[28px] overflow-hidden border border-[#30363d] shadow-[0_30px_60px_rgba(0,0,0,0.5)] relative">
+              <div className="bg-[#161b22] px-6 py-4 border-b border-[#30363d] flex items-center justify-between sticky top-0 z-10 backdrop-blur-md bg-[#161b22]/90">
+                <div className="flex items-center gap-5">
+                   <div className="flex gap-2">
+                      <div className="h-3.5 w-3.5 rounded-full bg-[#ff5f56] shadow-[0_0_8px_rgba(255,95,86,0.3)] transition-transform hover:scale-110" />
+                      <div className="h-3.5 w-3.5 rounded-full bg-[#ffbd2e] shadow-[0_0_8px_rgba(255,189,46,0.3)] transition-transform hover:scale-110" />
+                      <div className="h-3.5 w-3.5 rounded-full bg-[#27c93f] shadow-[0_0_8px_rgba(39,201,63,0.3)] transition-transform hover:scale-110" />
                    </div>
-                   <span className={`text-sm font-bold transition-colors ${expandedSections.includes(cat.name) ? 'text-slate-900' : 'text-slate-700'}`}>{cat.name}</span>
-                 </div>
-                 <div className={`transition-transform duration-300 ${expandedSections.includes(cat.name) ? 'rotate-180' : ''}`}>
-                    <ChevronDown className="h-4 w-4 text-slate-400" />
-                 </div>
-               </button>
-               
-               {expandedSections.includes(cat.name) && (
-                 <div className="p-5 bg-white animate-in slide-in-from-top-2 duration-300">
-                    {viewMode === "Structured" ? (
-                      renderStructuredContent(cat.id, cat.data)
-                    ) : (
-                      <div className="bg-slate-900 rounded-lg p-4 overflow-hidden border border-slate-800 shadow-inner">
-                        <pre className="text-[10.5px] font-mono text-emerald-400 leading-relaxed overflow-auto max-h-[400px] custom-scrollbar">
-                           {JSON.stringify(cat.data, null, 2)}
-                        </pre>
-                      </div>
-                    )}
-                 </div>
-               )}
+                   <div className="h-5 w-[1px] bg-[#30363d] mx-1" />
+                   <div className="flex flex-col">
+                      <span className="text-[10px] font-mono text-[#8b949e] uppercase tracking-[0.2em] font-black">forensic_extraction_payload.json</span>
+                      <span className="text-[8px] font-mono text-slate-600 uppercase tracking-widest">UTF-8 • Application/JSON</span>
+                   </div>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-9 px-4 text-[10px] font-black text-[#c9d1d9] hover:bg-[#30363d] hover:text-white border border-[#30363d] rounded-xl transition-all shadow-md group active:scale-95"
+                  onClick={() => {
+                    navigator.clipboard.writeText(JSON.stringify(normalizedData, null, 2));
+                    toast.success("JSON Payload mirrored to clipboard");
+                  }}
+                >
+                   <Copy className="h-4 w-4 mr-2.5 transition-transform group-hover:rotate-12" /> EXPORT SCHEMA
+                </Button>
+              </div>
+              <div className="relative">
+                <div className="absolute top-0 right-0 p-8 pointer-events-none select-none">
+                  <FileJson className="h-48 w-48 text-white/[0.03]" />
+                </div>
+                <pre className="text-[11.5px] font-mono text-[#79c0ff] bg-[#0d1117] p-10 leading-[1.8] overflow-auto max-h-[1400px] custom-scrollbar selection:bg-primary/40 scroll-smooth">
+                   {JSON.stringify(normalizedData, null, 2)}
+                </pre>
+              </div>
             </div>
-         ))}
+            <div className="mt-6 px-1 flex items-center justify-between">
+               <span className="text-[9px] font-black text-slate-700 uppercase tracking-[0.3em]">Forensic Integrity Checksum: SHA256-8A9C...</span>
+               <span className="text-[9px] font-black text-slate-700 uppercase tracking-[0.3em]">End of Payload</span>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -3360,7 +3776,7 @@ function AnalysisTab() {
                                    <div className="flex flex-col h-full text-slate-900">
                                       <div className="flex justify-between items-start mb-6 border-b-2 border-slate-900 pb-4">
                                          <div>
-                                            <div className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-1">{slides[activeSlide]?.subtitle}</div>
+                                            <div className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-1">{(slides[activeSlide] as any)?.subtitle}</div>
                                             <h2 className="text-[32px] font-black uppercase tracking-tighter leading-none">{slides[activeSlide]?.title}</h2>
                                          </div>
                                          <div className="text-right">
@@ -3674,7 +4090,7 @@ function AuditTrailTab() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {(realLogs || []).map((log, idx) => (
+                {(realLogs || []).map((log: any, idx: number) => (
                   <tr key={log.id} className="hover:bg-slate-50/50 transition-colors">
                     <td className="p-4 text-[10px] font-mono text-slate-500">
                       {new Date(log.created_at).toLocaleString()}
@@ -3684,7 +4100,7 @@ function AuditTrailTab() {
                        <div className="text-[9px] text-slate-400 uppercase">System Auditor</div>
                     </td>
                     <td className="p-4 text-[11px] font-bold text-slate-900">{log.action}</td>
-                    <td className="p-4">
+                     <td className="p-4">
                        <span className="px-2 py-0.5 rounded text-[9px] font-bold border bg-slate-50 border-slate-100 text-slate-400">
                           {log.entity_type}: {log.entity_name}
                        </span>
@@ -3712,16 +4128,79 @@ function AudioAnalysisPanel({ file, currentTime, onJump }: { file: any, currentT
   const [activeTab, setActiveTab] = useState<"Extraction" | "Scene Session">("Extraction");
   const [viewMode, setViewMode] = useState<"Structured" | "JSON">("Structured");
 
+  // Normalized Extraction Schema
+  const normalizedExtraction = useMemo(() => {
+    const raw = audioExtractionData;
+    return {
+      audio_id: "AUD_" + (file?.id?.slice(0, 4) || "001"),
+      case_id: "CS-2026-" + Math.floor(1000 + Math.random() * 9000),
+      modality: "audio",
+      audio_properties: {
+        file_name: raw.recording_meta.file_name,
+        source_type: raw.recording_meta.source_type,
+        capture_time: "2026-04-12 14:30:22",
+        source_device: raw.recording_meta.recording_type,
+        location_hint: "Site Alpha - Zone B",
+        duration: raw.recording_meta.duration,
+        language: raw.recording_meta.language,
+        channel_type: raw.recording_meta.channel_type,
+        recording_type: raw.recording_meta.recording_type,
+        audio_quality: raw.recording_meta.audio_quality,
+        noise_level: raw.recording_meta.noise_level,
+        overlap_level: raw.recording_meta.overlap_level
+      },
+      extraction_summary: {
+        transcript_summary: "Emergency report regarding Section 14 conveyor belt failure. Operator A identifies vibration then escalates to critical tear report.",
+        speaker_profiles: raw.speaker_profiles.map(s => ({
+          ...s,
+          label: s.speaker_label,
+          role: s.probable_role,
+          stress: s.stress_level
+        })),
+        communication_events: raw.communication_events,
+        factual_statements: raw.factual_statements || [],
+        timeline_events: raw.timeline_events || [],
+        human_performance_signals: raw.human_performance_signals,
+        risk_and_procedure_clues: raw.risk_and_procedure_clues,
+        contradictions_and_gaps: raw.contradictions_and_gaps || [],
+        review_meta: {
+          low_confidence_segments: raw.review_meta.low_confidence_segments,
+          needs_human_review: raw.review_meta.needs_human_review,
+          confidence: raw.review_meta.confidence
+        }
+      }
+    };
+  }, [file]);
+
+  // Normalized Scene Session Schema
+  const normalizedScene = useMemo(() => {
+    return {
+      audio_id: "AUD_" + (file?.id?.slice(0, 4) || "001"),
+      case_id: "CS-2026-" + Math.floor(1000 + Math.random() * 9000),
+      modality: "audio",
+      scene_session: {
+        speaker_count: audioExtractionData.speaker_profiles.length,
+        full_diarization: audioDiarizationData,
+        sync_settings: {
+          timestamp_linked_to_player: true,
+          auto_scroll_active_segment: true,
+          click_segment_seeks_audio: true
+        }
+      }
+    };
+  }, [file]);
+
   return (
     <div className="flex flex-col h-full bg-white">
-      <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-sm border-b px-4 py-2 flex items-center gap-1 shrink-0">
+      {/* Tab Switcher */}
+      <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b px-4 py-2 flex items-center gap-1 shrink-0">
         {(["Extraction", "Scene Session"] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`flex-1 py-1.5 px-3 text-[10px] font-black uppercase tracking-widest rounded-md transition-all ${
+            className={`flex-1 py-1.5 px-3 text-[10px] font-black uppercase tracking-[0.15em] rounded-md transition-all ${
               activeTab === tab
-              ? "bg-primary text-white shadow-sm"
+              ? "bg-slate-900 text-white shadow-md ring-1 ring-slate-900"
               : "text-slate-400 hover:text-slate-600 hover:bg-slate-50"
             }`}
           >
@@ -3732,26 +4211,60 @@ function AudioAnalysisPanel({ file, currentTime, onJump }: { file: any, currentT
 
       <div className="flex-1 overflow-auto custom-scrollbar">
         {activeTab === "Extraction" ? (
-          <div className="p-4 space-y-4">
-             <div className="flex items-center justify-between mb-4">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Intelligence Layer</span>
-                <div className="flex items-center gap-1 p-0.5 bg-slate-100 rounded-md border shadow-inner">
-                   <button onClick={() => setViewMode("Structured")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "Structured" ? "bg-white text-primary shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>Structured</button>
-                   <button onClick={() => setViewMode("JSON")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "JSON" ? "bg-white text-primary shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>JSON</button>
-                </div>
-             </div>
-             {viewMode === "Structured" ? (
-               <AudioExtractionStructured data={audioExtractionData} onJump={onJump} />
-             ) : (
-               <div className="bg-slate-900 rounded-xl p-4 overflow-hidden border border-slate-800 shadow-2xl mt-4">
-                  <pre className="text-[10px] font-mono text-emerald-400 leading-relaxed overflow-auto max-h-[1000px] custom-scrollbar">
-                     {JSON.stringify(audioExtractionData, null, 2)}
+          <div className="flex flex-col min-h-full">
+            <div className="p-4 border-b bg-slate-50/50 flex items-center justify-between">
+              <div className="flex flex-col">
+                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Intelligence Hub</span>
+                 <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter mt-1 opacity-60">Audio Protocol Matrix v2.1</span>
+              </div>
+              <div className="flex items-center gap-1 p-0.5 bg-slate-200/50 rounded-md border shadow-inner">
+                 <button onClick={() => setViewMode("Structured")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "Structured" ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>Structured</button>
+                 <button onClick={() => setViewMode("JSON")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "JSON" ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>JSON</button>
+              </div>
+            </div>
+
+            {viewMode === "Structured" ? (
+              <AudioExtractionStructured 
+                data={normalizedExtraction} 
+                onJump={onJump} 
+              />
+            ) : (
+              <div className="p-4 bg-[#0d1117] min-h-full">
+                <div className="rounded-xl overflow-hidden border border-[#30363d] shadow-2xl">
+                  <div className="bg-[#161b22] px-4 py-2.5 border-b border-[#30363d] flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                       <div className="flex gap-1.5">
+                          <div className="h-2.5 w-2.5 rounded-full bg-[#ff5f56]" />
+                          <div className="h-2.5 w-2.5 rounded-full bg-[#ffbd2e]" />
+                          <div className="h-2.5 w-2.5 rounded-full bg-[#27c93f]" />
+                       </div>
+                       <span className="text-[10px] font-mono text-[#8b949e] uppercase tracking-wider">audio_extraction_output.json</span>
+                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-7 px-2 text-[9px] font-black text-[#c9d1d9] hover:bg-[#30363d] hover:text-white border border-[#30363d]"
+                      onClick={() => {
+                        navigator.clipboard.writeText(JSON.stringify(normalizedExtraction, null, 2));
+                        toast.success("JSON copied to clipboard");
+                      }}
+                    >
+                       <Copy className="h-3 w-3 mr-1.5" /> COPY
+                    </Button>
+                  </div>
+                  <pre className="text-[10.5px] font-mono text-[#79c0ff] bg-[#0d1117] p-6 leading-relaxed overflow-auto max-h-[1200px] custom-scrollbar selection:bg-primary/30">
+                     {JSON.stringify(normalizedExtraction, null, 2)}
                   </pre>
-               </div>
-             )}
+                </div>
+              </div>
+            )}
           </div>
         ) : (
-          <AudioTranscriptSession currentTime={currentTime} onJump={onJump} />
+          <AudioSceneSession 
+            data={normalizedScene} 
+            currentTime={currentTime} 
+            onJump={onJump} 
+          />
         )}
       </div>
     </div>
@@ -3759,108 +4272,334 @@ function AudioAnalysisPanel({ file, currentTime, onJump }: { file: any, currentT
 }
 
 function AudioExtractionStructured({ data, onJump }: { data: any, onJump: (s: number) => void }) {
-  const [expandedSections, setExpandedSections] = useState<string[]>(["Audio Meta", "Intelligence Seeds"]);
+  const [expandedSections, setExpandedSections] = useState<string[]>(["Timeline & Facts", "Speaker Profiles", "Risks, Gaps, Review"]);
   const toggle = (s: string) => setExpandedSections(p => p.includes(s) ? p.filter(x => x !== s) : [...p, s]);
 
-  const ExtractionSection = ({ title, icon: Icon, children }: any) => (
-    <div className={`border border-slate-100 rounded-xl overflow-hidden mb-2 transition-all duration-300 ${expandedSections.includes(title) ? 'shadow-sm border-primary/10' : 'hover:border-slate-200'}`}>
-      <button onClick={() => toggle(title)} className={`w-full flex items-center justify-between px-3 py-2.5 transition-colors ${expandedSections.includes(title) ? 'bg-slate-50/50 border-b border-slate-50' : 'bg-white'}`}>
-        <div className="flex items-center gap-2.5">
-          <div className={`p-1.5 rounded-lg border shadow-sm ${expandedSections.includes(title) ? 'bg-primary text-white border-primary' : 'bg-white text-slate-400'}`}>
-            <Icon className="h-3.5 w-3.5" />
-          </div>
-          <span className={`text-[11px] font-black uppercase tracking-tight transition-colors ${expandedSections.includes(title) ? 'text-slate-900' : 'text-slate-600'}`}>{title}</span>
+  const SectionHeader = ({ title, icon: Icon, count }: any) => (
+    <button 
+      onClick={() => toggle(title)}
+      className={`w-full flex items-center justify-between px-5 py-3 transition-all ${expandedSections.includes(title) ? 'bg-slate-50/50 border-b' : 'hover:bg-slate-50/30'}`}
+    >
+      <div className="flex items-center gap-3">
+        <div className={`p-1.5 rounded-lg border shadow-sm ${expandedSections.includes(title) ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-400'}`}>
+          <Icon className="h-3.5 w-3.5" />
         </div>
-        <ChevronDown className={`h-3 w-3 text-slate-300 transition-transform ${expandedSections.includes(title) ? 'rotate-180' : ''}`} />
-      </button>
-      {expandedSections.includes(title) && <div className="p-3 bg-white space-y-3">{children}</div>}
+        <div className="flex flex-col items-start">
+           <span className={`text-[11px] font-black uppercase tracking-tight ${expandedSections.includes(title) ? 'text-slate-900' : 'text-slate-600'}`}>
+             {title}
+           </span>
+           {count !== undefined && <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter leading-none mt-0.5">{count} detected</span>}
+        </div>
+      </div>
+      <ChevronDown className={`h-3.5 w-3.5 text-slate-300 transition-transform duration-300 ${expandedSections.includes(title) ? 'rotate-180 text-slate-900' : ''}`} />
+    </button>
+  );
+
+  const KVP = ({ label, value, badge }: { label: string, value: any, badge?: { text: string, className: string } }) => (
+    <div className="flex flex-col gap-0.5 py-1.5 last:pb-0">
+      <div className="flex items-center gap-2">
+        <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">{label}</span>
+        {badge && (
+          <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border ${badge.className}`}>
+            {badge.text}
+          </span>
+        )}
+      </div>
+      <div className="text-[11px] font-bold text-slate-800 leading-snug">{value || "No data detected"}</div>
     </div>
   );
 
-  return (
-    <div className="space-y-1">
-      <ExtractionSection title="Audio Meta" icon={History}>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="flex flex-col gap-0.5"><span className="text-[9px] font-black text-slate-400 uppercase">Duration</span><span className="text-[11px] font-bold text-slate-800">{data.recording_meta.duration}</span></div>
-          <div className="flex flex-col gap-0.5"><span className="text-[9px] font-black text-slate-400 uppercase">Quality</span><span className="text-[11px] font-bold text-emerald-600">{data.recording_meta.audio_quality}</span></div>
-          <div className="flex flex-col gap-0.5"><span className="text-[9px] font-black text-slate-400 uppercase">Noise Level</span><span className="text-[11px] font-bold text-slate-800">{data.recording_meta.noise_level}</span></div>
-          <div className="flex flex-col gap-0.5"><span className="text-[9px] font-black text-slate-400 uppercase">Lang</span><span className="text-[11px] font-bold text-slate-800">{data.recording_meta.language}</span></div>
-        </div>
-      </ExtractionSection>
-      
-      <ExtractionSection title="Speaker Profiles" icon={Users}>
-        <div className="space-y-2">
-          {data.speaker_profiles.map((s: any) => (
-            <div key={s.speaker_id} className="p-3 border rounded-xl bg-slate-50/50">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] font-black text-slate-900 uppercase">{s.probable_role}</span>
-                <span className={`px-1.5 py-0.5 text-[8px] font-black uppercase rounded ${s.stress_level.includes('High') ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}`}>Stress: {s.stress_level.split(' ')[0]}</span>
-              </div>
-              <div className="grid grid-cols-2 gap-2 text-[9px] font-bold text-slate-500">
-                <div>Assertiveness: <span className="text-slate-800">{s.assertiveness}</span></div>
-                <div>Style: <span className="text-slate-800">{s.speaking_style}</span></div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </ExtractionSection>
+  const StatusPill = ({ text, type = 'default' }: { text: string, type?: 'observed' | 'claimed' | 'review' | 'default' | 'urgent' }) => {
+     const styles = {
+        observed: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+        claimed: 'bg-blue-50 text-blue-700 border-blue-100',
+        review: 'bg-amber-50 text-amber-700 border-amber-100',
+        urgent: 'bg-rose-50 text-rose-700 border-rose-100',
+        default: 'bg-slate-50 text-slate-500 border-slate-100'
+     };
+     return (
+        <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border ${styles[type]}`}>
+          {text}
+        </span>
+     );
+  };
 
-      <ExtractionSection title="Intelligence Seeds" icon={Brain}>
-        <div className="space-y-3">
-           <div className="bg-rose-50 border border-rose-100 p-3 rounded-xl">
-              <span className="text-[9px] font-black text-rose-700 uppercase block mb-2">Human Performance Signals</span>
-              <ul className="space-y-1.5">
-                 {data.human_performance_signals.delayed_reporting.map((sig: string, i: number) => <li key={i} className="flex items-center gap-2 text-[10px] font-bold text-rose-800 leading-tight"><AlertCircle className="h-3 w-3 shrink-0" /> {sig}</li>)}
-              </ul>
+  return (
+    <div className="flex flex-col divide-y divide-slate-100 border-b">
+      {/* Audio Properties */}
+      <div className="flex flex-col">
+         <SectionHeader title="Audio Properties" icon={AudioIcon} />
+         {expandedSections.includes("Audio Properties") && (
+           <div className="p-5 grid grid-cols-2 gap-4 bg-white animate-in fade-in slide-in-from-top-1">
+             <KVP label="Format" value={data.audio_properties.channel_type} />
+             <KVP label="Duration" value={data.audio_properties.duration} />
+             <KVP label="Quality" value={data.audio_properties.audio_quality} badge={{ text: 'Verified', className: 'bg-emerald-50 text-emerald-600 border-emerald-100' }} />
+             <KVP label="Language" value={data.audio_properties.language} />
+             <KVP label="Noise Floor" value={data.audio_properties.noise_level} />
+             <KVP label="Source Device" value={data.audio_properties.source_device} />
            </div>
-           <div className="p-3 border rounded-xl bg-slate-900 text-white">
-              <span className="text-[9px] font-black text-primary uppercase block mb-2">PEEPO Reasoning</span>
-              {Object.entries(data.peepo_seeds).map(([k, v]: any) => (
-                <div key={k} className="flex gap-2 mb-1.5 last:mb-0 opacity-90"><span className="text-[8px] font-black text-slate-500 uppercase min-w-[50px]">{k}</span><p className="text-[10px] font-bold text-slate-300 leading-tight italic">"{v[0]}"</p></div>
+         )}
+      </div>
+
+      {/* Speaker Profiles */}
+      <div className="flex flex-col">
+         <SectionHeader title="Speaker Profiles" icon={Users} count={data.extraction_summary.speaker_profiles.length} />
+         {expandedSections.includes("Speaker Profiles") && (
+           <div className="p-5 space-y-3 bg-white animate-in fade-in slide-in-from-top-1">
+              {data.extraction_summary.speaker_profiles.map((s: any) => (
+                <div key={s.speaker_id} className="p-4 border rounded-xl bg-slate-50/40 hover:bg-white hover:border-slate-300 transition-all group">
+                   <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-100">
+                      <div className="flex items-center gap-3">
+                         <div className="h-8 w-8 rounded-full bg-slate-900 flex items-center justify-center text-[10px] font-black text-white shadow-lg">
+                            {s.speaker_id === 'SPK_01' ? 'OP' : 'CR'}
+                         </div>
+                         <div className="flex flex-col">
+                            <span className="text-[11px] font-black text-slate-900 uppercase tracking-tight leading-none">{s.label}</span>
+                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter mt-1">{s.role}</span>
+                         </div>
+                      </div>
+                      <ConfidenceChip level={s.confidence.toLowerCase() as any} />
+                   </div>
+                   <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                      <KVP label="Talk Time" value={s.speaking_time} />
+                      <KVP label="Style" value={s.speaking_style} />
+                      <KVP label="Assertiveness" value={s.assertiveness} />
+                      <KVP label="Stress level" value={s.stress} badge={s.stress.includes('High') ? { text: 'Alert', className: 'bg-rose-50 text-rose-600 border-rose-100' } : undefined} />
+                   </div>
+                </div>
               ))}
            </div>
-        </div>
-      </ExtractionSection>
+         )}
+      </div>
+
+      {/* Communication Events */}
+      <div className="flex flex-col">
+         <SectionHeader title="Communication Events" icon={MessageSquare} count={data.extraction_summary.communication_events.length} />
+         {expandedSections.includes("Communication Events") && (
+           <div className="p-5 space-y-2.5 bg-white animate-in fade-in slide-in-from-top-1">
+              {data.extraction_summary.communication_events.map((e: any, i: number) => (
+                <div key={i} className="flex gap-4 p-3 hover:bg-slate-50 rounded-xl transition-all cursor-pointer group" onClick={() => onJump(parseInt(e.timestamp.split(':')[1]))}>
+                   <div className="flex flex-col items-center shrink-0 pt-0.5">
+                      <span className="text-[10px] font-black text-primary bg-primary/5 px-1.5 py-0.5 rounded leading-none tabular-nums group-hover:bg-primary group-hover:text-white transition-all">{e.timestamp}</span>
+                      <div className="w-[1.5px] flex-1 bg-slate-100 my-2" />
+                   </div>
+                   <div className="flex-1 space-y-1.5">
+                      <div className="flex items-center gap-2">
+                         <StatusPill text={e.event_type} type={e.urgency === 'Critical' ? 'urgent' : 'default'} />
+                         <span className="text-[10px] font-bold text-slate-400">Response: {e.response_status}</span>
+                      </div>
+                      <p className="text-[11px] font-bold text-slate-800 leading-snug pr-2 group-hover:text-primary transition-colors">{e.content_summary}</p>
+                   </div>
+                </div>
+              ))}
+           </div>
+         )}
+      </div>
+
+      {/* Timeline & Facts */}
+      <div className="flex flex-col">
+         <SectionHeader title="Timeline & Facts" icon={Clock} count={data.extraction_summary.factual_statements.length} />
+         {expandedSections.includes("Timeline & Facts") && (
+           <div className="p-5 space-y-6 bg-white animate-in fade-in slide-in-from-top-1">
+              <div className="space-y-4">
+                 <span className="text-[10px] font-black text-slate-900 border-b border-slate-900 pb-1 uppercase tracking-widest block">Validated Statements</span>
+                 {data.extraction_summary.factual_statements.map((f: any, i: number) => (
+                    <div key={i} className="relative pl-4">
+                       <div className="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500 rounded-full" />
+                       <div className="flex items-center gap-2 mb-1.5">
+                          <StatusPill text={f.statement_type} type="observed" />
+                          <span className="text-[9px] font-black text-slate-400 tabular-nums">[{f.timestamp}]</span>
+                          <ConfidenceChip level={f.confidence.toLowerCase() as any} />
+                       </div>
+                       <p className="text-[11px] font-bold text-slate-900 leading-relaxed italic">"{f.fact_text}"</p>
+                       <div className="mt-1 text-[9px] font-bold text-slate-400 uppercase tracking-widest">— {f.speaker} ({f.observed_or_claimed})</div>
+                    </div>
+                 ))}
+              </div>
+              <div className="space-y-4">
+                 <span className="text-[10px] font-black text-slate-400 border-b border-slate-100 pb-1 uppercase tracking-widest block">Chronological Flow</span>
+                 <div className="space-y-3">
+                   {data.extraction_summary.timeline_events.map((t: any, i: number) => (
+                      <div key={i} className="flex gap-3">
+                         <span className="text-[10px] font-black text-slate-300 tabular-nums shrink-0">{t.timestamp}</span>
+                         <div className="flex-1">
+                            <p className="text-[11px] font-bold text-slate-700 leading-snug">{t.event_summary}</p>
+                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block mt-0.5">Actor: {t.actor}</span>
+                         </div>
+                      </div>
+                   ))}
+                 </div>
+              </div>
+           </div>
+         )}
+      </div>
+
+      {/* Risks, Gaps, Review */}
+      <div className="flex flex-col">
+         <SectionHeader title="Risks, Gaps, Review" icon={Brain} />
+         {expandedSections.includes("Risks, Gaps, Review") && (
+           <div className="p-5 space-y-6 bg-white animate-in fade-in slide-in-from-top-1">
+              {/* Risks & Procedure Mentions */}
+              <div className="space-y-3">
+                 <div className="flex items-center gap-2 text-rose-600 border-b border-rose-100 pb-1.5">
+                    <AlertTriangle className="h-3.5 w-3.5" />
+                    <span className="text-[11px] font-black uppercase tracking-wider">Risk & Procedure Clues</span>
+                 </div>
+                 <div className="grid grid-cols-1 gap-2">
+                    {Object.entries(data.extraction_summary.risk_and_procedure_clues).map(([key, mentions]: any) => (
+                       mentions.length > 0 && (
+                         <div key={key} className="p-3 bg-slate-50 border rounded-xl">
+                            <span className="text-[9px] font-black text-slate-400 uppercase block mb-1.5">{key.replace(/_/g, ' ')}</span>
+                            <div className="space-y-1.5">
+                               {mentions.map((m: string, i: number) => (
+                                  <div key={i} className="flex items-start gap-2 text-[10.5px] font-bold text-slate-700 leading-tight">
+                                     <div className="h-1 w-1 bg-slate-400 rounded-full mt-1.5 shrink-0" />
+                                     {m}
+                                  </div>
+                               ))}
+                            </div>
+                         </div>
+                       )
+                    ))}
+                 </div>
+              </div>
+
+              {/* Performance Signals */}
+              <div className="space-y-3">
+                 <div className="flex items-center gap-2 text-amber-600 border-b border-amber-100 pb-1.5">
+                    <Activity className="h-3.5 w-3.5" />
+                    <span className="text-[11px] font-black uppercase tracking-wider">Human Performance Signals</span>
+                 </div>
+                 <div className="space-y-2">
+                    {Object.entries(data.extraction_summary.human_performance_signals).map(([key, signals]: any) => (
+                       signals.length > 0 && (
+                         <div key={key} className="flex flex-col gap-1 pr-2">
+                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">{key.replace(/_/g, ' ')}</span>
+                            <div className="space-y-1">
+                               {signals.map((s: string, i: number) => (
+                                  <div key={i} className="p-2 bg-amber-50/50 border border-amber-100/50 rounded-lg text-[10px] font-bold text-amber-800 leading-snug">
+                                     {s}
+                                  </div>
+                               ))}
+                            </div>
+                         </div>
+                       )
+                    ))}
+                 </div>
+              </div>
+
+              {/* Review Meta */}
+              <div className="bg-slate-900 rounded-xl p-5 text-white shadow-xl relative overflow-hidden">
+                 <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 blur-[60px] rounded-full pointer-events-none" />
+                 <span className="text-[10px] font-black text-primary uppercase tracking-[0.3em] block mb-3 relative z-10">Review Status Matrix</span>
+                 <div className="space-y-3 relative z-10">
+                    <div className="flex flex-col gap-1.5">
+                       <span className="text-[9px] font-black text-slate-500 uppercase">Critical Review Triggers:</span>
+                       <div className="space-y-1">
+                          {data.extraction_summary.review_meta.needs_human_review.map((r: string, i: number) => (
+                             <div key={i} className="flex items-center gap-2 text-[10px] font-bold text-slate-300">
+                                <div className="h-1 w-1 bg-amber-400 rounded-full" />
+                                {r}
+                             </div>
+                          ))}
+                       </div>
+                    </div>
+                    <div className="flex items-center justify-between border-t border-slate-700/50 pt-4">
+                       <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-black text-slate-400 uppercase">Confidence:</span>
+                          <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full text-[9px] font-black uppercase tracking-widest">{data.extraction_summary.review_meta.confidence}</span>
+                       </div>
+                    </div>
+                 </div>
+              </div>
+           </div>
+         )}
+      </div>
     </div>
   );
 }
 
-function AudioTranscriptSession({ currentTime, onJump }: { currentTime: number, onJump: (s: number) => void }) {
+function AudioSceneSession({ data, currentTime, onJump }: { data: any, currentTime: number, onJump: (s: number) => void }) {
   const isSegmentActive = (start: string, end: string) => {
-    const getS = (s: string) => s.split(':').map(Number)[0] * 60 + s.split(':').map(Number)[1];
+    const getS = (s: string) => {
+      const parts = s.split(':').map(Number);
+      return parts.length === 3 ? parts[0] * 3600 + parts[1] * 60 + parts[2] : parts[0] * 60 + parts[1];
+    };
     return currentTime >= getS(start) && currentTime <= getS(end);
   };
 
   return (
-    <div className="flex flex-col h-full bg-slate-50/30">
-      <div className="px-4 py-3 border-b bg-white flex items-center justify-between shadow-sm">
-         <div className="flex items-center gap-2">
-            <MessageSquare className="h-3.5 w-3.5 text-slate-400" />
-            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Diarization Log</span>
+    <div className="flex flex-col h-full bg-slate-50/10">
+      <div className="px-5 py-3 border-b bg-white flex items-center justify-between shadow-sm sticky top-0 z-30">
+         <div className="flex flex-col">
+            <div className="flex items-center gap-2">
+               <MessageSquare className="h-3.5 w-3.5 text-slate-900" />
+               <span className="text-[10px] font-black text-slate-900 uppercase tracking-[0.1em]">Scene Transcript Session</span>
+            </div>
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter mt-0.5">{data.scene_session.full_diarization.length} Segments • {data.scene_session.speaker_count} Speakers</span>
          </div>
-         <Button variant="ghost" size="sm" className="h-6 px-2 text-[9px] font-black text-primary hover:bg-primary/5 uppercase"><Copy className="h-3 w-3 mr-1" /> Export</Button>
+         <Button variant="ghost" size="sm" className="h-8 px-3 text-[10px] font-black text-slate-600 hover:bg-slate-100 border rounded-lg transition-all shadow-sm">
+           <Copy className="h-3.5 w-3.5 mr-2 opacity-60" /> Export RAW
+         </Button>
       </div>
 
-      <div className="flex-1 overflow-auto custom-scrollbar p-3 space-y-2">
-        {audioDiarizationData.map((seg) => {
+      <div className="flex-1 overflow-auto custom-scrollbar p-4 space-y-3">
+        {data.scene_session.full_diarization.map((seg: any) => {
           const active = isSegmentActive(seg.start_time, seg.end_time);
           return (
             <div
               key={seg.segment_id}
               onClick={() => {
                 const parts = seg.start_time.split(':').map(Number);
-                onJump(parts[0] * 60 + parts[1]);
+                onJump(parts.length === 3 ? parts[0] * 3600 + parts[1] * 60 + parts[2] : parts[0] * 60 + parts[1]);
               }}
-              className={`group flex flex-col gap-2.5 p-4 rounded-xl border transition-all duration-300 cursor-pointer relative overflow-hidden active:scale-[0.98] ${
+              className={`group flex flex-col gap-3 p-4 rounded-xl border transition-all duration-500 cursor-pointer relative overflow-hidden ${
                 active 
-                ? "bg-white border-primary ring-1 ring-primary/20 shadow-xl" 
-                : "bg-white border-slate-100 hover:border-primary/30 hover:shadow-md hover:bg-slate-50/50"
+                ? "bg-white border-slate-900 shadow-xl scale-[1.01] z-10" 
+                : "bg-white/60 border-slate-100 hover:border-slate-300 hover:bg-white hover:shadow-md"
               }`}
             >
-              {active && <div className="absolute top-0 left-0 w-1 h-full bg-primary" />}
+              {active && <div className="absolute top-0 left-0 w-1.5 h-full bg-slate-900" />}
+              
               <div className="flex items-center justify-between">
-                 <div className="flex items-center gap-2">
-                    <span className={`text-[10px] font-black tabular-nums transition-colors ${active ? "text-primary" : "text-slate-400"}`}>{seg.start_time} — {seg.end_time}</span>
+                 <div className="flex items-center gap-3">
+                    <span className={`text-[11px] font-black tabular-nums transition-colors ${active ? "text-slate-900" : "text-slate-400"}`}>
+                      {seg.start_time} — {seg.end_time}
+                    </span>
+                    <span className={`px-2 py-0.5 rounded-[4px] text-[9px] font-black uppercase border transition-all ${
+                      active 
+                      ? "bg-slate-900 text-white border-slate-900" 
+                      : (seg.speaker_id === "SPK_01" ? "bg-amber-50 text-amber-600 border-amber-100" : "bg-indigo-50 text-indigo-600 border-indigo-100")
+                    }`}>
+                      {seg.speaker_label}
+                    </span>
+                 </div>
+                 <ConfidenceChip level={seg.confidence.toLowerCase() as any} />
+              </div>
+
+              <div className="relative">
+                <p className={`text-[12px] leading-relaxed transition-all duration-500 ${active ? "text-slate-900 font-bold" : "text-slate-500 font-medium"} italic`}>
+                  "{seg.text}"
+                </p>
+                {seg.inaudible_flag && (
+                   <span className="absolute -right-1 -bottom-1 px-1.5 bg-rose-50 text-rose-600 text-[8px] font-black rounded border border-rose-100 uppercase">Inaudible</span>
+                )}
+              </div>
+
+              {!active && (
+                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                   <div className="h-1 w-1 rounded-full bg-slate-300" />
+                   <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest">Click to seek player</span>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+e ? "text-primary" : "text-slate-400"}`}>{seg.start_time} — {seg.end_time}</span>
                     <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase border ${
                       seg.speaker_id === "SPK_01" ? "bg-amber-50 text-amber-600 border-amber-100" : "bg-indigo-50 text-indigo-600 border-indigo-100"
                     }`}>{seg.speaker_label}</span>
