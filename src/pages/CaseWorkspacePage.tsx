@@ -2437,8 +2437,14 @@ function useSmartMedia(url: string | null, type: string) {
         const response = await fetch(url, { mode: 'cors' });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         
-        const blob = await response.blob();
+        const rawBlob = await response.blob();
         if (!active) return;
+
+        // Force a valid MIME type. If Supabase serves as 'application/octet-stream', 
+        // the browser will fail playback even if it's a blob. 
+        // Re-creating the blob with 'audio/mp4' (for m4a) or 'video/mp4' (for mp4) fixes this.
+        const forcedType = type === 'Audio' ? 'audio/mp4' : 'video/mp4';
+        const blob = new Blob([rawBlob], { type: forcedType });
 
         const blobUrl = URL.createObjectURL(blob);
         setMediaUrl(blobUrl);
