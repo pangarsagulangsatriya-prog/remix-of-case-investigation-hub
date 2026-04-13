@@ -64,3 +64,32 @@ CREATE POLICY "Public Access" ON evidence_files FOR ALL USING (true);
 INSERT INTO cases (case_number, title, status, severity)
 VALUES ('CS-2026-0145', 'Conveyor Belt Failure - Section 14', 'open', 'High')
 ON CONFLICT DO NOTHING;
+
+-- ==========================================
+-- STORAGE BUCKET CONFIGURATION
+-- ==========================================
+
+-- 7. Ensure 'evidence' bucket exists and configure payload limit
+-- Note: 'file_size_limit' is set to 1GB (1073741824 bytes) to prevent "413 Payload Too Large" errors
+INSERT INTO storage.buckets (id, name, public, "file_size_limit")
+VALUES ('evidence', 'evidence', true, 1073741824)
+ON CONFLICT (id) DO UPDATE SET 
+  "file_size_limit" = EXCLUDED."file_size_limit",
+  "public" = true;
+
+-- 8. Enforce Bucket Privacy Policies (Public Read, Auth Write)
+CREATE POLICY "Public Access to Evidence" 
+ON storage.objects FOR SELECT 
+USING ( bucket_id = 'evidence' );
+
+CREATE POLICY "Allow All Insert for Development" 
+ON storage.objects FOR INSERT 
+WITH CHECK ( bucket_id = 'evidence' );
+
+CREATE POLICY "Allow All Update for Development" 
+ON storage.objects FOR UPDATE 
+USING ( bucket_id = 'evidence' );
+
+CREATE POLICY "Allow All Delete for Development" 
+ON storage.objects FOR DELETE 
+USING ( bucket_id = 'evidence' );
