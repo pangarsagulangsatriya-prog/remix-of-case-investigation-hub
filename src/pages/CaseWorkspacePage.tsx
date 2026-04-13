@@ -2420,7 +2420,20 @@ function useSmartMedia(url: string | null, type: string) {
     fetch(busterUrl)
       .then(async (res) => {
         if (!res.ok) throw new Error("Fetch failed");
-        const blob = await res.blob();
+        const rawBlob = await res.blob();
+        
+        let mimeType = rawBlob.type;
+        // Fix for iOS/Safari missing valid audio type (often octet-stream from storage without headers)
+        if (!mimeType || mimeType === 'application/octet-stream' || mimeType === 'application/x-empty') {
+            const ext = url.split('.').pop()?.split('?')[0]?.toLowerCase();
+            if (ext === 'm4a') mimeType = 'audio/mp4';
+            else if (ext === 'mp3') mimeType = 'audio/mpeg';
+            else if (ext === 'wav') mimeType = 'audio/wav';
+            else mimeType = 'audio/mp4'; // safe default for modern devices
+        }
+        
+        const blob = new Blob([rawBlob], { type: mimeType });
+        
         if (isMounted) {
           const localUrl = URL.createObjectURL(blob);
           setMediaUrl(localUrl);
@@ -2428,7 +2441,7 @@ function useSmartMedia(url: string | null, type: string) {
       })
       .catch((err) => {
         console.warn("SmartMedia fallback to direct URL:", err);
-        if (isMounted) setMediaUrl(url);
+        if (isMounted) setMediaUrl(url); // safely fallback
       })
       .finally(() => {
         if (isMounted) setIsLoading(false);
@@ -2436,8 +2449,7 @@ function useSmartMedia(url: string | null, type: string) {
 
     return () => {
       isMounted = false;
-      // Note: We don't revoke immediately to prevent flickering during rapid selection,
-      // browsers will GC these eventually, but in high-res apps we'd track and revoke.
+      // Reclaiming memory - avoid revoking immediately on unmount to prevent stuttering
     };
   }, [url, type]);
 
@@ -2587,7 +2599,7 @@ function AdaptiveSourcePreview({
           <audio 
             ref={audioRef}
             preload="auto"
-            src={mediaUrl || file.url}
+            src={mediaUrl || undefined}
             onTimeUpdate={(e) => setAudioCurrentTime(Math.floor(e.currentTarget.currentTime))}
             onPlay={() => setAudioIsPlaying(true)}
             onPause={() => setAudioIsPlaying(false)}
@@ -2596,9 +2608,9 @@ function AdaptiveSourcePreview({
           />
           
           {mediaLoading && (
-            <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center gap-3">
+            <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center gap-3 rounded-lg border-2 border-primary/20">
               <RefreshCcw className="h-6 w-6 text-primary animate-spin" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Decrypting Audio Stream...</span>
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Decrypting & Processing Audio Stream...</span>
             </div>
           )}
           <div className="bg-white border-2 border-slate-100 rounded-lg shadow-xl p-8 space-y-8 relative overflow-hidden group">
