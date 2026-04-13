@@ -2632,15 +2632,22 @@ function AdaptiveSourcePreview({
               key={mediaUrl}
               ref={audioRef}
               preload="auto"
-              src={mediaUrl}
               crossOrigin="anonymous"
               onTimeUpdate={(e) => setAudioCurrentTime(Math.floor(e.currentTarget.currentTime))}
               onPlay={() => setAudioIsPlaying(true)}
               onPause={() => setAudioIsPlaying(false)}
               onEnded={() => setAudioIsPlaying(false)}
+              onError={(e) => {
+                const error = (e.currentTarget as any).error;
+                console.error("Audio internal error:", error);
+                if (error?.code === 4) {
+                   toast.error("Source File Incompatible: This file might be corrupted or in an unsupported format.");
+                }
+              }}
               className="hidden"
             >
               <source src={mediaUrl} type="audio/mp4" />
+              <source src={mediaUrl} type="audio/x-m4a" />
               <source src={mediaUrl} type="audio/mpeg" />
             </audio>
           )}
