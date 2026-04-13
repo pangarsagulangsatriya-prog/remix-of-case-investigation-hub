@@ -2394,7 +2394,7 @@ function ExtractionTab({
 
 
 
-// Smart Media Hook to workaround 416 Range issues for Audio/Images
+// Smart Media Hook to workaround 416 Range issues and CDN caching
 function useSmartMedia(url: string | null, type: string) {
   const [mediaUrl, setMediaUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -2405,53 +2405,23 @@ function useSmartMedia(url: string | null, type: string) {
       return;
     }
 
-    // Only use Blob strategy for Audio to bypass flaky Range requests
-    // Images/Videos are better off direct or handled by browser
-    if (type !== "Audio") {
-      setMediaUrl(`${url}${url.includes('?') ? '&' : '?'}t=${Date.now()}`);
-      return;
-    }
-
-    let isMounted = true;
     setIsLoading(true);
 
+    // Completely bypass unreliable Blob handling for all media.
+    // Instead of forcing a full download into RAM (which breaks on large files/CORS),
+    // we simply append a cache-buster. This forces the browser/CDN to directly
+    // negotiate '206 Partial Content' Range requests natively with the server.
     const busterUrl = `${url}${url.includes('?') ? '&' : '?'}t=${Date.now()}`;
+    
+    // Simulate a tiny processing delay just for UI purposes so users 
+    // see the decrypter state briefly before it mounts the native player.
+    const timer = setTimeout(() => {
+       setMediaUrl(busterUrl);
+       setIsLoading(false);
+    }, 400);
 
-    fetch(busterUrl)
-      .then(async (res) => {
-        if (!res.ok) throw new Error("Fetch failed");
-        const rawBlob = await res.blob();
-        
-        let mimeType = rawBlob.type;
-        // Fix for iOS/Safari missing valid audio type (often octet-stream from storage without headers)
-        if (!mimeType || mimeType === 'application/octet-stream' || mimeType === 'application/x-empty') {
-            const ext = url.split('.').pop()?.split('?')[0]?.toLowerCase();
-            if (ext === 'm4a') mimeType = 'audio/mp4';
-            else if (ext === 'mp3') mimeType = 'audio/mpeg';
-            else if (ext === 'wav') mimeType = 'audio/wav';
-            else mimeType = 'audio/mp4'; // safe default for modern devices
-        }
-        
-        const blob = new Blob([rawBlob], { type: mimeType });
-        
-        if (isMounted) {
-          const localUrl = URL.createObjectURL(blob);
-          setMediaUrl(localUrl);
-        }
-      })
-      .catch((err) => {
-        console.warn("SmartMedia fallback to direct URL:", err);
-        if (isMounted) setMediaUrl(url); // safely fallback
-      })
-      .finally(() => {
-        if (isMounted) setIsLoading(false);
-      });
-
-    return () => {
-      isMounted = false;
-      // Reclaiming memory - avoid revoking immediately on unmount to prevent stuttering
-    };
-  }, [url, type]);
+    return () => clearTimeout(timer);
+  }, [url]);
 
   return { mediaUrl, isLoading };
 }
@@ -2596,16 +2566,19 @@ function AdaptiveSourcePreview({
 
     return (
        <div className="w-full max-w-4xl space-y-6 animate-in slide-in-from-bottom-4 duration-500 pb-20">
-          <audio 
-            ref={audioRef}
-            preload="auto"
-            src={mediaUrl || undefined}
-            onTimeUpdate={(e) => setAudioCurrentTime(Math.floor(e.currentTarget.currentTime))}
-            onPlay={() => setAudioIsPlaying(true)}
-            onPause={() => setAudioIsPlaying(false)}
-            onEnded={() => setAudioIsPlaying(false)}
-            className="hidden"
-          />
+          {mediaUrl && (
+            <audio 
+              key={mediaUrl}
+              ref={audioRef}
+              preload="auto"
+              src={mediaUrl}
+              onTimeUpdate={(e) => setAudioCurrentTime(Math.floor(e.currentTarget.currentTime))}
+              onPlay={() => setAudioIsPlaying(true)}
+              onPause={() => setAudioIsPlaying(false)}
+              onEnded={() => setAudioIsPlaying(false)}
+              className="hidden"
+            />
+          )}
           
           {mediaLoading && (
             <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center gap-3 rounded-lg border-2 border-primary/20">
