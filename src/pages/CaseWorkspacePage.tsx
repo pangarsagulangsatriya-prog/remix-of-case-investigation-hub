@@ -2631,8 +2631,7 @@ function AdaptiveSourcePreview({
             <audio 
               key={mediaUrl}
               ref={audioRef}
-              preload="auto"
-              crossOrigin="anonymous"
+              preload="metadata"
               onTimeUpdate={(e) => setAudioCurrentTime(Math.floor(e.currentTarget.currentTime))}
               onPlay={() => setAudioIsPlaying(true)}
               onPause={() => setAudioIsPlaying(false)}
@@ -2686,6 +2685,16 @@ function AdaptiveSourcePreview({
                 </div>
                 <div className="flex items-center gap-2">
                    <StatusIndicator status="reviewed" type="review" />
+                   <a 
+                     href={mediaUrl || file.url} 
+                     download={file.name}
+                     target="_blank"
+                     rel="noopener noreferrer"
+                     className="h-9 w-9 p-0 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors text-slate-400 hover:text-primary"
+                     title="Download Evidence for Local Review"
+                   >
+                      <Download className="h-4 w-4" />
+                   </a>
                    <Button variant="ghost" size="sm" className="h-9 w-9 p-0 rounded-full hover:bg-slate-100 transition-colors">
                       <MoreVertical className="h-4 w-4 text-slate-400" />
                    </Button>
