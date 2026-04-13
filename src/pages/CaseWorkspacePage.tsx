@@ -810,9 +810,9 @@ function AIAnalysisPanel({ file }: { file: any }) {
     "Initial Interpretation"
   ]);
 
-  // Normalization logic: Map legacy/messy data to the strict investigation schema
+  // Normalization logic: Map investigation data to the strict single-image schema
   const normalizedData = useMemo(() => {
-    // This mapping ensures we support both the old schema and the new target schema
+    // raw source is imageExtractionData, but we map to the exact target structure
     const raw = imageExtractionData; 
     
     return {
@@ -820,34 +820,34 @@ function AIAnalysisPanel({ file }: { file: any }) {
       case_id: "CS-2026-5208",
       modality: "image",
       image_properties: {
-        file_name: file.name || raw.evidence_meta.file_name,
+        file_name: file.name || raw.evidence_meta.file_name || "N/A",
         source_type: "image",
         capture_time: raw.evidence_meta.capture_time || "N/A",
-        source_device: raw.evidence_meta.source_device || "Unknown",
-        location_hint: raw.evidence_meta.location_hint || "Site Alpha",
-        view_type: "drone_top",
+        source_device: raw.evidence_meta.source_device || "N/A",
+        location_hint: raw.evidence_meta.location_hint || "N/A",
+        view_type: raw.evidence_meta.view_type || "drone_top",
         image_quality: raw.evidence_meta.image_quality || "high",
         visibility_quality: raw.visibility_quality || "high",
         lighting_condition: raw.evidence_meta.lighting || "daylight",
         weather_visible: raw.evidence_meta.weather_condition || "clear",
-        extraction_mode: "visual_with_manual_overlay"
+        extraction_mode: raw.evidence_meta.extraction_mode || "visual_with_manual_overlay"
       },
       composition_objects: {
-        area_type: raw.scene_context.area_type || "haul_road",
-        operation_context: raw.scene_context.operation_type || "post_incident_review",
-        scene_summary: raw.scene_context.summary_scene,
-        scene_condition: raw.scene_context.scene_condition || "incident_documented",
-        detected_assets: raw.equipment_assets.detected_assets.map(a => ({
-          asset_ref: a.asset_ref,
-          asset_type: a.asset_type,
+        area_type: raw.scene_context.area_type || "N/A",
+        operation_context: raw.scene_context.operation_type || "N/A",
+        scene_summary: raw.scene_context.summary_scene || "No summary available",
+        scene_condition: raw.scene_context.scene_condition || "N/A",
+        detected_assets: (raw.equipment_assets.detected_assets || []).map(a => ({
+          asset_ref: a.asset_ref || "N/A",
+          asset_type: a.asset_type || "N/A",
           visible_identifier: a.id || "N/A",
-          position_in_scene: a.location || "center",
-          orientation: a.orientation || "nominal",
-          state: a.state,
-          damage_visible: a.visible_damage,
-          confidence: a.confidence
+          position_in_scene: a.location || "N/A",
+          orientation: a.orientation || "N/A",
+          state: a.state || "N/A",
+          damage_visible: a.visible_damage || "None detected",
+          confidence: a.confidence || "low"
         })),
-        detected_traces: [
+        detected_traces: (raw.equipment_assets.detected_traces || [
           {
             trace_ref: "T1",
             trace_type: "path_marker",
@@ -857,75 +857,98 @@ function AIAnalysisPanel({ file }: { file: any }) {
             observed_or_inferred: "observed",
             confidence: "high"
           }
-        ],
-        spatial_relations: raw.position_measurements.relative_positions,
-        measurements: [
+        ]).map(t => ({
+          trace_ref: t.trace_ref,
+          trace_type: t.trace_type,
+          position_in_scene: t.position_in_scene,
+          description: t.description,
+          direction_hint: t.direction_hint,
+          observed_or_inferred: t.observed_or_inferred,
+          confidence: t.confidence
+        })),
+        spatial_relations: raw.position_measurements.relative_positions || [],
+        measurements: (raw.position_measurements.measurements || [
           {
             measurement_ref: "M1",
             name: "road_width",
             value: 16.9,
             unit: "m",
-            measurement_type: "manual_overlay",
+            measurement_type: "manual_overlay", // manual_overlay, estimated_from_image, survey_reference
             basis: "annotated text visible inside image",
             confidence: "medium"
           }
-        ]
+        ]).map(m => ({
+          measurement_ref: m.measurement_ref,
+          name: m.name,
+          value: m.value,
+          unit: m.unit,
+          measurement_type: m.measurement_type,
+          basis: m.basis,
+          confidence: m.confidence
+        }))
       },
       people_ppe: {
-        person_count: raw.people.person_count,
-        detected_people: raw.people.detected_people.map(p => ({
-            person_ref: p.person_ref,
-            role_guess: p.role_guess,
-            position_in_scene: p.position_in_scene || "unknown",
-            activity: p.activity,
-            attention_direction: p.direction_of_attention || "unknown",
-            interaction_target: "N/A",
-            confidence: p.confidence
+        person_count: raw.people.person_count || 0,
+        detected_people: (raw.people.detected_people || []).map(p => ({
+            person_ref: p.person_ref || "N/A",
+            role_guess: p.role_guess || "N/A",
+            position_in_scene: p.position_in_scene || "N/A",
+            activity: p.activity || "N/A",
+            attention_direction: p.direction_of_attention || "N/A",
+            interaction_target: p.interaction_target || "N/A",
+            confidence: p.confidence || "low"
         })),
-        ppe_items: raw.people.ppe_equipment,
-        compliance_flags: raw.people.ppe_compliance_flags
+        ppe_items: (raw.people.ppe_equipment || []).map(item => ({
+          person_ref: item.person_ref,
+          item: item.item,
+          detected: item.detected,
+          properly_worn: item.properly_worn,
+          visibility: item.visibility,
+          confidence: item.confidence || "medium"
+        })),
+        compliance_flags: raw.people.ppe_compliance_flags || []
       },
       environment: {
-        surface_type: raw.environment.terrain_condition || "unpaved_road",
-        surface_condition: raw.environment.housekeeping_condition || "dry_compacted",
+        surface_type: raw.environment.terrain_condition || "N/A",
+        surface_condition: raw.environment.housekeeping_condition || "N/A",
         road_or_path_condition: "wide haul road with visible edge transition",
         edge_condition: "roadside drop/edge visible",
         berm_or_tanggul_present: true,
-        barrier_present: raw.environment.barrier_guarding_present.length > 0,
-        signage_present: raw.environment.signage_present.length > 0,
+        barrier_present: (raw.environment.barrier_guarding_present || []).length > 0,
+        signage_present: (raw.environment.signage_present || []).length > 0,
         traffic_control_present: false,
-        housekeeping_condition: raw.environment.housekeeping_condition,
-        dust_smoke_spillage: raw.environment.dust_smoke_spillage,
-        visibility_condition: raw.environment.visibility_condition,
+        housekeeping_condition: raw.environment.housekeeping_condition || "N/A",
+        dust_smoke_spillage: raw.environment.dust_smoke_spillage || [],
+        visibility_condition: raw.environment.visibility_condition || "N/A",
         environment_summary: "Open outdoor haul road scene with visible edge, slope, and annotated incident points."
       },
       initial_interpretation: {
-        observed_facts: raw.extracted_facts.filter(f => f.observed_or_inferred === "Observed").map(f => ({
+        observed_facts: (raw.extracted_facts || []).filter(f => f.observed_or_inferred === "Observed").map(f => ({
            fact_id: f.fact_id,
            fact_type: f.fact_type,
            fact_text: f.fact_text,
            source_region: f.source_region,
-           confidence: f.confidence
+           confidence: f.confidence || "high"
         })),
-        inferred_points: raw.extracted_facts.filter(f => f.observed_or_inferred === "Inferred").map(f => ({
+        inferred_points: (raw.extracted_facts || []).filter(f => f.observed_or_inferred === "Inferred").map(f => ({
            inference_id: f.fact_id,
            inference_text: f.fact_text,
-           basis: [f.source_region],
-           confidence: f.confidence
+           basis: f.basis || [f.source_region],
+           confidence: f.confidence || "medium"
         })),
-        hazard_signals: raw.incident_hazards.critical_hazards.map((h, i) => ({
+        hazard_signals: (raw.incident_hazards.critical_hazards || []).map(h => ({
            hazard_type: "critical",
            description: h,
            evidence_basis: "visual state analysis",
            confidence: "high"
         })),
         negative_findings: [
-          { item: "fire", description: "No active fire or smoke detected in this frame.", confidence: "high" }
+          { item: "traffic_control", description: "No visible traffic control devices detected in this image.", confidence: "medium" }
         ],
-        unknowns: raw.review_meta.unknowns,
-        review_flags: raw.review_meta.needs_human_review,
-        overall_scene_read: "Major mechanical failure confirmed via longitudinal belt rupture and support bracket misalignment.",
-        overall_confidence: "high",
+        unknowns: raw.review_meta.unknowns || [],
+        review_flags: raw.review_meta.needs_human_review || [],
+        overall_scene_read: "Primary interpretation suggests annotated post-incident road scene with an overturned light vehicle.",
+        overall_confidence: "medium",
         needs_human_validation: true
       }
     };
@@ -1054,19 +1077,24 @@ function AIAnalysisPanel({ file }: { file: any }) {
             <div className="space-y-3 pt-2">
                <span className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em] border-b border-slate-100 pb-1.5 block">Detected Traces</span>
                <div className="space-y-2.5">
-                  {normalizedData.composition_objects.detected_traces.map((trace, i) => (
-                    <div key={trace.trace_ref} className="p-4 border rounded-xl bg-slate-50/50 flex flex-col gap-2.5">
-                       <div className="flex items-center justify-between">
-                          <Chip text={trace.trace_type.replace(/_/g, ' ')} type="observed" />
-                          <ConfidenceChip level={trace.confidence.toLowerCase() as any} />
-                       </div>
-                       <p className="text-[11px] font-bold text-slate-700 leading-snug">{trace.description}</p>
-                       <div className="flex items-center justify-between text-[10px] font-black uppercase">
-                          <span className="text-slate-400 tracking-tighter">Pos: {trace.position_in_scene}</span>
-                          <span className="text-primary tracking-widest italic">Dir: {trace.direction_hint}</span>
-                       </div>
-                    </div>
-                  ))}
+                  {normalizedData.composition_objects.detected_traces.length > 0 ? (
+                    normalizedData.composition_objects.detected_traces.map((trace, i) => (
+                      <div key={trace.trace_ref} className="p-4 border rounded-xl bg-slate-50/50 flex flex-col gap-2.5">
+                         <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Chip text={trace.trace_type.replace(/_/g, ' ')} type={trace.observed_or_inferred === 'observed' ? 'observed' : 'inferred'} />
+                              <span className="text-[9px] font-bold text-slate-400">REF: {trace.trace_ref}</span>
+                            </div>
+                            <ConfidenceChip level={trace.confidence.toLowerCase() as any} />
+                         </div>
+                         <p className="text-[11px] font-bold text-slate-700 leading-snug">{trace.description}</p>
+                         <div className="flex items-center justify-between text-[10px] font-black uppercase">
+                            <span className="text-slate-400 tracking-tighter">Pos: {trace.position_in_scene}</span>
+                            <span className="text-primary tracking-widest italic">Dir: {trace.direction_hint}</span>
+                         </div>
+                      </div>
+                    ))
+                  ) : <div className="p-6 text-center border border-dashed rounded-xl text-[10px] text-slate-300 font-bold uppercase">No traces detected</div>}
                </div>
             </div>
 
@@ -1085,27 +1113,35 @@ function AIAnalysisPanel({ file }: { file: any }) {
             <div className="space-y-3 pt-2">
                <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
                   <span className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em]">Measurements</span>
-                  <Chip text="Calculated Trace" type="manual" />
+                  <div className="flex gap-1.5">
+                    <Chip text="Manual Overlay" type="manual" />
+                    <Chip text="Estimated" type="unknown" />
+                  </div>
                </div>
                <div className="grid grid-cols-1 gap-3">
-                  {normalizedData.composition_objects.measurements.map((m, i) => (
-                    <div key={m.measurement_ref} className="p-4 border-2 border-dashed border-primary/20 rounded-xl bg-primary/5">
-                       <div className="flex items-center justify-between mb-3">
-                          <span className="text-[10px] font-black text-primary uppercase tracking-[0.1em]">{m.name.replace(/_/g, ' ')}</span>
-                          <div className="flex items-center gap-1.5 translate-y-[-2px]">
-                             <span className="text-base font-black text-slate-900 tabular-nums">{m.value}</span>
-                             <span className="text-[10px] font-black text-slate-400 uppercase">{m.unit}</span>
-                          </div>
-                       </div>
-                       <div className="flex flex-col gap-1.5">
-                          <div className="flex items-center justify-between">
-                             <span className="text-[9px] font-medium text-slate-400 uppercase tracking-widest">Type: {m.measurement_type.replace(/_/g, ' ')}</span>
-                             <ConfidenceChip level={m.confidence.toLowerCase() as any} />
-                          </div>
-                          <p className="text-[10px] font-bold text-slate-500 leading-relaxed italic pr-4">Basis: {m.basis}</p>
-                       </div>
-                    </div>
-                  ))}
+                  {normalizedData.composition_objects.measurements.length > 0 ? (
+                    normalizedData.composition_objects.measurements.map((m, i) => (
+                      <div key={m.measurement_ref} className="p-4 border-2 border-dashed border-primary/20 rounded-xl bg-primary/5">
+                         <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] font-black text-primary uppercase tracking-[0.1em]">{m.name.replace(/_/g, ' ')}</span>
+                              <span className="text-[8px] font-bold text-primary/40">#{m.measurement_ref}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 translate-y-[-2px]">
+                               <span className="text-base font-black text-slate-900 tabular-nums">{m.value}</span>
+                               <span className="text-[10px] font-black text-slate-400 uppercase">{m.unit}</span>
+                            </div>
+                         </div>
+                         <div className="flex flex-col gap-1.5">
+                            <div className="flex items-center justify-between">
+                               <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Type: {m.measurement_type.replace(/_/g, ' ')}</span>
+                               <ConfidenceChip level={m.confidence.toLowerCase() as any} />
+                            </div>
+                            <p className="text-[10px] font-bold text-slate-500 leading-relaxed italic pr-4">Basis: {m.basis}</p>
+                         </div>
+                      </div>
+                    ))
+                  ) : <div className="p-6 text-center border border-dashed rounded-xl text-[10px] text-slate-300 font-bold uppercase">No measurements detected</div>}
                </div>
             </div>
           </div>
@@ -1162,11 +1198,14 @@ function AIAnalysisPanel({ file }: { file: any }) {
                           </div>
                           <div className="flex flex-wrap gap-2">
                              {normalizedData.people_ppe.ppe_items.filter(item => item.person_ref === p.person_ref).map((item, j) => (
-                                <div key={j} className={`px-3 py-2 rounded-xl border flex items-center gap-3 transition-all ${item.detected ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-50 border-slate-50 opacity-25 grayscale'}`}>
+                                <div key={j} className={`px-3 py-2 rounded-xl border flex items-center gap-4 transition-all ${item.detected ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-50 border-slate-50 opacity-25 grayscale'}`}>
                                    <div className={`h-2.5 w-2.5 rounded-full shadow-sm transition-all ${item.detected ? (item.properly_worn ? 'bg-emerald-500 shadow-emerald-500/20' : 'bg-rose-500 shadow-rose-500/50 pulse-danger') : 'bg-slate-300'}`} />
                                    <div className="flex flex-col gap-0.5 min-w-[50px]">
                                       <span className="text-[10px] font-black uppercase text-slate-800 tracking-tighter leading-none">{item.item.replace(/_/g, ' ')}</span>
-                                      <span className="text-[8px] font-bold text-slate-400 leading-none mt-0.5">{item.visibility.toUpperCase()}</span>
+                                      <span className="text-[8px] font-bold text-slate-400 leading-none mt-1">{item.visibility.toUpperCase()}</span>
+                                   </div>
+                                   <div className="ml-auto">
+                                     {item.detected && <ConfidenceChip level={item.confidence.toLowerCase() as any} />}
                                    </div>
                                 </div>
                              ))}
@@ -1332,11 +1371,11 @@ function AIAnalysisPanel({ file }: { file: any }) {
                              <div key={i} className="flex items-center justify-between p-3 bg-slate-50 border rounded-xl hover:bg-white transition-all group">
                                 <div className="flex items-center gap-3">
                                    <div className="h-2 w-2 rounded-full bg-slate-300 shadow-inner group-hover:bg-primary transition-colors" />
-                                   <span className="text-[11px] font-black text-slate-800 uppercase tracking-tight">{n.item}</span>
+                                   <span className="text-[11px] font-black text-slate-800 uppercase tracking-tight">{n.item.replace(/_/g, ' ')}</span>
                                 </div>
                                 <div className="flex items-center gap-3">
-                                   <span className="text-[10px] font-bold text-slate-400 italic">Confirmed {n.description}</span>
-                                   <ConfidenceChip level="high" />
+                                   <span className="text-[10px] font-bold text-slate-400 italic font-mono">"{n.description}"</span>
+                                   <ConfidenceChip level={n.confidence.toLowerCase() as any} />
                                 </div>
                              </div>
                           ))}
@@ -4599,24 +4638,8 @@ function AudioSceneSession({ data, currentTime, onJump }: { data: any, currentTi
     </div>
   );
 }
-e ? "text-primary" : "text-slate-400"}`}>{seg.start_time} — {seg.end_time}</span>
-                    <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase border ${
-                      seg.speaker_id === "SPK_01" ? "bg-amber-50 text-amber-600 border-amber-100" : "bg-indigo-50 text-indigo-600 border-indigo-100"
-                    }`}>{seg.speaker_label}</span>
-                 </div>
-                 <ConfidenceChip level={seg.confidence.toLowerCase() as any} />
-              </div>
-              <p className={`text-[11px] leading-relaxed transition-colors ${active ? "text-slate-900 font-bold" : "text-slate-500 font-medium"} italic`}>"{seg.text}"</p>
-              <div className="flex items-center gap-1.5 opacity-40 group-hover:opacity-100 transition-opacity">
-                 {seg.flags.map((f: string) => <span key={f} className="h-1.5 w-1.5 rounded-full bg-primary shadow-sm" title={f} />)}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
+
+
 
 // --- New Video Analysis Components ---
 
