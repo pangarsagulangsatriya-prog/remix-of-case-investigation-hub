@@ -2416,32 +2416,59 @@ function ExtractionTab({
 function useSmartMedia(url: string | null, type: string) {
   const [mediaUrl, setMediaUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isBlob, setIsBlob] = useState(false);
 
   useEffect(() => {
     if (!url) {
       setMediaUrl(null);
+      setIsLoading(false);
+      setIsBlob(false);
       return;
     }
 
+    let active = true;
     setIsLoading(true);
 
-    // Completely bypass unreliable Blob handling for all media.
-    // Instead of forcing a full download into RAM (which breaks on large files/CORS),
-    // we simply append a cache-buster. This forces the browser/CDN to directly
-    // negotiate '206 Partial Content' Range requests natively with the server.
-    const busterUrl = `${url}${url.includes('?') ? '&' : '?'}t=${Date.now()}`;
-    
-    // Simulate a tiny processing delay just for UI purposes so users 
-    // see the decrypter state briefly before it mounts the native player.
-    const timer = setTimeout(() => {
-       setMediaUrl(busterUrl);
-       setIsLoading(false);
-    }, 400);
+    const loadMedia = async () => {
+      // Strategy 1: Attempt to fetch as a Blob (Full local download)
+      // This is the most reliable way to fix 416 Requested Range Not Satisfiable 
+      // and "0:00 Duration" issues because the browser treats it as a local file.
+      try {
+        const response = await fetch(url, { mode: 'cors' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        const blob = await response.blob();
+        if (!active) return;
 
-    return () => clearTimeout(timer);
+        const blobUrl = URL.createObjectURL(blob);
+        setMediaUrl(blobUrl);
+        setIsBlob(true);
+        setIsLoading(false);
+      } catch (err) {
+        if (!active) return;
+        console.warn("Blob fetch failed (CORS or Network), falling back to direct stream:", err);
+        
+        // Strategy 2: Fallback to direct URL with Cache Buster
+        // If the server doesn't support CORS for Fetch, we fall back to standard 
+        // opaque streaming which might still work but is less reliable for seeking.
+        const busterUrl = `${url}${url.includes('?') ? '&' : '?'}t=${Date.now()}`;
+        setMediaUrl(busterUrl);
+        setIsBlob(false);
+        setIsLoading(false);
+      }
+    };
+
+    loadMedia();
+
+    return () => {
+      active = false;
+      if (mediaUrl && mediaUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(mediaUrl);
+      }
+    };
   }, [url]);
 
-  return { mediaUrl, isLoading };
+  return { mediaUrl, isLoading, isBlob };
 }
 
 function AdaptiveSourcePreview({ 
@@ -2473,7 +2500,7 @@ function AdaptiveSourcePreview({
   setAudioPlaybackSpeed?: (s: number) => void,
   audioRef?: React.RefObject<HTMLAudioElement>
 }) {
-  const { mediaUrl, isLoading: mediaLoading } = useSmartMedia(file.url, file.type);
+  const { mediaUrl, isLoading: mediaLoading, isBlob } = useSmartMedia(file.url, file.type);
 
   useEffect(() => {
     if (!audioRef.current) return;
@@ -2600,18 +2627,29 @@ function AdaptiveSourcePreview({
               ref={audioRef}
               preload="auto"
               src={mediaUrl}
+              crossOrigin="anonymous"
               onTimeUpdate={(e) => setAudioCurrentTime(Math.floor(e.currentTarget.currentTime))}
               onPlay={() => setAudioIsPlaying(true)}
               onPause={() => setAudioIsPlaying(false)}
               onEnded={() => setAudioIsPlaying(false)}
               className="hidden"
-            />
+            >
+              <source src={mediaUrl} type="audio/mp4" />
+              <source src={mediaUrl} type="audio/mpeg" />
+            </audio>
           )}
           
           {mediaLoading && (
             <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center gap-3 rounded-lg border-2 border-primary/20">
               <RefreshCcw className="h-6 w-6 text-primary animate-spin" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Decrypting & Processing Audio Stream...</span>
+              <div className="text-center">
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-900 block mb-1">
+                  {isBlob ? "Buffering Secure Audio Stream..." : "Fetching Investigative Media..."}
+                </span>
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">
+                  {isBlob ? "Bypassing server range restrictions for stability" : "Initializing low-latency stream"}
+                </span>
+              </div>
             </div>
           )}
           <div className="bg-white border-2 border-slate-100 rounded-lg shadow-xl p-8 space-y-8 relative overflow-hidden group">
