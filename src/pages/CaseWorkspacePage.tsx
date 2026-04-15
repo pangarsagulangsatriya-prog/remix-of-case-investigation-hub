@@ -1059,7 +1059,7 @@ function AIAnalysisPanel({ file }: { file: any }) {
                               <span className="text-[11px] font-black text-slate-800 uppercase tracking-tight">{asset.asset_type.replace(/_/g, ' ')}</span>
                               <span className="text-[9px] font-bold text-slate-400">#{asset.visible_identifier}</span>
                            </div>
-                           <ConfidenceChip level={asset.confidence.toLowerCase() as any} />
+                           <ConfidenceChip level={(asset.confidence || "low").toLowerCase() as any} />
                         </div>
                         <div className="grid grid-cols-2 gap-y-3 gap-x-6">
                            <KVP label="Position" value={asset.position_in_scene} />
@@ -1085,7 +1085,7 @@ function AIAnalysisPanel({ file }: { file: any }) {
                               <Chip text={trace.trace_type.replace(/_/g, ' ')} type={trace.observed_or_inferred === 'observed' ? 'observed' : 'inferred'} />
                               <span className="text-[9px] font-bold text-slate-400">REF: {trace.trace_ref}</span>
                             </div>
-                            <ConfidenceChip level={trace.confidence.toLowerCase() as any} />
+                            <ConfidenceChip level={(trace.confidence || "medium").toLowerCase() as any} />
                          </div>
                          <p className="text-[11px] font-bold text-slate-700 leading-snug">{trace.description}</p>
                          <div className="flex items-center justify-between text-[10px] font-black uppercase">
@@ -1135,7 +1135,7 @@ function AIAnalysisPanel({ file }: { file: any }) {
                          <div className="flex flex-col gap-1.5">
                             <div className="flex items-center justify-between">
                                <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Type: {m.measurement_type.replace(/_/g, ' ')}</span>
-                               <ConfidenceChip level={m.confidence.toLowerCase() as any} />
+                               <ConfidenceChip level={(m.confidence || "low").toLowerCase() as any} />
                             </div>
                             <p className="text-[10px] font-bold text-slate-500 leading-relaxed italic pr-4">Basis: {m.basis}</p>
                          </div>
@@ -1181,7 +1181,7 @@ function AIAnalysisPanel({ file }: { file: any }) {
                                 <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1 opacity-60">Verified Actor</span>
                              </div>
                           </div>
-                          <ConfidenceChip level={p.confidence.toLowerCase() as any} />
+                          <ConfidenceChip level={(p.confidence || "low").toLowerCase() as any} />
                        </div>
                        
                        <div className="grid grid-cols-2 gap-x-10 gap-y-4">
@@ -1202,10 +1202,10 @@ function AIAnalysisPanel({ file }: { file: any }) {
                                    <div className={`h-2.5 w-2.5 rounded-full shadow-sm transition-all ${item.detected ? (item.properly_worn ? 'bg-emerald-500 shadow-emerald-500/20' : 'bg-rose-500 shadow-rose-500/50 pulse-danger') : 'bg-slate-300'}`} />
                                    <div className="flex flex-col gap-0.5 min-w-[50px]">
                                       <span className="text-[10px] font-black uppercase text-slate-800 tracking-tighter leading-none">{item.item.replace(/_/g, ' ')}</span>
-                                      <span className="text-[8px] font-bold text-slate-400 leading-none mt-1">{item.visibility.toUpperCase()}</span>
+                                      <span className="text-[8px] font-bold text-slate-400 leading-none mt-1">{item.visibility?.toUpperCase() || "N/A"}</span>
                                    </div>
                                    <div className="ml-auto">
-                                     {item.detected && <ConfidenceChip level={item.confidence.toLowerCase() as any} />}
+                                     {item.detected && <ConfidenceChip level={(item.confidence || "medium").toLowerCase() as any} />}
                                    </div>
                                 </div>
                              ))}
@@ -1291,7 +1291,7 @@ function AIAnalysisPanel({ file }: { file: any }) {
                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500 rounded-full transition-all group-hover:w-2" />
                            <div className="flex items-center gap-2.5 mb-2.5">
                               <Chip text={f.fact_type.replace(/_/g, ' ')} type="observed" />
-                              <ConfidenceChip level={f.confidence.toLowerCase() as any} />
+                              <ConfidenceChip level={(f.confidence || "high").toLowerCase() as any} />
                            </div>
                            <p className="text-[12px] font-black text-slate-900 leading-relaxed pr-6">{f.fact_text}</p>
                            {f.source_region && (
@@ -1321,7 +1321,7 @@ function AIAnalysisPanel({ file }: { file: any }) {
                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-600 rounded-full opacity-30 transition-all group-hover:opacity-100 group-hover:w-2" />
                            <div className="flex items-center gap-2.5 mb-2.5">
                               <Chip text="logical_inference" type="inferred" />
-                              <ConfidenceChip level={p.confidence.toLowerCase() as any} />
+                              <ConfidenceChip level={(p.confidence || "medium").toLowerCase() as any} />
                            </div>
                            <p className="text-[12px] font-black text-slate-700 leading-relaxed pr-6 italic font-serif">"{p.inference_text}"</p>
                            <div className="mt-2.5 flex items-center gap-2 text-[9px] font-black text-indigo-400 uppercase tracking-[0.2em] bg-indigo-50/50 py-1.5 px-3 rounded-lg border border-indigo-100/50 w-fit">
@@ -1351,7 +1351,7 @@ function AIAnalysisPanel({ file }: { file: any }) {
                            </div>
                            <div className="flex items-center justify-between mb-3 relative z-10">
                               <span className="text-[11px] font-black text-rose-800 uppercase tracking-widest border-b border-rose-200 pb-0.5">{h.hazard_type}</span>
-                              <ConfidenceChip level={h.confidence.toLowerCase() as any} />
+                              <ConfidenceChip level={(h.confidence || "high").toLowerCase() as any} />
                            </div>
                            <p className="text-[12px] font-black text-rose-950 leading-tight mb-3 pr-8 relative z-10">{h.description}</p>
                            <div className="text-[9px] font-black text-rose-500 uppercase tracking-[0.15em] opacity-80 relative z-10 bg-white/50 w-fit px-2 py-0.5 rounded border border-rose-100">Protocol Basis: {h.evidence_basis}</div>
@@ -1375,7 +1375,7 @@ function AIAnalysisPanel({ file }: { file: any }) {
                                 </div>
                                 <div className="flex items-center gap-3">
                                    <span className="text-[10px] font-bold text-slate-400 italic font-mono">"{n.description}"</span>
-                                   <ConfidenceChip level={n.confidence.toLowerCase() as any} />
+                                   <ConfidenceChip level={(n.confidence || "medium").toLowerCase() as any} />
                                 </div>
                              </div>
                           ))}
@@ -4448,7 +4448,7 @@ function AudioExtractionStructured({ data, onJump }: { data: any, onJump: (s: nu
                        <div className="flex items-center gap-2 mb-1.5">
                           <StatusPill text={f.statement_type} type="observed" />
                           <span className="text-[9px] font-black text-slate-400 tabular-nums">[{f.timestamp}]</span>
-                          <ConfidenceChip level={f.confidence.toLowerCase() as any} />
+                          <ConfidenceChip level={(f.confidence || "high").toLowerCase() as any} />
                        </div>
                        <p className="text-[11px] font-bold text-slate-900 leading-relaxed italic">"{f.fact_text}"</p>
                        <div className="mt-1 text-[9px] font-bold text-slate-400 uppercase tracking-widest">— {f.speaker} ({f.observed_or_claimed})</div>

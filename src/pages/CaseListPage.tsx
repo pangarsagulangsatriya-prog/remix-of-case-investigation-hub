@@ -204,7 +204,7 @@ export default function CaseListPage() {
                         <td className="text-xs font-medium text-slate-900 truncate max-w-[200px]">{c.title}</td>
                         <td className="text-xs text-slate-600 font-medium">Site Alpha</td>
                         <td className="text-xs text-slate-500 font-medium">{new Date(c.created_at).toLocaleDateString()}</td>
-                        <td className="py-2.5"><SeverityChip severity={c.severity.toLowerCase() as any} /></td>
+                        <td className="py-2.5"><SeverityChip severity={(c.severity || "medium").toLowerCase() as any} /></td>
                         <td className="py-2.5"><StatusChip status={c.status as any} /></td>
                         <td className="text-xs text-slate-700 font-medium">Admin</td>
                         <td className="text-xs text-center font-medium text-slate-600">0</td>
@@ -297,7 +297,7 @@ export default function CaseListPage() {
                       { label: "Site", value: "Site Alpha", icon: Globe },
                       { label: "Created", value: new Date(selectedCase.created_at).toLocaleDateString(), icon: Clock },
                       { label: "Updated", value: new Date(selectedCase.updated_at).toLocaleDateString(), icon: History },
-                      { label: "Status", value: selectedCase.status.toUpperCase(), icon: List },
+                      { label: "Status", value: (selectedCase.status || "draft").toUpperCase(), icon: List },
                     ].map((item) => (
                       <div key={item.label} className="flex items-center justify-between py-1.5 px-1 rounded-md hover:bg-slate-50 transition-colors">
                         <div className="flex items-center gap-2">
@@ -536,7 +536,7 @@ function CaseGridCard({
         
         {/* Severity & Date Row */}
         <div className="flex items-center justify-between mb-4">
-          <SeverityChip severity={caseData.severity.toLowerCase() as any} />
+          <SeverityChip severity={(caseData.severity || "medium").toLowerCase() as any} />
           <div className="flex items-center gap-1.5 text-slate-400">
             <Clock className="h-3 w-3" />
             <span className="text-[11px] font-bold">{new Date(caseData.created_at).toLocaleDateString()}</span>
