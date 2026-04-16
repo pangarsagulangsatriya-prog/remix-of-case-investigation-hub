@@ -1,3 +1,4 @@
+// BUILD_VERSION: 2026-04-16T19:35:00 — force redeploy with diarization + 6-layer extraction
 import React, { useState, useEffect, useRef, useMemo } from "react"; 
 import { useParams } from "react-router-dom";
 import { AppLayout } from "@/components/AppLayout";
