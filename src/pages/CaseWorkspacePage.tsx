@@ -4199,7 +4199,7 @@ function AuditTrailTab() {
 // --- Audio Analysis Components ---
 
 function AudioAnalysisPanel({ file, currentTime, onJump }: { file: any, currentTime: number, onJump: (s: number) => void }) {
-  const [activeTab, setActiveTab] = useState<"Extraction" | "Scene Session">("Extraction");
+  const [activeTab, setActiveTab] = useState<"Extraction" | "Diarization">("Extraction");
   const [viewMode, setViewMode] = useState<"Structured" | "JSON">("Structured");
 
   // Normalized Extraction Schema
@@ -4246,7 +4246,7 @@ function AudioAnalysisPanel({ file, currentTime, onJump }: { file: any, currentT
     };
   }, [file]);
 
-  // Normalized Scene Session Schema
+  // Normalized Diarization Schema
   const normalizedScene = useMemo(() => {
     return {
       audio_id: "AUD_" + (file?.id?.slice(0, 4) || "001"),
@@ -4268,7 +4268,7 @@ function AudioAnalysisPanel({ file, currentTime, onJump }: { file: any, currentT
     <div className="flex flex-col h-full bg-white">
       {/* Tab Switcher */}
       <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b px-4 py-2 flex items-center gap-1 shrink-0">
-        {(["Extraction", "Scene Session"] as const).map((tab) => (
+        {(["Extraction", "Diarization"] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -4608,7 +4608,7 @@ function AudioSceneSession({ data, currentTime, onJump }: { data: any, currentTi
          <div className="flex flex-col">
             <div className="flex items-center gap-2">
                <MessageSquare className="h-3.5 w-3.5 text-slate-900" />
-               <span className="text-[10px] font-black text-slate-900 uppercase tracking-[0.1em]">Scene Transcript Session</span>
+               <span className="text-[10px] font-black text-slate-900 uppercase tracking-[0.1em]">Diarization Session</span>
             </div>
             <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter mt-0.5">{data.scene_session.full_diarization.length} Segments • {data.scene_session.speaker_count} Speakers</span>
          </div>
@@ -4679,14 +4679,14 @@ function AudioSceneSession({ data, currentTime, onJump }: { data: any, currentTi
 // --- New Video Analysis Components ---
 
 function VideoAnalysisPanel({ file, currentTime, onJump }: { file: any, currentTime: number, onJump: (s: number) => void }) {
-  const [activeTab, setActiveTab] = useState<"Extraction" | "Scene Session">("Extraction");
+  const [activeTab, setActiveTab] = useState<"Extraction" | "Diarization">("Extraction");
   const [viewMode, setViewMode] = useState<"Structured" | "JSON">("Structured");
 
   return (
     <div className="flex flex-col h-full bg-white">
       {/* Sticky Tab Switcher */}
       <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-sm border-b px-4 py-2 flex items-center gap-1 shrink-0">
-        {(["Extraction", "Scene Session"] as const).map((tab) => (
+        {(["Extraction", "Diarization"] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
