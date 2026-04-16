@@ -68,7 +68,11 @@ import {
   Ruler,
   MessageCircle,
   Download,
-  Plus
+  Plus,
+  Shield,
+  HelpCircle,
+  Layout,
+  Layers
 } from "lucide-react";
 
 interface AgentState {
@@ -1543,7 +1547,7 @@ function AudioRightPanel({
   audioCurrentTime: number;
   onSeek: (seconds: number) => void;
 }) {
-  const [activeTab, setActiveTab] = useState<'extraction' | 'diary'>('extraction');
+  const [activeTab, setActiveTab] = useState<'extraction' | 'diarization'>('extraction');
   const [viewMode, setViewMode] = useState<'Structured' | 'JSON'>('Structured');
   const [expandedSections, setExpandedSections] = useState<string[]>(['audio_session_meta', 'speaker_profiles']);
 
@@ -1612,13 +1616,20 @@ function AudioRightPanel({
           <ChevronDown className={`h-3 w-3 text-slate-400 flex-shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
         </button>
         {open && (
-          <div className="p-3 bg-white">
-            {children}
-          </div>
+           <div className="p-3 bg-white">
+             {children}
+           </div>
         )}
       </div>
     );
   };
+
+  const KVP = ({ label, value }: { label: string; value: string | number }) => (
+    <div className="min-w-0">
+      <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block">{label}</span>
+      <span className="text-[10px] font-bold text-slate-800 truncate block leading-tight">{value || '—'}</span>
+    </div>
+  );
 
   // ── Extraction tab ─────────────────────────────────────────────────────────
 
@@ -1626,8 +1637,8 @@ function AudioRightPanel({
     if (viewMode === 'JSON') {
       return (
         <div className="p-3">
-          <div className="bg-slate-900 rounded-xl p-4 overflow-hidden border border-slate-800">
-            <pre className="text-[10px] font-mono text-emerald-400 leading-relaxed overflow-auto max-h-[700px] custom-scrollbar">
+          <div className="bg-[#0d1117] rounded-xl p-4 overflow-hidden border border-slate-800 shadow-2xl">
+            <pre className="text-[11px] font-mono text-[#79c0ff] leading-relaxed overflow-auto max-h-[700px] custom-scrollbar selection:bg-primary/30">
               {JSON.stringify(data, null, 2)}
             </pre>
           </div>
@@ -1635,270 +1646,194 @@ function AudioRightPanel({
       );
     }
 
-    const hps = data.human_performance_signals as any;
     const rpc = (data as any).risk_and_procedure_clues;
 
     return (
-      <div className="p-3 space-y-2">
-
-        {/* 1 — Audio Session Meta */}
-        <AccSection id="audio_session_meta" title="Audio Session Meta" icon={Settings}>
-          <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-            {([
-              ['Session', data.recording_meta.file_name],
-              ['Duration', data.recording_meta.duration],
-              ['Quality', data.recording_meta.audio_quality],
-              ['Type', data.recording_meta.recording_type],
-              ['Noise', data.recording_meta.noise_level],
-              ['Channel', data.recording_meta.channel_type],
-              ['Language', data.recording_meta.language],
-              ['Overlap', data.recording_meta.overlap_level],
-            ] as [string, string][]).map(([label, value]) => (
-              <div key={label} className="min-w-0">
-                <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide block">{label}</span>
-                <span className="text-[10px] font-bold text-slate-800 truncate block">{value || '—'}</span>
-              </div>
-            ))}
+      <div className="p-3 space-y-2.5 pb-20">
+        
+        {/* A — Audio Properties */}
+        <AccSection id="audio_props" title="Audio Properties" icon={Settings}>
+          <div className="space-y-4">
+             <div className="grid grid-cols-2 gap-3">
+               <KVP label="File Name" value={data.recording_meta.file_name} />
+               <KVP label="Audio ID" value={`AUD-${(data as any).audio_id || '9921'}`} />
+               <KVP label="Duration" value={data.recording_meta.duration} />
+               <KVP label="Language" value={data.recording_meta.language} />
+             </div>
+             <div className="pt-2 border-t border-slate-100">
+               <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest block mb-2">Source Context</span>
+               <div className="grid grid-cols-2 gap-3">
+                 <KVP label="Source Type" value={data.recording_meta.source_type} />
+                 <KVP label="Channel" value={data.recording_meta.channel_type} />
+                 <KVP label="Device" value={(data.recording_meta as any).source_device || 'Fixed Radio'} />
+                 <KVP label="Rec Type" value={data.recording_meta.recording_type} />
+               </div>
+             </div>
+             <div className="pt-2 border-t border-slate-100">
+               <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest block mb-2">Technical Quality</span>
+               <div className="grid grid-cols-2 gap-3">
+                 <KVP label="Quality" value={data.recording_meta.audio_quality} />
+                 <KVP label="Noise Level" value={data.recording_meta.noise_level} />
+                 <KVP label="Overlap" value={data.recording_meta.overlap_level} />
+               </div>
+             </div>
           </div>
         </AccSection>
 
-        {/* 2 — Speaker Profiles */}
-        <AccSection id="speaker_profiles" title="Speaker Profiles" icon={Users} count={data.speaker_profiles.length}>
+        {/* B — Session Context */}
+        <AccSection id="session_context" title="Session Context" icon={Layout}>
+          <div className="space-y-4">
+             <div className="grid grid-cols-2 gap-3">
+               <KVP label="Session Type" value={(data as any).session_type || 'Operational Log'} />
+               <KVP label="Purpose" value={(data as any).session_purpose || 'Standard Radio Check'} />
+               <KVP label="Stage" value={(data as any).investigation_stage || 'Evidence Ingestion'} />
+               <KVP label="Speakers" value={`${data.speaker_profiles.length} detected`} />
+             </div>
+             <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-100">
+               <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide block mb-1">Conversation Setting</span>
+               <span className="text-[10px] font-bold text-slate-600">{(data as any).conversation_setting || 'Remote Radio (Site Alpha)'}</span>
+             </div>
+          </div>
+        </AccSection>
+
+        {/* C — Speaker Registry */}
+        <AccSection id="speaker_registry" title="Speaker Registry" icon={Users} count={data.speaker_profiles.length}>
           <div className="space-y-2">
             {data.speaker_profiles.map((s: any) => (
-              <div key={s.speaker_id} className="p-2.5 border rounded-lg bg-slate-50/50 hover:bg-white transition-all">
-                <div className="flex items-start justify-between mb-1.5">
-                  <div>
-                    <span className="text-[10px] font-black text-slate-900 block">{s.speaker_label || s.speaker_id}</span>
-                    <span className="text-[9px] font-bold text-slate-400">{s.probable_role}</span>
-                  </div>
-                  <Chip label={`Stress: ${s.stress_level.split(' ')[0]}`} variant={s.stress_level.includes('High') ? 'critical' : 'ok'} />
-                </div>
-                <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[9px] font-bold text-slate-400">
-                  <span>Speaking: <span className="text-slate-700">{s.speaking_time}</span></span>
-                  <span>Style: <span className="text-slate-700">{s.speaking_style.split(',')[0]}</span></span>
-                  <span>Assert: <span className="text-slate-700">{s.assertiveness}</span></span>
-                  <span>Hesit: <span className="text-slate-700">{s.hesitation}</span></span>
-                  <span>Role: <span className="text-slate-700">{s.escalation_role}</span></span>
-                  <span>Conf: <span className="text-slate-700">{s.confidence}</span></span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </AccSection>
-
-        {/* 3 — Communication Events */}
-        <AccSection id="comm_events" title="Communication Events" icon={MessageCircle} count={data.communication_events.length}>
-          <div className="space-y-2">
-            {data.communication_events.map((ev: any, i: number) => (
-              <div key={i} className="flex gap-2 p-2 border rounded-lg bg-white hover:bg-slate-50/50 transition-all">
-                <TsBtn time={ev.timestamp} />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5 flex-wrap mb-1">
-                    <span className="text-[9px] font-black text-slate-800 truncate">{ev.event_type}</span>
-                    <Chip label={ev.urgency} variant={ev.urgency === 'Critical' ? 'critical' : ev.urgency === 'Medium' ? 'warn' : 'default'} />
-                  </div>
-                  <p className="text-[9px] font-bold text-slate-600 leading-snug mb-1">{ev.content_summary}</p>
-                  <div className="flex items-center gap-1 text-[8px] font-bold text-slate-400 flex-wrap">
-                    <span>{ev.actor}</span><span>→</span><span>{ev.target_actor}</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </AccSection>
-
-        {/* 4 — Factual Statements */}
-        <AccSection id="factual_statements" title="Factual Statements" icon={FileText} count={(data as any).factual_statements?.length || 0}>
-          <div className="space-y-2">
-            {((data as any).factual_statements || []).map((f: any, i: number) => (
-              <div key={i} className="flex gap-2 p-2 border rounded-lg bg-white hover:bg-slate-50/50 transition-all">
-                <TsBtn time={f.timestamp} />
-                <div className="flex-1 min-w-0">
-                  <p className="text-[10px] font-bold text-slate-800 leading-snug mb-1">{f.fact_text}</p>
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="text-[8px] font-bold text-slate-500">{f.speaker}</span>
-                    <Chip label={f.statement_type} />
-                    <Chip label={f.observed_or_claimed} variant={f.observed_or_claimed === 'Observed' ? 'ok' : 'info'} />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </AccSection>
-
-        {/* 5 — Timeline Events */}
-        <AccSection id="timeline_events" title="Timeline Events" icon={Clock} count={(data as any).timeline_events?.length || 0}>
-          <div className="relative">
-            <div className="absolute left-[10px] top-1 bottom-1 w-px bg-slate-100" />
-            <div className="space-y-3">
-              {((data as any).timeline_events || []).map((ev: any, i: number) => (
-                <div key={i} className="flex gap-2.5 items-start relative z-10">
-                  <button
-                    onClick={() => seek(ev.timestamp)}
-                    className="h-[20px] w-[20px] rounded-full border-2 border-white bg-slate-100 flex items-center justify-center hover:bg-primary/15 transition-colors flex-shrink-0 mt-0.5 shadow-sm"
-                    title="Seek to this time"
-                  >
-                    <div className="h-1.5 w-1.5 rounded-full bg-primary/60" />
-                  </button>
-                  <div className="flex-1 min-w-0 pb-1">
-                    <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
-                      <span className="text-[9px] font-black text-primary tabular-nums">{ev.timestamp}</span>
-                      <span className="text-[9px] font-bold text-slate-400">· {ev.actor}</span>
+              <div key={s.speaker_id} className="p-3 border rounded-xl bg-white hover:bg-slate-50/50 transition-all border-slate-100 group shadow-sm">
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="h-6 w-6 rounded-lg bg-slate-100 flex items-center justify-center text-[10px] font-black text-slate-400 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+                      {s.speaker_id.split('_')[1]}
                     </div>
-                    <p className="text-[9px] font-bold text-slate-700 leading-snug">{ev.event_summary}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </AccSection>
-
-        {/* 6 — Human Performance Signals */}
-        <AccSection id="human_perf" title="Human Performance Signals" icon={Activity}>
-          <div className="space-y-1.5">
-            {([
-              { key: 'communication_positive_or_not', label: 'Communication',     icon: MessageSquare, tone: 'neutral' },
-              { key: 'missed_confirmation',           label: 'Missed Confirmation', icon: AlertCircle,  tone: 'warn' },
-              { key: 'delayed_reporting',             label: 'Delayed Reporting',   icon: Clock,         tone: 'warn' },
-              { key: 'supervision_signal',            label: 'Supervision',         icon: Users,         tone: 'warn' },
-              { key: 'stress_or_confusion',           label: 'Stress / Confusion',  icon: AlertTriangle, tone: 'critical' },
-              { key: 'speak_up_signal',               label: 'Speak-Up',            icon: MessageSquare, tone: 'ok' },
-              { key: 'coordination_gap_signal',       label: 'Coordination Gap',    icon: AlertCircle,   tone: 'warn' },
-            ] as any[]).map(({ key, label, icon: Icon, tone }) => {
-              const raw = hps[key];
-              const arr: string[] = Array.isArray(raw) ? raw : (raw ? [raw] : []);
-              if (arr.length === 0) return null;
-              const dot = tone === 'critical' ? 'bg-rose-400' : tone === 'warn' ? 'bg-amber-400' : tone === 'ok' ? 'bg-emerald-400' : 'bg-slate-300';
-              return (
-                <div key={key} className="p-2 border rounded-lg bg-slate-50/30">
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <Icon className="h-3 w-3 text-slate-400" />
-                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-wide">{label}</span>
-                  </div>
-                  <div className="space-y-0.5">
-                    {arr.map((item: string, i: number) => (
-                      <div key={i} className="flex items-start gap-1.5">
-                        <div className={`h-1.5 w-1.5 rounded-full mt-1 flex-shrink-0 ${dot}`} />
-                        <p className="text-[9px] font-bold text-slate-600 leading-snug">{item}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </AccSection>
-
-        {/* 7 — Risk & Procedure Clues */}
-        <AccSection id="risk_clues" title="Risk & Procedure Clues" icon={AlertTriangle}>
-          <div className="space-y-2.5">
-            {rpc && ([
-              { key: 'procedure_mentions',          label: 'Procedure' },
-              { key: 'equipment_issue_mentions',    label: 'Equipment' },
-              { key: 'sensor_alarm_mentions',       label: 'Sensor / Alarm' },
-              { key: 'emergency_response_mentions', label: 'Emergency' },
-              { key: 'control_gap_mentions',        label: 'Control Gap' },
-              { key: 'radio_channel_issue_mentions',label: 'Radio / Comms' },
-            ] as { key: string; label: string }[]).map(({ key, label }) => {
-              const items: string[] = rpc[key] || [];
-              if (items.length === 0) return null;
-              return (
-                <div key={key}>
-                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide block mb-1">{label}</span>
-                  <div className="space-y-0.5">
-                    {items.map((item, i) => (
-                      <div key={i} className="flex items-start gap-1.5">
-                        <div className="h-1 w-1 rounded-full bg-slate-300 mt-1.5 flex-shrink-0" />
-                        <p className="text-[9px] font-bold text-slate-600 leading-snug">{item}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </AccSection>
-
-        {/* 8 — Contradictions & Gaps */}
-        <AccSection id="contradictions" title="Contradictions & Gaps" icon={AlertCircle} count={(data as any).contradictions_and_gaps?.length || 0}>
-          <div className="space-y-2">
-            {((data as any).contradictions_and_gaps || []).map((c: any, i: number) => (
-              <div key={i} className="p-2.5 border border-amber-100 rounded-lg bg-amber-50/30 hover:bg-amber-50/60 transition-all">
-                <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                  <TsBtn time={c.timestamp} />
-                  <Chip label={c.type} variant="warn" />
-                  <span className="ml-auto text-[8px] font-bold text-slate-400">{c.confidence}</span>
-                </div>
-                <p className="text-[9px] font-bold text-slate-700 leading-snug">{c.detail}</p>
-              </div>
-            ))}
-          </div>
-        </AccSection>
-
-        {/* 9 — PEEPO Seeds */}
-        <AccSection id="peepo" title="PEEPO Seeds" icon={Brain}>
-          <div className="space-y-1.5">
-            {Object.entries(data.peepo_seeds).map(([cat, items]: any) => {
-              const arr: string[] = Array.isArray(items) ? items : [items];
-              return (
-                <div key={cat} className="p-2 rounded-lg border border-slate-100 bg-slate-50/40 hover:bg-white transition-all">
-                  <span className="text-[8px] font-black text-primary uppercase tracking-wider block mb-1">{cat}</span>
-                  {arr.map((item: string, i: number) => (
-                    <div key={i} className="flex items-start gap-1.5">
-                      <div className="h-1 w-1 rounded-full bg-primary/40 mt-1.5 flex-shrink-0" />
-                      <p className="text-[9px] font-bold text-slate-600 leading-snug">{item}</p>
+                    <div>
+                      <span className="text-[10px] font-black text-slate-900 block leading-tight">{s.speaker_label}</span>
+                      <span className="text-[9px] font-bold text-slate-400">{s.probable_role}</span>
                     </div>
-                  ))}
-                </div>
-              );
-            })}
-          </div>
-        </AccSection>
-
-        {/* 10 — IPLS Seeds */}
-        <AccSection id="ipls" title="IPLS Seeds" icon={FileSearch} count={data.ipls_seeds.length}>
-          <div className="space-y-2">
-            {data.ipls_seeds.map((ipls: any, i: number) => (
-              <div key={i} className="p-2.5 border-l-2 border-l-primary border border-slate-100 rounded-r-lg bg-slate-50/40">
-                <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                  <span className="text-[9px] font-black text-primary">{ipls.layer_candidate}</span>
-                  <span className="text-[8px] text-slate-300">·</span>
-                  <span className="text-[9px] font-bold text-slate-500">{ipls.control_area_candidate}</span>
-                </div>
-                <p className="text-[9px] font-bold text-slate-700 leading-snug mb-1">{ipls.deviation_text}</p>
-                {ipls.evidence_quote && (
-                  <p className="text-[9px] font-medium text-slate-400 italic leading-snug">"{ipls.evidence_quote}"</p>
-                )}
-              </div>
-            ))}
-          </div>
-        </AccSection>
-
-        {/* 11 — Review Meta */}
-        <AccSection id="review_meta" title="Review Meta" icon={CheckCircle2}>
-          <div className="space-y-2">
-            {((data as any).review_meta?.low_confidence_segments || []).map((seg: string, i: number) => (
-              <div key={i} className="flex items-start gap-1.5">
-                <AlertCircle className="h-3 w-3 text-amber-400 flex-shrink-0 mt-0.5" />
-                <p className="text-[9px] font-bold text-slate-600 leading-snug">{seg}</p>
-              </div>
-            ))}
-            {((data as any).review_meta?.needs_human_review || []).length > 0 && (
-              <div>
-                <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide block mb-1">Needs Human Review</span>
-                {(data as any).review_meta.needs_human_review.map((item: string, i: number) => (
-                  <div key={i} className="flex items-start gap-1.5 mb-1 last:mb-0">
-                    <Eye className="h-3 w-3 text-primary flex-shrink-0 mt-0.5" />
-                    <p className="text-[9px] font-bold text-slate-600 leading-snug">{item}</p>
                   </div>
-                ))}
+                  <div className="flex flex-col items-end gap-1">
+                    <Chip label={`Stress: ${s.stress_level.split(' ')[0]}`} variant={s.stress_level.includes('High') ? 'critical' : 'ok'} />
+                    <span className="text-[8px] font-black text-slate-300 uppercase">{s.confidence} Conf</span>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-50">
+                  <KVP label="Speaking" value={s.speaking_time} />
+                  <KVP label="Assert" value={s.assertiveness} />
+                  <KVP label="Hesit" value={s.hesitation} />
+                </div>
               </div>
-            )}
-            <div className="flex items-center justify-between pt-1.5 border-t border-slate-100">
-              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wide">Overall Confidence</span>
-              <span className="text-[10px] font-black text-emerald-600">{(data as any).review_meta?.confidence || '—'}</span>
-            </div>
+            ))}
+          </div>
+        </AccSection>
+
+        {/* D — Transcript & Evidence */}
+        <AccSection id="transcript_evidence" title="Transcript & Evidence" icon={MessageCircle} count={(data as any).factual_statements?.length + (data as any).timeline_events?.length}>
+          <div className="space-y-4">
+             {/* Evidence Statements */}
+             <div>
+               <span className="text-[9px] font-black text-slate-900 uppercase tracking-[0.2em] mb-3 block px-1">Evidence Statements</span>
+               <div className="space-y-2">
+                 {(data as any).factual_statements.map((f: any, i: number) => (
+                   <div key={i} className="flex gap-2.5 p-2.5 border rounded-xl bg-white hover:bg-slate-50/50 transition-all">
+                     <TsBtn time={f.timestamp} />
+                     <div className="flex-1 min-w-0">
+                       <p className="text-[10px] font-bold text-slate-800 leading-snug mb-2 italic">"{f.fact_text}"</p>
+                       <div className="flex items-center gap-1.5 flex-wrap">
+                         <span className="px-1.5 py-0.5 bg-slate-100 rounded text-[8px] font-bold text-slate-500 uppercase">{f.speaker}</span>
+                         <Chip label={f.statement_type} variant="info" />
+                       </div>
+                     </div>
+                   </div>
+                 ))}
+               </div>
+             </div>
+
+             {/* Timeline Events */}
+             <div className="pt-2">
+               <span className="text-[9px] font-black text-slate-900 uppercase tracking-[0.2em] mb-3 block px-1">Forensic Timeline</span>
+               <div className="relative pl-3 border-l border-slate-100 ml-2 space-y-4">
+                 {(data as any).timeline_events.map((ev: any, i: number) => (
+                   <div key={i} className="relative">
+                     <div className="absolute -left-[16.5px] top-1.5 h-2 w-2 rounded-full bg-slate-200 border-2 border-white shadow-sm" />
+                     <div className="flex items-center gap-1.5 mb-1">
+                        <TsBtn time={ev.timestamp} />
+                        <span className="text-[9px] font-bold text-slate-400">· {ev.actor}</span>
+                     </div>
+                     <p className="text-[10px] font-bold text-slate-700 leading-snug">{ev.event_summary}</p>
+                   </div>
+                 ))}
+               </div>
+             </div>
+          </div>
+        </AccSection>
+
+        {/* E — Investigation Cues */}
+        <AccSection id="investigation_cues" title="Investigation Cues" icon={Activity}>
+           <div className="space-y-4">
+             {([
+               { key: 'procedure_mentions',          icon: Shield,   label: 'Procedure' },
+               { key: 'equipment_issue_mentions',    icon: Settings, label: 'Equipment' },
+               { key: 'emergency_response_mentions', icon: HelpCircle, label: 'Emergency' },
+               { key: 'control_gap_mentions',        icon: AlertTriangle, label: 'Control Gaps' },
+             ] as any[]).map(({ key, icon: Icon, label }) => {
+               const items = rpc[key] || [];
+               if (items.length === 0) return null;
+               return (
+                 <div key={key} className="p-3 border rounded-xl bg-slate-50/30">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Icon className="h-3.5 w-3.5 text-slate-400" />
+                      <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">{label}</span>
+                    </div>
+                    <div className="space-y-1.5">
+                      {items.map((it: string, j: number) => (
+                        <div key={j} className="flex gap-2">
+                          <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 mt-1.5 flex-shrink-0" />
+                          <p className="text-[10px] font-bold text-slate-700 leading-snug">{it}</p>
+                        </div>
+                      ))}
+                    </div>
+                 </div>
+               );
+             })}
+           </div>
+        </AccSection>
+
+        {/* F — Risks, Gaps, Review */}
+        <AccSection id="risks_gaps" title="Risks, Gaps, Review" icon={Search} count={(data as any).contradictions_and_gaps.length}>
+          <div className="space-y-4">
+             {/* Contradictions */}
+             <div className="space-y-2">
+               {(data as any).contradictions_and_gaps.map((c: any, i: number) => (
+                 <div key={i} className="p-3 border border-rose-100 rounded-xl bg-rose-50/30">
+                   <div className="flex items-center gap-2 mb-2">
+                     <TsBtn time={c.timestamp} />
+                     <Chip label={c.type} variant="critical" />
+                   </div>
+                   <p className="text-[10px] font-bold text-slate-800 leading-snug">{c.detail}</p>
+                 </div>
+               ))}
+             </div>
+
+             {/* Human Review Flags */}
+             <div className="pt-2 border-t border-slate-100">
+               <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest block mb-2">Human Review Tokens</span>
+               <div className="space-y-1.5">
+                 {(data as any).review_meta.needs_human_review.map((token: string, i: number) => (
+                   <div key={i} className="flex items-center gap-2 px-2.5 py-1.5 bg-slate-50 rounded-lg border border-slate-100">
+                      <Eye className="h-3 w-3 text-primary" />
+                      <span className="text-[10px] font-bold text-slate-600">{token}</span>
+                   </div>
+                 ))}
+               </div>
+             </div>
+
+             <div className="flex items-center justify-between p-3 bg-emerald-50 border border-emerald-100 rounded-xl mt-4">
+               <div className="flex items-center gap-2">
+                 <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                 <span className="text-[10px] font-black text-emerald-900 uppercase">Analysis Confidence</span>
+               </div>
+               <span className="text-[12px] font-black text-emerald-600">{(data as any).review_meta.confidence}</span>
+             </div>
           </div>
         </AccSection>
 
@@ -1906,80 +1841,179 @@ function AudioRightPanel({
     );
   };
 
-  // ── Diary Session tab ──────────────────────────────────────────────────────
+  // ── Diarization Session tab ────────────────────────────────────────────────
 
-  const renderDiary = () => {
+  const renderDiarization = () => {
     const segments = audioDiarizationData;
     const totalSpeakers = [...new Set(segments.map(s => s.speaker_id))].length;
-    const curMin = Math.floor(audioCurrentTime / 60).toString().padStart(2, '0');
-    const curSec = (audioCurrentTime % 60).toString().padStart(2, '0');
+    const [searchTerm, setSearchTerm] = useState('');
+    const [speakerFilter, setSpeakerFilter] = useState<string | null>(null);
+    const [showLowConfOnly, setShowLowConfOnly] = useState(false);
+
+    const filteredSegments = segments.filter(seg => {
+      const matchesSearch = seg.text.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSpeaker = !speakerFilter || seg.speaker_id === speakerFilter;
+      const matchesConf = !showLowConfOnly || seg.confidence === 'low' || seg.confidence === 'medium';
+      return matchesSearch && matchesSpeaker && matchesConf;
+    });
 
     return (
-      <div className="flex flex-col h-full">
-        {/* Mini header stats */}
-        <div className="px-3 py-1.5 border-b border-slate-100 bg-slate-50/50 flex items-center gap-3 text-[9px] font-bold text-slate-400 uppercase tracking-wide flex-shrink-0">
-          <span>{segments.length} segments</span>
-          <span className="h-3 w-px bg-slate-200" />
-          <span>{totalSpeakers} speakers</span>
-          <span className="h-3 w-px bg-slate-200" />
-          <span>04:22 total</span>
-          <div className="ml-auto flex items-center gap-1.5">
-            <div className={`h-1.5 w-1.5 rounded-full ${audioCurrentTime > 0 ? 'bg-primary animate-pulse' : 'bg-slate-200'}`} />
-            <span className="tabular-nums text-slate-500">{curMin}:{curSec}</span>
-          </div>
+      <div className="flex flex-col h-full bg-white">
+        {/* A. Forensic Header */}
+        <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/30">
+           <div className="flex items-center justify-between mb-3">
+              <div>
+                <h3 className="text-[12px] font-black text-slate-900 uppercase tracking-wider">Diarization Session</h3>
+                <span className="text-[9px] font-bold text-slate-400">Audio Forensic Evidence Log · Site Alpha</span>
+              </div>
+              <button className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[10px] font-black text-slate-600 hover:bg-slate-50 transition-all shadow-sm">
+                <Download className="h-3.5 w-3.5" />
+                EXPORT RAW
+              </button>
+           </div>
+           <div className="flex items-center gap-4 text-[10px] font-bold text-slate-500">
+              <div className="flex items-center gap-1.5">
+                <Layers className="h-3.5 w-3.5 text-slate-400" />
+                <span>{segments.length} Segments</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Users className="h-3.5 w-3.5 text-slate-400" />
+                <span>{totalSpeakers} Speakers</span>
+              </div>
+              <div className="flex items-center gap-1.5 px-2 py-0.5 bg-primary/10 text-primary rounded-full">
+                <Clock className="h-3.5 w-3.5" />
+                <span className="tabular-nums">04:22 Total</span>
+              </div>
+           </div>
         </div>
 
-        {/* Segment list */}
-        <div className="flex-1 overflow-auto custom-scrollbar divide-y divide-slate-50">
-          {segments.map((seg) => {
-            const active = isSegActive(seg.start_time, seg.end_time);
-            return (
-              <div
-                key={seg.segment_id}
-                onClick={() => seek(seg.start_time)}
-                className={`flex gap-2.5 px-3 py-2.5 cursor-pointer transition-all relative group ${
-                  active
-                    ? 'bg-primary/5 border-l-2 border-l-primary'
-                    : 'border-l-2 border-l-transparent hover:bg-slate-50/80 hover:border-l-slate-200'
-                }`}
+        {/* B. Action Layer */}
+        <div className="px-4 py-3 border-b border-slate-100 space-y-3 bg-white">
+           <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+              <input 
+                type="text" 
+                placeholder="Search transcript evidence..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-[11px] font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-slate-300"
+              />
+           </div>
+           <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+              <button 
+                onClick={() => setSpeakerFilter(null)}
+                className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase whitespace-nowrap transition-all ${!speakerFilter ? 'bg-slate-900 text-white shadow-md' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}`}
               >
-                {/* Timestamp range */}
-                <div className="w-[72px] flex-shrink-0 pt-0.5">
-                  <span className={`text-[9px] font-black tabular-nums leading-tight block ${active ? 'text-primary' : 'text-slate-400'}`}>
-                    {seg.start_time}
-                  </span>
-                  <span className={`text-[8px] font-bold tabular-nums block ${active ? 'text-primary/60' : 'text-slate-300'}`}>
-                    –{seg.end_time}
-                  </span>
-                </div>
-
-                {/* Content */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                    <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wide border ${
-                      seg.speaker_id === 'SPK_01'
-                        ? 'bg-amber-50 text-amber-700 border-amber-100'
-                        : 'bg-indigo-50 text-indigo-700 border-indigo-100'
-                    }`}>
-                      {seg.speaker_label}
-                    </span>
-                    {seg.flags.includes('critical_evidence') && <span className="h-1.5 w-1.5 rounded-full bg-rose-500" title="Critical evidence" />}
-                    {seg.flags.includes('hazard_alert') && <span className="h-1.5 w-1.5 rounded-full bg-amber-400" title="Hazard alert" />}
-                    {seg.flags.includes('key_observation') && <Star className="h-2.5 w-2.5 text-amber-400 fill-amber-400" />}
-                    {seg.flags.includes('emergency_command') && <span className="h-1.5 w-1.5 rounded-full bg-rose-600 animate-pulse" title="Emergency command" />}
-                  </div>
-                  <p className={`text-[10px] leading-relaxed ${active ? 'text-slate-900 font-medium' : 'text-slate-600 font-medium'}`}>
-                    {seg.text}
-                  </p>
-                </div>
+                All Speakers
+              </button>
+              {data.speaker_profiles.map(s => (
+                <button 
+                  key={s.speaker_id}
+                  onClick={() => setSpeakerFilter(s.speaker_id)}
+                  className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase whitespace-nowrap transition-all ${speakerFilter === s.speaker_id ? 'bg-primary text-white shadow-md' : 'bg-slate-100 text-slate-400 hover:bg-primary/5 hover:text-primary'}`}
+                >
+                  {s.speaker_label}
+                </button>
+              ))}
+              <div className="ml-auto flex items-center gap-2">
+                <button 
+                  onClick={() => setShowLowConfOnly(!showLowConfOnly)}
+                  className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-[9px] font-black uppercase transition-all ${showLowConfOnly ? 'bg-amber-100 text-amber-900 ring-1 ring-amber-200' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}
+                >
+                  <AlertCircle className="h-3 w-3" />
+                  FLAGGED ONLY
+                </button>
               </div>
-            );
-          })}
+           </div>
+        </div>
 
-          {/* End marker */}
-          <div className="flex flex-col items-center justify-center py-6 gap-1">
-            <div className="h-px w-8 bg-slate-100" />
-            <span className="text-[8px] font-black uppercase tracking-[0.2em] text-slate-300">End of Recording</span>
+        {/* C. Segment Review List */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-1">
+          {filteredSegments.length > 0 ? (
+            filteredSegments.map((seg) => {
+              const active = isSegActive(seg.start_time, seg.end_time);
+              const isLowConf = seg.confidence.toLowerCase() !== 'high';
+              const speakerInfo = data.speaker_profiles.find(s => s.speaker_id === seg.speaker_id);
+
+              return (
+                <div
+                  key={seg.segment_id}
+                  onClick={() => seek(seg.start_time)}
+                  className={`group relative flex gap-4 p-3 rounded-2xl cursor-pointer transition-all border border-transparent ${
+                    active
+                      ? 'bg-slate-900 text-white shadow-xl ring-2 ring-primary/40 -translate-y-0.5 z-10'
+                      : 'hover:bg-slate-50 hover:border-slate-100'
+                  }`}
+                >
+                  {/* Timeline Rail Component */}
+                  <div className="flex flex-col items-center w-[45px] flex-shrink-0 pt-1">
+                    <span className={`text-[10px] font-black tabular-nums ${active ? 'text-primary' : 'text-slate-900'}`}>
+                      {seg.start_time}
+                    </span>
+                    <div className={`w-px flex-1 my-2 ${active ? 'bg-primary/30' : 'bg-slate-100 group-hover:bg-slate-200'}`} />
+                    <span className={`text-[9px] font-bold tabular-nums ${active ? 'text-slate-400' : 'text-slate-300'}`}>
+                      {seg.duration || '0:05'}
+                    </span>
+                  </div>
+
+                  {/* Evidence Card Content */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider shadow-sm ${
+                          active 
+                            ? 'bg-primary text-white' 
+                            : seg.speaker_id === 'SPK_01' ? 'bg-amber-50 text-amber-700 border border-amber-100' : 'bg-indigo-50 text-indigo-700 border border-indigo-100'
+                        }`}>
+                          {seg.speaker_label}
+                        </span>
+                        <span className={`text-[9px] font-bold hidden sm:block ${active ? 'text-slate-400' : 'text-slate-300'}`}>
+                          {speakerInfo?.probable_role || 'Speaker'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        {seg.flags?.map((flag: string, idx: number) => (
+                           <div key={idx} className="h-4 w-4 rounded bg-rose-500/10 flex items-center justify-center" title={flag}>
+                              <AlertTriangle className={`h-2.5 w-2.5 ${active ? 'text-rose-400' : 'text-rose-500'}`} />
+                           </div>
+                        ))}
+                        <div className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter ${
+                          isLowConf ? 'bg-rose-500 text-white' : active ? 'bg-emerald-500/20 text-emerald-400' : 'bg-emerald-50 text-emerald-600'
+                        }`}>
+                          {seg.confidence}
+                        </div>
+                      </div>
+                    </div>
+                    <p className={`text-[11px] leading-[1.6] ${active ? 'text-slate-100 italic' : 'text-slate-700 font-medium'}`}>
+                      {searchTerm ? (
+                        seg.text.split(new RegExp(`(${searchTerm})`, 'gi')).map((part, i) => 
+                          part.toLowerCase() === searchTerm.toLowerCase() 
+                            ? <mark key={i} className="bg-yellow-200 text-slate-900 rounded-sm px-0.5">{part}</mark> 
+                            : part
+                        )
+                      ) : seg.text}
+                    </p>
+                  </div>
+
+                  {/* Active Indicator Pulse */}
+                  {active && (
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                       <div className="h-2 w-2 rounded-full bg-primary animate-ping" />
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          ) : (
+             <div className="h-full flex flex-col items-center justify-center p-10 text-center opacity-40">
+                <Search className="h-8 w-8 text-slate-300 mb-3" />
+                <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest leading-tight">No matching fragments found<br/>Adjust your filters</span>
+             </div>
+          )}
+
+          <div className="py-12 flex flex-col items-center justify-center opacity-20">
+             <div className="h-px w-10 bg-slate-300 mb-2" />
+             <span className="text-[8px] font-black uppercase tracking-[0.4em]">End of Diarization</span>
           </div>
         </div>
       </div>
@@ -1995,11 +2029,11 @@ function AudioRightPanel({
       <div className="px-3 py-2 border-b bg-white flex items-center justify-between flex-shrink-0 gap-2">
         {/* Tab switcher */}
         <div className="flex items-center gap-0.5 p-0.5 bg-slate-100 rounded-md border border-slate-200 shadow-inner">
-          {(['extraction', 'diary'] as const).map(tab => (
+          {(['extraction', 'diarization'] as const).map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-3 py-1 text-[9px] font-black uppercase tracking-tight rounded transition-all ${
+              className={`px-3 py-1 rounded text-[10px] font-black tracking-widest uppercase transition-all ${
                 activeTab === tab
                   ? 'bg-white text-primary shadow-sm ring-1 ring-slate-200/60'
                   : 'text-slate-400 hover:text-slate-600'
