@@ -3543,6 +3543,7 @@ function AnalysisTab() {
   const [canvasZoom, setCanvasZoom] = useState(85);
   const [isExporting, setIsExporting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [factViewMode, setFactViewMode] = useState<'slide' | 'default'>('default');
 
   const containerRef = useRef<HTMLDivElement>(null);
   
@@ -3820,16 +3821,35 @@ function AnalysisTab() {
                   backgroundSize: '24px 24px'
                }}
             >
-                {!selectedAgentId ? (
-                    <div className="py-24 flex flex-col items-center text-center max-w-sm">
-                        <div className="h-24 w-24 rounded-[3rem] bg-white border border-slate-200 shadow-2xl flex items-center justify-center mb-10 rotate-12 transition-transform hover:rotate-0">
-                            <Brain className="h-10 w-10 text-slate-200" />
-                        </div>
-                        <h3 className="text-xl font-black text-slate-800 tracking-tighter mb-3 uppercase opacity-50">Orchestration Standby</h3>
-                    </div>
-                ) : (
-                    <div className="bg-white shadow-[0_30px_90px_-20px_rgba(0,0,0,0.3)] flex flex-col relative transition-all duration-300 origin-center overflow-hidden rounded-[2px]" 
-                         style={{ width: '1024px', height: '576px', transform: `scale(${canvasZoom/100})` }}>
+                 {!selectedAgentId ? (
+                     <div className="py-24 flex flex-col items-center text-center max-w-sm">
+                         <div className="h-24 w-24 rounded-[3rem] bg-white border border-slate-200 shadow-2xl flex items-center justify-center mb-10 rotate-12 transition-transform hover:rotate-0">
+                             <Brain className="h-10 w-10 text-slate-200" />
+                         </div>
+                         <h3 className="text-xl font-black text-slate-800 tracking-tighter mb-3 uppercase opacity-50">Orchestration Standby</h3>
+                     </div>
+                 ) : selectedAgentId === 'fact' && factViewMode === 'default' ? (
+                     <div className="w-full h-full bg-white animate-in fade-in duration-500 overflow-hidden">
+                        <FactChronologyModule 
+                           initialItems={slides[activeSlide]?.content.items}
+                           metadata={slides[activeSlide]?.content.metadata}
+                           viewMode="default"
+                           onViewModeChange={setFactViewMode}
+                           onSync={(newItems) => {
+                             setAgents(prev => prev.map(a => a.id === 'fact' ? {
+                               ...a,
+                               results: {
+                                 ...a.results,
+                                 chronology_items: newItems
+                               }
+                             } : a));
+                             toast.success("Chronology successfully synced to case intelligence.");
+                           }}
+                        />
+                     </div>
+                 ) : (
+                     <div className={`bg-white shadow-[0_30px_90px_-20px_rgba(0,0,0,0.3)] flex flex-col relative transition-all duration-300 origin-center overflow-hidden rounded-[2px] ${factViewMode === 'default' ? 'w-full h-full' : ''}`} 
+                          style={factViewMode === 'default' ? {} : { width: '1024px', height: '576px', transform: `scale(${canvasZoom/100})` }}>
                        <div className="flex-1 p-[60px] flex flex-col relative overflow-hidden h-full">
                           {selectedAgent?.status === 'running' ? (
                              <div className="flex flex-col items-center justify-center h-full text-center space-y-8 animate-pulse text-slate-300">
@@ -3847,6 +3867,8 @@ function AnalysisTab() {
                                     <FactChronologyModule 
                                       initialItems={slides[activeSlide]?.content.items}
                                       metadata={slides[activeSlide]?.content.metadata}
+                                      viewMode="slide"
+                                      onViewModeChange={setFactViewMode}
                                       onSync={(newItems) => {
                                         setAgents(prev => prev.map(a => a.id === 'fact' ? {
                                           ...a,
