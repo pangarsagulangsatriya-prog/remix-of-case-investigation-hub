@@ -1,5 +1,6 @@
 // BUILD_VERSION: 2026-04-16T19:35:00 — force redeploy with diarization + 6-layer extraction
 import React, { useState, useEffect, useRef, useMemo } from "react"; 
+import { FactChronologyModule, ChronologyItem } from "@/components/analysis/FactChronologyModule";
 import { useParams } from "react-router-dom";
 import { AppLayout } from "@/components/AppLayout";
 import { StatusChip, SeverityChip, ConfidenceChip } from "@/components/StatusChip";
@@ -111,23 +112,17 @@ const initialAgentsState: AgentState[] = [
            sumber_bukti: "SCADA, CCTV-B14, HSE Logs",
            severity: "High"
         },
-        timeline: {
-           praKontak: [
-              { time: "14:10", name: "System", event: "Vibration sensor alarm start on Section 14 drive motor" },
-              { time: "14:20", name: "Ahmed Khan", event: "Operator manual override initiated to maintain throughput" },
-              { time: "14:21", name: "System", event: "Secondary tension alarm ignored by control room" }
-           ],
-           kontak: [
-              { time: "14:23", name: "Equipment", event: "Belt rupture detected at Section 14 leading to massive spillage" },
-              { time: "14:24", name: "System", event: "Main line conveyor 2 motor torque spike detected" },
-              { time: "14:25", name: "System", event: "Emergency stop automatically triggered by belt rip sensors" }
-           ],
-           pascaKontak: [
-              { time: "14:30", name: "HSE Team", event: "Departure to incident site for initial containment and safety cordoning" },
-              { time: "14:45", name: "Maria Santos", event: "Area secured and maintenance lockout-tagout (LOTO) procedures applied" },
-              { time: "15:00", name: "Ahmed Khan", event: "Initial witness statement provided to HSE supervisor" }
-           ]
-        }
+        chronology_items: [
+           { id: 'f1', phase: 'pre_contact', time_label: "14:10", chronology_text: "Vibration sensor alarm start on Section 14 drive motor", source: 'ai', annotated_by_human: false, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+           { id: 'f2', phase: 'pre_contact', time_label: "14:20", chronology_text: "Operator manual override initiated to maintain throughput", source: 'ai', annotated_by_human: false, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+           { id: 'f3', phase: 'pre_contact', time_label: "14:21", chronology_text: "Secondary tension alarm ignored by control room", source: 'ai', annotated_by_human: false, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+           { id: 'f4', phase: 'contact', time_label: "14:23", chronology_text: "Belt rupture detected at Section 14 leading to massive spillage", source: 'ai', annotated_by_human: false, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+           { id: 'f5', phase: 'contact', time_label: "14:24", chronology_text: "Main line conveyor 2 motor torque spike detected", source: 'ai', annotated_by_human: false, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+           { id: 'f6', phase: 'contact', time_label: "14:25", chronology_text: "Emergency stop automatically triggered by belt rip sensors", source: 'ai', annotated_by_human: false, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+           { id: 'f7', phase: 'post_contact', time_label: "14:30", chronology_text: "HSE Team departure to incident site for initial containment", source: 'ai', annotated_by_human: false, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+           { id: 'f8', phase: 'post_contact', time_label: "14:45", chronology_text: "Area secured and maintenance lockout-tagout (LOTO) applied", source: 'ai', annotated_by_human: false, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+           { id: 'f9', phase: 'post_contact', time_label: "15:00", chronology_text: "Initial witness statement provided to HSE supervisor", source: 'ai', annotated_by_human: false, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+        ]
      }
   },
   { 
@@ -3574,30 +3569,32 @@ function AnalysisTab() {
     const agent = agents.find(a => a.id === selectedAgentId);
     if (!agent) return [];
 
-    if (agent.id === 'fact' && agent.results) {
-       return [
-          {
-             id: 'fact-1',
-             type: 'chronology',
-             title: 'Fact & Chronology',
-             subtitle: 'Overview Incident',
-             caseCode: 'CS-2026-0147',
-             content: {
-                summary: agent.results.ringkasan?.deskripsi || "No summary available.",
-                metadata: [
-                   { label: 'Incident Date', value: agent.results.ringkasan?.tanggal || "—" },
-                   { label: 'Incident Time', value: agent.results.ringkasan?.jam || "—" },
-                   { label: 'Location', value: agent.results.ringkasan?.lokasi || "—" },
-                   { label: 'Incident Type', value: agent.results.ringkasan?.jenis || "—" },
-                   { label: 'Department', value: agent.results.ringkasan?.departemen || "—" },
-                   { label: 'Evidence Source', value: agent.results.ringkasan?.sumber_bukti || "—" },
-                   { label: 'Severity', value: agent.results.ringkasan?.severity || "—" }
-                ],
-                timeline: agent.results.timeline || { praKontak: [], kontak: [], pascaKontak: [] }
-             }
-          }
-       ];
-    }
+     if (agent.id === 'fact' && agent.results) {
+        return [
+           {
+              id: 'fact-1',
+              type: 'chronology_module',
+              title: 'Fact & Chronology',
+              subtitle: 'Overview Incident',
+              caseCode: 'CS-2026-0147',
+              content: {
+                 summary: agent.results.ringkasan?.deskripsi || "No summary available.",
+                 metadata: {
+                    incidentDate: agent.results.ringkasan?.tanggal || "—",
+                    incidentTime: agent.results.ringkasan?.jam || "—",
+                    location: agent.results.ringkasan?.lokasi || "—",
+                    incidentType: agent.results.ringkasan?.jenis || "—",
+                    department: agent.results.ringkasan?.departemen || "—",
+                    evidenceSource: agent.results.ringkasan?.sumber_bukti || "—",
+                    severity: agent.results.ringkasan?.severity || "—",
+                    summary: agent.results.ringkasan?.deskripsi || "—",
+                    caseCode: 'CS-2026-0147'
+                 },
+                 items: agent.results.chronology_items || []
+              }
+           }
+        ];
+     }
     
     return [{
        id: 'slide-1',
@@ -3846,61 +3843,31 @@ function AnalysisTab() {
                              </div>
                           ) : (
                              <div className="flex-1 animate-in fade-in duration-500 overflow-hidden">
-                                {slides[activeSlide]?.type === 'chronology' ? (
-                                   <div className="flex flex-col h-full text-slate-900">
-                                      <div className="flex justify-between items-start mb-6 border-b-2 border-slate-900 pb-4">
-                                         <div>
-                                            <div className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-1">{(slides[activeSlide] as any)?.subtitle}</div>
-                                            <h2 className="text-[32px] font-black uppercase tracking-tighter leading-none">{slides[activeSlide]?.title}</h2>
-                                         </div>
-                                         <div className="text-right">
-                                            <div className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1">Investigation Code</div>
-                                            <div className="text-sm font-mono font-bold text-slate-800">#{slides[activeSlide]?.caseCode}</div>
-                                         </div>
-                                      </div>
-                                      <div className="mb-6 bg-slate-50 border-l-4 border-slate-900 p-4 rounded-r-lg">
-                                         <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Executive Summary</div>
-                                         <div className="text-[14px] text-slate-700 font-medium leading-relaxed">{slides[activeSlide]?.content?.summary}</div>
-                                      </div>
-                                      <div className="grid grid-cols-4 gap-4 mb-8 bg-white border border-slate-100 p-4 rounded-xl">
-                                         {slides[activeSlide]?.content?.metadata.map((m: any) => (
-                                            <div key={m.label}>
-                                               <div className="text-[8px] font-black text-slate-400 uppercase mb-1">{m.label}</div>
-                                               <div className="text-[11px] font-bold text-slate-800">{m.value}</div>
-                                            </div>
-                                         ))}
-                                      </div>
-                                      <div className="flex-1 grid grid-cols-3 gap-4 min-h-0 overflow-hidden">
-                                         {['praKontak', 'kontak', 'pascaKontak'].map((key, i) => (
-                                            <div key={key} className="flex flex-col border border-slate-100 rounded-xl overflow-hidden bg-white">
-                                               <div className={`${i === 0 ? 'bg-emerald-600' : i === 1 ? 'bg-rose-600' : 'bg-amber-500'} px-4 py-2`}>
-                                                  <span className="text-[10px] font-black text-white uppercase tracking-widest">{key.replace('K', ' K')}</span>
-                                               </div>
-                                               <div className="flex-1 overflow-y-auto p-3 space-y-2.5 custom-scrollbar">
-                                                  {slides[activeSlide]?.content?.timeline[key].map((item: any, idx: number) => (
-                                                     <div key={idx} className="flex gap-2">
-                                                        <div className="text-[9px] font-black text-slate-400">[{item.time}]</div>
-                                                        <div>
-                                                           <div className="text-[10px] font-black text-slate-800 mb-0.5">[{item.name}]</div>
-                                                           <div className="text-[10px] text-slate-500 font-medium leading-normal">{item.event}</div>
-                                                        </div>
-                                                     </div>
-                                                  ))}
-                                               </div>
-                                            </div>
-                                         ))}
-                                      </div>
-                                   </div>
-                                ) : (
-                                   <div className="flex flex-col h-full">
-                                      <h2 className="text-[32px] font-black text-slate-800 mb-8 tracking-tighter uppercase">{slides[activeSlide]?.title}</h2>
-                                      <div className="flex-1 bg-[#1a1c23] rounded-lg p-6 overflow-hidden border border-slate-700 shadow-2xl relative">
-                                         <pre className="text-[12px] font-mono text-emerald-400/90 leading-tight h-full overflow-auto custom-scrollbar">
-                                            {JSON.stringify(slides[activeSlide]?.content, null, 2)}
-                                         </pre>
-                                      </div>
-                                   </div>
-                                )}
+                                 {slides[activeSlide]?.type === 'chronology_module' ? (
+                                    <FactChronologyModule 
+                                      initialItems={slides[activeSlide]?.content.items}
+                                      metadata={slides[activeSlide]?.content.metadata}
+                                      onSync={(newItems) => {
+                                        setAgents(prev => prev.map(a => a.id === 'fact' ? {
+                                          ...a,
+                                          results: {
+                                            ...a.results,
+                                            chronology_items: newItems
+                                          }
+                                        } : a));
+                                        toast.success("Chronology successfully synced to case intelligence.");
+                                      }}
+                                    />
+                                 ) : (
+                                    <div className="flex flex-col h-full">
+                                       <h2 className="text-[32px] font-black text-slate-800 mb-8 tracking-tighter uppercase">{slides[activeSlide]?.title}</h2>
+                                       <div className="flex-1 bg-[#1a1c23] rounded-lg p-6 overflow-hidden border border-slate-700 shadow-2xl relative">
+                                          <pre className="text-[12px] font-mono text-emerald-400/90 leading-tight h-full overflow-auto custom-scrollbar">
+                                             {JSON.stringify(slides[activeSlide]?.content, null, 2)}
+                                          </pre>
+                                       </div>
+                                    </div>
+                                 )}
                              </div>
                           )}
                           <div className="absolute bottom-10 left-[60px] right-[60px] flex justify-between items-center opacity-40 border-t border-slate-100 pt-8">
