@@ -3745,11 +3745,20 @@ function AnalysisTab() {
                </div>
             </div>
 
-            <div ref={containerRef} className="flex-1 relative overflow-auto custom-scrollbar p-10 flex items-start justify-center">
+            <div ref={containerRef} className={cn(
+               "flex-1 relative overflow-auto custom-scrollbar flex items-start justify-center transition-all duration-300",
+               factViewMode === 'default' ? "p-0" : "p-10"
+            )}>
                  {selectedAgentId ? (
-                         <div className={`bg-white shadow-[0_30px_90px_-20px_rgba(0,0,0,0.3)] flex flex-col relative transition-all duration-300 origin-center overflow-hidden rounded-[2px] ${factViewMode === 'default' ? 'w-full h-full' : ''}`} 
-                              style={factViewMode === 'default' ? {} : { width: '1024px', height: '576px', transform: `scale(${canvasZoom/100})` }}>
-                           <div className="flex-1 p-[60px] flex flex-col relative overflow-hidden h-full">
+                         <div className={cn(
+                              "bg-white flex flex-col relative transition-all duration-500 origin-center overflow-hidden",
+                              factViewMode === 'default' ? "w-full h-full rounded-none" : "w-[1024px] h-[576px] rounded-[2px] shadow-[0_30px_90px_-20px_rgba(0,0,0,0.3)] shadow-black/20"
+                         )}
+                              style={factViewMode === 'default' ? {} : { transform: `scale(${canvasZoom/100})` }}>
+                           <div className={cn(
+                              "flex-1 flex flex-col relative overflow-hidden h-full transition-all duration-500",
+                              factViewMode === 'default' ? "p-0" : "p-[60px]"
+                           )}>
                               {selectedAgent?.status === 'running' ? (
                                  <div className="flex flex-col items-center justify-center h-full text-center space-y-8 animate-pulse text-slate-300">
                                     <Loader2 className="h-12 w-12 animate-spin" />
