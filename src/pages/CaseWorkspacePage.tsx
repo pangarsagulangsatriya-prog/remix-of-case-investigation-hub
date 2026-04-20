@@ -1,4 +1,4 @@
-// BUILD_VERSION: 2026-04-16T19:35:00 — force redeploy with diarization + 6-layer extraction
+// BUILD_VERSION: 2026-04-20T13:59:00 — independent orchestration + agent lifecycle overhaul
 import React, { useState, useEffect, useRef, useMemo } from "react"; 
 import { FactChronologyModule, ChronologyItem, TraceabilityPanel, VerificationStatus, STATUS_CONFIG } from "@/components/analysis/FactChronologyModule";
 import { useParams } from "react-router-dom";
