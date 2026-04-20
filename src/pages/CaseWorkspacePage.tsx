@@ -77,12 +77,27 @@ import {
   Layers
 } from "lucide-react";
 
+type AgentStatus = 'idle' | 'queued' | 'running' | 'paused' | 'stopped' | 'completed' | 'failed' | 'cancelled';
+
+interface AgentRunHistory {
+  run_id: string;
+  agent_id: string;
+  started_at: string;
+  ended_at?: string;
+  triggered_by: string;
+  status: AgentStatus;
+  token_usage?: number;
+  duration_ms?: number;
+  summary?: string;
+  error_message?: string;
+}
+
 interface AgentState {
   id: string;
   name: string;
   icon: any;
   purpose: string;
-  status: 'idle' | 'queued' | 'running' | 'completed' | 'warning' | 'failed' | 'blocked' | 'cancelled' | 'skipped';
+  status: AgentStatus;
   triggeredBy?: string;
   lastRunTimestamp?: string;
   lastUpdatedTimestamp?: string;
@@ -91,16 +106,40 @@ interface AgentState {
   microStatus?: string;
   results?: any;
   dependencies: string[];
+  
+  // Operational Metadata
+  runCount: number;
+  currentRunProgress?: number;
+  tokenEstimate?: number;
+  actualTokenUsage?: number;
+  durationMs?: number;
+  errorMessage?: string;
+  history: AgentRunHistory[];
+  backendCapabilities: {
+    canPause: boolean;
+    canResume: boolean;
+    canStop: boolean;
+    canRerun: boolean;
+  };
 }
-
 const initialAgentsState: AgentState[] = [
   { 
      id: 'fact', 
      name: 'Fact & Chronology', 
      icon: Clock, 
      purpose: 'Reconstruct sequence of events from raw evidence batches.', 
-     status: 'idle', 
-     dependencies: [], 
+     status: 'completed', 
+     dependencies: [],
+     runCount: 3,
+     lastRunTimestamp: "Today, 10:42 AM",
+     tokenEstimate: 2500,
+     actualTokenUsage: 2140,
+     durationMs: 4200,
+     history: [
+       { run_id: "r-101", agent_id: "fact", started_at: "2026-04-20T09:00:00Z", ended_at: "2026-04-20T09:00:05Z", triggered_by: "System", status: "completed", token_usage: 2050, duration_ms: 5000, summary: "Initial extraction" },
+       { run_id: "r-102", agent_id: "fact", started_at: "2026-04-20T10:42:00Z", ended_at: "2026-04-20T10:42:04Z", triggered_by: "Current User", status: "completed", token_usage: 2140, duration_ms: 4200, summary: "Rerun after evidence update" }
+     ],
+     backendCapabilities: { canPause: false, canResume: false, canStop: true, canRerun: true },
      results: {
         ringkasan: {
            tanggal: "April 05, 2026",
@@ -201,37 +240,7 @@ const initialAgentsState: AgentState[] = [
                  confidence_score: 0.88
                }
              ]
-           },
-           { id: 'f5', phase: 'contact', time_label: "14:24", chronology_text: "Main line conveyor 2 motor torque spike detected", source: 'ai', annotated_by_human: false, verification_status: 'ai_generated', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-           { id: 'f6', phase: 'contact', time_label: "14:25", chronology_text: "Emergency stop automatically triggered by belt rip sensors", source: 'ai', annotated_by_human: false, verification_status: 'ai_generated', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-           { id: 'f7', phase: 'post_contact', time_label: "14:30", chronology_text: "HSE Team departure to incident site for initial containment", source: 'ai', annotated_by_human: false, verification_status: 'ai_generated', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-           { 
-             id: 'f8', 
-             phase: 'post_contact', 
-             time_label: "14:45", 
-             chronology_text: "Area secured and maintenance lockout-tagout (LOTO) applied", 
-             source: 'ai', 
-             annotated_by_human: false, 
-             verification_status: 'ai_generated',
-             created_at: new Date().toISOString(), 
-             updated_at: new Date().toISOString(),
-             support_strength: 0.88,
-             synthesis_summary: "Procedural completion confirmed via digital LOTO registration form and maintenance shift turnover log.",
-             traceability: [
-               {
-                 trace_id: 'tr-301',
-                 source_type: 'document',
-                 source_file_name: 'LOTO-REG-SEC14-APR05.pdf',
-                 source_file_id: 'ev-995',
-                 extraction_run_id: 'doc-node-v1',
-                 page_number: 1,
-                 extracted_content: "LOTO PROCEDURE COMPLETED. PADLOCK REF: #7721-B. SIGNED: M. SANTOS.",
-                 support_type: 'direct',
-                 confidence_score: 0.99
-               }
-             ]
-           },
-           { id: 'f9', phase: 'post_contact', time_label: "15:00", chronology_text: "Initial witness statement provided to HSE supervisor", source: 'ai', annotated_by_human: false, verification_status: 'ai_generated', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+           }
         ]
      }
   },
@@ -242,13 +251,20 @@ const initialAgentsState: AgentState[] = [
      purpose: 'Map roles, permissions, and coordination gaps of involved entities.', 
      status: 'idle', 
      dependencies: ['fact'],
+     runCount: 1,
+     lastRunTimestamp: "Yesterday",
+     tokenEstimate: 1200,
+     history: [
+        { run_id: "r-99", agent_id: "actor", started_at: "2026-04-19T14:20:00Z", ended_at: "2026-04-19T14:20:03Z", triggered_by: "System", status: "completed", token_usage: 1105, duration_ms: 3200, summary: "Baseline actor mapping" }
+     ],
+     backendCapabilities: { canPause: false, canResume: false, canStop: true, canRerun: true },
      results: {
         aktor: [
            { nama: "Ahmed Khan", peran: "Conveyor Supervisor", status_shift: "Active", tindakan: "Manual Override" },
            { nama: "Maria Santos", peran: "Maintenance Lead", status_shift: "Remote", tindakan: "Log Review" }
         ],
         relasi: "Gaps found between HSE protocol and manual override speed.",
-        temuan_utama: " احمد (Ahmed) was operating outside standard speed parameters."
+        temuan_utama: "احمد (Ahmed) was operating outside standard speed parameters."
      }
   },
   { 
@@ -258,6 +274,10 @@ const initialAgentsState: AgentState[] = [
      purpose: 'Analyze People, Environment, Equipment, Procedures, and Org factors.', 
      status: 'idle', 
      dependencies: ['actor'],
+     runCount: 0,
+     tokenEstimate: 3500,
+     history: [],
+     backendCapabilities: { canPause: false, canResume: false, canStop: true, canRerun: true },
      results: {
         people: ["Operator fatigue suspected", "Training gap on Section 14 override"],
         environment: ["High dust levels impacting sensors", "Limited visibility in sector"],
@@ -275,6 +295,10 @@ const initialAgentsState: AgentState[] = [
      purpose: 'Classify incident across the 5 layers of Industrial Prevention Logic.', 
      status: 'idle', 
      dependencies: ['peepo'],
+     runCount: 0,
+     tokenEstimate: 800,
+     history: [],
+     backendCapabilities: { canPause: false, canResume: false, canStop: true, canRerun: true },
      results: {
         layer_1: "Immediate Cause: Mechanical Rupture",
         layer_2: "Direct Cause: Tensioner Override",
@@ -292,6 +316,10 @@ const initialAgentsState: AgentState[] = [
      purpose: 'Generate corrective actions and predictive risk mitigations.', 
      status: 'idle', 
      dependencies: ['ipls'],
+     runCount: 0,
+     tokenEstimate: 2000,
+     history: [],
+     backendCapabilities: { canPause: false, canResume: false, canStop: true, canRerun: true },
      results: {
         actions: [
            { id: "A1", desc: "Automated tensioner shutdown logic upgrade", priority: "Critical", owner: "Maintenance" },
@@ -3083,6 +3111,8 @@ function AnalysisTab() {
   const [canvasZoom, setCanvasZoom] = useState(85);
   const [isExporting, setIsExporting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [preRunAgentId, setPreRunAgentId] = useState<string | null>(null);
+  const [historyAgentId, setHistoryAgentId] = useState<string | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
   
@@ -3223,6 +3253,54 @@ function AnalysisTab() {
     }
   }, [chainQueue, activeTask, globalStatus, agents, execMode]);
 
+  const runSingleAgent = (agentId: string, isRerun: boolean = false) => {
+    setPreRunAgentId(null);
+    setAgents(prev => prev.map(a => a.id === agentId ? { 
+      ...a, 
+      status: 'running', 
+      microStatus: isRerun ? 'Reprocessing...' : 'Executing...',
+      triggeredBy: 'Current User'
+    } : a));
+    
+    // Simulate backend execution
+    setTimeout(() => {
+      setAgents(prev => prev.map(a => {
+        if (a.id === agentId) {
+          const actualTokens = (a.tokenEstimate || 1000) * (0.8 + Math.random() * 0.4);
+          const duration = 3000 + Math.random() * 2000;
+          const newRun: AgentRunHistory = {
+            run_id: `run-${Math.random().toString(36).substr(2, 9)}`,
+            agent_id: agentId,
+            started_at: new Date().toISOString(),
+            ended_at: new Date().toISOString(),
+            triggered_by: "Current User",
+            status: "completed",
+            token_usage: Math.floor(actualTokens),
+            duration_ms: Math.floor(duration),
+            summary: isRerun ? "Re-analysis triggered by user request." : "Initial analysis completed successfully."
+          };
+
+          return { 
+            ...a, 
+            status: 'completed', 
+            runCount: a.runCount + 1,
+            lastRunTimestamp: "Just now",
+            actualTokenUsage: Math.floor(actualTokens),
+            durationMs: Math.floor(duration),
+            history: [newRun, ...a.history]
+          };
+        }
+        return a;
+      }));
+      toast.success(`${agents.find(ag => ag.id === agentId)?.name} analysis finished.`);
+    }, 4000);
+  };
+
+  const stopSingleAgent = (agentId: string) => {
+    setAgents(prev => prev.map(a => a.id === agentId ? { ...a, status: 'stopped' } : a));
+    toast.error("Agent execution terminated.");
+  };
+
   const startFullChain = () => {
     setExecMode("full");
     setGlobalStatus("running");
@@ -3290,28 +3368,74 @@ function AnalysisTab() {
                         key={agent.id}
                         onClick={() => setSelectedAgentId(agent.id)}
                         className={`
-                           group relative flex flex-col p-4 rounded-xl border bg-white transition-all cursor-pointer
-                           ${selectedAgentId === agent.id ? "border-slate-900 shadow-md ring-1 ring-slate-900/5 translate-x-1" : "border-slate-200 hover:border-slate-300"}
+                           group relative flex flex-col p-5 rounded-2xl border bg-white transition-all cursor-pointer overflow-hidden
+                           ${selectedAgentId === agent.id ? "border-slate-900 shadow-xl ring-1 ring-slate-900/5 -translate-y-0.5" : "border-slate-200 hover:border-slate-300 shadow-sm hover:shadow-md"}
                         `}
                      >
-                        <div className="flex items-start justify-between mb-3">
-                           <div className={`h-11 w-11 rounded-xl border flex items-center justify-center transition-all ${selectedAgentId === agent.id ? "bg-slate-900 text-white border-slate-900 shadow-lg shadow-slate-900/10 scale-105" : "bg-white text-slate-400 border-slate-100"}`}>
+                        <div className="flex items-start justify-between mb-4">
+                           <div className={`h-12 w-12 rounded-2xl border flex items-center justify-center transition-all ${selectedAgentId === agent.id ? "bg-slate-900 text-white border-slate-900 shadow-lg shadow-slate-900/20" : "bg-white text-slate-400 border-slate-100"}`}>
                               <agent.icon className="h-5 w-5" />
                            </div>
-                           <div className={`
-                                px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border
-                                ${agent.status === 'completed' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 
-                                  agent.status === 'running' ? 'bg-blue-50 text-blue-700 border-blue-100 animate-pulse' : 
-                                  'bg-slate-50 text-slate-400 border-slate-100'}
-                           `}>
-                                {agent.status}
+                           <div className="flex flex-col items-end gap-2">
+                              <div className={`
+                                   px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border
+                                   ${agent.status === 'completed' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 
+                                     agent.status === 'running' ? 'bg-blue-50 text-blue-700 border-blue-100 animate-pulse' : 
+                                     agent.status === 'stopped' ? 'bg-rose-50 text-rose-700 border-rose-100' :
+                                     'bg-slate-50 text-slate-400 border-slate-100'}
+                              `}>
+                                   {agent.status}
+                              </div>
+                              {agent.lastRunTimestamp && (
+                                 <span className="text-[8px] font-bold text-slate-300 uppercase tracking-tight">{agent.lastRunTimestamp}</span>
+                              )}
                            </div>
                         </div>
-                        <h4 className={`text-[10px] font-black uppercase tracking-[0.15em] mb-1.5 ${selectedAgentId === agent.id ? "text-slate-900" : "text-slate-500"}`}>{agent.name}</h4>
-                        <p className="text-[10px] font-bold text-slate-400 leading-snug opacity-80">{agent.purpose}</p>
+
+                        <div className="space-y-1 mb-4">
+                           <h4 className={`text-[11px] font-black uppercase tracking-[0.15em] ${selectedAgentId === agent.id ? "text-slate-900" : "text-slate-500"}`}>{agent.name}</h4>
+                           <p className="text-[10px] font-medium text-slate-400 leading-snug line-clamp-2 opacity-80">{agent.purpose}</p>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-50">
+                           {agent.status === 'running' ? (
+                              <Button 
+                                 onClick={(e) => { e.stopPropagation(); stopSingleAgent(agent.id); }}
+                                 variant="outline" 
+                                 className="col-span-2 h-10 bg-rose-50 hover:bg-rose-100 border-rose-100 text-rose-600 text-[10px] font-black uppercase tracking-[0.1em] rounded-xl transition-all"
+                              >
+                                 <XCircle className="h-4 w-4 mr-2" /> Stop Node
+                              </Button>
+                           ) : (
+                              <>
+                                 <Button 
+                                    onClick={(e) => { e.stopPropagation(); setPreRunAgentId(agent.id); }}
+                                    className="h-10 bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-black uppercase tracking-[0.1em] rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.15)] transition-all hover:-translate-y-0.5 active:translate-y-0"
+                                 >
+                                    <Play className="h-3.5 w-3.5 mr-2 fill-current" /> {agent.runCount > 0 ? "Rerun" : "Execute"}
+                                 </Button>
+                                 <div className="flex gap-1.5">
+                                    <Button 
+                                       variant="outline" 
+                                       onClick={(e) => { e.stopPropagation(); setHistoryAgentId(agent.id); }}
+                                       className="flex-1 h-10 bg-white border-slate-200 text-slate-500 text-[10px] font-black uppercase tracking-[0.1em] rounded-xl hover:bg-slate-50 transition-colors"
+                                    >
+                                       <History className="h-4 w-4" />
+                                    </Button>
+                                    <Button 
+                                       variant="outline" 
+                                       className="flex-1 h-10 bg-white border-slate-200 text-slate-500 text-[10px] font-black uppercase tracking-[0.1em] rounded-xl hover:bg-slate-50 transition-colors"
+                                    >
+                                       <Settings className="h-4 w-4" />
+                                    </Button>
+                                 </div>
+                              </>
+                           )}
+                        </div>
+
                         {agent.status === 'running' && (
-                           <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500/20 overflow-hidden rounded-b-xl">
-                              <div className="h-full bg-blue-500 animate-pulse w-full" />
+                           <div className="absolute bottom-0 left-0 right-0 h-1 bg-slate-100 overflow-hidden">
+                              <div className="h-full bg-blue-500 animate-pulse w-full origin-left" />
                            </div>
                         )}
                      </div>
@@ -3568,9 +3692,24 @@ function AnalysisTab() {
                   </div>
                 </>
              )}
-          </div>
-    </div>
-  );
+     </div>
+
+     {preRunAgentId && (
+        <PreRunModal 
+          agent={agents.find(a => a.id === preRunAgentId)!}
+          onClose={() => setPreRunAgentId(null)}
+          onRun={(rerun) => runSingleAgent(preRunAgentId, rerun)}
+        />
+     )}
+
+     {historyAgentId && (
+        <AgentHistoryPanel 
+          agent={agents.find(a => a.id === historyAgentId)!}
+          onClose={() => setHistoryAgentId(null)}
+        />
+     )}
+  </div>
+);
 }
 
 function ReportsTab() {
@@ -4735,6 +4874,193 @@ export default function CaseWorkspacePage() {
         </div>
       </div>
     </AppLayout>
+  );
+}
+
+
+function PreRunModal({ agent, onClose, onRun }: { agent: AgentState, onClose: () => void, onRun: (isRerun: boolean) => void }) {
+  const isRerun = agent.status === 'completed' || agent.status === 'failed' || agent.status === 'cancelled';
+  
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200">
+      <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden border border-slate-200">
+        <div className="h-14 border-b border-slate-100 flex items-center justify-between px-6 bg-slate-50/50">
+          <div className="flex items-center gap-3">
+             <div className="h-8 w-8 rounded-lg bg-slate-900 text-white flex items-center justify-center shadow-lg shadow-slate-900/10">
+                <agent.icon className="h-4 w-4" />
+             </div>
+             <div>
+                <h3 className="text-xs font-black uppercase tracking-widest text-slate-900 leading-none">Execute Node</h3>
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1 block">Configuration & Cost Warning</span>
+             </div>
+          </div>
+          <Button variant="ghost" size="sm" onClick={onClose} className="h-8 w-8 p-0 rounded-full hover:bg-slate-200 text-slate-400">
+             <X className="h-4 w-4" />
+          </Button>
+        </div>
+
+        <div className="p-6 space-y-6">
+          <div className="bg-slate-50 rounded-xl p-5 border border-slate-100 space-y-4">
+             <div className="flex flex-col">
+                <span className="text-[9px] font-black text-slate-400 uppercase mb-2">Agent Context</span>
+                <span className="text-[14px] font-black text-slate-900 uppercase tracking-tight leading-none">{agent.name}</span>
+                <p className="text-[11px] font-bold text-slate-500 mt-2 leading-relaxed opacity-70">{agent.purpose}</p>
+             </div>
+             
+             <div className="grid grid-cols-2 gap-6 pt-2">
+                <div className="flex flex-col">
+                   <span className="text-[8px] font-black text-slate-400 uppercase mb-1">Execution Mode</span>
+                   <span className={`text-[10px] font-black uppercase tracking-widest ${isRerun ? "text-amber-600" : "text-emerald-600"}`}>
+                      {isRerun ? "Rerun / Re-analysis" : "Fresh Execution"}
+                   </span>
+                </div>
+                <div className="flex flex-col">
+                   <span className="text-[8px] font-black text-slate-400 uppercase mb-1">Last Run</span>
+                   <span className="text-[10px] font-black text-slate-800 uppercase tabular-nums">{agent.lastRunTimestamp || "Never"}</span>
+                </div>
+             </div>
+          </div>
+
+          <div className="space-y-4">
+             <div className="flex items-center justify-between px-1">
+                <div className="flex items-center gap-2">
+                   <Database className="h-3 w-3 text-slate-400" />
+                   <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Resource Estimate</span>
+                </div>
+             </div>
+             <div className="grid grid-cols-2 gap-3">
+                <div className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm">
+                   <div className="text-[18px] font-black text-slate-900 leading-none">{agent.tokenEstimate?.toLocaleString()}</div>
+                   <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-2 flex items-center gap-1">
+                      Est. Tokens <HelpCircle className="h-2.5 w-2.5" />
+                   </div>
+                </div>
+                <div className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm">
+                   <div className="text-[18px] font-black text-slate-900 leading-none">12</div>
+                   <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-2">Source Evidence</div>
+                </div>
+             </div>
+          </div>
+
+          <div className="bg-amber-50/50 border border-amber-100 border-dashed rounded-xl p-4 flex gap-3">
+             <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0" />
+             <div className="space-y-1">
+                <span className="text-[10px] font-black text-amber-800 uppercase block tracking-wider">Token Consumption Warning</span>
+                <p className="text-[11px] font-black text-amber-900 leading-snug opacity-70">
+                   Running this agent will consume cloud inference tokens. Cost will be billed to the Case ID budget.
+                </p>
+             </div>
+          </div>
+        </div>
+
+        <div className="p-6 pt-0 flex gap-3">
+          <Button variant="outline" onClick={onClose} className="flex-1 h-11 text-[11px] font-black uppercase tracking-widest rounded-xl">
+             Cancel
+          </Button>
+          <Button onClick={() => onRun(isRerun)} className="flex-1 h-11 bg-slate-900 hover:bg-black text-white text-[11px] font-black uppercase tracking-widest rounded-xl shadow-xl shadow-slate-900/10">
+             {isRerun ? "Confirm Rerun" : "Confirm Execute"}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AgentHistoryPanel({ agent, onClose }: { agent: AgentState, onClose: () => void }) {
+  return (
+    <div className="fixed inset-y-0 right-0 w-[420px] bg-white border-l border-slate-200 z-[100] shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
+      <div className="h-16 border-b border-slate-100 flex items-center justify-between px-6 bg-slate-50/50">
+        <div className="flex items-center gap-3">
+           <History className="h-5 w-5 text-slate-400" />
+           <div className="flex flex-col">
+              <h3 className="text-xs font-black uppercase tracking-widest text-slate-900">Run History</h3>
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">{agent.name}</span>
+           </div>
+        </div>
+        <Button variant="ghost" size="sm" onClick={onClose} className="h-9 w-9 p-0 rounded-full hover:bg-slate-200 text-slate-400 transition-all">
+           <X className="h-5 w-5" />
+        </Button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+        {agent.history.length === 0 ? (
+          <div className="h-full flex flex-col items-center justify-center text-center opacity-20 p-12">
+             <Activity className="h-12 w-12 text-slate-300 mb-6" />
+             <h4 className="text-[12px] font-black uppercase tracking-[0.2em]">No History Found</h4>
+             <p className="text-[10px] font-bold text-slate-500 uppercase mt-2">This agent has not been executed yet.</p>
+          </div>
+        ) : (
+          agent.history.map((run, i) => (
+            <div key={run.run_id} className="relative pl-6 pb-8 last:pb-0">
+               {i !== agent.history.length - 1 && (
+                  <div className="absolute left-[7px] top-4 bottom-0 w-px bg-slate-100" />
+               )}
+               <div className="absolute left-0 top-1.5 h-3.5 w-3.5 rounded-full bg-white border-2 border-slate-200 flex items-center justify-center">
+                  <div className={`h-1.5 w-1.5 rounded-full ${run.status === 'completed' ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+               </div>
+               
+               <div className="bg-white border border-slate-100 rounded-xl p-4 shadow-sm hover:border-slate-300 transition-all cursor-default">
+                  <div className="flex items-start justify-between mb-4">
+                     <div className="flex flex-col">
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Timestamp</span>
+                        <span className="text-[11px] font-black text-slate-800 tabular-nums">
+                           {new Date(run.started_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
+                        </span>
+                     </div>
+                     <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border ${run.status === 'completed' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-rose-50 text-rose-700 border-rose-100'}`}>
+                        {run.status}
+                     </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                     <div>
+                        <div className="text-[8px] font-black text-slate-400 uppercase mb-1">Token Usage</div>
+                        <div className="text-[12px] font-black text-slate-900 tabular-nums">{run.token_usage?.toLocaleString() || "—"}</div>
+                     </div>
+                     <div>
+                        <div className="text-[8px] font-black text-slate-400 uppercase mb-1">Duration</div>
+                        <div className="text-[12px] font-black text-slate-900 tabular-nums">{(run.duration_ms! / 1000).toFixed(2)}s</div>
+                     </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 mb-3">
+                     <Users className="h-3 w-3 text-slate-300" />
+                     <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Triggered by: <span className="text-slate-800">{run.triggered_by}</span></span>
+                  </div>
+
+                  <div className="bg-slate-50/50 rounded-lg p-3 border border-slate-50">
+                     <p className="text-[11px] font-bold text-slate-500 leading-snug italic">
+                        "{run.summary || "No summary provided for this run."}"
+                     </p>
+                  </div>
+               </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      <div className="p-6 border-t border-slate-100 bg-slate-50/30">
+        <div className="flex items-center justify-between mb-4">
+           <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Aggregate Metrics</span>
+           <span className="text-[10px] font-black text-slate-900 uppercase">{agent.runCount} Total Runs</span>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+           <div className="bg-white p-3 rounded-lg border shadow-sm">
+              <div className="text-[14px] font-black text-slate-900 leading-none">
+                 {agent.history.reduce((a, b) => a + (b.token_usage || 0), 0).toLocaleString()}
+              </div>
+              <div className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">Total Tokens</div>
+           </div>
+           <div className="bg-white p-3 rounded-lg border shadow-sm">
+              <div className="text-[14px] font-black text-slate-900 leading-none">
+                 {(agent.history.reduce((a, b) => a + (b.duration_ms || 0), 0) / 1000).toFixed(1)}s
+              </div>
+              <div className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">Total Compute</div>
+           </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
