@@ -3766,7 +3766,7 @@ function AnalysisTab() {
                                         <FactChronologyModule 
                                           initialItems={slides[activeSlide]?.content.items}
                                           metadata={slides[activeSlide]?.content.metadata}
-                                          viewMode="slide"
+                                          viewMode={factViewMode}
                                           onViewModeChange={setFactViewMode}
                                           selectedItemId={selectedChronologyItemId || undefined}
                                           onSelectItem={setSelectedChronologyItemId}
