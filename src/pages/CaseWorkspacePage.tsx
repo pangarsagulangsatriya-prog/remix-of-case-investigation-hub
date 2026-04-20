@@ -1,4 +1,5 @@
 // BUILD_VERSION: 2026-04-16T19:35:00 — force redeploy with diarization + 6-layer extraction
+import { cn } from "@/lib/utils";
 import React, { useState, useEffect, useRef, useMemo } from "react"; 
 import { FactChronologyModule, ChronologyItem, TraceabilityPanel, VerificationStatus, STATUS_CONFIG } from "@/components/analysis/FactChronologyModule";
 import { useParams } from "react-router-dom";
