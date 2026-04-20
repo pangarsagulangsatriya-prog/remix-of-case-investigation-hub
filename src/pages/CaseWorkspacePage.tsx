@@ -1,4 +1,4 @@
-// BUILD_VERSION: 2026-04-20T13:59:00 — independent orchestration + agent lifecycle overhaul
+// BUILD_VERSION: 2026-04-16T19:35:00 — force redeploy with diarization + 6-layer extraction
 import React, { useState, useEffect, useRef, useMemo } from "react"; 
 import { FactChronologyModule, ChronologyItem, TraceabilityPanel, VerificationStatus, STATUS_CONFIG } from "@/components/analysis/FactChronologyModule";
 import { useParams } from "react-router-dom";
@@ -2949,6 +2949,39 @@ function ExtractionTab({
          </div>
       </div>
 
+      <div className="w-[460px] border-l border-slate-200 bg-white flex flex-col shrink-0 z-20 shadow-[-2px_0_10px_rgba(0,0,0,0.03)] overflow-hidden">
+        {selectedFile ? (
+            <div className="flex-1 overflow-y-auto custom-scrollbar">
+                {selectedFile.type === "Image" && <ImageExtractionConsole file={selectedFile} />}
+                {selectedFile.type === "Audio" && <AudioExtractionConsole file={selectedFile} onJump={jumpToAudioTime} />}
+                {selectedFile.type === "Video" && <VideoAnalysisPanel file={selectedFile} currentTime={videoCurrentTime || 0} onJump={jumpToVideoTime} />}
+                {selectedFile.type === "Document" && (
+                    <div className="p-8 space-y-6">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="h-10 w-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600 border border-indigo-100 shadow-sm">
+                                <FileText className="h-5 w-5" />
+                            </div>
+                            <div>
+                                <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">{selectedFile.name}</h3>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.15em] mt-0.5">Forensic Document Extraction</p>
+                            </div>
+                        </div>
+                         <div className="p-10 border-2 border-dashed rounded-3xl flex flex-col items-center justify-center text-center opacity-30 grayscale saturate-0">
+                            <FileText className="h-8 w-8 text-slate-300 mb-4" />
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Deep Extraction Pending</span>
+                         </div>
+                    </div>
+                )}
+            </div>
+        ) : (
+          <div className="flex-1 flex flex-col items-center justify-center text-center p-12 opacity-30 grayscale saturate-0">
+             <Cpu className="h-12 w-12 text-slate-200 mb-6" />
+             <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900">Forensic Engine Standby</h3>
+             <p className="text-[10px] font-bold text-slate-400 uppercase mt-4 max-w-[220px] leading-relaxed">Select an evidence object to initiate automated feature extraction.</p>
+          </div>
+        )}
+      </div>
+
       <DeleteConfirmationModal 
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
@@ -2972,6 +3005,365 @@ function ExtractionTab({
   );
 }
 
+
+// --- Evidence Review Workspace Helper Components ---
+
+function AdaptiveSourcePreview({ 
+  file, 
+  videoCurrentTime, setVideoCurrentTime, videoIsPlaying, setVideoIsPlaying, videoRef,
+  audioCurrentTime, setAudioCurrentTime, audioIsPlaying, setAudioIsPlaying, audioPlaybackSpeed, setAudioPlaybackSpeed, audioRef
+}: any) {
+  if (file.type === "Image") return <ImagePreview file={file} />;
+  if (file.type === "Audio") return <AudioPreview file={file} currentTime={audioCurrentTime} setCurrentTime={setAudioCurrentTime} isPlaying={audioIsPlaying} setIsPlaying={setAudioIsPlaying} playbackSpeed={audioPlaybackSpeed} setPlaybackSpeed={setAudioPlaybackSpeed} audioRef={audioRef} />;
+  if (file.type === "Video") return <VideoPreview file={file} currentTime={videoCurrentTime} setCurrentTime={setVideoCurrentTime} isPlaying={videoIsPlaying} setIsPlaying={setVideoIsPlaying} videoRef={videoRef} />;
+  return (
+    <div className="flex flex-col items-center justify-center p-20 text-slate-300 opacity-50 bg-white/50 rounded-2xl border-2 border-dashed border-slate-200">
+       <Folders className="h-12 w-12 mb-4" />
+       <span className="text-[10px] font-black uppercase tracking-[0.2em]">Preview not available for this modality</span>
+    </div>
+  );
+}
+
+function ImagePreview({ file }: { file: any }) {
+  return (
+    <div className="relative w-full aspect-video bg-[#0f172a] rounded-2xl overflow-hidden shadow-2xl group border border-slate-800 ring-1 ring-white/10">
+      <img src={file.url} alt={file.name} className="w-full h-full object-contain" />
+      <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+         <span className="text-[10px] font-black text-white uppercase tracking-widest block">{file.name}</span>
+         <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">Forensic Visual Evidence · High Integrity Snapshot</span>
+      </div>
+    </div>
+  );
+}
+
+function AudioPreview({ file, currentTime, setCurrentTime, isPlaying, setIsPlaying, playbackSpeed, setPlaybackSpeed, audioRef }: any) {
+  return (
+    <div className="w-full max-w-2xl bg-white border border-slate-200 rounded-3xl p-8 shadow-2xl relative overflow-hidden group">
+       <div className="absolute top-0 right-0 w-48 h-48 bg-primary/5 blur-[80px] rounded-full pointer-events-none" />
+       <div className="flex flex-col items-center gap-6 relative z-10">
+          <div className="h-20 w-20 rounded-[2.5rem] bg-slate-900 flex items-center justify-center text-white shadow-xl shadow-slate-900/10 group-hover:scale-110 transition-transform duration-700">
+             <AudioIcon className="h-8 w-8" />
+          </div>
+          <div className="text-center space-y-1">
+             <h3 className="text-sm font-black text-slate-900 uppercase tracking-[0.2em]">{file.name}</h3>
+             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest italic opacity-60">Forensic Audio Console · Site Alpha</p>
+          </div>
+          
+          <div className="w-full space-y-3">
+             <div className="flex items-center justify-between text-[10px] font-black text-slate-400 tabular-nums uppercase tracking-widest text-primary/80">
+                <span>00:00</span>
+                <span>04:22</span>
+             </div>
+             <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden relative border shadow-inner">
+                <div className="h-full bg-primary relative overflow-hidden" style={{ width: '35%' }}>
+                   <div className="absolute inset-0 bg-white/20 animate-shimmer" />
+                </div>
+             </div>
+          </div>
+
+          <div className="flex items-center gap-6 text-slate-400">
+             <button className="p-2 hover:text-slate-900 transition-colors"><RefreshCcw className="h-4 w-4" /></button>
+             <button className="h-14 w-14 bg-slate-900 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-slate-800 transition-all hover:scale-105 active:scale-95">
+                <Play className="h-6 w-6 fill-current ml-1" />
+             </button>
+             <button className="p-2 hover:text-slate-900 transition-colors"><Maximize2 className="h-4 w-4" /></button>
+          </div>
+       </div>
+    </div>
+  );
+}
+
+function VideoPreview({ file, currentTime, setCurrentTime, isPlaying, setIsPlaying, videoRef }: any) {
+  return (
+    <div className="relative w-full aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl group border border-slate-800 ring-1 ring-white/10">
+      <video ref={videoRef} src={file.url} className="w-full h-full object-contain" />
+      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20">
+         <button className="h-16 w-16 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center text-white border border-white/20 hover:scale-110 active:scale-95 transition-all shadow-2xl">
+            <Play className="h-7 w-7 fill-current ml-1" />
+         </button>
+      </div>
+      <div className="absolute inset-x-0 bottom-0 p-5 bg-gradient-to-t from-black/90 to-transparent flex items-center justify-between">
+         <div className="flex flex-col gap-0.5">
+            <span className="text-[10px] font-black text-white uppercase tracking-widest shadow-sm">{file.name}</span>
+            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter shadow-sm">CCTV Feed · Site Alpha Zone B</span>
+         </div>
+         <div className="flex items-center gap-3">
+            <span className="text-[10px] font-black text-white tabular-nums">00:14 / 05:00</span>
+            <button className="p-1.5 text-white hover:bg-white/10 rounded transition-colors"><Maximize2 className="h-3.5 w-3.5" /></button>
+         </div>
+      </div>
+    </div>
+  );
+}
+
+function ImageExtractionConsole({ file }: { file: any }) {
+  const [viewMode, setViewMode] = useState<"Structured" | "JSON">("Structured");
+  
+  const properties = {
+     "General Detection": {
+        "Incident Context": "Conveyor Belt zone at Section 14",
+        "Environmental Condition": "Low light, heavy coal dust, visible vibration",
+        "Modality Strength": "High (Clear visual evidence of tear)",
+        "Equipment Serial": "C-14-MS-001"
+     },
+     "Environment & PPE": {
+        "Hazard Zone": "Zone 4 (Active Machinery)",
+        "Visibility": "Estimated 8 meters",
+        "Dust Level": "Critical (Potential sensor interference)",
+        "PPE Presence": "Operator detected at 14:22:15 wearing Level 2 Gear"
+     },
+     "AI Extraction Metadata": {
+        "Model": "Vision Analysis Matrix v4.2",
+        "Confidence": "94%",
+        "Tokens": 1420,
+        "Run ID": "img-node-1423"
+     }
+  };
+
+  return (
+    <div className="flex flex-col h-full bg-white">
+      <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b px-5 py-3 flex items-center justify-between shrink-0">
+         <div className="flex flex-col">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Visual Extraction Matrix</span>
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter mt-1 opacity-60">Evidence ID: {file.id.slice(0,8)}</span>
+         </div>
+         <div className="flex items-center gap-1 p-0.5 bg-slate-200/50 rounded-md border shadow-inner">
+            <button onClick={() => setViewMode("Structured")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "Structured" ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>Structured</button>
+            <button onClick={() => setViewMode("JSON")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "JSON" ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>JSON</button>
+         </div>
+      </div>
+
+      <div className="flex-1 overflow-auto custom-scrollbar p-6 space-y-8">
+         {viewMode === "Structured" ? (
+            <>
+               {Object.entries(properties).map(([section, items]) => (
+                  <div key={section} className="space-y-4 animate-in fade-in slide-in-from-top-1">
+                     <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+                        <Database className="h-3.5 w-3.5 text-slate-400" />
+                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{section}</span>
+                     </div>
+                     <div className="grid grid-cols-1 gap-4 pl-4 border-l-2 border-slate-50">
+                        {Object.entries(items).map(([label, value]) => (
+                           <div key={label} className="flex flex-col gap-1">
+                              <span className="text-[9px] font-black text-slate-400 uppercase tracking-tight">{label}</span>
+                              <span className="text-[11px] font-bold text-slate-700 leading-snug">{value}</span>
+                           </div>
+                        ))}
+                     </div>
+                  </div>
+               ))}
+               <div className="bg-slate-900 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 blur-[60px] rounded-full pointer-events-none" />
+                  <span className="text-[10px] font-black text-primary uppercase tracking-[0.4em] block mb-4 relative z-10">Forensic Integrity Score</span>
+                  <div className="flex items-baseline gap-2 relative z-10">
+                     <span className="text-4xl font-black text-white group-hover:scale-110 transition-transform duration-500">92</span>
+                     <span className="text-[11px] font-black text-slate-500 uppercase">Perception Confidence</span>
+                  </div>
+                  <div className="mt-4 pt-4 border-t border-slate-800 relative z-10 flex items-center justify-between">
+                     <div className="flex items-center gap-2">
+                        <Shield className="h-3.5 w-3.5 text-emerald-500" />
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Signed & Encrypted</span>
+                     </div>
+                     <span className="text-[8px] font-bold text-slate-600 uppercase">SHA-256 Validated</span>
+                  </div>
+               </div>
+            </>
+         ) : (
+            <div className="bg-[#0f1419] rounded-2xl border border-slate-800 p-6 overflow-hidden shadow-2xl relative">
+               <div className="absolute top-0 right-0 p-2 opacity-20"><FileSearch className="h-10 w-10 text-white" /></div>
+               <pre className="text-[10.5px] font-mono text-primary leading-relaxed custom-scrollbar max-h-none overflow-visible">
+                  {JSON.stringify(properties, null, 2)}
+               </pre>
+            </div>
+         )}
+      </div>
+
+      <div className="p-6 border-t bg-white shrink-0">
+         <Button className="w-full h-11 bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-black uppercase tracking-[0.2em] rounded-xl shadow-lg hover:shadow-slate-200 transition-all">
+            <RefreshCcw className="h-4 w-4 mr-2" /> RE-ANALYZE EVIDENCE
+         </Button>
+      </div>
+    </div>
+  );
+}
+
+function AudioExtractionConsole({ file, onJump }: { file: any, onJump: (s: number) => void }) {
+  const [activeTab, setActiveTab] = useState<"Extraction" | "Diarization">("Extraction");
+  const [viewMode, setViewMode] = useState<"Structured" | "JSON">("Structured");
+  const [currentTime] = useState(0);
+
+  const audioExtractionData = useMemo(() => ({
+    recording_meta: {
+      file_name: file.name,
+      source_type: "Emergency Radio Channel 4",
+      duration: "04:22",
+      language: "Indonesian / English",
+      channel_type: "Mono (Forensic Optimized)",
+      recording_type: "Site Alpha Control Room",
+      audio_quality: "High",
+      noise_level: "Moderate (Conveyor Background)",
+      overlap_level: "Low"
+    },
+    speaker_profiles: [
+      { speaker_id: "SPK_01", speaker_label: "Operator A", probable_role: "Field Supervisor", confidence: "High", speaking_time: "02:15", speaking_style: "Urgent, Command style", assertiveness: "High", stress_level: "Elevated" },
+      { speaker_id: "SPK_02", speaker_label: "Control Room", probable_role: "Safety Dispatcher", confidence: "High", speaking_time: "01:45", speaking_style: "Analytical, Following protocol", assertiveness: "High", stress_level: "Stable" }
+    ],
+    communication_events: [
+      { timestamp: "00:05", event_type: "Initial Contact", source_speaker: "SPK_01", target_speaker: "SPK_02", content_summary: "Reporting vibration anomalies on Section 14", urgency: "Medium", response_status: "Verified" },
+      { timestamp: "02:14", event_type: "Escalation", source_speaker: "SPK_01", target_speaker: "SPK_02", content_summary: "Visual confirmation of structural tear", urgency: "Critical", response_status: "Immediate Action" }
+    ],
+    factual_statements: [
+      { timestamp: "00:10", speaker: "Operator A", fact_text: "Vibration threshold exceeded at Zone B-14", statement_type: "Observation", observed_or_claimed: "Observed", confidence: "High" },
+      { timestamp: "02:18", speaker: "Operator A", fact_text: "Structural rupture visible on belt section 14A", statement_type: "Declaration", observed_or_claimed: "Observed", confidence: "High" }
+    ],
+    timeline_events: [
+      { timestamp: "14:10", event_summary: "Initial vibration alert logged by operator", actor: "Ahmed (Operator A)" },
+      { timestamp: "14:23", event_summary: "Direct order for emergency stop given", actor: "Supervisor Sarah" }
+    ],
+    human_performance_signals: { fatigue_clues: [], stress_signals: ["Voice pitch increase during escalation"], coordination_gaps: ["5 second delay in control room response"] },
+    risk_and_procedure_clues: { protocol_mentions: ["Section 14 Safety Protocol", "Lockout-Tagout"], safety_warnings: ["Emergency stop bypass not used"] },
+    review_meta: { low_confidence_segments: [12, 145], needs_human_review: ["Check transcription for 'tensioner' vs 'tension'"], confidence: "92%" }
+  }), [file]);
+
+  const audioDiarizationData = useMemo(() => [
+    { segment_id: "seg_1", speaker_id: "SPK_01", speaker_label: "Operator A", start_time: "00:04", end_time: "00:12", duration: "0:08", text: "Control, ini Operator A. Getaran di Section 14 melebihi batas aman. Mohon dicek.", confidence: "High", flags: [] },
+    { segment_id: "seg_2", speaker_id: "SPK_02", speaker_label: "Control Room", start_time: "00:15", end_time: "00:22", duration: "0:07", text: "Diterima Operator A. Sensor kami juga menunjukkan anomali. Standby.", confidence: "High", flags: [] },
+    { segment_id: "seg_3", speaker_id: "SPK_01", speaker_label: "Operator A", start_time: "02:14", end_time: "02:22", duration: "0:08", text: "Kontrol! Belt Section 14 robek! Terjadi tumpahan material berat! E-Stop!", confidence: "High", flags: ["URGENT", "STRESS"] }
+  ], []);
+
+  const normalizedExtraction = useMemo(() => {
+    const raw = audioExtractionData;
+    return {
+      audio_id: "AUD_" + (file?.id?.slice(0, 4) || "001"),
+      case_id: "CS-2026-" + Math.floor(1000 + Math.random() * 9000),
+      modality: "audio",
+      audio_properties: {
+        file_name: raw.recording_meta.file_name,
+        source_type: raw.recording_meta.source_type,
+        capture_time: "2026-04-12 14:30:22",
+        source_device: raw.recording_meta.recording_type,
+        location_hint: "Site Alpha - Zone B",
+        duration: raw.recording_meta.duration,
+        language: raw.recording_meta.language,
+        channel_type: raw.recording_meta.channel_type,
+        recording_type: raw.recording_meta.recording_type,
+        audio_quality: raw.recording_meta.audio_quality,
+        noise_level: raw.recording_meta.noise_level,
+        overlap_level: raw.recording_meta.overlap_level
+      },
+      extraction_summary: {
+        transcript_summary: "Emergency report regarding Section 14 conveyor belt failure. Operator A identifies vibration then escalates to critical tear report.",
+        speaker_profiles: raw.speaker_profiles.map(s => ({
+          ...s,
+          label: s.speaker_label,
+          role: s.probable_role,
+          stress: s.stress_level
+        })),
+        communication_events: raw.communication_events,
+        factual_statements: raw.factual_statements || [],
+        timeline_events: raw.timeline_events || [],
+        human_performance_signals: raw.human_performance_signals,
+        risk_and_procedure_clues: raw.risk_and_procedure_clues,
+        contradictions_and_gaps: [],
+        review_meta: {
+          low_confidence_segments: raw.review_meta.low_confidence_segments,
+          needs_human_review: raw.review_meta.needs_human_review,
+          confidence: raw.review_meta.confidence
+        }
+      }
+    };
+  }, [file]);
+
+  const normalizedScene = useMemo(() => {
+    return {
+      audio_id: "AUD_" + (file?.id?.slice(0, 4) || "001"),
+      case_id: "CS-2026-" + Math.floor(1000 + Math.random() * 9000),
+      modality: "audio",
+      scene_session: {
+        speaker_count: audioExtractionData.speaker_profiles.length,
+        full_diarization: audioDiarizationData,
+        sync_settings: {
+          timestamp_linked_to_player: true,
+          auto_scroll_active_segment: true,
+          click_segment_seeks_audio: true
+        }
+      }
+    };
+  }, [file]);
+
+  return (
+    <div className="flex flex-col h-full bg-white">
+      <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b px-4 py-2 flex items-center gap-1 shrink-0">
+        {(["Extraction", "Diarization"] as const).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`flex-1 py-1.5 px-3 text-[10px] font-black uppercase tracking-[0.15em] rounded-md transition-all ${
+              activeTab === tab
+              ? "bg-slate-900 text-white shadow-md ring-1 ring-slate-900"
+              : "text-slate-400 hover:text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            {tab}
+          </button>
+        ))}
+      </div>
+
+      <div className="flex-1 overflow-auto custom-scrollbar">
+        {activeTab === "Extraction" ? (
+          <div className="flex flex-col min-h-full">
+            <div className="p-4 border-b bg-slate-50/50 flex items-center justify-between">
+              <div className="flex flex-col">
+                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Intelligence Hub</span>
+                 <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter mt-1 opacity-60">Audio Protocol Matrix v2.1</span>
+              </div>
+              <div className="flex items-center gap-1 p-0.5 bg-slate-200/50 rounded-md border shadow-inner">
+                 <button onClick={() => setViewMode("Structured")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "Structured" ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>Structured</button>
+                 <button onClick={() => setViewMode("JSON")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "JSON" ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>JSON</button>
+              </div>
+            </div>
+
+            {viewMode === "Structured" ? (
+              <AudioExtractionStructured 
+                data={normalizedExtraction} 
+                onJump={onJump} 
+              />
+            ) : (
+              <div className="p-4 bg-[#0d1117] min-h-full">
+                <div className="rounded-xl overflow-hidden border border-[#30363d] shadow-2xl">
+                  <div className="bg-[#161b22] px-4 py-2.5 border-b border-[#30363d] flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                       <div className="flex gap-1.5">
+                          <div className="h-2.5 w-2.5 rounded-full bg-[#ff5f56]" />
+                          <div className="h-2.5 w-2.5 rounded-full bg-[#ffbd2e]" />
+                          <div className="h-2.5 w-2.5 rounded-full bg-[#27c93f]" />
+                       </div>
+                       <span className="text-[10px] font-mono text-[#8b949e] uppercase tracking-wider">audio_extraction_output.json</span>
+                    </div>
+                    <Button variant="ghost" size="sm" className="h-7 px-2 text-[9px] font-black text-[#c9d1d9] hover:bg-[#30363d] hover:text-white border border-[#30363d]">
+                       <Copy className="h-3 w-3 mr-1.5" /> COPY
+                    </Button>
+                  </div>
+                  <pre className="text-[10.5px] font-mono text-[#79c0ff] bg-[#0d1117] p-6 leading-relaxed overflow-auto max-h-[1200px] custom-scrollbar selection:bg-primary/30">
+                     {JSON.stringify(normalizedExtraction, null, 2)}
+                  </pre>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <AudioSceneSession 
+            data={normalizedScene} 
+            currentTime={currentTime} 
+            onJump={onJump} 
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+
 function AnalysisTab() {
   const [agents, setAgents] = useState<AgentState[]>(initialAgentsState);
   const [factViewMode, setFactViewMode] = useState<'slide' | 'default'>('default');
@@ -2989,7 +3381,7 @@ function AnalysisTab() {
   const [historyAgentId, setHistoryAgentId] = useState<string | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
-  
+
   const fitToWorkspace = () => {
     if (!containerRef.current) return;
     const cw = containerRef.current.clientWidth - 40; 
@@ -3044,7 +3436,7 @@ function AnalysisTab() {
        id: 'slide-1',
        type: 'raw',
        title: 'Extraction Result',
-       content: agent?.results || {}
+       content: agent.results || {}
     }];
   }, [selectedAgentId, agents]);
 
@@ -3122,13 +3514,16 @@ function AnalysisTab() {
         setChainQueue(q => q.slice(1));
         setActiveTask(null);
       }, 4000);
-    } else if (globalStatus === 'running' && !activeTask && chainQueue.length === 0) {
+    } else if (globalStatus === 'running' && chainQueue.length === 0 && !activeTask) {
       setGlobalStatus('completed');
     }
-  }, [chainQueue, activeTask, globalStatus, agents, execMode]);
+  }, [globalStatus, chainQueue, activeTask, agents, execMode]);
 
   const runSingleAgent = (agentId: string, isRerun: boolean = false) => {
     setPreRunAgentId(null);
+    setSelectedAgentId(agentId);
+    setExecMode("manual");
+    
     setAgents(prev => prev.map(a => a.id === agentId ? { 
       ...a, 
       status: 'running', 
@@ -3350,94 +3745,67 @@ function AnalysisTab() {
                </div>
             </div>
 
-            <div 
-               ref={containerRef}
-               className="flex-1 flex flex-col items-center justify-center p-4 overflow-hidden relative"
-               style={{
-                  backgroundImage: 'radial-gradient(circle, #E2E8F0 1px, transparent 1px)',
-                  backgroundSize: '24px 24px'
-               }}
-            >
-                 {!selectedAgentId ? (
-                     <div className="py-24 flex flex-col items-center text-center max-w-sm">
-                         <div className="h-24 w-24 rounded-[3rem] bg-white border border-slate-200 shadow-2xl flex items-center justify-center mb-10 rotate-12 transition-transform hover:rotate-0">
-                             <Brain className="h-10 w-10 text-slate-200" />
-                         </div>
-                         <h3 className="text-xl font-black text-slate-800 tracking-tighter mb-3 uppercase opacity-50">Orchestration Standby</h3>
-                     </div>
-                 ) : selectedAgentId === 'fact' && factViewMode === 'default' ? (
-                        <FactChronologyModule 
-                           initialItems={slides[activeSlide]?.content.items}
-                           metadata={slides[activeSlide]?.content.metadata}
-                           viewMode="default"
-                           onViewModeChange={setFactViewMode}
-                           selectedItemId={selectedChronologyItemId}
-                           onSelectItem={setSelectedChronologyItemId}
-                           onSync={(newItems) => {
-                             setAgents(prev => prev.map(a => a.id === 'fact' ? {
-                               ...a,
-                               results: {
-                                 ...a.results,
-                                 chronology_items: newItems
-                               }
-                             } : a));
-                             toast.success("Chronology successfully synced to case intelligence.");
-                           }}
-                        />
+            <div ref={containerRef} className="flex-1 relative overflow-auto custom-scrollbar p-10 flex items-start justify-center">
+                 {selectedAgentId ? (
+                         <div className={`bg-white shadow-[0_30px_90px_-20px_rgba(0,0,0,0.3)] flex flex-col relative transition-all duration-300 origin-center overflow-hidden rounded-[2px] ${factViewMode === 'default' ? 'w-full h-full' : ''}`} 
+                              style={factViewMode === 'default' ? {} : { width: '1024px', height: '576px', transform: `scale(${canvasZoom/100})` }}>
+                           <div className="flex-1 p-[60px] flex flex-col relative overflow-hidden h-full">
+                              {selectedAgent?.status === 'running' ? (
+                                 <div className="flex flex-col items-center justify-center h-full text-center space-y-8 animate-pulse text-slate-300">
+                                    <Loader2 className="h-12 w-12 animate-spin" />
+                                    <span className="text-[20px] font-black uppercase tracking-[0.2em]">{selectedAgent.microStatus || "Processing Matrix..."}</span>
+                                 </div>
+                              ) : !selectedAgent?.results ? (
+                                 <div className="flex flex-col h-full items-center justify-center text-center opacity-30 grayscale pointer-events-none space-y-6">
+                                    <Cpu className="h-12 w-12 text-slate-300" />
+                                    <h2 className="text-3xl font-black uppercase tracking-[0.2em] text-slate-400">Node Standby</h2>
+                                 </div>
+                              ) : (
+                                 <div className="flex-1 animate-in fade-in duration-500 overflow-hidden">
+                                     {slides[activeSlide]?.type === 'chronology_module' ? (
+                                        <FactChronologyModule 
+                                          initialItems={slides[activeSlide]?.content.items}
+                                          metadata={slides[activeSlide]?.content.metadata}
+                                          viewMode="slide"
+                                          onViewModeChange={setFactViewMode}
+                                          selectedItemId={selectedChronologyItemId || undefined}
+                                          onSelectItem={setSelectedChronologyItemId}
+                                          onSync={(newItems) => {
+                                            setAgents(prev => prev.map(a => a.id === 'fact' ? {
+                                              ...a,
+                                              results: {
+                                                ...a.results,
+                                                chronology_items: newItems
+                                              }
+                                            } : a));
+                                            toast.success("Chronology successfully synced to case intelligence.");
+                                          }}
+                                        />
+                                     ) : (
+                                        <div className="flex flex-col h-full">
+                                           <h2 className="text-[32px] font-black text-slate-800 mb-8 tracking-tighter uppercase">{slides[activeSlide]?.title}</h2>
+                                           <div className="flex-1 bg-[#1a1c23] rounded-lg p-6 overflow-hidden border border-slate-700 shadow-2xl relative">
+                                              <pre className="text-[12px] font-mono text-emerald-400/90 leading-tight h-full overflow-auto custom-scrollbar">
+                                                 {JSON.stringify(slides[activeSlide]?.content, null, 2)}
+                                              </pre>
+                                           </div>
+                                        </div>
+                                     )}
+                                 </div>
+                              )}
+                              <div className="absolute bottom-10 left-[60px] right-[60px] flex justify-between items-center opacity-40 border-t border-slate-100 pt-8">
+                                 <span className="text-[11px] font-black text-slate-800 uppercase tracking-[0.3em] font-mono">BERAU CORE INTELLIGENCE PIPELINE</span>
+                                 <span className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] font-mono">MATRIX v4.8.2-SYNTH</span>
+                              </div>
+                           </div>
+                        </div>
                  ) : (
-                     <div className={`bg-white shadow-[0_30px_90px_-20px_rgba(0,0,0,0.3)] flex flex-col relative transition-all duration-300 origin-center overflow-hidden rounded-[2px] ${factViewMode === 'default' ? 'w-full h-full' : ''}`} 
-                          style={factViewMode === 'default' ? {} : { width: '1024px', height: '576px', transform: `scale(${canvasZoom/100})` }}>
-                       <div className="flex-1 p-[60px] flex flex-col relative overflow-hidden h-full">
-                          {selectedAgent?.status === 'running' ? (
-                             <div className="flex flex-col items-center justify-center h-full text-center space-y-8 animate-pulse text-slate-300">
-                                <Loader2 className="h-12 w-12 animate-spin" />
-                                <span className="text-[20px] font-black uppercase tracking-[0.2em]">{selectedAgent.microStatus || "Processing Matrix..."}</span>
-                             </div>
-                          ) : !selectedAgent?.results ? (
-                             <div className="flex flex-col h-full items-center justify-center text-center opacity-30 grayscale pointer-events-none space-y-6">
-                                <Cpu className="h-12 w-12 text-slate-300" />
-                                <h2 className="text-3xl font-black uppercase tracking-[0.2em] text-slate-400">Node Standby</h2>
-                             </div>
-                          ) : (
-                             <div className="flex-1 animate-in fade-in duration-500 overflow-hidden">
-                                 {slides[activeSlide]?.type === 'chronology_module' ? (
-                                    <FactChronologyModule 
-                                      initialItems={slides[activeSlide]?.content?.items || []}
-                                      metadata={slides[activeSlide]?.content?.metadata || {}}
-                                      viewMode="slide"
-                                      onViewModeChange={setFactViewMode}
-                                      selectedItemId={selectedChronologyItemId}
-                                      onSelectItem={setSelectedChronologyItemId}
-                                      onSync={(newItems) => {
-                                        setAgents(prev => prev.map(a => a.id === 'fact' ? {
-                                          ...a,
-                                          results: {
-                                            ...a.results,
-                                            chronology_items: newItems
-                                          }
-                                        } : a));
-                                        toast.success("Chronology successfully synced to case intelligence.");
-                                      }}
-                                    />
-                                 ) : (
-                                    <div className="flex flex-col h-full">
-                                       <h2 className="text-[32px] font-black text-slate-800 mb-8 tracking-tighter uppercase">{slides[activeSlide]?.title}</h2>
-                                       <div className="flex-1 bg-[#1a1c23] rounded-lg p-6 overflow-hidden border border-slate-700 shadow-2xl relative">
-                                          <pre className="text-[12px] font-mono text-emerald-400/90 leading-tight h-full overflow-auto custom-scrollbar">
-                                             {JSON.stringify(slides[activeSlide]?.content || {}, null, 2)}
-                                          </pre>
-                                       </div>
-                                    </div>
-                                 )}
-                             </div>
-                          )}
-                          <div className="absolute bottom-10 left-[60px] right-[60px] flex justify-between items-center opacity-40 border-t border-slate-100 pt-8">
-                             <span className="text-[11px] font-black text-slate-800 uppercase tracking-[0.3em] font-mono">BERAU CORE INTELLIGENCE PIPELINE</span>
-                             <span className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] font-mono">MATRIX v4.8.2-SYNTH</span>
-                          </div>
-                       </div>
+                    <div className="h-full flex flex-col items-center justify-center text-center opacity-20 p-20">
+                       <LayoutGrid className="h-16 w-16 mb-8" />
+                       <h2 className="text-3xl font-black uppercase tracking-[0.3em]">Matrix Idle</h2>
+                       <p className="text-[11px] font-bold uppercase tracking-widest mt-4">Select an agent node to begin synthesis</p>
                     </div>
-                )}
+                 )}
             </div>
 
             <div className="h-12 bg-white border-t border-slate-200 px-6 flex items-center justify-between shrink-0 z-40">
@@ -3588,8 +3956,8 @@ function AnalysisTab() {
           onClose={() => setHistoryAgentId(null)}
         />
      )}
-  </div>
-);
+    </div>
+  );
 }
 
 function ReportsTab() {
