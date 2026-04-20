@@ -22,7 +22,21 @@ import {
   Cpu,
   Maximize2,
   ZoomIn,
-  ZoomOut
+  ZoomOut,
+  FileText,
+  MessageSquare,
+  Activity,
+  Mic,
+  Camera,
+  Video,
+  FileSearch,
+  ChevronDown,
+  ExternalLink,
+  ShieldCheck,
+  Zap,
+  Quote,
+  Target,
+  BarChart3
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -31,6 +45,24 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 export type ChronologyPhase = "pre_contact" | "contact" | "post_contact";
+export type VerificationStatus = "ai_generated" | "human_verified" | "needs_review" | "partially_supported" | "unsupported";
+
+export interface Traceability {
+  trace_id: string;
+  source_type: "audio" | "image" | "document" | "video" | "other";
+  source_file_name: string;
+  source_file_id: string;
+  extraction_run_id: string;
+  chunk_id?: string;
+  page_number?: number;
+  timestamp_start?: string;
+  timestamp_end?: string;
+  frame_ref?: string;
+  extracted_content: string;
+  extracted_summary?: string;
+  support_type: "direct" | "partial" | "contextual";
+  confidence_score: number;
+}
 
 export interface ChronologyItem {
   id: string;
@@ -39,10 +71,14 @@ export interface ChronologyItem {
   phase: ChronologyPhase;
   source: "ai" | "human";
   annotated_by_human: boolean;
+  verification_status: VerificationStatus;
   created_at: string;
   updated_at: string;
   updated_by?: string;
   original_text?: string;
+  traceability?: Traceability[];
+  synthesis_summary?: string;
+  support_strength?: number;
 }
 
 export interface FactMetadata {
@@ -63,6 +99,8 @@ interface FactChronologyModuleProps {
   onSync?: (items: ChronologyItem[]) => void;
   viewMode?: 'slide' | 'default';
   onViewModeChange?: (mode: 'slide' | 'default') => void;
+  onSelectItem?: (itemId: string | null) => void;
+  selectedItemId?: string | null;
 }
 
 const PHASE_CONFIG = {
@@ -92,18 +130,34 @@ const PHASE_CONFIG = {
   }
 };
 
+export const STATUS_CONFIG: Record<VerificationStatus, { label: string, color: string, icon: any }> = {
+  ai_generated: { label: "AI Generated", color: "bg-blue-50 text-blue-600 border-blue-100", icon: Brain },
+  human_verified: { label: "Human Verified", color: "bg-emerald-50 text-emerald-600 border-emerald-100", icon: ShieldCheck },
+  needs_review: { label: "Needs Review", color: "bg-amber-50 text-amber-600 border-amber-100", icon: Clock },
+  partially_supported: { label: "Partially Supported", color: "bg-violet-50 text-violet-600 border-violet-100", icon: Target },
+  unsupported: { label: "Unsupported", color: "bg-rose-50 text-rose-600 border-rose-100", icon: AlertTriangle },
+};
+
 export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({ 
   initialItems, 
   metadata,
   onSync,
   viewMode: controlledViewMode,
-  onViewModeChange
+  onViewModeChange,
+  onSelectItem,
+  selectedItemId: controlledSelectedItemId
 }) => {
   const [items, setItems] = useState<ChronologyItem[]>(initialItems);
   const [internalViewMode, setInternalViewMode] = useState<'slide' | 'default'>('default');
+  const [internalSelectedItemId, setInternalSelectedItemId] = useState<string | null>(null);
   
   const viewMode = controlledViewMode || internalViewMode;
   const setViewMode = onViewModeChange || setInternalViewMode;
+  const selectedItemId = controlledSelectedItemId || internalSelectedItemId;
+  const setSelectedItemId = (id: string | null) => {
+    if (onSelectItem) onSelectItem(id);
+    setInternalSelectedItemId(id);
+  };
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editBuffer, setEditBuffer] = useState<Partial<ChronologyItem>>({});
@@ -120,7 +174,8 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
       if (item.id === editingId) {
         const isActuallyChanged = 
           item.chronology_text !== editBuffer.chronology_text || 
-          item.time_label !== editBuffer.time_label;
+          item.time_label !== editBuffer.time_label ||
+          item.verification_status !== editBuffer.verification_status;
         
         if (!isActuallyChanged) return item;
 
@@ -157,75 +212,328 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
 
   return (
     <div className={cn(
-      "flex flex-col h-full bg-white relative",
+      "flex h-full bg-white relative transition-all duration-300",
       viewMode === 'default' ? "overflow-hidden" : ""
     )}>
-      {/* Header / Mode Switcher */}
-      <div className={cn(
-        "z-50 flex items-center gap-1 p-1 rounded-lg border shadow-sm bg-white",
-        viewMode === 'slide' ? "absolute top-4 right-4" : "sticky top-0 m-4 mb-0 self-end"
-      )}>
-        <Button 
-          variant={viewMode === 'default' ? 'default' : 'ghost'} 
-          size="sm" 
-          onClick={() => setViewMode('default')}
-          className={cn("h-8 text-[10px] font-black uppercase tracking-widest px-3", viewMode === 'default' ? "bg-slate-900" : "text-slate-500 hover:text-slate-900")}
-        >
-          <TableIcon className="h-3.5 w-3.5 mr-2" /> Default View
-        </Button>
-        <Button 
-          variant={viewMode === 'slide' ? 'default' : 'ghost'} 
-          size="sm" 
-          onClick={() => setViewMode('slide')}
-          className={cn("h-8 text-[10px] font-black uppercase tracking-widest px-3", viewMode === 'slide' ? "bg-slate-900" : "text-slate-500 hover:text-slate-900")}
-        >
-          <Presentation className="h-3.5 w-3.5 mr-2" /> Slide View
-        </Button>
-      </div>
+      <div className="flex-1 flex flex-col min-w-0 h-full relative">
+        <div className={cn(
+          "z-50 flex items-center gap-1 p-1 rounded-lg border shadow-sm bg-white",
+          viewMode === 'slide' ? "absolute top-4 right-4" : "sticky top-0 m-4 mb-0 self-end"
+        )}>
+          <Button 
+            variant={viewMode === 'default' ? 'default' : 'ghost'} 
+            size="sm" 
+            onClick={() => setViewMode('default')}
+            className={cn("h-8 text-[10px] font-black uppercase tracking-widest px-3", viewMode === 'default' ? "bg-slate-900" : "text-slate-500 hover:text-slate-900")}
+          >
+            <TableIcon className="h-3.5 w-3.5 mr-2" /> Default View
+          </Button>
+          <Button 
+            variant={viewMode === 'slide' ? 'default' : 'ghost'} 
+            size="sm" 
+            onClick={() => setViewMode('slide')}
+            className={cn("h-8 text-[10px] font-black uppercase tracking-widest px-3", viewMode === 'slide' ? "bg-slate-900" : "text-slate-500 hover:text-slate-900")}
+          >
+            <Presentation className="h-3.5 w-3.5 mr-2" /> Slide View
+          </Button>
+        </div>
 
-      <div className="flex-1 overflow-hidden">
-        {viewMode === 'slide' ? (
-          <FactSlideView metadata={metadata} groupedItems={groupedItems} />
-        ) : (
-          <FactDefaultView 
-            items={items} 
-            groupedItems={groupedItems}
-            editingId={editingId}
-            editBuffer={editBuffer}
-            setEditBuffer={setEditBuffer}
-            onEdit={handleEdit}
-            onSave={handleSaveEdit}
-            onCancel={handleCancelEdit}
-            metadata={metadata}
-          />
-        )}
-      </div>
-
-      {/* Persistence Controls */}
-      {viewMode === 'default' && (
-        <div className="p-4 border-t bg-slate-50/50 flex justify-end shrink-0">
-          {onSync && (
-            <Button 
-              onClick={() => onSync(items)}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black uppercase tracking-[0.2em] px-6 h-10 rounded-lg shadow-lg shadow-emerald-500/10"
-            >
-              Sync to Case Intelligence
-            </Button>
+        <div className="flex-1 overflow-hidden">
+          {viewMode === 'slide' ? (
+            <FactSlideView 
+              metadata={metadata} 
+              groupedItems={groupedItems} 
+              selectedItemId={selectedItemId}
+              onSelectItem={setSelectedItemId}
+            />
+          ) : (
+            <FactDefaultView 
+              items={items} 
+              groupedItems={groupedItems}
+              editingId={editingId}
+              editBuffer={editBuffer}
+              setEditBuffer={setEditBuffer}
+              onEdit={handleEdit}
+              onSave={handleSaveEdit}
+              onCancel={handleCancelEdit}
+              metadata={metadata}
+              selectedItemId={selectedItemId}
+              onSelectItem={setSelectedItemId}
+            />
           )}
         </div>
-      )}
+
+        {viewMode === 'default' && (
+          <div className="p-4 border-t bg-slate-50/50 flex justify-end shrink-0">
+            {onSync && (
+              <Button 
+                onClick={() => onSync(items)}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black uppercase tracking-[0.2em] px-6 h-10 rounded-lg shadow-lg shadow-emerald-500/10"
+              >
+                Sync to Case Intelligence
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ── Traceability Panel Component ──────────────────────────────────────────
+
+export const TraceabilityPanel: React.FC<{ 
+  item: ChronologyItem, 
+  onClose: () => void,
+  onUpdateStatus: (status: VerificationStatus) => void,
+  onEdit: () => void
+}> = ({ item, onClose, onUpdateStatus, onEdit }) => {
+  const status = STATUS_CONFIG[item.verification_status];
+  
+  const groupedTraceability = useMemo(() => {
+    return {
+      audio: item.traceability?.filter(t => t.source_type === 'audio') || [],
+      image: item.traceability?.filter(t => t.source_type === 'image') || [],
+      document: item.traceability?.filter(t => t.source_type === 'document') || [],
+      video: item.traceability?.filter(t => t.source_type === 'video') || [],
+    };
+  }, [item.traceability]);
+
+  return (
+    <div className="flex flex-col h-full bg-white shadow-[-8px_0_30px_-15px_rgba(0,0,0,0.1)]">
+      {/* Panel Header */}
+      <div className="p-6 border-b bg-white shrink-0">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2.5">
+            <div className="h-8 w-8 rounded-lg bg-slate-900 flex items-center justify-center text-white">
+              <Zap className="h-4 w-4" />
+            </div>
+            <div>
+              <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight leading-none">Traceability Matrix</h3>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Audit & Validation Console</p>
+            </div>
+          </div>
+          <Button variant="ghost" size="sm" onClick={onClose} className="h-8 w-8 p-0 rounded-full hover:bg-slate-100">
+            <X className="h-4 w-4 text-slate-400" />
+          </Button>
+        </div>
+
+        <div className="bg-slate-50/80 rounded-xl p-4 border border-slate-100 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-mono font-black text-slate-400 bg-white px-2 py-0.5 border rounded">[{item.time_label}]</span>
+              <div className={cn("flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border", status.color)}>
+                <status.icon className="h-3 w-3" /> {status.label}
+              </div>
+            </div>
+            <span className={cn("text-[9px] font-black px-2 py-0.5 rounded uppercase border", 
+              item.phase === 'pre_contact' ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
+              item.phase === 'contact' ? "bg-rose-50 text-rose-600 border-rose-100" :
+              "bg-amber-50 text-amber-600 border-amber-100"
+            )}>
+              {item.phase.replace("_", " ")}
+            </span>
+          </div>
+          <p className="text-[13px] font-bold text-slate-800 leading-relaxed pr-2">
+            {item.chronology_text}
+          </p>
+          <div className="flex gap-2 pt-2 border-t border-slate-200/50">
+             <Button variant="ghost" size="sm" onClick={onEdit} className="h-8 px-3 text-[9px] font-black uppercase tracking-widest gap-2 hover:bg-white border">
+                <Pencil className="h-3 w-3 text-slate-400" /> Edit Text
+             </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content Area */}
+      <div className="flex-1 overflow-auto p-6 scrollbar-thin bg-slate-50/20">
+        <div className="space-y-8">
+          {/* AI Synthesis Summary */}
+          {item.synthesis_summary && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Brain className="h-3.5 w-3.5 text-blue-500" />
+                <h4 className="text-[10px] font-black text-slate-700 uppercase tracking-[0.15em]">AI Synthesis Strategy</h4>
+              </div>
+              <div className="bg-blue-50/40 border border-blue-100/50 rounded-xl p-4 relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-3 opacity-5">
+                   <Quote className="h-12 w-12 rotate-180" />
+                </div>
+                <p className="text-[11px] font-bold text-blue-800/80 leading-relaxed relative z-10">
+                  {item.synthesis_summary}
+                </p>
+                <div className="mt-3 flex items-center gap-4">
+                   <div className="flex-1">
+                      <div className="flex justify-between items-center mb-1">
+                         <span className="text-[9px] font-black text-blue-400 uppercase tracking-tighter">Support Strength</span>
+                         <span className="text-[9px] font-black text-blue-600 uppercase">{(item.support_strength || 0) * 100}%</span>
+                      </div>
+                      <div className="h-1 bg-blue-100 rounded-full overflow-hidden">
+                         <div className="h-full bg-blue-500 rounded-full" style={{ width: `${(item.support_strength || 0) * 100}%` }} />
+                      </div>
+                   </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Evidence Traceability */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Layers className="h-3.5 w-3.5 text-slate-400" />
+                <h4 className="text-[10px] font-black text-slate-700 uppercase tracking-[0.15em]">Supporting Lineage</h4>
+              </div>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{item.traceability?.length || 0} Sources</span>
+            </div>
+
+            {(!item.traceability || item.traceability.length === 0) ? (
+              <div className="bg-white border-2 border-dashed border-slate-200 rounded-xl p-10 text-center">
+                 <Search className="h-8 w-8 text-slate-200 mx-auto mb-4" />
+                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">No traceability data available for this node</p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {(Object.entries(groupedTraceability) as [string, Traceability[]][]).map(([type, traces]) => {
+                  if (traces.length === 0) return null;
+                  const Icon = type === 'audio' ? Mic : type === 'image' ? Camera : type === 'document' ? FileText : Video;
+                  return (
+                    <div key={type} className="space-y-3">
+                      <div className="flex items-center gap-2 px-1">
+                         <Icon className="h-3 w-3 text-slate-400" />
+                         <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{type} Evidence</span>
+                      </div>
+                      {traces.map((t, idx) => (
+                        <div key={t.trace_id} className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all group">
+                          <div className="p-3 bg-slate-50/50 border-b flex items-center justify-between">
+                             <div className="flex items-center gap-2">
+                                <div className="h-6 w-6 rounded bg-white border flex items-center justify-center text-slate-400 group-hover:text-primary transition-colors">
+                                   <Icon className="h-3 w-3" />
+                                </div>
+                                <div className="flex flex-col">
+                                   <span className="text-[10px] font-black text-slate-700 truncate max-w-[180px]">{t.source_file_name}</span>
+                                   <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">
+                                      {t.page_number ? `Page ${t.page_number}` : t.timestamp_start ? `[${t.timestamp_start}]` : "Full Asset"}
+                                   </span>
+                                </div>
+                             </div>
+                             <div className="flex items-center gap-2">
+                                <span className={cn("text-[8px] font-black px-1.5 py-0.5 rounded uppercase border whitespace-nowrap", 
+                                  t.support_type === 'direct' ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
+                                  t.support_type === 'partial' ? "bg-amber-50 text-amber-600 border-amber-100" :
+                                  "bg-slate-50 text-slate-500 border-slate-100"
+                                )}>
+                                   {t.support_type}
+                                </span>
+                                <Button variant="ghost" size="sm" className="h-6 w-6 p-0 rounded-full hover:bg-slate-200">
+                                   <ExternalLink className="h-2.5 w-2.5 text-slate-400" />
+                                </Button>
+                             </div>
+                          </div>
+                          <div className="p-4 space-y-3">
+                             <div className="space-y-1.5">
+                                <div className="flex items-center gap-1.5 opacity-40">
+                                   <Quote className="h-2.5 w-2.5 text-slate-400" />
+                                   <span className="text-[8px] font-black text-slate-400 uppercase tracking-[0.1em]">Extracted Material</span>
+                                </div>
+                                <div className="bg-slate-50/80 rounded-lg p-3 border border-slate-100/50">
+                                   <p className="text-[11px] font-bold text-slate-600 italic leading-relaxed">
+                                      "{t.extracted_content}"
+                                   </p>
+                                </div>
+                             </div>
+                             {t.extracted_summary && (
+                               <div className="pt-2 border-t border-slate-50 flex items-start gap-2">
+                                  <div className="h-1.5 w-1.5 rounded-full bg-blue-500 mt-1 shrink-0" />
+                                  <p className="text-[10px] font-bold text-slate-400 leading-tight">
+                                     {t.extracted_summary}
+                                  </p>
+                               </div>
+                             )}
+                          </div>
+                          <div className="px-4 py-2.5 bg-slate-50/30 border-t flex items-center justify-between">
+                             <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-1">
+                                   <BarChart3 className="h-2.5 w-2.5 text-slate-300" />
+                                   <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Confidence: {t.confidence_score * 100}%</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                   <Cpu className="h-2.5 w-2.5 text-slate-300" />
+                                   <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">Node: {t.extraction_run_id.slice(-4)}</span>
+                                </div>
+                             </div>
+                             <span className="text-[8px] font-bold text-slate-300 uppercase tabular-nums">ID: {t.trace_id.slice(0, 8)}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Reviewer Actions */}
+      <div className="p-6 border-t bg-white shrink-0 space-y-4">
+        <h5 className="text-[10px] font-black text-slate-800 uppercase tracking-widest flex items-center gap-2 mb-2">
+           <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" /> Formal Verification Action
+        </h5>
+        <div className="grid grid-cols-2 gap-2">
+           <Button 
+             onClick={() => onUpdateStatus('human_verified')}
+             className="bg-emerald-600 hover:bg-emerald-700 text-white h-10 text-[9px] font-black uppercase tracking-widest gap-2 rounded-xl"
+           >
+              <Check className="h-3.5 w-3.5" /> Approve Full 
+           </Button>
+           <Button 
+             onClick={() => onUpdateStatus('partially_supported')}
+             variant="outline"
+             className="border-slate-200 text-slate-700 h-10 text-[9px] font-black uppercase tracking-widest gap-2 rounded-xl"
+           >
+              <Target className="h-3.5 w-3.5 text-blue-500" /> Part Support
+           </Button>
+           <Button 
+             onClick={() => onUpdateStatus('needs_review')}
+             variant="outline"
+             className="border-slate-200 text-slate-700 h-10 text-[9px] font-black uppercase tracking-widest gap-2 rounded-xl"
+           >
+              <Clock className="h-3.5 w-3.5 text-amber-500" /> Mark Review
+           </Button>
+           <Button 
+             onClick={() => onUpdateStatus('unsupported')}
+             variant="outline"
+             className="border-slate-200 text-slate-700 h-10 text-[9px] font-black uppercase tracking-widest gap-2 rounded-xl"
+           >
+              <XCircle className="h-3.5 w-3.5 text-rose-500" /> Unsupported
+           </Button>
+        </div>
+        <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+           <p className="text-[9px] font-bold text-slate-400 leading-relaxed">
+             Approving or marking this row will flag it as **Human Evaluated** in the final audit trail and PDF report.
+           </p>
+        </div>
+      </div>
     </div>
   );
 };
 
 // ── Slide View Component ───────────────────────────────────────────────────
 
-const FactSlideView: React.FC<{ metadata: FactMetadata, groupedItems: Record<ChronologyPhase, ChronologyItem[]> }> = ({ 
+const FactSlideView: React.FC<{ 
+  metadata: FactMetadata, 
+  groupedItems: Record<ChronologyPhase, ChronologyItem[]>,
+  selectedItemId?: string | null,
+  onSelectItem: (id: string | null) => void
+}> = ({ 
   metadata, 
-  groupedItems 
+  groupedItems,
+  selectedItemId,
+  onSelectItem
 }) => {
   return (
-    <div className="flex-1 flex flex-col p-[60px] text-slate-900 animate-in fade-in duration-500">
+    <div className="flex-1 flex flex-col p-[60px] text-slate-900 animate-in fade-in duration-500 relative">
       {/* Title Area */}
       <div className="flex justify-between items-start mb-6 border-b-2 border-slate-900 pb-4">
         <div>
@@ -280,17 +588,32 @@ const FactSlideView: React.FC<{ metadata: FactMetadata, groupedItems: Record<Chr
               </div>
               <div className="flex-1 overflow-y-auto p-5 space-y-4 custom-scrollbar bg-slate-50/10">
                 {groupedItems[phase].length > 0 ? groupedItems[phase].map((item) => (
-                  <div key={item.id} className="relative group">
+                  <div 
+                    key={item.id} 
+                    onClick={() => onSelectItem(item.id)}
+                    className={cn(
+                      "relative group cursor-pointer p-2 -mx-2 rounded-lg transition-all",
+                      selectedItemId === item.id ? "bg-slate-100 shadow-inner" : "hover:bg-slate-50"
+                    )}
+                  >
                     <div className="flex gap-3">
                       <div className="flex flex-col items-center">
                         <div className={cn("h-2.5 w-2.5 rounded-full mt-1.5 shadow-sm", config.dotColor)} />
                         <div className="w-px flex-1 bg-slate-100 my-1 group-last:hidden" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-[10px] font-mono font-black text-slate-400">[{item.time_label}]</span>
-                          {item.annotated_by_human && (
-                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" title="Human Annotated" />
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="flex items-center gap-2">
+                             <span className="text-[10px] font-mono font-black text-slate-400">[{item.time_label}]</span>
+                             {item.annotated_by_human && (
+                               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" title="Human Annotated" />
+                             )}
+                          </div>
+                          {item.traceability && (
+                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">Trace</span>
+                                <ChevronRight className="h-2.5 w-2.5 text-slate-300" />
+                             </div>
                           )}
                         </div>
                         <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
@@ -338,7 +661,9 @@ const FactDefaultView: React.FC<{
   onEdit: (item: ChronologyItem) => void,
   onSave: () => void,
   onCancel: () => void,
-  metadata: FactMetadata
+  metadata: FactMetadata,
+  selectedItemId?: string | null,
+  onSelectItem: (id: string | null) => void
 }> = ({ 
   items, 
   groupedItems, 
@@ -348,7 +673,9 @@ const FactDefaultView: React.FC<{
   onEdit, 
   onSave, 
   onCancel,
-  metadata
+  metadata,
+  selectedItemId,
+  onSelectItem
 }) => {
   return (
     <div className="flex flex-col h-full bg-slate-50/10">
@@ -398,8 +725,18 @@ const FactDefaultView: React.FC<{
                     <tbody className="divide-y divide-slate-50">
                       {phaseItems.length > 0 ? phaseItems.map((item) => {
                         const isEditing = editingId === item.id;
+                        const isSelected = selectedItemId === item.id;
+                        const status = STATUS_CONFIG[item.verification_status];
+
                         return (
-                          <tr key={item.id} className={cn("group transition-colors", isEditing ? "bg-primary/5" : "hover:bg-slate-50/50")}>
+                          <tr 
+                            key={item.id} 
+                            onClick={() => !isEditing && onSelectItem(item.id)}
+                            className={cn(
+                              "group transition-all cursor-pointer relative", 
+                              isEditing ? "bg-primary/5 cursor-default" : isSelected ? "bg-slate-100/80 shadow-inner" : "hover:bg-slate-50/50"
+                            )}
+                          >
                             <td className="px-5 py-4 align-top">
                               {isEditing ? (
                                 <Input 
@@ -408,20 +745,42 @@ const FactDefaultView: React.FC<{
                                   className="h-8 font-mono text-[11px] font-bold border-slate-300"
                                 />
                               ) : (
-                                <span className={cn("text-[11px] font-mono font-black", config.textColor)}>{item.time_label}</span>
+                                <div className="flex flex-col gap-1">
+                                  <span className={cn("text-[11px] font-mono font-black", config.textColor)}>{item.time_label}</span>
+                                  {item.traceability && (
+                                     <div className="flex items-center gap-1 opacity-40">
+                                        <Layers className="h-2.5 w-2.5" />
+                                        <span className="text-[8px] font-black uppercase tracking-tighter">{item.traceability.length} Sources</span>
+                                     </div>
+                                  )}
+                                </div>
                               )}
                             </td>
                             <td className="px-5 py-4 align-top">
                               {isEditing ? (
-                                <div className="space-y-2">
+                                <div className="space-y-4">
                                   <Textarea 
                                     value={editBuffer.chronology_text}
                                     onChange={(e) => setEditBuffer({ ...editBuffer, chronology_text: e.target.value })}
                                     className="min-h-[80px] text-xs font-medium leading-relaxed resize-none border-slate-300"
                                   />
-                                  <div className="flex items-center gap-2">
+                                  <div className="grid grid-cols-2 gap-2">
+                                     <div className="space-y-1">
+                                        <span className="text-[8px] font-black text-slate-400 uppercase">Verification Status</span>
+                                        <select 
+                                          value={editBuffer.verification_status}
+                                          onChange={(e) => setEditBuffer({ ...editBuffer, verification_status: e.target.value as VerificationStatus })}
+                                          className="w-full h-8 bg-white border border-slate-200 rounded px-2 text-[10px] font-bold"
+                                        >
+                                          {Object.entries(STATUS_CONFIG).map(([k, v]) => (
+                                             <option key={k} value={k}>{v.label}</option>
+                                          ))}
+                                        </select>
+                                     </div>
+                                  </div>
+                                  <div className="flex items-center gap-2 pt-2">
                                     <Button size="sm" onClick={onSave} className="h-7 px-3 bg-slate-900 text-[9px] uppercase font-black tracking-widest">
-                                      <Check className="h-3 w-3 mr-1.5" /> Save
+                                      <Check className="h-3 w-3 mr-1.5" /> Commit Change
                                     </Button>
                                     <Button size="sm" variant="ghost" onClick={onCancel} className="h-7 px-3 text-[9px] uppercase font-black tracking-widest">
                                       Cancel
@@ -430,35 +789,47 @@ const FactDefaultView: React.FC<{
                                 </div>
                               ) : (
                                 <div className="relative group/edit">
-                                  <p className="text-xs font-medium text-slate-700 leading-relaxed pr-8">
+                                  <p className={cn("text-xs font-medium leading-relaxed pr-8 transition-colors", 
+                                    isSelected ? "text-slate-900" : "text-slate-700"
+                                  )}>
                                     {item.chronology_text}
                                   </p>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="sm" 
-                                    onClick={() => onEdit(item)}
-                                    className="absolute top-0 -right-2 h-7 w-7 p-0 opacity-0 group-hover/edit:opacity-100 transition-opacity"
-                                  >
-                                    <Pencil className="h-3 w-3 text-slate-400" />
-                                  </Button>
+                                  <div className="flex items-center gap-1.5 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                     <span className="text-[8px] font-black text-primary uppercase tracking-[0.15em] flex items-center gap-1">
+                                        <Target className="h-2.5 w-2.5" /> Audit Traceable
+                                     </span>
+                                     <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        onClick={(e) => { e.stopPropagation(); onEdit(item); }}
+                                        className="h-6 w-6 p-0 hover:bg-slate-200 rounded"
+                                      >
+                                        <Pencil className="h-3 w-3 text-slate-400" />
+                                      </Button>
+                                  </div>
                                 </div>
                               )}
                             </td>
                             <td className="px-5 py-4 align-top text-right">
-                              <div className="flex flex-col items-end">
-                                {item.annotated_by_human ? (
-                                  <div className="flex flex-col items-end">
-                                    <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest flex items-center gap-1.5">
-                                      <User className="h-3 w-3" /> Human Verified
-                                    </span>
-                                    <span className="text-[8px] font-bold text-slate-300 uppercase mt-1">{item.updated_by}</span>
-                                  </div>
-                                ) : (
-                                  <div className="flex flex-col items-end border border-blue-100 bg-blue-50/30 px-2 py-1 rounded">
-                                    <span className="text-[9px] font-black text-blue-500 uppercase tracking-widest flex items-center gap-1.5">
-                                      <Brain className="h-3 w-3" /> AI Core
-                                    </span>
-                                  </div>
+                              <div className="flex flex-col items-end gap-1.5">
+                                <div className={cn("flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border", status.color)}>
+                                   <status.icon className="h-2.5 w-2.5" /> {status.label}
+                                </div>
+                                {item.annotated_by_human && (
+                                   <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tight">{item.updated_by || "System"} Review</span>
+                                )}
+                                {item.support_strength !== undefined && (
+                                   <div className="flex items-center gap-2 mt-1">
+                                      <div className="h-1 w-12 bg-slate-100 rounded-full overflow-hidden">
+                                         <div 
+                                           className={cn("h-full rounded-full",
+                                             item.support_strength > 0.8 ? "bg-emerald-500" : 
+                                             item.support_strength > 0.5 ? "bg-amber-500" : "bg-rose-500"
+                                           )} 
+                                           style={{ width: `${item.support_strength * 100}%` }} 
+                                         />
+                                      </div>
+                                   </div>
                                 )}
                               </div>
                             </td>

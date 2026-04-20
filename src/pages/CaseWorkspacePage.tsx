@@ -1,6 +1,6 @@
 // BUILD_VERSION: 2026-04-16T19:35:00 — force redeploy with diarization + 6-layer extraction
 import React, { useState, useEffect, useRef, useMemo } from "react"; 
-import { FactChronologyModule, ChronologyItem } from "@/components/analysis/FactChronologyModule";
+import { FactChronologyModule, ChronologyItem, TraceabilityPanel, VerificationStatus, STATUS_CONFIG } from "@/components/analysis/FactChronologyModule";
 import { useParams } from "react-router-dom";
 import { AppLayout } from "@/components/AppLayout";
 import { StatusChip, SeverityChip, ConfidenceChip } from "@/components/StatusChip";
@@ -113,15 +113,125 @@ const initialAgentsState: AgentState[] = [
            severity: "High"
         },
         chronology_items: [
-           { id: 'f1', phase: 'pre_contact', time_label: "14:10", chronology_text: "Vibration sensor alarm start on Section 14 drive motor", source: 'ai', annotated_by_human: false, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-           { id: 'f2', phase: 'pre_contact', time_label: "14:20", chronology_text: "Operator manual override initiated to maintain throughput", source: 'ai', annotated_by_human: false, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-           { id: 'f3', phase: 'pre_contact', time_label: "14:21", chronology_text: "Secondary tension alarm ignored by control room", source: 'ai', annotated_by_human: false, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-           { id: 'f4', phase: 'contact', time_label: "14:23", chronology_text: "Belt rupture detected at Section 14 leading to massive spillage", source: 'ai', annotated_by_human: false, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-           { id: 'f5', phase: 'contact', time_label: "14:24", chronology_text: "Main line conveyor 2 motor torque spike detected", source: 'ai', annotated_by_human: false, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-           { id: 'f6', phase: 'contact', time_label: "14:25", chronology_text: "Emergency stop automatically triggered by belt rip sensors", source: 'ai', annotated_by_human: false, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-           { id: 'f7', phase: 'post_contact', time_label: "14:30", chronology_text: "HSE Team departure to incident site for initial containment", source: 'ai', annotated_by_human: false, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-           { id: 'f8', phase: 'post_contact', time_label: "14:45", chronology_text: "Area secured and maintenance lockout-tagout (LOTO) applied", source: 'ai', annotated_by_human: false, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-           { id: 'f9', phase: 'post_contact', time_label: "15:00", chronology_text: "Initial witness statement provided to HSE supervisor", source: 'ai', annotated_by_human: false, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+           { 
+             id: 'f1', 
+             phase: 'pre_contact', 
+             time_label: "14:10", 
+             chronology_text: "Vibration sensor alarm start on Section 14 drive motor", 
+             source: 'ai', 
+             annotated_by_human: false, 
+             verification_status: 'ai_generated',
+             created_at: new Date().toISOString(), 
+             updated_at: new Date().toISOString(),
+             support_strength: 0.92,
+             synthesis_summary: "Merged telemetry data from SCADA Section 14 motor with temporal alignment from HSE control log. High consistency observed across vibration delta spikes.",
+             traceability: [
+               {
+                 trace_id: 'tr-101',
+                 source_type: 'other',
+                 source_file_name: 'SCADA_LOG_SEC14_2026.csv',
+                 source_file_id: 'ev-991',
+                 extraction_run_id: 'ext-node-v1',
+                 extracted_content: "Motor 14A: Vibration threshold exceeded at 14:10:04. Current: 4.2mm/s. Limit: 2.5mm/s.",
+                 support_type: 'direct',
+                 confidence_score: 0.98
+               }
+             ]
+           },
+           { 
+             id: 'f2', 
+             phase: 'pre_contact', 
+             time_label: "14:20", 
+             chronology_text: "Operator manual override initiated to maintain throughput", 
+             source: 'ai', 
+             annotated_by_human: false, 
+             verification_status: 'needs_review',
+             created_at: new Date().toISOString(), 
+             updated_at: new Date().toISOString(),
+             support_strength: 0.65,
+             synthesis_summary: "Action inferred from control room keystroke logs and lack of automated response to vibration delta.",
+             traceability: [
+               {
+                 trace_id: 'tr-102',
+                 source_type: 'document',
+                 source_file_name: 'Control_Room_Ops_Log.pdf',
+                 source_file_id: 'ev-992',
+                 extraction_run_id: 'ext-node-v2',
+                 extracted_content: "User: AKHAN - Override [Motor_14A] - Priority: Force_Run",
+                 support_type: 'direct',
+                 confidence_score: 0.85
+               }
+             ]
+           },
+           { id: 'f3', phase: 'pre_contact', time_label: "14:21", chronology_text: "Secondary tension alarm ignored by control room", source: 'ai', annotated_by_human: false, verification_status: 'ai_generated', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+           { 
+             id: 'f4', 
+             phase: 'contact', 
+             time_label: "14:23", 
+             chronology_text: "Belt rupture detected at Section 14 leading to massive spillage", 
+             source: 'ai', 
+             annotated_by_human: false, 
+             verification_status: 'ai_generated',
+             created_at: new Date().toISOString(), 
+             updated_at: new Date().toISOString(),
+             support_strength: 0.95,
+             synthesis_summary: "Critical event synthesized from CCTV-B14 visual rupture detection and simultaneous noise spike in Section 14 Audio Console.",
+             traceability: [
+               {
+                 trace_id: 'tr-201',
+                 source_type: 'image',
+                 source_file_name: 'CCTV-B14-FRAME-1423.jpg',
+                 source_file_id: 'ev-993',
+                 extraction_run_id: 'img-node-v1',
+                 extracted_content: "Scene context: Conveyor Gallery. Object: Belt. Condition: Ruptured. Material: Coal Spillage (est. 2 tons).",
+                 extracted_summary: "Visual confirmation of structural belt failure and lateral material scattering.",
+                 support_type: 'direct',
+                 confidence_score: 0.99
+               },
+               {
+                 trace_id: 'tr-202',
+                 source_type: 'audio',
+                 source_file_name: 'CONV_GALLERY_MIC_B.wav',
+                 source_file_id: 'ev-994',
+                 extraction_run_id: 'aud-node-v1',
+                 timestamp_start: "03:45",
+                 timestamp_end: "03:48",
+                 extracted_content: "[High Impact Snap Sound] followed by sustained mechanical grinding.",
+                 support_type: 'partial',
+                 confidence_score: 0.88
+               }
+             ]
+           },
+           { id: 'f5', phase: 'contact', time_label: "14:24", chronology_text: "Main line conveyor 2 motor torque spike detected", source: 'ai', annotated_by_human: false, verification_status: 'ai_generated', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+           { id: 'f6', phase: 'contact', time_label: "14:25", chronology_text: "Emergency stop automatically triggered by belt rip sensors", source: 'ai', annotated_by_human: false, verification_status: 'ai_generated', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+           { id: 'f7', phase: 'post_contact', time_label: "14:30", chronology_text: "HSE Team departure to incident site for initial containment", source: 'ai', annotated_by_human: false, verification_status: 'ai_generated', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+           { 
+             id: 'f8', 
+             phase: 'post_contact', 
+             time_label: "14:45", 
+             chronology_text: "Area secured and maintenance lockout-tagout (LOTO) applied", 
+             source: 'ai', 
+             annotated_by_human: false, 
+             verification_status: 'ai_generated',
+             created_at: new Date().toISOString(), 
+             updated_at: new Date().toISOString(),
+             support_strength: 0.88,
+             synthesis_summary: "Procedural completion confirmed via digital LOTO registration form and maintenance shift turnover log.",
+             traceability: [
+               {
+                 trace_id: 'tr-301',
+                 source_type: 'document',
+                 source_file_name: 'LOTO-REG-SEC14-APR05.pdf',
+                 source_file_id: 'ev-995',
+                 extraction_run_id: 'doc-node-v1',
+                 page_number: 1,
+                 extracted_content: "LOTO PROCEDURE COMPLETED. PADLOCK REF: #7721-B. SIGNED: M. SANTOS.",
+                 support_type: 'direct',
+                 confidence_score: 0.99
+               }
+             ]
+           },
+           { id: 'f9', phase: 'post_contact', time_label: "15:00", chronology_text: "Initial witness statement provided to HSE supervisor", source: 'ai', annotated_by_human: false, verification_status: 'ai_generated', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
         ]
      }
   },
@@ -1193,8 +1303,8 @@ function AIAnalysisPanel({ file }: { file: any }) {
 
                        <div className="space-y-3 pt-4 border-t border-slate-50">
                           <div className="flex items-center justify-between">
-                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] block">PPE Individual Audit</span>
-                            <span className="text-[8px] font-bold text-slate-300 uppercase">Verified via PPE-Matrix v2</span>
+                             <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] block">PPE Individual Audit</span>
+                             <span className="text-[8px] font-bold text-slate-300 uppercase">Verified via PPE-Matrix v2</span>
                           </div>
                           <div className="flex flex-wrap gap-2">
                              {normalizedData.people_ppe.ppe_items.filter(item => item.person_ref === p.person_ref).map((item, j) => (
@@ -1243,7 +1353,7 @@ function AIAnalysisPanel({ file }: { file: any }) {
                  <div key={i} className={`p-4 rounded-xl border flex items-center justify-between transition-all ${item.active ? 'bg-emerald-50/40 border-emerald-100 shadow-sm' : 'bg-slate-50/50 border-slate-100 grayscale opacity-50'}`}>
                     <span className="text-[10px] font-bold uppercase text-slate-600 tracking-tight">{item.label}</span>
                     <div className={`p-1 rounded-full ${item.active ? 'bg-emerald-500' : 'bg-slate-200'}`}>
-                       {item.active ? <Check className="h-3 w-3 text-white" /> : <X className="h-3 w-3 text-white" />}
+                       {item.active ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}
                     </div>
                  </div>
                ))}
@@ -2066,7 +2176,7 @@ function AudioRightPanel({
           </div>
         ) : (
           <div className="h-full flex flex-col overflow-hidden">
-            {renderDiary()}
+            {renderDiarization()}
           </div>
         )}
       </div>
@@ -2811,63 +2921,131 @@ function ExtractionTab({
          </div>
       </div>
 
-      <div className="w-[460px] min-w-[380px] border-l bg-white flex flex-col shrink-0 z-20 shadow-[-2px_0_6px_rgba(0,0,0,0.04)]">
-        <div className="h-12 border-b flex items-center justify-between px-4 shrink-0 bg-slate-50/50">
-           <div className="flex items-center gap-2">
-              <Brain className="h-4 w-4 text-primary" />
-              <span className="text-[10px] font-bold text-slate-700 uppercase tracking-widest">Extraction Console</span>
-           </div>
-           <div className="flex items-center gap-1.5">
-              <Button variant="ghost" size="sm" className="h-7 w-7 p-0 rounded-full hover:bg-slate-200">
-                 <History className="h-3.5 w-3.5 text-slate-400" />
-              </Button>
-              <Button variant="ghost" size="sm" className="h-7 px-2 text-[10px] font-bold text-primary hover:bg-primary/5">Rerun Engine</Button>
-           </div>
-        </div>
-        
-        <div className="flex-1 overflow-auto custom-scrollbar bg-white">
-           {selectedFile?.type === "Video" ? (
-             <VideoAnalysisPanel 
-                file={selectedFile} 
-                currentTime={videoCurrentTime}
-                onJump={jumpToVideoTime}
-              />
-           ) : selectedFile?.type === "Audio" ? (
-             <AudioAnalysisPanel 
-                file={selectedFile} 
-                currentTime={audioCurrentTime}
-                onJump={jumpToAudioTime}
-             />
-           ) : selectedFile?.type === "Image" ? (
-             <AIAnalysisPanel file={selectedFile} />
-           ) : (
-             <div className="p-6">
-               <AdaptiveExtractionOutput file={selectedFile} />
-             </div>
-           )}
-        </div>
+      <div className="w-[460px] border-l border-slate-200 bg-white flex flex-col shrink-0 z-20 shadow-[-2px_0_10px_rgba(0,0,0,0.03)] overflow-hidden">
+             {selectedChronologyItemId && selectedAgentId === 'fact' ? (
+                <TraceabilityPanel 
+                  item={agents.find(a => a.id === 'fact')?.results?.chronology_items?.find((i: any) => i.id === selectedChronologyItemId)}
+                  onClose={() => setSelectedChronologyItemId(null)}
+                  onUpdateStatus={(status) => {
+                    setAgents(prev => prev.map(a => a.id === 'fact' ? {
+                      ...a,
+                      results: {
+                        ...a.results,
+                        chronology_items: a.results.chronology_items.map((i: any) => i.id === selectedChronologyItemId ? { ...i, verification_status: status, annotated_by_human: true, updated_at: new Date().toISOString(), updated_by: "Current User" } : i)
+                      }
+                    } : a));
+                    toast.success(`Chronology status updated to ${STATUS_CONFIG[status].label}`);
+                  }}
+                  onEdit={() => {
+                    // Logic to trigger edit mode in the module if needed, 
+                    // but since the module handles its own internal state for editing, 
+                    // this would require a more complex bridge or just letting the user 
+                    // edit in the main view. For now, we'll keep it simple.
+                    toast.info("Please use the edit button on the chronology row to modify text.");
+                  }}
+                />
+             ) : (
+               <>
+                 <div className="h-12 border-b border-slate-200 flex items-center justify-between px-5 bg-slate-50/50 shrink-0">
+                    <div className="flex items-center gap-2">
+                       <Brain className="h-3.5 w-3.5 text-slate-400" />
+                       <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Synthesis Console</span>
+                    </div>
+                    <div className="flex items-center gap-4">
+                       <div className="flex items-center gap-2">
+                          <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                          <span className="text-[9px] font-black uppercase text-slate-400">Live Agent</span>
+                       </div>
+                    </div>
+                 </div>
 
-        <div className="px-5 py-4 border-t bg-white shrink-0 shadow-[0_-2px_8px_rgba(0,0,0,0.04)]">
-           <div className="flex items-center gap-2">
-              <Button
-                onClick={handleReview}
-                disabled={selectedFile?.review_status === "reviewed"}
-                className={`flex-1 h-9 text-xs font-black uppercase tracking-widest shadow-sm transition-all ${
-                  selectedFile?.review_status === "reviewed"
-                  ? "bg-emerald-500 hover:bg-emerald-600 text-white"
-                  : "bg-slate-900 hover:bg-slate-800 text-white"
-                }`}
-              >
-                 {selectedFile?.review_status === "reviewed" ? (
-                   <span className="flex items-center gap-2 tracking-tighter"><CheckCircle className="h-4 w-4" /> Review Complete</span>
-                 ) : "Verify & Mark Reviewed"}
-              </Button>
-              <Button variant="outline" className="h-9 px-3 border-slate-200 hover:bg-slate-50">
-                 <MoreVertical className="h-4 w-4 text-slate-400" />
-              </Button>
-           </div>
-        </div>
-      </div>
+                 <div className="flex-1 overflow-y-auto p-6 scrollbar-thin">
+                    {!selectedAgentId ? (
+                       <div className="flex flex-col items-center justify-center h-full text-center opacity-20 grayscale pointer-events-none p-12">
+                          <Cpu className="h-12 w-12 text-slate-300 mb-6" />
+                          <h3 className="text-sm font-black uppercase tracking-[0.2em] text-slate-800 leading-tight">Orchestration Standby</h3>
+                          <p className="text-[10px] font-bold text-slate-500 uppercase mt-4">Select an agent node from the matrix to view synthesized reasoning.</p>
+                       </div>
+                    ) : (
+                       <div className="space-y-8">
+                          {/* Reasoning Area */}
+                          <div className="space-y-4">
+                             <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                   <div className="h-5 w-5 bg-slate-900 rounded flex items-center justify-center text-white">
+                                      <Search className="h-2.5 w-2.5" />
+                                   </div>
+                                   <h4 className="text-[11px] font-black text-slate-800 uppercase tracking-widest">Reasoning Chain</h4>
+                                </div>
+                                <span className={cn("px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border", selectedAgent?.status === 'completed' ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-slate-50 text-slate-500 border-slate-100")}>
+                                   {selectedAgent?.status}
+                                </span>
+                             </div>
+                             
+                             <div className="bg-slate-50/80 rounded-xl p-5 border border-slate-100 space-y-4 shadow-inner">
+                                <div className="flex items-center gap-3">
+                                   <div className="h-8 w-8 rounded-full bg-white border border-slate-200 shadow-sm flex items-center justify-center overflow-hidden">
+                                      <selectedAgent.icon className="h-4 w-4 text-slate-400" />
+                                   </div>
+                                   <div>
+                                      <div className="text-[12px] font-black text-slate-900 leading-none">{selectedAgent?.name}</div>
+                                      <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Matrix Node ID: {selectedAgent?.id}</div>
+                                   </div>
+                                </div>
+                                <p className="text-[12px] text-slate-600 font-medium leading-relaxed italic">
+                                   "Analyzing high-delta vibration telemetry and manual override markers identified in evidence Review. Cross-referencing LOTO logs for procedural gaps."
+                                </p>
+                             </div>
+                          </div>
+
+                          {/* Slide Artifacts Area */}
+                          <div className="space-y-4">
+                             <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                   <div className="h-5 w-5 bg-slate-100 border rounded flex items-center justify-center text-slate-400">
+                                      <Layers className="h-2.5 w-2.5" />
+                                   </div>
+                                   <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Slide Artifacts</h4>
+                                </div>
+                                <Button variant="ghost" size="sm" className="h-6 px-2 text-[8px] font-black uppercase text-slate-400 hover:text-slate-900">
+                                   View All
+                                </Button>
+                             </div>
+
+                             <div className="grid grid-cols-1 gap-2">
+                                {slides.map(slide => (
+                                   <div key={slide.id} className="group cursor-pointer bg-white border border-slate-200 rounded-xl p-3 flex items-center justify-between hover:border-slate-900 transition-all shadow-sm">
+                                      <div className="flex items-center gap-3">
+                                         <div className="h-10 w-[70px] bg-slate-50 rounded border border-slate-100 flex items-center justify-center group-hover:bg-slate-900 transition-colors">
+                                            <DocIcon className="h-4 w-4 text-slate-300 group-hover:text-white" />
+                                         </div>
+                                         <div>
+                                            <div className="text-[11px] font-black text-slate-800 leading-none truncate max-w-[150px] uppercase tracking-tighter">{slide.title}</div>
+                                            <div className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">{slide.type}</div>
+                                         </div>
+                                      </div>
+                                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                                         <Maximize2 className="h-3 w-3 text-slate-400" />
+                                      </Button>
+                                   </div>
+                                ))}
+                             </div>
+                          </div>
+                       </div>
+                    )}
+                 </div>
+
+                 <div className="p-6 border-t bg-slate-50/50">
+                    <Button 
+                       className="w-full bg-slate-900 hover:bg-black text-white h-11 text-[10px] font-black uppercase tracking-[0.2em] rounded-xl shadow-xl shadow-slate-900/10"
+                       disabled={!selectedAgentId}
+                    >
+                       Export Investigation Pack
+                     </Button>
+                 </div>
+               </>
+             )}
+          </div>
 
       <DeleteConfirmationModal 
         isOpen={isDeleteModalOpen}
@@ -2892,648 +3070,10 @@ function ExtractionTab({
   );
 }
 
-
-
-
-
-
-// Smart Media Hook to workaround 416 Range issues and CDN caching
-function useSmartMedia(url: string | null, type: string) {
-  const [mediaUrl, setMediaUrl] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isBlob, setIsBlob] = useState(false);
-
-  useEffect(() => {
-    if (!url) {
-      setMediaUrl(null);
-      setIsLoading(false);
-      setIsBlob(false);
-      return;
-    }
-
-    let active = true;
-    setIsLoading(true);
-
-    const loadMedia = async () => {
-      // Strategy 1: Attempt to fetch as a Blob (Full local download)
-      // This is the most reliable way to fix 416 Requested Range Not Satisfiable 
-      // and "0:00 Duration" issues because the browser treats it as a local file.
-      try {
-        const response = await fetch(url, { mode: 'cors' });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        
-        const rawBlob = await response.blob();
-        if (!active) return;
-
-        // Force a valid MIME type. If Supabase serves as 'application/octet-stream', 
-        // the browser will fail playback even if it's a blob. 
-        // Re-creating the blob with 'audio/mp4' (for m4a) or 'video/mp4' (for mp4) fixes this.
-        const forcedType = type === 'Audio' ? 'audio/mp4' : 'video/mp4';
-        const blob = new Blob([rawBlob], { type: forcedType });
-
-        const blobUrl = URL.createObjectURL(blob);
-        setMediaUrl(blobUrl);
-        setIsBlob(true);
-        setIsLoading(false);
-      } catch (err) {
-        if (!active) return;
-        console.warn("Blob fetch failed (CORS or Network), falling back to direct stream:", err);
-        
-        // Strategy 2: Fallback to direct URL with Cache Buster
-        // If the server doesn't support CORS for Fetch, we fall back to standard 
-        // opaque streaming which might still work but is less reliable for seeking.
-        const busterUrl = `${url}${url.includes('?') ? '&' : '?'}t=${Date.now()}`;
-        setMediaUrl(busterUrl);
-        setIsBlob(false);
-        setIsLoading(false);
-      }
-    };
-
-    loadMedia();
-
-    return () => {
-      active = false;
-      if (mediaUrl && mediaUrl.startsWith('blob:')) {
-        URL.revokeObjectURL(mediaUrl);
-      }
-    };
-  }, [url]);
-
-  return { mediaUrl, isLoading, isBlob };
-}
-
-function AdaptiveSourcePreview({ 
-  file, 
-  videoCurrentTime, 
-  setVideoCurrentTime, 
-  videoIsPlaying, 
-  setVideoIsPlaying, 
-  videoRef,
-  audioCurrentTime = 0,
-  setAudioCurrentTime = () => {},
-  audioIsPlaying = false,
-  setAudioIsPlaying = () => {},
-  audioPlaybackSpeed = 1,
-  setAudioPlaybackSpeed = () => {},
-  audioRef
-}: { 
-  file: any,
-  videoCurrentTime?: number,
-  setVideoCurrentTime?: (t: number) => void,
-  videoIsPlaying?: boolean,
-  setVideoIsPlaying?: (p: boolean) => void,
-  videoRef?: React.RefObject<HTMLVideoElement>,
-  audioCurrentTime?: number,
-  setAudioCurrentTime?: (t: number) => void,
-  audioIsPlaying?: boolean,
-  setAudioIsPlaying?: (p: boolean) => void,
-  audioPlaybackSpeed?: number,
-  setAudioPlaybackSpeed?: (s: number) => void,
-  audioRef?: React.RefObject<HTMLAudioElement>
-}) {
-  const { mediaUrl, isLoading: mediaLoading, isBlob } = useSmartMedia(file.url, file.type);
-
-  useEffect(() => {
-    if (!audioRef.current) return;
-    if (audioIsPlaying) {
-      audioRef.current.play().catch(err => {
-        console.error("Playback error:", err);
-        setAudioIsPlaying(false);
-      });
-    } else {
-      audioRef.current.pause();
-    }
-  }, [audioIsPlaying, mediaUrl]);
-  useEffect(() => {
-    if (!audioRef.current) return;
-    audioRef.current.playbackRate = audioPlaybackSpeed;
-  }, [audioPlaybackSpeed]);
-
-  useEffect(() => {
-    if (!audioRef.current) return;
-    if (Math.abs(audioRef.current.currentTime - audioCurrentTime) > 1.5) {
-      audioRef.current.currentTime = audioCurrentTime;
-    }
-  }, [audioCurrentTime]);
-
-  if (!file) return <div className="p-20 text-center text-slate-400 font-bold uppercase tracking-[0.2em] opacity-50">Select evidence for preview</div>;
-  
-  if (file.type === "Document") {
-    return (
-      <div className="flex flex-col gap-6 w-full max-w-5xl pb-20">
-        <div className="bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-500 h-[850px]">
-           <div className="h-12 bg-slate-50 border-b flex items-center justify-between px-6">
-              <div className="flex items-center gap-3">
-                <div className="h-7 w-7 bg-primary/10 rounded-lg flex items-center justify-center">
-                  <DocIcon className="h-4 w-4 text-primary" />
-                </div>
-                <div>
-                  <h3 className="text-[11px] font-black text-slate-900 uppercase tracking-widest">{file.name}</h3>
-                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">REAL-TIME DOCUMENT PREVIEW</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <Button variant="ghost" size="sm" className="h-8 text-[10px] font-bold uppercase tracking-widest gap-2" onClick={() => window.open(file.url, '_blank')}>
-                  <ExternalLink className="h-3.5 w-3.5" /> Fullscreen
-                </Button>
-                <div className="h-4 w-px bg-slate-200" />
-                <Button variant="outline" size="sm" className="h-8 text-[10px] font-bold uppercase tracking-widest gap-2 bg-white" onClick={() => window.open(file.url, '_blank')}>
-                  <Download className="h-3.5 w-3.5" /> Download
-                </Button>
-              </div>
-           </div>
-           <div className="flex-1 bg-slate-100 flex items-center justify-center overflow-hidden relative">
-              {file.url ? (
-                <iframe 
-                  src={file.name?.toLowerCase().endsWith(".pdf") ? `${file.url}#toolbar=0&navpanes=0` : `https://docs.google.com/viewer?url=${encodeURIComponent(file.url)}&embedded=true`} 
-                  className="w-full h-full border-none bg-white" 
-                  title={file.name}
-                />
-              ) : (
-                <div className="text-center space-y-4">
-                  <AlertCircle className="h-12 w-12 text-slate-300 mx-auto" />
-                  <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Document Source Unavailable</p>
-                </div>
-              )}
-           </div>
-        </div>
-
-        <div className="space-y-4">
-           <div className="flex items-center justify-between border-b pb-2 px-1">
-              <div className="flex items-center gap-2">
-                 <Brain className="h-4 w-4 text-primary" />
-                 <h2 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.2em]">Automated Intelligence Output</h2>
-              </div>
-              <div className="flex items-center gap-2">
-                 <span className="text-[10px] font-bold text-slate-400">Analysis pending extraction refresh</span>
-              </div>
-           </div>
-           
-           <div className="bg-slate-50 border border-dashed border-slate-200 rounded-xl p-12 text-center">
-              <div className="h-12 w-12 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
-                 <RefreshCcw className="h-5 w-5 text-slate-400 animate-spin-slow" />
-              </div>
-              <h3 className="text-sm font-black text-slate-700 uppercase tracking-widest mb-2">Extraction in Progress</h3>
-              <p className="text-[11px] text-slate-500 font-medium max-w-sm mx-auto leading-relaxed">
-                The intelligence engine is currently parsing this document for thematic findings. Extracted facts will appear here once processed.
-              </p>
-           </div>
-        </div>
-      </div>
-    );
-  }
-
-
-  if (file.type === "Image") {
-    return (
-      <div className="w-full max-w-4xl aspect-[4/3] bg-[#0f172a] rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] relative overflow-hidden group animate-in fade-in zoom-in-95 duration-500 ring-1 ring-white/10">
-         <ImageViewer file={file} />
-      </div>
-    );
-  }
-
-  if (file.type === "Audio") {
-    const jumpTo = (timeStr: string) => {
-      const parts = timeStr.split(':').map(Number);
-      const seconds = parts[0] * 60 + parts[1];
-      if (audioRef.current) {
-        audioRef.current.currentTime = seconds;
-        if (!audioIsPlaying) {
-          setAudioIsPlaying(true);
-        }
-      }
-      setAudioCurrentTime(seconds);
-    };
-
-    const isSegmentActive = (start: string, end: string) => {
-      const getS = (s: string) => s.split(':').map(Number)[0] * 60 + s.split(':').map(Number)[1];
-      return audioCurrentTime >= getS(start) && audioCurrentTime <= getS(end);
-    };
-
-    return (
-       <div className="w-full max-w-4xl space-y-6 animate-in slide-in-from-bottom-4 duration-500 pb-20">
-          {mediaUrl && (
-            <audio 
-              key={mediaUrl}
-              ref={audioRef}
-              preload="metadata"
-              onTimeUpdate={(e) => setAudioCurrentTime(Math.floor(e.currentTarget.currentTime))}
-              onPlay={() => setAudioIsPlaying(true)}
-              onPause={() => setAudioIsPlaying(false)}
-              onEnded={() => setAudioIsPlaying(false)}
-              onError={(e) => {
-                const error = (e.currentTarget as any).error;
-                console.error("Audio internal error:", error);
-                if (error?.code === 4) {
-                   toast.error("Source File Incompatible: This file might be corrupted or in an unsupported format.");
-                }
-              }}
-              className="hidden"
-            >
-              <source src={mediaUrl} type="audio/mp4" />
-              <source src={mediaUrl} type="audio/x-m4a" />
-              <source src={mediaUrl} type="audio/mpeg" />
-            </audio>
-          )}
-          
-          {mediaLoading && (
-            <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center gap-3 rounded-lg border-2 border-primary/20">
-              <RefreshCcw className="h-6 w-6 text-primary animate-spin" />
-              <div className="text-center">
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-900 block mb-1">
-                  {isBlob ? "Buffering Secure Audio Stream..." : "Fetching Investigative Media..."}
-                </span>
-                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">
-                  {isBlob ? "Bypassing server range restrictions for stability" : "Initializing low-latency stream"}
-                </span>
-              </div>
-            </div>
-          )}
-          <div className="bg-white border-2 border-slate-100 rounded-lg shadow-xl p-8 space-y-8 relative overflow-hidden group">
-             <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none group-hover:opacity-20 transition-opacity">
-                <AudioIcon className="h-32 w-32 -mr-10 -mt-10 rotate-12" />
-             </div>
-             
-             <div className="flex items-center justify-between relative z-10">
-                <div className="flex items-center gap-4">
-                   <div className="h-14 w-14 bg-slate-900 rounded-lg flex items-center justify-center text-white shadow-2xl shadow-slate-900/20 group-hover:scale-105 transition-transform">
-                      <AudioIcon className="h-7 w-7" />
-                   </div>
-                   <div>
-                      <h3 className="text-xl font-black text-slate-900 leading-tight">{file.name}</h3>
-                      <div className="flex items-center gap-3 mt-1">
-                        <p className="text-[11px] text-slate-400 font-black uppercase tracking-[0.2em]">Source: {file.source || "External"}</p>
-                        <div className="h-1 w-1 bg-slate-300 rounded-full" />
-                        <p className="text-[11px] text-slate-400 font-black uppercase tracking-[0.2em]">{file.duration} · High Fidelity</p>
-                      </div>
-                   </div>
-                </div>
-                <div className="flex items-center gap-2">
-                   <StatusIndicator status="reviewed" type="review" />
-                   <a 
-                     href={mediaUrl || file.url} 
-                     download={file.name}
-                     target="_blank"
-                     rel="noopener noreferrer"
-                     className="h-9 w-9 p-0 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors text-slate-400 hover:text-primary"
-                     title="Download Evidence for Local Review"
-                   >
-                      <Download className="h-4 w-4" />
-                   </a>
-                   <Button variant="ghost" size="sm" className="h-9 w-9 p-0 rounded-full hover:bg-slate-100 transition-colors">
-                      <MoreVertical className="h-4 w-4 text-slate-400" />
-                   </Button>
-                </div>
-             </div>
-
-             <div className="space-y-3">
-                <div className="h-20 w-full bg-slate-50/50 flex items-end gap-[2px] px-2 py-3 rounded-xl border border-slate-100 group/wave cursor-pointer relative"
-                     onClick={(e) => {
-                       const rect = e.currentTarget.getBoundingClientRect();
-                       const x = e.clientX - rect.left;
-                       const pct = x / rect.width;
-                       const totalSeconds = 8 * 60 + 42; 
-                       setAudioCurrentTime(Math.floor(totalSeconds * pct));
-                     }}>
-                   {Array.from({ length: 120 }).map((_, i) => {
-                     const totalSeconds = 8 * 60 + 42;
-                     const targetX = (i / 120) * totalSeconds;
-                     const isPast = targetX <= audioCurrentTime;
-                     return (
-                        <div key={i} 
-                             className={`flex-1 rounded-full transition-all duration-300 ${isPast ? "bg-primary" : "bg-slate-200"}`} 
-                             style={{ height: `${20 + Math.sin(i * 0.2) * 20 + Math.random() * 40}%`, opacity: isPast ? 1 : 0.4 }} />
-                     );
-                   })}
-                   <div className="absolute top-0 bottom-0 w-0.5 bg-primary z-20 shadow-[0_0_10px_rgba(37,99,235,0.8)]" 
-                        style={{ left: `${(audioCurrentTime / (8*60+42)) * 100}%` }} />
-                </div>
-                <div className="flex justify-between px-1">
-                   <span className="text-[11px] font-black text-slate-400 tabular-nums">
-                     {Math.floor(audioCurrentTime / 60).toString().padStart(2, '0')}:{(audioCurrentTime % 60).toString().padStart(2, '0')}
-                   </span>
-                   <span className="text-[11px] font-black text-slate-400 tabular-nums">{file.duration}</span>
-                </div>
-             </div>
-
-             <div className="flex items-center justify-between bg-slate-50/50 p-2 rounded-lg border border-slate-100 shadow-inner">
-                <div className="flex items-center gap-1">
-                   <Button variant="ghost" size="sm" className="h-9 w-9 p-0 text-slate-500" onClick={() => setAudioCurrentTime(prev => Math.max(0, prev - 10))}><RefreshCcw className="h-4 w-4 -scale-x-100" /></Button>
-                   <Button 
-                      className="h-12 w-12 bg-slate-900 rounded-xl flex items-center justify-center text-white shadow-xl hover:bg-slate-800 transition-all hover:scale-105 active:scale-95"
-                      onClick={() => setAudioIsPlaying(!audioIsPlaying)}>
-                      {audioIsPlaying ? <div className="h-4 w-4 bg-white rounded-sm" /> : <Play className="h-5 w-5 fill-white ml-1" />}
-                   </Button>
-                   <Button variant="ghost" size="sm" className="h-9 w-9 p-0 text-slate-500" onClick={() => setAudioCurrentTime(prev => prev + 10)}><RefreshCcw className="h-4 w-4" /></Button>
-                </div>
-                <div className="flex items-center gap-6">
-                   <div className="flex items-center gap-3">
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Rate</span>
-                      <select 
-                        value={audioPlaybackSpeed}
-                        onChange={(e) => setAudioPlaybackSpeed(Number(e.target.value))}
-                        className="bg-transparent text-xs font-black text-slate-700 outline-none border-none cursor-pointer">
-                        <option value={0.5}>0.5x</option>
-                        <option value={1}>1.0x</option>
-                        <option value={1.5}>1.5x</option>
-                        <option value={2}>2.0x</option>
-                      </select>
-                   </div>
-                   <div className="flex items-center gap-2">
-                       <Wind className="h-4 w-4 text-slate-300" />
-                       <div className="w-20 h-1 bg-slate-200 rounded-full overflow-hidden">
-                          <div className="h-full w-3/4 bg-slate-400" />
-                       </div>
-                   </div>
-                </div>
-             </div>
-          </div>
-
-        </div>
-     );
-  }
-
-  if (file.type === "Video") {
-     const activeSegment = videoTimeframesData.find(tf => {
-        const getS = (s: string) => s.split(':').map(Number)[0] * 60 + s.split(':').map(Number)[1];
-        return (videoCurrentTime || 0) >= getS(tf.start_time) && (videoCurrentTime || 0) <= getS(tf.end_time);
-     });
-
-     const jumpTo = (timeStr: string) => {
-        const parts = timeStr.split(':').map(Number);
-        const seconds = parts[0] * 60 + parts[1];
-        if (videoRef?.current) {
-          videoRef.current.currentTime = seconds;
-          videoRef.current.play();
-          setVideoIsPlaying?.(true);
-        }
-     };
-
-     return (
-       <div className="w-full max-w-4xl space-y-8 animate-in slide-in-from-bottom-4 duration-500 pb-20">
-          <div className="space-y-4">
-             <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                   <div className="h-10 w-10 bg-black rounded-lg flex items-center justify-center text-white border border-white/20 shadow-xl">
-                      <VideoIcon className="h-5 w-5" />
-                   </div>
-                   <div>
-                      <h3 className="text-lg font-black text-slate-900 leading-tight uppercase tracking-tight">{file.name}</h3>
-                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-none mt-1">
-                        {file.source || "External Intake"} • High Fidelity Visual Stream • 1080p
-                      </p>
-                   </div>
-                </div>
-                <div className="flex items-center gap-2">
-                   <StatusIndicator status="completed" type="extraction" />
-                   <div className="h-4 w-px bg-slate-200" />
-                   <Button variant="outline" size="sm" className="h-8 text-[10px] font-bold uppercase tracking-widest gap-2 bg-white">
-                      <Download className="h-3 w-3" /> Export Clip
-                   </Button>
-                </div>
-             </div>
-
-             <div className="aspect-video bg-slate-950 border border-slate-800 rounded-lg shadow-2xl relative overflow-hidden group">
-                <div className="absolute top-4 left-4 z-50 flex items-center gap-2">
-                   <div className="h-2 w-2 rounded-full bg-rose-500 animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.6)]" />
-                   <span className="text-[9px] font-black text-white uppercase tracking-[0.2em] bg-black/60 backdrop-blur px-2.5 py-1 rounded border border-white/10">ARCHIVE RECORDING</span>
-                </div>
-                
-                <video
-                  ref={videoRef}
-                  preload="auto"
-                  className="w-full h-full object-contain"
-                  src={file.url}
-                  onTimeUpdate={(e) => setVideoCurrentTime?.(e.currentTarget.currentTime)}
-                  onPlay={() => setVideoIsPlaying?.(true)}
-                  onPause={() => setVideoIsPlaying?.(false)}
-                />
-
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity" />
-                
-                <div className="absolute bottom-0 left-0 right-0 p-6 flex flex-col gap-4 opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0">
-                   <div className="flex items-center gap-4">
-                      <button onClick={() => videoIsPlaying ? videoRef?.current?.pause() : videoRef?.current?.play()} className="h-10 w-10 bg-white rounded-full flex items-center justify-center text-slate-900 shadow-xl hover:scale-110 active:scale-95 transition-all">
-                        {videoIsPlaying ? <div className="h-3 w-3 bg-slate-900 rounded-sm" /> : <Play className="h-4 w-4 fill-slate-900 ml-0.5" />}
-                      </button>
-                      <div className="flex-1 h-1 bg-white/20 rounded-full overflow-hidden cursor-pointer">
-                         <div className="h-full bg-primary" style={{ width: `${((videoCurrentTime || 0) / (14*60+30)) * 100}%` }} />
-                      </div>
-                      <span className="text-[10px] font-black text-white tabular-nums tracking-widest">
-                        {Math.floor((videoCurrentTime || 0)/60).toString().padStart(2,'0')}:{(Math.floor((videoCurrentTime || 0)%60)).toString().padStart(2,'0')} / {file.duration}
-                      </span>
-                   </div>
-                </div>
-             </div>
-          </div>
-       </div>
-     );
-  }
-
-  return null;
-}
-
-function AdaptiveExtractionOutput({ file }: { file: any }) {
-  const [viewMode, setViewMode] = useState<"Structured" | "JSON">("Structured");
-  const [expandedSections, setExpandedSections] = useState<string[]>([]);
-  
-  useEffect(() => {
-    if (file?.type === "Audio") {
-      setExpandedSections(["Recording Meta", "Intelligence Seeds"]);
-    } else if (file?.type === "Video") {
-      setExpandedSections(["Detected Events"]);
-    } else {
-      setExpandedSections([]);
-    }
-  }, [file?.id, file?.type]);
-
-  if (!file) return null;
-
-  const toggle = (s: string) => setExpandedSections(p => p.includes(s) ? p.filter(x => x !== s) : [...p, s]);
-
-  const Section = ({ title, icon: Icon, children }: any) => (
-     <div className={`border rounded-xl overflow-hidden shadow-sm transition-all duration-300 ${expandedSections.includes(title) ? 'ring-1 ring-primary/20 shadow-md translate-y-[-2px]' : 'hover:border-slate-300'}`}>
-        <button 
-           onClick={() => toggle(title)}
-           className={`w-full flex items-center justify-between p-4 transition-colors ${expandedSections.includes(title) ? 'bg-slate-50/80 border-b' : 'bg-white hover:bg-slate-50/50'}`}
-        >
-           <div className="flex items-center gap-3">
-              <div className={`h-8 w-8 rounded-lg border shadow-sm flex items-center justify-center transition-all ${expandedSections.includes(title) ? 'bg-primary text-white border-primary shadow-primary/20' : 'bg-white text-slate-400'}`}>
-                 <Icon className="h-4 w-4" />
-              </div>
-              <span className={`text-sm font-black transition-colors ${expandedSections.includes(title) ? 'text-slate-900' : 'text-slate-700'}`}>{title}</span>
-           </div>
-           <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${expandedSections.includes(title) ? 'rotate-180' : ''}`} />
-        </button>
-        {expandedSections.includes(title) && (
-           <div className="p-5 bg-white space-y-4 animate-in slide-in-from-top-2 duration-300">
-              {children}
-           </div>
-        )}
-     </div>
-  );
-
-  const DataRow = ({ label, value, badge }: any) => (
-     <div className="flex items-center justify-between py-1.5">
-        <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-tight">{label}</span>
-        {badge ? (
-          <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border ${badge.className}`}>{badge.text}</span>
-        ) : (
-          <span className="text-[11px] font-black text-slate-700">{value || "—"}</span>
-        )}
-     </div>
-  );
-
-  const ExtractionItem = ({ fact, type, source, conf }: any) => (
-    <div className="bg-white border border-slate-200 rounded-lg p-3 hover:border-primary/40 transition-all hover:shadow-md cursor-pointer group mb-3 last:mb-0 relative overflow-hidden">
-       <div className="absolute top-0 left-0 w-1 h-full bg-slate-100 group-hover:bg-primary/50 transition-colors" />
-       <div className="flex items-center justify-between mb-1.5">
-          <div className="flex items-center gap-2">
-             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{type}</span>
-             <ConfidenceChip level={(conf || "Low").toLowerCase() as any} />
-          </div>
-       </div>
-       <p className="text-xs font-bold text-slate-900 leading-snug mb-2 pr-4">{fact}</p>
-       <div className="flex items-center gap-1.5 text-[9px] font-bold text-slate-400 uppercase tracking-widest border-t pt-2 border-slate-50">
-          <Paperclip className="h-2.5 w-2.5" />
-          {source}
-       </div>
-    </div>
-  );
-
-  if (file.type === "Audio") {
-     const data = audioExtractionData;
-     return (
-        <div className="space-y-3 pb-20">
-           <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Forensic logic</span>
-              <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-lg border shadow-inner">
-                 <button onClick={() => setViewMode("Structured")} className={`px-2 py-0.5 text-[8px] font-black uppercase rounded transition-all ${viewMode === "Structured" ? "bg-white text-primary shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>Structured</button>
-                 <button onClick={() => setViewMode("JSON")} className={`px-2 py-0.5 text-[8px] font-black uppercase rounded transition-all ${viewMode === "JSON" ? "bg-white text-primary shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>JSON</button>
-              </div>
-           </div>
-
-           {viewMode === "JSON" ? (
-              <div className="bg-slate-900 rounded-lg p-6 overflow-hidden border border-slate-800 shadow-2xl">
-                 <pre className="text-[10.5px] font-mono text-emerald-400 leading-relaxed overflow-auto max-h-[800px] custom-scrollbar">
-                    {JSON.stringify(data, null, 2)}
-                 </pre>
-              </div>
-           ) : (
-              <div className="space-y-4">
-                 <Section title="Recording Meta" icon={Settings}>
-                    <div className="divide-y divide-slate-50">
-                       <DataRow label="Duration" value={data.recording_meta.duration} />
-                       <DataRow label="Quality" value={data.recording_meta.audio_quality} badge={{ text: data.recording_meta.audio_quality, className: "bg-emerald-50 text-emerald-700 border-emerald-100" }} />
-                       <DataRow label="Type" value={data.recording_meta.recording_type} />
-                       <DataRow label="Noise Level" value={data.recording_meta.noise_level} />
-                    </div>
-                 </Section>
-                 <Section title="Diarization & Transcript" icon={MessageSquare}>
-                    <div className="space-y-4">
-                       {data.full_diarization.map((seg: any) => (
-                         <div key={seg.segment_id} className="flex flex-col gap-1.5 pl-3 border-l-2 border-slate-100">
-                            <span className="text-[10px] font-black text-slate-500 uppercase">{seg.speaker_label} · {seg.start_time}</span>
-                            <p className="text-[11px] font-bold text-slate-800 italic leading-relaxed">"{seg.text}"</p>
-                         </div>
-                       ))}
-                    </div>
-                 </Section>
-                 <Section title="Intelligence Seeds" icon={Brain}>
-                    <div className="space-y-4">
-                       <div className="p-3 border rounded-xl bg-slate-900 text-white">
-                          <span className="text-[10px] font-black text-primary uppercase block mb-2">PEEPO Reasoning</span>
-                          {Object.entries(data.peepo_seeds).map(([k, v]: any) => (
-                            <div key={k} className="flex gap-2 mb-1.5 last:mb-0 opacity-90">
-                               <span className="text-[9px] font-black text-slate-500 uppercase min-w-[60px]">{k}</span>
-                               <p className="text-[10px] font-bold text-slate-300 leading-tight">"{v[0]}"</p>
-                            </div>
-                          ))}
-                       </div>
-                    </div>
-                 </Section>
-              </div>
-           )}
-        </div>
-     );
-  }
-
-  if (file.type === "Document") {
-    return (
-      <div className="space-y-6 pb-20">
-        <div className="space-y-3 bg-slate-50 p-4 rounded-xl border">
-           <div className="flex items-center gap-2 mb-0.5">
-              <FileText className="h-3.5 w-3.5 text-primary" />
-              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Document Summary</span>
-           </div>
-           <p className="text-[11px] font-bold text-slate-700 leading-relaxed italic">
-             Initial HSE report documenting structural failure of Conveyor Belt 14 in Zone B. 
-           </p>
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-           {[
-             { label: "Incident Type", value: "Mechanical Failure" },
-             { label: "Location", value: "Pit Delta / Zone B" },
-             { label: "Critical Assets", value: "Conveyor 14" },
-             { label: "Severity", value: "High", badge: "bg-rose-100 text-rose-700" },
-           ].map((item, i) => (
-              <div key={i} className="bg-slate-50/50 p-2.5 border rounded-lg">
-                 <span className="text-[8px] font-black text-slate-400 uppercase block mb-0.5">{item.label}</span>
-                 <span className={`text-[10px] font-black ${item.badge ? item.badge + " px-1.5 py-0.5 rounded-sm" : "text-slate-800"}`}>
-                    {item.value}
-                 </span>
-              </div>
-           ))}
-        </div>
-        <Section title="Timeline & Facts" icon={Clock}>
-           <ExtractionItem fact="14:35 - Belt tear occurs, E-stop triggered" type="Critical Event" source="Page 1, Para 3" conf="High" />
-           <ExtractionItem fact="14:15 - Unusual vibration reported" type="Telemetry" source="Page 1, Para 2" conf="High" />
-        </Section>
-        <Section title="Risk Signals" icon={AlertTriangle}>
-           <ExtractionItem fact="Locked egress: Walkway B blocked" type="Safety Violation" source="Page 1, Para 4" conf="High" />
-        </Section>
-      </div>
-    );
-  }
-
-  if (file.type === "Video") {
-     return (
-        <div className="space-y-4 pb-20">
-           <Section title="Detected Events" icon={VideoIcon}>
-              <ExtractionItem fact="Metal-on-metal friction sparks detected at section 14" type="Visual Anomaly" source="CCTV [14:35:12]" conf="High" />
-              <ExtractionItem fact="Conveyor belt deflection exceeding 150mm" type="Measurement" source="Computer Vision" conf="High" />
-           </Section>
-           <Section title="Hazards & Alerts" icon={AlertCircle}>
-              <ExtractionItem fact="Operator seen approaching moving parts without barriers" type="Safety Violation" source="Scene AI" conf="Medium" />
-           </Section>
-        </div>
-     );
-  }
-
-  if (file.type === "Image") {
-    return (
-      <div className="space-y-4 pb-20">
-         <Section title="Composition & Objects" icon={LayoutGrid}>
-            <ExtractionItem fact="Visible tear across 90% of belt width" type="Surface Condition" source="Region [X:234, Y:782]" conf="High" />
-            <ExtractionItem fact="Roller support bracket appears detached" type="Equipment Hazard" source="Region [X:451, Y:123]" conf="Medium" />
-         </Section>
-         <Section title="Safety & PPE" icon={CheckCircle2}>
-            <ExtractionItem fact="Person wearing high-vis vest & hard hat" type="PPE Compliance" source="Global Scene" conf="High" />
-            <ExtractionItem fact="No exclusion zone barriers visible near tear" type="Safety Observation" source="Global Scene" conf="High" />
-         </Section>
-      </div>
-    );
-  }
-
-  return (
-    <div className="p-12 text-center">
-       <span className="text-xs font-bold text-slate-400">No extracted items for this format yet.</span>
-    </div>
-  );
-}
-
 function AnalysisTab() {
   const [agents, setAgents] = useState<AgentState[]>(initialAgentsState);
+  const [factViewMode, setFactViewMode] = useState<'slide' | 'default'>('default');
+  const [selectedChronologyItemId, setSelectedChronologyItemId] = useState<string | null>(null);
   const [execMode, setExecMode] = useState<"idle" | "full" | "manual">("idle");
   const [globalStatus, setGlobalStatus] = useState<"idle" | "running" | "blocked" | "completed" | "stopped" | "failed">("idle");
   const [chainQueue, setChainQueue] = useState<string[]>([]);
@@ -3543,7 +3083,6 @@ function AnalysisTab() {
   const [canvasZoom, setCanvasZoom] = useState(85);
   const [isExporting, setIsExporting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [factViewMode, setFactViewMode] = useState<'slide' | 'default'>('default');
 
   const containerRef = useRef<HTMLDivElement>(null);
   
@@ -3760,12 +3299,12 @@ function AnalysisTab() {
                               <agent.icon className="h-5 w-5" />
                            </div>
                            <div className={`
-                               px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border
-                               ${agent.status === 'completed' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 
-                                 agent.status === 'running' ? 'bg-blue-50 text-blue-700 border-blue-100 animate-pulse' : 
-                                 'bg-slate-50 text-slate-400 border-slate-100'}
+                                px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border
+                                ${agent.status === 'completed' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 
+                                  agent.status === 'running' ? 'bg-blue-50 text-blue-700 border-blue-100 animate-pulse' : 
+                                  'bg-slate-50 text-slate-400 border-slate-100'}
                            `}>
-                               {agent.status}
+                                {agent.status}
                            </div>
                         </div>
                         <h4 className={`text-[10px] font-black uppercase tracking-[0.15em] mb-1.5 ${selectedAgentId === agent.id ? "text-slate-900" : "text-slate-500"}`}>{agent.name}</h4>
@@ -3829,12 +3368,13 @@ function AnalysisTab() {
                          <h3 className="text-xl font-black text-slate-800 tracking-tighter mb-3 uppercase opacity-50">Orchestration Standby</h3>
                      </div>
                  ) : selectedAgentId === 'fact' && factViewMode === 'default' ? (
-                     <div className="w-full h-full bg-white animate-in fade-in duration-500 overflow-hidden">
                         <FactChronologyModule 
                            initialItems={slides[activeSlide]?.content.items}
                            metadata={slides[activeSlide]?.content.metadata}
                            viewMode="default"
                            onViewModeChange={setFactViewMode}
+                           selectedItemId={selectedChronologyItemId}
+                           onSelectItem={setSelectedChronologyItemId}
                            onSync={(newItems) => {
                              setAgents(prev => prev.map(a => a.id === 'fact' ? {
                                ...a,
@@ -3846,7 +3386,6 @@ function AnalysisTab() {
                              toast.success("Chronology successfully synced to case intelligence.");
                            }}
                         />
-                     </div>
                  ) : (
                      <div className={`bg-white shadow-[0_30px_90px_-20px_rgba(0,0,0,0.3)] flex flex-col relative transition-all duration-300 origin-center overflow-hidden rounded-[2px] ${factViewMode === 'default' ? 'w-full h-full' : ''}`} 
                           style={factViewMode === 'default' ? {} : { width: '1024px', height: '576px', transform: `scale(${canvasZoom/100})` }}>
@@ -3869,6 +3408,8 @@ function AnalysisTab() {
                                       metadata={slides[activeSlide]?.content.metadata}
                                       viewMode="slide"
                                       onViewModeChange={setFactViewMode}
+                                      selectedItemId={selectedChronologyItemId}
+                                      onSelectItem={setSelectedChronologyItemId}
                                       onSync={(newItems) => {
                                         setAgents(prev => prev.map(a => a.id === 'fact' ? {
                                           ...a,
@@ -3927,85 +3468,106 @@ function AnalysisTab() {
          </div>
 
          <div className="w-[460px] border-l border-slate-200 bg-white flex flex-col shrink-0 z-20 shadow-[-2px_0_10px_rgba(0,0,0,0.03)] overflow-hidden">
-             <div className="h-12 border-b border-slate-200 flex items-center justify-between px-5 bg-slate-50/50 shrink-0">
-                <div className="flex items-center gap-2">
-                   <Brain className="h-4 w-4 text-primary" />
-                   <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest">Synthesis Console</span>
-                </div>
-                <div className="flex items-center gap-2">
-                   <Button variant="ghost" size="sm" className="h-7 px-2 text-[9px] font-bold text-slate-400 border">
-                      <History className="h-3.5 w-3.5 mr-1" /> Log
-                   </Button>
-                   <Button variant="ghost" size="sm" className="h-7 px-2 text-[9px] font-bold text-primary border border-primary/20">
-                      Rerun Node
-                   </Button>
-                </div>
-             </div>
+             {selectedChronologyItemId && selectedAgentId === 'fact' ? (
+                <TraceabilityPanel 
+                  item={agents.find(a => a.id === 'fact')?.results?.chronology_items?.find((i: any) => i.id === selectedChronologyItemId)}
+                  onClose={() => setSelectedChronologyItemId(null)}
+                  onUpdateStatus={(status) => {
+                    setAgents(prev => prev.map(a => a.id === 'fact' ? {
+                      ...a,
+                      results: {
+                        ...a.results,
+                        chronology_items: a.results.chronology_items.map((i: any) => i.id === selectedChronologyItemId ? { ...i, verification_status: status, annotated_by_human: true, updated_at: new Date().toISOString(), updated_by: "Current User" } : i)
+                      }
+                    } : a));
+                    toast.success(`Chronology status updated to ${STATUS_CONFIG[status].label}`);
+                  }}
+                  onEdit={() => {
+                    toast.info("Please use the edit button on the chronology row to modify text.");
+                  }}
+                />
+             ) : (
+                <>
+                  <div className="h-12 border-b border-slate-200 flex items-center justify-between px-5 bg-slate-50/50 shrink-0">
+                    <div className="flex items-center gap-2">
+                       <Brain className="h-4 w-4 text-primary" />
+                       <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest">Synthesis Console</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                       <Button variant="ghost" size="sm" className="h-7 px-2 text-[9px] font-bold text-slate-400 border">
+                          <History className="h-3.5 w-3.5 mr-1" /> Log
+                       </Button>
+                       <Button variant="ghost" size="sm" className="h-7 px-2 text-[9px] font-bold text-primary border border-primary/20">
+                          Rerun Node
+                       </Button>
+                    </div>
+                  </div>
 
-             <div className="flex-1 overflow-y-auto custom-scrollbar">
-                {selectedAgentId ? (
-                   <div className="p-6 space-y-8">
-                      <div className="bg-slate-50 border rounded-xl p-5 space-y-4">
-                         <div className="flex items-center gap-2 border-b border-slate-200 pb-2 mb-2">
-                            <Settings className="h-3.5 w-3.5 text-slate-400" />
-                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Node Properties</span>
-                         </div>
-                         <div className="grid grid-cols-2 gap-6">
-                            <div className="flex flex-col">
-                               <span className="text-[9px] font-black text-slate-400 uppercase mb-1">State Relay</span>
-                               <div className="flex items-center gap-2">
-                                  <div className={`h-2 w-2 rounded-full ${selectedAgent?.status === 'running' ? 'bg-blue-500 animate-pulse' : 'bg-emerald-500'}`} />
-                                  <span className="text-[11px] font-black text-slate-800 tracking-tight uppercase">{selectedAgent?.status || "STANDBY"}</span>
-                               </div>
-                            </div>
-                            <div className="flex flex-col">
-                               <span className="text-[9px] font-black text-slate-400 uppercase mb-1">Last Run</span>
-                               <span className="text-[11px] font-black text-slate-800 uppercase tabular-nums">{selectedAgent?.lastRunTimestamp || "—"}</span>
-                            </div>
-                         </div>
-                      </div>
+                  <div className="flex-1 overflow-y-auto custom-scrollbar">
+                    {selectedAgentId ? (
+                       <div className="p-6 space-y-8">
+                          <div className="bg-slate-50 border rounded-xl p-5 space-y-4">
+                             <div className="flex items-center gap-2 border-b border-slate-200 pb-2 mb-2">
+                                <Settings className="h-3.5 w-3.5 text-slate-400" />
+                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Node Properties</span>
+                             </div>
+                             <div className="grid grid-cols-2 gap-6">
+                                <div className="flex flex-col">
+                                   <span className="text-[9px] font-black text-slate-400 uppercase mb-1">State Relay</span>
+                                   <div className="flex items-center gap-2">
+                                      <div className={`h-2 w-2 rounded-full ${selectedAgent?.status === 'running' ? 'bg-blue-500 animate-pulse' : 'bg-emerald-500'}`} />
+                                      <span className="text-[11px] font-black text-slate-800 tracking-tight uppercase">{selectedAgent?.status || "STANDBY"}</span>
+                                   </div>
+                                </div>
+                                <div className="flex flex-col">
+                                   <span className="text-[9px] font-black text-slate-400 uppercase mb-1">Last Run</span>
+                                   <span className="text-[11px] font-black text-slate-800 uppercase tabular-nums">{selectedAgent?.lastRunTimestamp || "—"}</span>
+                                </div>
+                             </div>
+                          </div>
 
-                      <div className="space-y-4">
-                         <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
-                            <FileText className="h-3.5 w-3.5 text-slate-400" />
-                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Slide Artifacts</span>
-                         </div>
-                         <div className="grid grid-cols-2 gap-3">
-                            {slides.map((s, i) => (
-                               <div key={s.id} onClick={() => setActiveSlide(i)} className={`group p-4 rounded-xl border-2 transition-all cursor-pointer relative overflow-hidden ${activeSlide === i ? 'bg-white border-blue-500' : 'bg-white border-slate-100 hover:border-slate-200'}`}>
-                                  <div className="flex items-start justify-between mb-3">
-                                     <div className={`h-8 w-8 rounded-lg border flex items-center justify-center ${activeSlide === i ? "bg-blue-600 text-white" : "bg-slate-50 text-slate-400"}`}>
-                                        <FileCode className="h-4 w-4" />
-                                     </div>
-                                     <span className="text-[8px] font-black text-slate-400 uppercase">Slide {i + 1}</span>
-                                  </div>
-                                  <h5 className="text-[10px] font-black uppercase truncate">{s.title}</h5>
-                               </div>
-                            ))}
-                         </div>
-                      </div>
+                          <div className="space-y-4">
+                             <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
+                                <FileText className="h-3.5 w-3.5 text-slate-400" />
+                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Slide Artifacts</span>
+                             </div>
+                             <div className="grid grid-cols-2 gap-3">
+                                {slides.map((s, i) => (
+                                   <div key={s.id} onClick={() => setActiveSlide(i)} className={`group p-4 rounded-xl border-2 transition-all cursor-pointer relative overflow-hidden ${activeSlide === i ? 'bg-white border-blue-500' : 'bg-white border-slate-100 hover:border-slate-200'}`}>
+                                      <div className="flex items-start justify-between mb-3">
+                                         <div className={`h-8 w-8 rounded-lg border flex items-center justify-center ${activeSlide === i ? "bg-blue-600 text-white" : "bg-slate-50 text-slate-400"}`}>
+                                            <FileCode className="h-4 w-4" />
+                                         </div>
+                                         <span className="text-[8px] font-black text-slate-400 uppercase">Slide {i + 1}</span>
+                                      </div>
+                                      <h5 className="text-[10px] font-black uppercase truncate">{s.title}</h5>
+                                   </div>
+                                ))}
+                             </div>
+                          </div>
 
-                      <div className="bg-amber-50/30 border border-amber-100 rounded-xl p-5 space-y-3">
-                         <div className="flex items-center gap-2">
-                            <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
-                            <span className="text-[10px] font-bold text-amber-700 uppercase tracking-widest">Reasoning Gap</span>
-                         </div>
-                         <p className="text-[11px] font-bold text-amber-800 opacity-80 leading-relaxed">The Matrix identified a correlation between Manual Override and Bearing Temperature at Zone B-14.</p>
-                      </div>
-                   </div>
-                ) : (
-                   <div className="h-full flex flex-col items-center justify-center text-center p-12 opacity-30">
-                      <Brain className="h-10 w-10 text-slate-300 mb-6" />
-                      <h4 className="text-sm font-black uppercase tracking-[0.2em]">Console Idle</h4>
-                   </div>
-                )}
-             </div>
-             
-             <div className="p-5 border-t bg-white shrink-0">
-                <Button onClick={handleExport} disabled={isExporting} className="w-full h-11 bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-black uppercase tracking-[0.2em] rounded-xl">
-                   {isExporting ? "Exporting..." : "Publish Presentation"}
-                </Button>
-             </div>
+                          <div className="bg-amber-50/30 border border-amber-100 rounded-xl p-5 space-y-3">
+                             <div className="flex items-center gap-2">
+                                <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
+                                <span className="text-[10px] font-bold text-amber-700 uppercase tracking-widest">Reasoning Gap</span>
+                             </div>
+                             <p className="text-[11px] font-bold text-amber-800 opacity-80 leading-relaxed">The Matrix identified a correlation between Manual Override and Bearing Temperature at Zone B-14.</p>
+                          </div>
+                       </div>
+                    ) : (
+                       <div className="h-full flex flex-col items-center justify-center text-center p-12 opacity-30">
+                          <Brain className="h-10 w-10 text-slate-300 mb-6" />
+                          <h4 className="text-sm font-black uppercase tracking-[0.2em]">Console Idle</h4>
+                       </div>
+                    )}
+                  </div>
+                  <div className="p-5 border-t bg-white shrink-0">
+                     <Button onClick={handleExport} disabled={isExporting} className="w-full h-11 bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-black uppercase tracking-[0.2em] rounded-xl">
+                        {isExporting ? "Exporting..." : "Publish Presentation"}
+                     </Button>
+                  </div>
+                </>
+             )}
           </div>
     </div>
   );
