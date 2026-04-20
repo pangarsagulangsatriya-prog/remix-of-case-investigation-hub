@@ -1,5 +1,4 @@
 // BUILD_VERSION: 2026-04-16T19:35:00 — force redeploy with diarization + 6-layer extraction
-import { cn } from "@/lib/utils";
 import React, { useState, useEffect, useRef, useMemo } from "react"; 
 import { FactChronologyModule, ChronologyItem, TraceabilityPanel, VerificationStatus, STATUS_CONFIG } from "@/components/analysis/FactChronologyModule";
 import { useParams } from "react-router-dom";
@@ -15,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Upload,
   Play,
+  Pause,
   Brain,
   FileText,
   Send,
@@ -123,6 +123,14 @@ interface AgentState {
     canRerun: boolean;
   };
 }
+
+const formatTime = (seconds: number) => {
+  if (isNaN(seconds)) return "00:00";
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+};
+
 const initialAgentsState: AgentState[] = [
   { 
      id: 'fact', 
@@ -2954,7 +2962,7 @@ function ExtractionTab({
         {selectedFile ? (
             <div className="flex-1 overflow-y-auto custom-scrollbar">
                 {selectedFile.type === "Image" && <ImageExtractionConsole file={selectedFile} />}
-                {selectedFile.type === "Audio" && <AudioExtractionConsole file={selectedFile} onJump={jumpToAudioTime} />}
+                {selectedFile.type === "Audio" && <AudioExtractionConsole file={selectedFile} onJump={jumpToAudioTime} currentTime={audioCurrentTime} />}
                 {selectedFile.type === "Video" && <VideoAnalysisPanel file={selectedFile} currentTime={videoCurrentTime || 0} onJump={jumpToVideoTime} />}
                 {selectedFile.type === "Document" && (
                     <div className="p-8 space-y-6">
@@ -3038,8 +3046,47 @@ function ImagePreview({ file }: { file: any }) {
 }
 
 function AudioPreview({ file, currentTime, setCurrentTime, isPlaying, setIsPlaying, playbackSpeed, setPlaybackSpeed, audioRef }: any) {
+  const [duration, setDuration] = useState(0);
+
+  const togglePlay = () => {
+    if (audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.pause();
+      } else {
+        audioRef.current.play();
+      }
+      setIsPlaying(!isPlaying);
+    }
+  };
+
+  const onTimeUpdate = () => {
+    if (audioRef.current) {
+      setCurrentTime(audioRef.current.currentTime);
+    }
+  };
+
+  const onLoadedMetadata = () => {
+    if (audioRef.current) {
+      setDuration(audioRef.current.duration);
+    }
+  };
+
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const time = parseFloat(e.target.value);
+    if (audioRef.current) {
+      audioRef.current.currentTime = time;
+    }
+    setCurrentTime(time);
+  };
+
   return (
     <div className="w-full max-w-2xl bg-white border border-slate-200 rounded-3xl p-8 shadow-2xl relative overflow-hidden group">
+       <audio 
+         ref={audioRef} 
+         src={file.url} 
+         onTimeUpdate={onTimeUpdate} 
+         onLoadedMetadata={onLoadedMetadata}
+       />
        <div className="absolute top-0 right-0 w-48 h-48 bg-primary/5 blur-[80px] rounded-full pointer-events-none" />
        <div className="flex flex-col items-center gap-6 relative z-10">
           <div className="h-20 w-20 rounded-[2.5rem] bg-slate-900 flex items-center justify-center text-white shadow-xl shadow-slate-900/10 group-hover:scale-110 transition-transform duration-700">
@@ -3052,20 +3099,27 @@ function AudioPreview({ file, currentTime, setCurrentTime, isPlaying, setIsPlayi
           
           <div className="w-full space-y-3">
              <div className="flex items-center justify-between text-[10px] font-black text-slate-400 tabular-nums uppercase tracking-widest text-primary/80">
-                <span>00:00</span>
-                <span>04:22</span>
+                <span>{formatTime(currentTime)}</span>
+                <span>{formatTime(duration || 262)}</span>
              </div>
-             <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden relative border shadow-inner">
-                <div className="h-full bg-primary relative overflow-hidden" style={{ width: '35%' }}>
-                   <div className="absolute inset-0 bg-white/20 animate-shimmer" />
-                </div>
-             </div>
+             <input 
+                type="range"
+                min="0"
+                max={duration || 262}
+                step="0.1"
+                value={currentTime}
+                onChange={handleSeek}
+                className="w-full h-1.5 bg-slate-100 rounded-full appearance-none cursor-pointer accent-primary"
+             />
           </div>
 
           <div className="flex items-center gap-6 text-slate-400">
-             <button className="p-2 hover:text-slate-900 transition-colors"><RefreshCcw className="h-4 w-4" /></button>
-             <button className="h-14 w-14 bg-slate-900 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-slate-800 transition-all hover:scale-105 active:scale-95">
-                <Play className="h-6 w-6 fill-current ml-1" />
+             <button className="p-2 hover:text-slate-900 transition-colors" onClick={() => { if(audioRef.current) audioRef.current.currentTime = 0; }}><RefreshCcw className="h-4 w-4" /></button>
+             <button 
+                onClick={togglePlay}
+                className="h-14 w-14 bg-slate-900 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-slate-800 transition-all hover:scale-105 active:scale-95"
+             >
+                {isPlaying ? <Pause className="h-6 w-6 fill-current" /> : <Play className="h-6 w-6 fill-current ml-1" />}
              </button>
              <button className="p-2 hover:text-slate-900 transition-colors"><Maximize2 className="h-4 w-4" /></button>
           </div>
@@ -3188,10 +3242,9 @@ function ImageExtractionConsole({ file }: { file: any }) {
   );
 }
 
-function AudioExtractionConsole({ file, onJump }: { file: any, onJump: (s: number) => void }) {
+function AudioExtractionConsole({ file, onJump, currentTime }: { file: any, onJump: (s: number) => void, currentTime: number }) {
   const [activeTab, setActiveTab] = useState<"Extraction" | "Diarization">("Extraction");
   const [viewMode, setViewMode] = useState<"Structured" | "JSON">("Structured");
-  const [currentTime] = useState(0);
 
   const audioExtractionData = useMemo(() => ({
     recording_meta: {
@@ -3746,20 +3799,11 @@ function AnalysisTab() {
                </div>
             </div>
 
-            <div ref={containerRef} className={cn(
-               "flex-1 relative overflow-auto custom-scrollbar flex items-start justify-center transition-all duration-300",
-               factViewMode === 'default' ? "p-0" : "p-10"
-            )}>
+            <div ref={containerRef} className="flex-1 relative overflow-auto custom-scrollbar p-10 flex items-start justify-center">
                  {selectedAgentId ? (
-                         <div className={cn(
-                              "bg-white flex flex-col relative transition-all duration-500 origin-center overflow-hidden",
-                              factViewMode === 'default' ? "w-full h-full rounded-none" : "w-[1024px] h-[576px] rounded-[2px] shadow-[0_30px_90px_-20px_rgba(0,0,0,0.3)] shadow-black/20"
-                         )}
-                              style={factViewMode === 'default' ? {} : { transform: `scale(${canvasZoom/100})` }}>
-                           <div className={cn(
-                              "flex-1 flex flex-col relative overflow-hidden h-full transition-all duration-500",
-                              factViewMode === 'default' ? "p-0" : "p-[60px]"
-                           )}>
+                         <div className={`bg-white shadow-[0_30px_90px_-20px_rgba(0,0,0,0.3)] flex flex-col relative transition-all duration-300 origin-center overflow-hidden rounded-[2px] ${factViewMode === 'default' ? 'w-full h-full' : ''}`} 
+                              style={factViewMode === 'default' ? {} : { width: '1024px', height: '576px', transform: `scale(${canvasZoom/100})` }}>
+                           <div className="flex-1 p-[60px] flex flex-col relative overflow-hidden h-full">
                               {selectedAgent?.status === 'running' ? (
                                  <div className="flex flex-col items-center justify-center h-full text-center space-y-8 animate-pulse text-slate-300">
                                     <Loader2 className="h-12 w-12 animate-spin" />
