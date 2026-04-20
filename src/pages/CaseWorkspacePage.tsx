@@ -2949,132 +2949,6 @@ function ExtractionTab({
          </div>
       </div>
 
-      <div className="w-[460px] border-l border-slate-200 bg-white flex flex-col shrink-0 z-20 shadow-[-2px_0_10px_rgba(0,0,0,0.03)] overflow-hidden">
-             {selectedChronologyItemId && selectedAgentId === 'fact' ? (
-                <TraceabilityPanel 
-                  item={agents.find(a => a.id === 'fact')?.results?.chronology_items?.find((i: any) => i.id === selectedChronologyItemId)}
-                  onClose={() => setSelectedChronologyItemId(null)}
-                  onUpdateStatus={(status) => {
-                    setAgents(prev => prev.map(a => a.id === 'fact' ? {
-                      ...a,
-                      results: {
-                        ...a.results,
-                        chronology_items: a.results.chronology_items.map((i: any) => i.id === selectedChronologyItemId ? { ...i, verification_status: status, annotated_by_human: true, updated_at: new Date().toISOString(), updated_by: "Current User" } : i)
-                      }
-                    } : a));
-                    toast.success(`Chronology status updated to ${STATUS_CONFIG[status].label}`);
-                  }}
-                  onEdit={() => {
-                    // Logic to trigger edit mode in the module if needed, 
-                    // but since the module handles its own internal state for editing, 
-                    // this would require a more complex bridge or just letting the user 
-                    // edit in the main view. For now, we'll keep it simple.
-                    toast.info("Please use the edit button on the chronology row to modify text.");
-                  }}
-                />
-             ) : (
-               <>
-                 <div className="h-12 border-b border-slate-200 flex items-center justify-between px-5 bg-slate-50/50 shrink-0">
-                    <div className="flex items-center gap-2">
-                       <Brain className="h-3.5 w-3.5 text-slate-400" />
-                       <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Synthesis Console</span>
-                    </div>
-                    <div className="flex items-center gap-4">
-                       <div className="flex items-center gap-2">
-                          <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                          <span className="text-[9px] font-black uppercase text-slate-400">Live Agent</span>
-                       </div>
-                    </div>
-                 </div>
-
-                 <div className="flex-1 overflow-y-auto p-6 scrollbar-thin">
-                    {!selectedAgentId ? (
-                       <div className="flex flex-col items-center justify-center h-full text-center opacity-20 grayscale pointer-events-none p-12">
-                          <Cpu className="h-12 w-12 text-slate-300 mb-6" />
-                          <h3 className="text-sm font-black uppercase tracking-[0.2em] text-slate-800 leading-tight">Orchestration Standby</h3>
-                          <p className="text-[10px] font-bold text-slate-500 uppercase mt-4">Select an agent node from the matrix to view synthesized reasoning.</p>
-                       </div>
-                    ) : (
-                       <div className="space-y-8">
-                          {/* Reasoning Area */}
-                          <div className="space-y-4">
-                             <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                   <div className="h-5 w-5 bg-slate-900 rounded flex items-center justify-center text-white">
-                                      <Search className="h-2.5 w-2.5" />
-                                   </div>
-                                   <h4 className="text-[11px] font-black text-slate-800 uppercase tracking-widest">Reasoning Chain</h4>
-                                </div>
-                                <span className={cn("px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border", selectedAgent?.status === 'completed' ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-slate-50 text-slate-500 border-slate-100")}>
-                                   {selectedAgent?.status}
-                                </span>
-                             </div>
-                             
-                             <div className="bg-slate-50/80 rounded-xl p-5 border border-slate-100 space-y-4 shadow-inner">
-                                <div className="flex items-center gap-3">
-                                   <div className="h-8 w-8 rounded-full bg-white border border-slate-200 shadow-sm flex items-center justify-center overflow-hidden">
-                                      <selectedAgent.icon className="h-4 w-4 text-slate-400" />
-                                   </div>
-                                   <div>
-                                      <div className="text-[12px] font-black text-slate-900 leading-none">{selectedAgent?.name}</div>
-                                      <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Matrix Node ID: {selectedAgent?.id}</div>
-                                   </div>
-                                </div>
-                                <p className="text-[12px] text-slate-600 font-medium leading-relaxed italic">
-                                   "Analyzing high-delta vibration telemetry and manual override markers identified in evidence Review. Cross-referencing LOTO logs for procedural gaps."
-                                </p>
-                             </div>
-                          </div>
-
-                          {/* Slide Artifacts Area */}
-                          <div className="space-y-4">
-                             <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                   <div className="h-5 w-5 bg-slate-100 border rounded flex items-center justify-center text-slate-400">
-                                      <Layers className="h-2.5 w-2.5" />
-                                   </div>
-                                   <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Slide Artifacts</h4>
-                                </div>
-                                <Button variant="ghost" size="sm" className="h-6 px-2 text-[8px] font-black uppercase text-slate-400 hover:text-slate-900">
-                                   View All
-                                </Button>
-                             </div>
-
-                             <div className="grid grid-cols-1 gap-2">
-                                {slides.map(slide => (
-                                   <div key={slide.id} className="group cursor-pointer bg-white border border-slate-200 rounded-xl p-3 flex items-center justify-between hover:border-slate-900 transition-all shadow-sm">
-                                      <div className="flex items-center gap-3">
-                                         <div className="h-10 w-[70px] bg-slate-50 rounded border border-slate-100 flex items-center justify-center group-hover:bg-slate-900 transition-colors">
-                                            <DocIcon className="h-4 w-4 text-slate-300 group-hover:text-white" />
-                                         </div>
-                                         <div>
-                                            <div className="text-[11px] font-black text-slate-800 leading-none truncate max-w-[150px] uppercase tracking-tighter">{slide.title}</div>
-                                            <div className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">{slide.type}</div>
-                                         </div>
-                                      </div>
-                                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                                         <Maximize2 className="h-3 w-3 text-slate-400" />
-                                      </Button>
-                                   </div>
-                                ))}
-                             </div>
-                          </div>
-                       </div>
-                    )}
-                 </div>
-
-                 <div className="p-6 border-t bg-slate-50/50">
-                    <Button 
-                       className="w-full bg-slate-900 hover:bg-black text-white h-11 text-[10px] font-black uppercase tracking-[0.2em] rounded-xl shadow-xl shadow-slate-900/10"
-                       disabled={!selectedAgentId}
-                    >
-                       Export Investigation Pack
-                     </Button>
-                 </div>
-               </>
-             )}
-          </div>
-
       <DeleteConfirmationModal 
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
@@ -3170,7 +3044,7 @@ function AnalysisTab() {
        id: 'slide-1',
        type: 'raw',
        title: 'Extraction Result',
-       content: agent.results || {}
+       content: agent?.results || {}
     }];
   }, [selectedAgentId, agents]);
 
@@ -3528,8 +3402,8 @@ function AnalysisTab() {
                              <div className="flex-1 animate-in fade-in duration-500 overflow-hidden">
                                  {slides[activeSlide]?.type === 'chronology_module' ? (
                                     <FactChronologyModule 
-                                      initialItems={slides[activeSlide]?.content.items}
-                                      metadata={slides[activeSlide]?.content.metadata}
+                                      initialItems={slides[activeSlide]?.content?.items || []}
+                                      metadata={slides[activeSlide]?.content?.metadata || {}}
                                       viewMode="slide"
                                       onViewModeChange={setFactViewMode}
                                       selectedItemId={selectedChronologyItemId}
@@ -3550,7 +3424,7 @@ function AnalysisTab() {
                                        <h2 className="text-[32px] font-black text-slate-800 mb-8 tracking-tighter uppercase">{slides[activeSlide]?.title}</h2>
                                        <div className="flex-1 bg-[#1a1c23] rounded-lg p-6 overflow-hidden border border-slate-700 shadow-2xl relative">
                                           <pre className="text-[12px] font-mono text-emerald-400/90 leading-tight h-full overflow-auto custom-scrollbar">
-                                             {JSON.stringify(slides[activeSlide]?.content, null, 2)}
+                                             {JSON.stringify(slides[activeSlide]?.content || {}, null, 2)}
                                           </pre>
                                        </div>
                                     </div>
@@ -3593,23 +3467,29 @@ function AnalysisTab() {
 
          <div className="w-[460px] border-l border-slate-200 bg-white flex flex-col shrink-0 z-20 shadow-[-2px_0_10px_rgba(0,0,0,0.03)] overflow-hidden">
              {selectedChronologyItemId && selectedAgentId === 'fact' ? (
-                <TraceabilityPanel 
-                  item={agents.find(a => a.id === 'fact')?.results?.chronology_items?.find((i: any) => i.id === selectedChronologyItemId)}
-                  onClose={() => setSelectedChronologyItemId(null)}
-                  onUpdateStatus={(status) => {
-                    setAgents(prev => prev.map(a => a.id === 'fact' ? {
-                      ...a,
-                      results: {
-                        ...a.results,
-                        chronology_items: a.results.chronology_items.map((i: any) => i.id === selectedChronologyItemId ? { ...i, verification_status: status, annotated_by_human: true, updated_at: new Date().toISOString(), updated_by: "Current User" } : i)
-                      }
-                    } : a));
-                    toast.success(`Chronology status updated to ${STATUS_CONFIG[status].label}`);
-                  }}
-                  onEdit={() => {
-                    toast.info("Please use the edit button on the chronology row to modify text.");
-                  }}
-                />
+                (() => {
+                  const item = agents.find(a => a.id === 'fact')?.results?.chronology_items?.find((i: any) => i.id === selectedChronologyItemId);
+                  if (!item) return null;
+                  return (
+                    <TraceabilityPanel 
+                      item={item}
+                      onClose={() => setSelectedChronologyItemId(null)}
+                      onUpdateStatus={(status) => {
+                        setAgents(prev => prev.map(a => a.id === 'fact' ? {
+                          ...a,
+                          results: {
+                            ...a.results,
+                            chronology_items: a.results.chronology_items.map((i: any) => i.id === selectedChronologyItemId ? { ...i, verification_status: status, annotated_by_human: true, updated_at: new Date().toISOString(), updated_by: "Current User" } : i)
+                          }
+                        } : a));
+                        toast.success(`Chronology status updated to ${STATUS_CONFIG[status].label}`);
+                      }}
+                      onEdit={() => {
+                        toast.info("Please use the edit button on the chronology row to modify text.");
+                      }}
+                    />
+                  );
+                })()
              ) : (
                 <>
                   <div className="h-12 border-b border-slate-200 flex items-center justify-between px-5 bg-slate-50/50 shrink-0">
