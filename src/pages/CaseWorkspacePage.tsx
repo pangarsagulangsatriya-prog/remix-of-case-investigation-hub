@@ -352,7 +352,7 @@ import {
 import { UploadModal, CompletedGroup } from "@/components/UploadModal";
 
 // Mock types removed. Using data from hooks.
-const tabs = ["Overview", "Evidence Review", "Review", "Audit Trail"];
+const tabs = ["Evidence Review", "Review", "Audit Trail"];
 
 const progressSteps = [
   { label: "Evidence", done: true },
@@ -5158,7 +5158,7 @@ export default function CaseWorkspacePage() {
         </div>
 
         <div className="flex-1 overflow-hidden relative">
-          {activeTab === "Overview" && <OverviewTab />}
+          {/* Overview Tab removed */}
           {activeTab === "Evidence Review" && (
             <ExtractionTab 
               evidenceFiles={evidenceFiles} 

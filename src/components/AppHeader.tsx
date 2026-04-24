@@ -7,7 +7,7 @@ export function AppHeader() {
   return (
     <header className="h-11 flex items-center justify-between border-b px-3 bg-white shrink-0 antialiased">
       <div className="flex items-center gap-2 px-3">
-        <InvestigationIntelligenceLogo className="h-6 w-auto" />
+        {/* Logo removed as requested */}
       </div>
 
       <div className="flex items-center gap-2">
