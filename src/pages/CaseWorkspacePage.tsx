@@ -3897,71 +3897,14 @@ function AnalysisTab() {
                   <div className="h-12 border-b border-slate-200 flex items-center justify-between px-5 bg-slate-50/50 shrink-0">
                     <div className="flex items-center gap-2">
                        <Brain className="h-4 w-4 text-primary" />
-                       <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest">Synthesis Console</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-
+                       <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest">Evidence Console</span>
                     </div>
                   </div>
 
-                  <div className="flex-1 overflow-y-auto custom-scrollbar">
-                    {selectedAgentId ? (
-                       <div className="p-6 space-y-8">
-                          <div className="bg-slate-50 border rounded-sm p-5 space-y-4">
-                             <div className="flex items-center gap-2 border-b border-slate-200 pb-2 mb-2">
-                                <Settings className="h-3.5 w-3.5 text-slate-400" />
-                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Node Properties</span>
-                             </div>
-                             <div className="grid grid-cols-2 gap-6">
-                                <div className="flex flex-col">
-                                   <span className="text-[9px] font-black text-slate-400 uppercase mb-1">State Relay</span>
-                                   <div className="flex items-center gap-2">
-                                      <div className={`h-2 w-2 rounded-full ${selectedAgent?.status === 'running' ? 'bg-blue-500 animate-pulse' : 'bg-emerald-500'}`} />
-                                      <span className="text-[11px] font-black text-slate-800 tracking-tight uppercase">{selectedAgent?.status || "STANDBY"}</span>
-                                   </div>
-                                </div>
-                                <div className="flex flex-col">
-                                   <span className="text-[9px] font-black text-slate-400 uppercase mb-1">Last Run</span>
-                                   <span className="text-[11px] font-black text-slate-800 uppercase tabular-nums">{selectedAgent?.lastRunTimestamp || "—"}</span>
-                                </div>
-                             </div>
-                          </div>
-
-                          <div className="space-y-4">
-                             <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
-                                <FileText className="h-3.5 w-3.5 text-slate-400" />
-                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Slide Artifacts</span>
-                             </div>
-                             <div className="grid grid-cols-2 gap-3">
-                                {slides.map((s, i) => (
-                                   <div key={s.id} onClick={() => setActiveSlide(i)} className={`group p-4 rounded-sm border-2 transition-all cursor-pointer relative overflow-hidden ${activeSlide === i ? 'bg-white border-blue-500' : 'bg-white border-slate-100 hover:border-slate-200'}`}>
-                                      <div className="flex items-start justify-between mb-3">
-                                         <div className={`h-8 w-8 rounded-sm border flex items-center justify-center ${activeSlide === i ? "bg-blue-600 text-white" : "bg-slate-50 text-slate-400"}`}>
-                                            <FileCode className="h-4 w-4" />
-                                         </div>
-                                         <span className="text-[8px] font-black text-slate-400 uppercase">Slide {i + 1}</span>
-                                      </div>
-                                      <h5 className="text-[10px] font-black uppercase truncate">{s.title}</h5>
-                                   </div>
-                                ))}
-                             </div>
-                          </div>
-
-                          <div className="bg-amber-50/30 border border-amber-100 rounded-sm p-5 space-y-3">
-                             <div className="flex items-center gap-2">
-                                <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
-                                <span className="text-[10px] font-bold text-amber-700 uppercase tracking-widest">Reasoning Gap</span>
-                             </div>
-                             <p className="text-[11px] font-bold text-amber-800 opacity-80 leading-relaxed">The Matrix identified a correlation between Manual Override and Bearing Temperature at Zone B-14.</p>
-                          </div>
-                       </div>
-                    ) : (
-                       <div className="h-full flex flex-col items-center justify-center text-center p-12 opacity-30">
-                          <Brain className="h-10 w-10 text-slate-300 mb-6" />
-                          <h4 className="text-sm font-black uppercase tracking-[0.2em]">Console Idle</h4>
-                       </div>
-                    )}
+                  <div className="flex-1 overflow-y-auto custom-scrollbar flex items-center justify-center p-12 text-slate-300">
+                     <h4 className="text-[10px] font-black uppercase tracking-[0.2em]">Console Standby</h4>
                   </div>
+
                   <div className="p-5 border-t bg-white shrink-0">
                      <Button onClick={handleExport} disabled={isExporting} className="w-full h-11 bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-black uppercase tracking-[0.2em] rounded-sm">
                         {isExporting ? "Exporting..." : "Publish Presentation"}
