@@ -4157,60 +4157,76 @@ function AnalysisTab() {
                                           <div className="space-y-4 p-4 bg-white border border-slate-200 rounded-none">
 
 
-                                             <div className="flex flex-col gap-6">
-                                                {/* Section 1: Temporal Context */}
-                                                <div className="space-y-3">
-                                                   <div className="flex items-center gap-2">
-                                                      <div className="h-px w-4 bg-slate-200" />
-                                                      <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest">Temporal Context</span>
+                                             <div className="flex flex-wrap gap-y-3 gap-x-2 items-baseline">
+                                                <TooltipProvider delayDuration={100}>
+                                                   <div className="border border-slate-200 bg-slate-50 px-2 py-1 rounded-none flex items-center gap-1.5 transition-colors hover:bg-slate-100 group">
+                                                      <span className="text-[10px] font-black text-slate-900 uppercase">{item.breakdown?.time || item.time || item.time_label}</span>
+                                                      <Tooltip>
+                                                         <TooltipTrigger asChild>
+                                                            <div className="h-1.5 w-1.5 bg-slate-400 group-hover:scale-125 transition-transform" />
+                                                         </TooltipTrigger>
+                                                         <TooltipContent className="bg-slate-900 text-white rounded-none border-none text-[8px] font-black uppercase px-3 py-2">TIME / TEMPORAL</TooltipContent>
+                                                      </Tooltip>
                                                    </div>
-                                                   <div className="flex flex-wrap items-center gap-3">
-                                                      <div className="border border-slate-200 bg-slate-50 px-3 py-1.5 rounded-none flex items-center gap-2">
-                                                         <span className="text-[9px] font-black text-slate-900 uppercase">{item.breakdown?.time || item.time || item.time_label}</span>
-                                                         <span className="text-[7px] font-bold text-slate-400 uppercase tracking-tighter">TIME</span>
-                                                      </div>
-                                                      <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest px-2">in</span>
-                                                      <div className="border border-slate-200 bg-slate-50 px-3 py-1.5 rounded-none flex items-center gap-2">
-                                                         <span className="text-[9px] font-black text-slate-900 uppercase">{(item.breakdown?.phase || item.phase || "PRE CONTACT").replace('_', ' ')}</span>
-                                                         <span className="text-[7px] font-bold text-slate-400 uppercase tracking-tighter">PHASE</span>
-                                                      </div>
+
+                                                   <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest px-1">in</span>
+
+                                                   <div className="border border-slate-200 bg-slate-50 px-2 py-1 rounded-none flex items-center gap-1.5 transition-colors hover:bg-slate-100 group">
+                                                      <span className="text-[10px] font-black text-slate-900 uppercase">{(item.breakdown?.phase || item.phase || "PRE CONTACT").replace('_', ' ')}</span>
+                                                      <Tooltip>
+                                                         <TooltipTrigger asChild>
+                                                            <div className="h-1.5 w-1.5 bg-slate-400 group-hover:scale-125 transition-transform" />
+                                                         </TooltipTrigger>
+                                                         <TooltipContent className="bg-slate-900 text-white rounded-none border-none text-[8px] font-black uppercase px-3 py-2">INCIDENT PHASE</TooltipContent>
+                                                      </Tooltip>
                                                    </div>
-                                                </div>
 
-                                                {/* Section 2: Incident Entities */}
-                                                <div className="space-y-3">
-                                                   <div className="flex items-center gap-2">
-                                                      <div className="h-px w-4 bg-slate-200" />
-                                                      <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest">Incident Entities</span>
+                                                   <div className="border-2 border-amber-500 bg-white px-2 py-1 rounded-none flex items-center gap-1.5 transition-colors hover:bg-amber-50 group">
+                                                      <span className="text-[10px] font-black text-slate-900 uppercase">{item.breakdown?.action || 'VIBRATION ALARM TRIGGERED'}</span>
+                                                      <Tooltip>
+                                                         <TooltipTrigger asChild>
+                                                            <div className="h-1.5 w-1.5 bg-amber-500 group-hover:scale-125 transition-transform" />
+                                                         </TooltipTrigger>
+                                                         <TooltipContent className="bg-slate-900 text-white rounded-none border-none text-[8px] font-black uppercase px-3 py-2">ACTION / EVENT</TooltipContent>
+                                                      </Tooltip>
                                                    </div>
-                                                   <div className="flex flex-wrap items-center gap-y-4 gap-x-3">
-                                                      <div className="border-2 border-amber-500 bg-white px-3 py-2 rounded-none flex flex-col min-w-[120px]">
-                                                         <span className="text-[7px] font-black text-amber-600 uppercase tracking-tighter mb-0.5">Action / Event</span>
-                                                         <span className="text-[10px] font-black text-slate-900 uppercase">{item.breakdown?.action || 'ALARM TRIGGERED'}</span>
-                                                      </div>
-                                                      
-                                                      <span className="text-[9px] font-bold text-slate-300 uppercase px-2">by</span>
 
-                                                      <div className="border border-purple-500 bg-white px-3 py-2 rounded-none flex flex-col min-w-[80px]">
-                                                         <span className="text-[7px] font-black text-purple-600 uppercase tracking-tighter mb-0.5">Actor</span>
-                                                         <span className="text-[10px] font-black text-slate-900 uppercase">{item.breakdown?.actor || 'SYSTEM'}</span>
-                                                      </div>
+                                                   <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest px-1">by</span>
 
-                                                      <span className="text-[9px] font-bold text-slate-300 uppercase px-2">on</span>
-
-                                                      <div className="border border-blue-500 bg-white px-3 py-2 rounded-none flex flex-col min-w-[140px]">
-                                                         <span className="text-[7px] font-black text-blue-600 uppercase tracking-tighter mb-0.5">Object / Unit</span>
-                                                         <span className="text-[10px] font-black text-slate-900 uppercase">{item.breakdown?.objectOrUnit || 'SECTION 14 DRIVE'}</span>
-                                                      </div>
-
-                                                      <span className="text-[9px] font-bold text-slate-300 uppercase px-2">at</span>
-
-                                                      <div className="border border-blue-500 bg-white px-3 py-2 rounded-none flex flex-col min-w-[100px]">
-                                                         <span className="text-[7px] font-black text-blue-600 uppercase tracking-tighter mb-0.5">Location</span>
-                                                         <span className="text-[10px] font-black text-slate-900 uppercase">{item.breakdown?.location || 'SECTION 14'}</span>
-                                                      </div>
+                                                   <div className="border border-purple-500 bg-white px-2 py-1 rounded-none flex items-center gap-1.5 transition-colors hover:bg-purple-50 group">
+                                                      <span className="text-[10px] font-black text-slate-900 uppercase">{item.breakdown?.actor || 'SENSOR SYSTEM'}</span>
+                                                      <Tooltip>
+                                                         <TooltipTrigger asChild>
+                                                            <div className="h-1.5 w-1.5 bg-purple-500 group-hover:scale-125 transition-transform" />
+                                                         </TooltipTrigger>
+                                                         <TooltipContent className="bg-slate-900 text-white rounded-none border-none text-[8px] font-black uppercase px-3 py-2">ACTOR / AGENT</TooltipContent>
+                                                      </Tooltip>
                                                    </div>
-                                                </div>
+
+                                                   <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest px-1">on</span>
+
+                                                   <div className="border border-blue-500 bg-white px-2 py-1 rounded-none flex items-center gap-1.5 transition-colors hover:bg-blue-50 group">
+                                                      <span className="text-[10px] font-black text-slate-900 uppercase">{item.breakdown?.objectOrUnit || 'SECTION 14 DRIVE MOTOR'}</span>
+                                                      <Tooltip>
+                                                         <TooltipTrigger asChild>
+                                                            <div className="h-1.5 w-1.5 bg-blue-500 group-hover:scale-125 transition-transform" />
+                                                         </TooltipTrigger>
+                                                         <TooltipContent className="bg-slate-900 text-white rounded-none border-none text-[8px] font-black uppercase px-3 py-2">OBJECT / UNIT</TooltipContent>
+                                                      </Tooltip>
+                                                   </div>
+
+                                                   <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest px-1">at</span>
+
+                                                   <div className="border border-blue-500 bg-white px-2 py-1 rounded-none flex items-center gap-1.5 transition-colors hover:bg-blue-50 group">
+                                                      <span className="text-[10px] font-black text-slate-900 uppercase">{item.breakdown?.location || 'SECTION 14'}</span>
+                                                      <Tooltip>
+                                                         <TooltipTrigger asChild>
+                                                            <div className="h-1.5 w-1.5 bg-blue-500 group-hover:scale-125 transition-transform" />
+                                                         </TooltipTrigger>
+                                                         <TooltipContent className="bg-slate-900 text-white rounded-none border-none text-[8px] font-black uppercase px-3 py-2">PHYSICAL LOCATION</TooltipContent>
+                                                      </Tooltip>
+                                                   </div>
+                                                </TooltipProvider>
                                              </div>
                                           </div>
                                        </div>
