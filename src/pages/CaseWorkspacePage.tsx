@@ -4226,16 +4226,13 @@ function AnalysisTab() {
                                                  {JSON.stringify(slides[activeSlide]?.content, null, 2)}
                                               </pre>
                                            </div>
-                                        )
-
-                                       )}
-                                    </div>
-                                 )}
-                              </div>
-                           )}
-                        </div>
-                     </div>
-
+                                        )}
+                                     </div>
+                                  )}
+                               </div>
+                            )}
+                         </div>
+                      </div>
                   ) : (
                      <div className="flex-1 flex flex-col items-center justify-center p-12 text-slate-300">
                         <Brain className="h-12 w-12 mb-4 opacity-20" />
