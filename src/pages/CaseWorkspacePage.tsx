@@ -4222,7 +4222,7 @@ function AnalysisTab() {
                                              <LayoutGrid className="h-3 w-3 text-slate-400" />
                                              <span className="text-[10px] font-black uppercase tracking-widest text-slate-900">Event Breakdown</span>
                                           </div>
-                                          <div className="grid grid-cols-2 gap-px bg-slate-200 border border-slate-200 rounded-none overflow-hidden">
+                                          <div className="grid grid-cols-[120px_1fr] gap-px bg-slate-200 border border-slate-200 rounded-none overflow-hidden">
                                              {[
                                                 { label: 'Time', value: item.breakdown?.time || item.time || item.time_label },
                                                 { label: 'Timezone', value: item.breakdown?.timezone || item.timezone || '—' },
@@ -4234,10 +4234,14 @@ function AnalysisTab() {
                                                 { label: 'Condition', value: item.breakdown?.condition || '—' },
                                                 { label: 'Outcome', value: item.breakdown?.outcome || '—' },
                                              ].map((row, i) => (
-                                                <div key={i} className="bg-white p-3 space-y-1">
-                                                   <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{row.label}</span>
-                                                   <p className="text-[10px] font-bold text-slate-900 uppercase truncate">{row.value}</p>
-                                                </div>
+                                                <React.Fragment key={i}>
+                                                   <div className="bg-slate-50/50 p-3 flex items-center">
+                                                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{row.label}</span>
+                                                   </div>
+                                                   <div className="bg-white p-3 flex items-center">
+                                                      <p className="text-[10px] font-bold text-slate-900 uppercase truncate">{row.value}</p>
+                                                   </div>
+                                                </React.Fragment>
                                              ))}
                                           </div>
                                        </div>
