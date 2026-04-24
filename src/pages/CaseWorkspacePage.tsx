@@ -94,7 +94,13 @@ import {
   ShieldAlert,
   HelpCircle,
   Layout,
-  Layers
+  Layers,
+  Sun,
+  Contrast,
+  Zap,
+  Eye,
+  EyeOff,
+  Wand2
 } from "lucide-react";
 
 type AgentStatus = 'idle' | 'queued' | 'running' | 'paused' | 'stopped' | 'completed' | 'failed' | 'cancelled';
@@ -3389,13 +3395,47 @@ function ImagePreview({ file }: { file: any }) {
   const [viewMode, setViewMode] = useState<'fit' | 'fill' | '100%'>('fit');
   const containerRef = useRef<HTMLDivElement>(null);
 
+  const [enhancements, setEnhancements] = useState({
+    exposure: 100,
+    contrast: 100,
+    saturate: 100,
+    invert: 0,
+    grayscale: 0,
+    sepia: 0,
+    hue: 0,
+  });
+  const [isForensicOpen, setIsForensicOpen] = useState(false);
+
   useEffect(() => {
     // Reset on file change
     setScale(1);
     setPosition({ x: 0, y: 0 });
     setViewMode('fit');
     setHandToolActive(false);
+    setEnhancements({
+      exposure: 100,
+      contrast: 100,
+      saturate: 100,
+      invert: 0,
+      grayscale: 0,
+      sepia: 0,
+      hue: 0,
+    });
   }, [file.id]);
+
+  const applyPreset = (preset: string) => {
+    const base = { exposure: 100, contrast: 100, saturate: 100, invert: 0, grayscale: 0, sepia: 0, hue: 0 };
+    switch(preset) {
+      case 'high-contrast': setEnhancements({...base, contrast: 180, saturate: 120 }); break;
+      case 'low-light': setEnhancements({...base, exposure: 160, contrast: 130 }); break;
+      case 'dust-cut': setEnhancements({...base, contrast: 150, saturate: 80 }); break;
+      case 'sepia': setEnhancements({...base, sepia: 100 }); break;
+      case 'grayscale': setEnhancements({...base, grayscale: 100 }); break;
+      case 'invert': setEnhancements({...base, invert: 100 }); break;
+      case 'infra': setEnhancements({...base, hue: 180, contrast: 140 }); break;
+      default: setEnhancements(base);
+    }
+  };
 
   const handleZoom = (factor: number, centerX?: number, centerY?: number) => {
     setScale(prev => {
@@ -3467,7 +3507,67 @@ function ImagePreview({ file }: { file: any }) {
           >
             <RefreshCcw className="h-3.5 w-3.5" />
           </button>
+        <div className="w-px h-4 bg-slate-100 mx-1" />
+        <button 
+          onClick={() => setIsForensicOpen(!isForensicOpen)}
+          className={cn("p-1.5 rounded-sm transition-all", isForensicOpen ? "bg-indigo-500 text-white shadow-inner" : "text-slate-500 hover:text-slate-900 hover:bg-slate-100")}
+        >
+          <Wand2 className="h-3.5 w-3.5" />
+        </button>
+      </div>
+
+      {isForensicOpen && (
+        <div className="flex items-center justify-center shrink-0 -mt-1 scale-95 animate-in slide-in-from-top-2 duration-200">
+           <div className="flex items-center gap-4 p-1.5 bg-white border border-slate-200 rounded-sm shadow-sm">
+              <div className="flex items-center gap-1 border-r pr-3 border-slate-100">
+                 <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest mr-2">Presets</span>
+                 {[
+                   { id: "natural", label: "Original" },
+                   { id: "high-contrast", label: "Hi-Contrast" },
+                   { id: "low-light", label: "Low-Light" },
+                   { id: "dust-cut", label: "Clarity" },
+                   { id: "grayscale", label: "B&W" },
+                   { id: "invert", label: "Invert" },
+                   { id: "infra", label: "Thermal-P" }
+                 ].map(p => (
+                   <button 
+                    key={p.id}
+                    onClick={() => applyPreset(p.id)}
+                    className="px-2 py-1 text-[8px] font-bold text-slate-500 hover:text-slate-900 hover:bg-slate-50 rounded-sm uppercase tracking-tighter"
+                   >
+                     {p.label}
+                   </button>
+                 ))}
+              </div>
+
+              <div className="flex items-center gap-4">
+                 {[
+                   { id: "exposure", label: "EXP", icon: Sun, min: 50, max: 200 },
+                   { id: "contrast", label: "CON", icon: Contrast, min: 50, max: 200 },
+                   { id: "saturate", label: "SAT", icon: Zap, min: 0, max: 200 }
+                 ].map(s => (
+                   <div key={s.id} className="flex items-center gap-2">
+                      <s.icon className="h-3 w-3 text-slate-400" />
+                      <input 
+                        type="range" 
+                        min={s.min} 
+                        max={s.max} 
+                        value={(enhancements as any)[s.id]}
+                        onChange={(e) => setEnhancements(prev => ({ ...prev, [s.id]: parseInt(e.target.value) }))}
+                        className="w-16 h-1 bg-slate-100 rounded-full appearance-none cursor-pointer accent-indigo-500"
+                      />
+                   </div>
+                 ))}
+                 <button 
+                  onClick={() => setEnhancements({ exposure: 100, contrast: 100, saturate: 100, invert: 0, grayscale: 0, sepia: 0, hue: 0 })}
+                  className="p-1 hover:bg-rose-50 text-rose-400 hover:text-rose-600 rounded transition-all"
+                 >
+                   <RefreshCcw className="h-3 w-3" />
+                 </button>
+              </div>
+           </div>
         </div>
+      )}
       </div>
 
       <div 
@@ -3484,7 +3584,8 @@ function ImagePreview({ file }: { file: any }) {
           className="w-full h-full flex items-center justify-center transition-transform duration-75 ease-out select-none"
           style={{ 
             transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
-            transformOrigin: 'center center'
+            transformOrigin: 'center center',
+            filter: `brightness(${enhancements.exposure}%) contrast(${enhancements.contrast}%) saturate(${enhancements.saturate}%) invert(${enhancements.invert}%) grayscale(${enhancements.grayscale}%) sepia(${enhancements.sepia}%) hue-rotate(${enhancements.hue}deg)`
           }}
         >
           <img 
