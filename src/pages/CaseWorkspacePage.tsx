@@ -4224,7 +4224,7 @@ function AnalysisTab() {
                                              <LayoutGrid className="h-3 w-3 text-slate-400" />
                                              <span className="text-[10px] font-black uppercase tracking-widest text-slate-900">Event Breakdown</span>
                                           </div>
-                                          <div className="border border-slate-200 rounded-none overflow-hidden divide-y divide-slate-100">
+                                          <div className="border border-slate-200 rounded-none overflow-hidden bg-slate-200 flex flex-col gap-px">
                                              {[
                                                 { id: 'time', label: 'Time', value: item.breakdown?.time || item.time || item.time_label, 
                                                    evidence: [
@@ -4264,7 +4264,7 @@ function AnalysisTab() {
                                                    ]
                                                 },
                                              ].map((row, i) => (
-                                                <div key={row.id} className="group">
+                                                <div key={row.id} className="group bg-slate-200">
                                                    <button 
                                                       onClick={() => {
                                                          setExpandedEntityRows(prev => 
@@ -4273,7 +4273,7 @@ function AnalysisTab() {
                                                       }}
                                                       className="w-full grid grid-cols-[120px_1fr] gap-px bg-slate-200 hover:bg-slate-300 transition-colors"
                                                    >
-                                                      <div className="bg-slate-50/50 p-3 flex items-center justify-between group-hover:bg-slate-100 transition-colors">
+                                                      <div className="bg-slate-50 p-3 flex items-center justify-between group-hover:bg-slate-100 transition-colors border-r border-slate-200">
                                                          <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{row.label}</span>
                                                       </div>
                                                       <div className="bg-white p-3 flex items-center justify-between">
@@ -4289,25 +4289,25 @@ function AnalysisTab() {
                                                    </button>
                                                    
                                                    {expandedEntityRows.includes(row.id) && (
-                                                      <div className="bg-slate-50 border-t border-slate-100 p-6 space-y-5 animate-in slide-in-from-top-1 duration-300">
+                                                      <div className="bg-slate-50/50 border-t border-slate-200 p-6 space-y-6 animate-in slide-in-from-top-1 duration-300">
                                                          <div className="flex items-center gap-2">
-                                                            <div className="h-px w-8 bg-slate-300" />
-                                                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none">Evidence Citations</span>
+                                                            <div className="h-px w-8 bg-slate-900" />
+                                                            <span className="text-[8px] font-black text-slate-900 uppercase tracking-[0.2em] leading-none">Evidence Citations</span>
                                                          </div>
 
                                                          <div className="space-y-4">
                                                             {row.evidence.map((ev, evIdx) => (
-                                                               <div key={evIdx} className="bg-white border-2 border-slate-900 p-5 rounded-lg shadow-[4px_4px_0px_rgba(0,0,0,0.06)] space-y-4">
+                                                               <div key={evIdx} className="bg-white border-2 border-slate-900 p-5 rounded-none shadow-[4px_4px_0px_rgba(0,0,0,0.1)] space-y-4">
                                                                   <div className="flex items-center justify-between">
                                                                      <div className="flex items-center gap-3">
                                                                         {ev.type === 'audio' ? (
                                                                            <>
                                                                               <span className="text-[10px] font-mono text-slate-400 tracking-tight">{ev.timeframe}</span>
-                                                                              <span className="px-2 py-0.5 bg-slate-900 text-white text-[9px] font-black uppercase tracking-widest rounded-sm">{ev.speaker}</span>
+                                                                              <span className="px-2 py-0.5 bg-slate-900 text-white text-[9px] font-black uppercase tracking-widest rounded-none">{ev.speaker}</span>
                                                                            </>
                                                                         ) : (
                                                                            <div className="flex items-center gap-2">
-                                                                              <div className="h-1.5 w-1.5 rounded-full bg-slate-900" />
+                                                                              <div className="h-1.5 w-1.5 bg-slate-900" />
                                                                               <span className="text-[9px] font-black text-slate-900 uppercase tracking-widest">PAGE {ev.page}</span>
                                                                            </div>
                                                                         )}
@@ -4330,6 +4330,7 @@ function AnalysisTab() {
                                                    )}
                                                 </div>
                                              ))}
+                                          </div>
                                           </div>
                                        </div>
                                     </div>
