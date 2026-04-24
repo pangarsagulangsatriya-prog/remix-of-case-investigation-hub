@@ -3852,7 +3852,6 @@ function AnalysisTab() {
                                      )}
                                  </div>
                               )}
-
                            </div>
                         </div>
                  ) : (
@@ -3863,50 +3862,133 @@ function AnalysisTab() {
                     </div>
                  )}
             </div>
-
-
          </div>
 
          <div className="w-[460px] border-l border-slate-200 bg-white flex flex-col shrink-0 z-20 shadow-[-2px_0_10px_rgba(0,0,0,0.03)] overflow-hidden">
              {selectedChronologyItemId && selectedAgentId === 'fact' ? (
                 (() => {
-                  const item = agents.find(a => a.id === 'fact')?.results?.chronology_items?.find((i: any) => i.id === selectedChronologyItemId);
-                  if (!item) return null;
+                  const factAgent = agents.find(a => a.id === 'fact');
+                  const item = factAgent?.results?.chronology_items?.find((i: any) => i.id === selectedChronologyItemId);
+                  
+                  if (!item) return (
+                     <div className="flex-1 flex flex-col items-center justify-center p-12 text-slate-300">
+                        <h4 className="text-[10px] font-black uppercase tracking-[0.2em]">Item Not Found</h4>
+                     </div>
+                  );
+
+                  const audioEvidence = {
+                     diarization: [
+                       { startTime: '00:04', endTime: '00:12', speaker: 'OPERATOR A', text: 'Control, ini Operator A. Getaran di Section 14 melebihi batas aman. Mohon dicek.', confidence: 'High' },
+                       { startTime: '00:15', endTime: '00:22', speaker: 'CONTROL ROOM', text: 'Diterima Operator A. Sensor kami juga menunjukkan anamali. Standby.', confidence: 'High' },
+                       { startTime: '02:14', endTime: '02:22', speaker: 'OPERATOR A', text: 'Kontrol! Belt Section 14 robek! Terjadi tumpahan material berat! E-Stop!', confidence: 'High' }
+                     ],
+                     analysis: {
+                        speakers: [
+                          { name: 'OPERATOR A', role: 'FIELD SUPERVISOR', talkTime: '02:15', style: 'Urgent, Command style', assertiveness: 'High', stressLevel: 'Elevated', confidence: 'High' },
+                          { name: 'CONTROL ROOM', role: 'SAFETY DISPATCHER', talkTime: '01:45', style: 'Analytical, Following protocol', assertiveness: 'Medium', stressLevel: 'Normal', confidence: 'High' }
+                        ]
+                     }
+                  };
+
                   return (
-                    <TraceabilityPanel 
-                      item={item}
-                      onClose={() => setSelectedChronologyItemId(null)}
-                      onUpdateStatus={(status) => {
-                        setAgents(prev => prev.map(a => a.id === 'fact' ? {
-                          ...a,
-                          results: {
-                            ...a.results,
-                            chronology_items: a.results.chronology_items.map((i: any) => i.id === selectedChronologyItemId ? { ...i, verification_status: status, annotated_by_human: true, updated_at: new Date().toISOString(), updated_by: "Current User" } : i)
-                          }
-                        } : a));
-                        toast.success(`Chronology status updated to ${STATUS_CONFIG[status].label}`);
-                      }}
-                      onEdit={() => {
-                        toast.info("Please use the edit button on the chronology row to modify text.");
-                      }}
-                    />
+                    <div className="flex flex-col h-full bg-white">
+                       <div className="h-12 border-b border-slate-200 flex items-center justify-between px-5 bg-slate-50/50 shrink-0">
+                          <div className="flex items-center gap-2">
+                             <Brain className="h-4 w-4 text-primary" />
+                             <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest">Evidence Console</span>
+                          </div>
+                          <Button variant="ghost" size="sm" onClick={() => setSelectedChronologyItemId(null)} className="h-8 w-8 p-0 text-slate-400 hover:text-slate-600 hover:bg-slate-100">
+                             <X className="h-4 w-4" />
+                          </Button>
+                       </div>
+                       <div className="flex border-b border-slate-200 shrink-0">
+                          <button onClick={() => setActiveConsoleTab('diarization')} className={cn("flex-1 h-12 text-[10px] font-black uppercase tracking-widest transition-all border-r border-slate-200", activeConsoleTab === 'diarization' ? "bg-slate-900 text-white" : "text-slate-400 hover:bg-slate-50")}>Diarization</button>
+                          <button onClick={() => setActiveConsoleTab('analysis')} className={cn("flex-1 h-12 text-[10px] font-black uppercase tracking-widest transition-all", activeConsoleTab === 'analysis' ? "bg-slate-900 text-white" : "text-slate-400 hover:bg-slate-50")}>Analysis</button>
+                       </div>
+                       <div className="flex-1 overflow-y-auto custom-scrollbar p-6 pb-20">
+                          {activeConsoleTab === 'diarization' ? (
+                             <div className="space-y-6">
+                                <div className="flex items-center justify-between mb-4">
+                                   <div className="flex items-center gap-2">
+                                      <MessageSquare className="h-3 w-3 text-slate-400" />
+                                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-900">Diarization Session</span>
+                                   </div>
+                                </div>
+                                {audioEvidence.diarization.map((seg, idx) => (
+                                   <div key={idx} className="border-l-2 border-slate-900 pl-4 py-1 space-y-2 group">
+                                      <div className="flex items-center justify-between">
+                                         <div className="flex items-center gap-3">
+                                            <span className="text-[10px] font-mono font-black text-slate-400">{seg.startTime} — {seg.endTime}</span>
+                                            <span className="px-2 py-0.5 bg-slate-900 text-white text-[8px] font-black uppercase rounded-sm">{seg.speaker}</span>
+                                         </div>
+                                         <span className="text-[9px] font-black text-emerald-600 uppercase">High</span>
+                                      </div>
+                                      <p className="text-xs font-medium leading-relaxed text-slate-700 italic">"{seg.text}"</p>
+                                   </div>
+                                ))}
+                             </div>
+                          ) : (
+                             <div className="space-y-8">
+                                <div className="flex items-center justify-between">
+                                   <div className="flex flex-col">
+                                      <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">Intelligence Hub</span>
+                                      <span className="text-[11px] font-black uppercase tracking-widest text-slate-900">Audio Protocol Matrix V2.1</span>
+                                   </div>
+                                   <div className="flex bg-slate-100 p-0.5 rounded-sm">
+                                      <button className="px-3 py-1 text-[8px] font-black uppercase bg-white shadow-sm rounded-sm">Structured</button>
+                                      <button className="px-3 py-1 text-[8px] font-black uppercase text-slate-400">JSON</button>
+                                   </div>
+                                </div>
+
+                                <div className="space-y-4">
+                                   {audioEvidence.analysis.speakers.map((s, idx) => (
+                                      <div key={idx} className="border border-slate-200 p-5 rounded-sm hover:border-slate-400 transition-colors">
+                                         <div className="flex items-center justify-between mb-6">
+                                            <div className="flex items-center gap-4">
+                                               <div className="h-10 w-10 bg-slate-900 text-white flex items-center justify-center rounded-sm font-black text-xs">
+                                                  {s.name.split(' ').map(n => n[0]).join('')}
+                                               </div>
+                                               <div>
+                                                  <h4 className="text-xs font-black uppercase tracking-wider text-slate-900">{s.name}</h4>
+                                                  <p className="text-[9px] font-bold text-slate-400 uppercase">{s.role}</p>
+                                               </div>
+                                            </div>
+                                            <span className="text-[9px] font-black text-emerald-600 uppercase">High</span>
+                                         </div>
+
+                                         <div className="grid grid-cols-2 gap-y-6 gap-x-12">
+                                            <div className="space-y-1">
+                                               <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Talk Time</span>
+                                               <p className="text-xs font-bold text-slate-900">{s.talkTime}</p>
+                                            </div>
+                                            <div className="space-y-1">
+                                               <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Style</span>
+                                               <p className="text-xs font-bold text-slate-900">{s.style}</p>
+                                            </div>
+                                            <div className="space-y-1">
+                                               <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Assertiveness</span>
+                                               <p className="text-xs font-bold text-slate-900">{s.assertiveness}</p>
+                                            </div>
+                                            <div className="space-y-1">
+                                               <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Stress Level</span>
+                                               <p className="text-xs font-bold text-slate-900">{s.stressLevel}</p>
+                                            </div>
+                                         </div>
+                                      </div>
+                                   ))}
+                                </div>
+                             </div>
+                          )}
+                       </div>
+                    </div>
                   );
                 })()
              ) : (
-                <>
-                  <div className="h-12 border-b border-slate-200 flex items-center justify-between px-5 bg-slate-50/50 shrink-0">
-                    <div className="flex items-center gap-2">
-                       <Brain className="h-4 w-4 text-primary" />
-                       <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest">Evidence Console</span>
-                    </div>
-                  </div>
-
-                  <div className="flex-1 overflow-y-auto custom-scrollbar flex items-center justify-center p-12 text-slate-300">
-                     <h4 className="text-[10px] font-black uppercase tracking-[0.2em]">Console Standby</h4>
-                  </div>
-
-                   {/* Publish Action Removed */}
-                </>
+                <div className="flex-1 flex flex-col items-center justify-center p-12 text-slate-300">
+                   <Brain className="h-12 w-12 mb-4 opacity-20" />
+                   <h4 className="text-[10px] font-black uppercase tracking-[0.2em]">Console Standby</h4>
+                   <p className="text-[10px] mt-2 opacity-50 font-bold uppercase">Select an event to review evidence</p>
+                </div>
              )}
      </div>
 
