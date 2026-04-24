@@ -5122,12 +5122,6 @@ export default function CaseWorkspacePage() {
           </div>
           
           <div className="flex items-center gap-4">
-            <div className="flex -space-x-2">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="h-7 w-7 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center text-[10px] font-bold shadow-sm">U{i}</div>
-              ))}
-            </div>
-            <div className="h-8 w-px bg-slate-200" />
             <Button className="h-9 font-bold px-4 bg-slate-900 text-white shadow-md">Submit Case</Button>
           </div>
         </div>
