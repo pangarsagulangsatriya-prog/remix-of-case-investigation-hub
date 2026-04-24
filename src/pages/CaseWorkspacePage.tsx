@@ -3140,6 +3140,7 @@ function ExtractionTab({
                </Button>
              </div>
           </div>
+        </div>
           
         <div className="flex-1 overflow-y-auto custom-scrollbar p-0">
           <div className="space-y-0.5">
