@@ -3852,10 +3852,7 @@ function AnalysisTab() {
                                      )}
                                  </div>
                               )}
-                              <div className="absolute bottom-10 left-[60px] right-[60px] flex justify-between items-center opacity-40 border-t border-slate-100 pt-8">
-                                 <span className="text-[11px] font-black text-slate-800 uppercase tracking-[0.3em] font-mono">BERAU CORE INTELLIGENCE PIPELINE</span>
-                                 <span className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] font-mono">MATRIX v4.8.2-SYNTH</span>
-                              </div>
+
                            </div>
                         </div>
                  ) : (
@@ -3867,29 +3864,7 @@ function AnalysisTab() {
                  )}
             </div>
 
-            <div className="h-12 bg-white border-t border-slate-200 px-6 flex items-center justify-between shrink-0 z-40">
-                <div className="flex items-center gap-4">
-                   <div className="flex items-center gap-1">
-                      <Button onClick={() => setActiveSlide(prev => Math.max(0, prev - 1))} variant="ghost" size="sm" className="h-8 w-8 p-0 border"><ChevronLeft className="h-4 w-4" /></Button>
-                      <div className="bg-slate-50 border px-3 h-8 flex items-center rounded-md">
-                        <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Slide {activeSlide + 1} of {slides.length || 1}</span>
-                      </div>
-                      <Button onClick={() => setActiveSlide(prev => Math.min((slides.length || 1) - 1, prev + 1))} variant="ghost" size="sm" className="h-8 w-8 p-0 border"><ChevronRight className="h-4 w-4" /></Button>
-                   </div>
-                   <div className="flex items-center gap-1 bg-slate-100/50 border border-slate-200 rounded-sm p-1">
-                      <Button onClick={() => setCanvasZoom(Math.max(20, canvasZoom - 10))} variant="ghost" className="h-7 w-7 p-0"><ZoomOut className="h-3.5 w-3.5" /></Button>
-                      <Button onClick={fitToWorkspace} variant="ghost" className="h-7 px-2 text-[9px] font-black text-slate-600 bg-white border  rounded">AUTO FIT</Button>
-                      <div className="w-12 text-center font-bold text-[10px] text-slate-700">{canvasZoom}%</div>
-                      <Button onClick={() => setCanvasZoom(Math.min(200, canvasZoom + 10))} variant="ghost" className="h-7 w-7 p-0"><ZoomIn className="h-3.5 w-3.5" /></Button>
-                   </div>
-                </div>
-                <div className="flex items-center gap-2">
-                   <Button variant="ghost" className="h-8 w-8 p-0 border hover:bg-slate-50"><Maximize2 className="h-4 w-4" /></Button>
-                   <Button onClick={handleSaveArtifact} disabled={isSaving} className="h-9 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black uppercase tracking-widest px-6 rounded-sm">
-                      {isSaving ? "Syncing..." : "Sync to Case"}
-                   </Button>
-                </div>
-             </div>
+
          </div>
 
          <div className="w-[460px] border-l border-slate-200 bg-white flex flex-col shrink-0 z-20 shadow-[-2px_0_10px_rgba(0,0,0,0.03)] overflow-hidden">
