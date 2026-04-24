@@ -643,22 +643,13 @@ const FactDefaultView: React.FC<{
 }) => {
   return (
     <div className="flex flex-col h-full bg-slate-50/10">
-      <div className="flex items-center justify-between px-6 py-4 border-b bg-white shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="h-8 w-8 bg-slate-900 rounded-lg flex items-center justify-center text-white">
-            <History className="h-4 w-4" />
-          </div>
-          <div className="flex flex-col">
-            <h2 className="text-sm font-black text-slate-800 uppercase tracking-tight">Case Chronology</h2>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mt-0.5">#{metadata.caseCode} • Investigation Intelligence</p>
-          </div>
+      <div className="h-12 flex items-center justify-between px-5 border-b border-slate-200 bg-white shrink-0">
+        <div className="flex items-center gap-2">
+          <div className="h-2 w-2 rounded-full bg-emerald-500" />
+          <h2 className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Case Chronology</h2>
         </div>
-        <div className="flex items-center gap-4">
-           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-100">
-              <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">{items.filter(i => i.annotated_by_human).length} Annotated</span>
-           </div>
-           <div className="h-4 w-px bg-slate-200" />
-           <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{items.length} Total items</span>
+        <div className="flex items-center">
+           <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">{items.length} TOTAL ITEMS</span>
         </div>
       </div>
 
