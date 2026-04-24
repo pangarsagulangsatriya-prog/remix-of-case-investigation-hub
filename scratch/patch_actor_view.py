@@ -11,13 +11,17 @@ for i, line in enumerate(lines):
     if 'selectedAgentId === \'actor\' ? \'Actor Intelligence Profile\'' in line:
         start_idx = i + 1
     if start_idx != -1 and '</pre>' in line:
-        end_idx = i + 2
-        break
+        for j in range(i, i + 10):
+            if ') : (' in lines[j] and 'selectedAgentId' not in lines[j]:
+                end_idx = j
+                break
+        if end_idx != -1:
+            break
 
 if start_idx != -1 and end_idx != -1:
     new_block = """                                       {selectedAgentId === 'actor' ? (
                                           <div className="flex-1 overflow-y-auto custom-scrollbar p-0 space-y-10">
-                                             <div className="border-2 border-slate-900 bg-white p-8 rounded-none shadow-[12px_12px_0px_rgba(0,0,0,0.05)] relative overflow-hidden group max-w-4xl">
+                                             <div className="border-2 border-slate-900 bg-white p-8 rounded-none shadow-[12px_12px_0px_rgba(0,0,0,0.05)] relative overflow-hidden group max-w-4xl mx-auto">
                                                 <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
                                                    <Brain className="h-48 w-48 text-slate-900 -mr-12 -mt-12 rotate-12" />
                                                 </div>
@@ -45,7 +49,7 @@ if start_idx != -1 and end_idx != -1:
                                                    </div>
                                                 </div>
                                              </div>
-                                             <div className="space-y-6 max-w-4xl pb-12">
+                                             <div className="space-y-6 max-w-4xl mx-auto pb-12">
                                                 <div className="border border-slate-200 bg-slate-200 flex flex-col gap-px rounded-none overflow-hidden shadow-sm">
                                                    {[
                                                       { label: 'Full Name', value: 'Bagas Pramono' },
@@ -76,9 +80,16 @@ if start_idx != -1 and end_idx != -1:
                                              </pre>
                                           </div>
                                        )}
+                                    </div>
+                                 )}
+                              </div>
+                           )}
+                        </div>
+                     </div>
 """
     # Replace lines from start_idx to end_idx
-    lines[start_idx:end_idx+1] = [new_block + '\n']
+    # We want to keep everything before start_idx and after end_idx
+    lines[start_idx:end_idx] = [new_block + '\n']
     
     with open(path, 'w', encoding='utf-8') as f:
         f.writelines(lines)
