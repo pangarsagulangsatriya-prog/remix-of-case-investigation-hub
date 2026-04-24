@@ -4325,7 +4325,7 @@ function AnalysisTab() {
                                                                            </div>
                                                                         )}
                                                                      </div>
-                                                                     {ev.type === 'audio' ? <Mic className="h-3 w-3 text-slate-200" /> : <DocIcon className="h-3 w-3 text-slate-200" />}
+                                                                     {ev.type === 'audio' ? <AudioIcon className="h-3 w-3 text-slate-200" /> : <DocIcon className="h-3 w-3 text-slate-200" />}
                                                                   </div>
                                                                   
                                                                   <p className="text-xs font-bold text-slate-800 leading-relaxed italic pr-4">
