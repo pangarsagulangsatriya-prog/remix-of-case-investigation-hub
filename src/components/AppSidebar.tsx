@@ -27,11 +27,8 @@ import {
 } from "@/components/ui/sidebar";
 
 const navItems = [
-  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Cases", url: "/cases", icon: FolderSearch },
   { title: "Evidence", url: "/evidence", icon: FileText },
-  { title: "Analysis", url: "/analysis", icon: Brain },
-  { title: "Reports", url: "/reports", icon: ClipboardList },
   { title: "Review & Approval", url: "/review", icon: CheckCircle2 },
   { title: "Audit Trail", url: "/audit-trail", icon: History },
   { title: "Admin", url: "/admin", icon: Settings },
