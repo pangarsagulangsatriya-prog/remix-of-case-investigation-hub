@@ -3439,39 +3439,39 @@ function ImagePreview({ file }: { file: any }) {
       onMouseLeave={stopDragging}
       style={{ cursor: isDragging ? 'grabbing' : (handToolActive ? 'grab' : 'default') }}
     >
-      {/* IBM Carbon Toolbar */}
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 p-1 bg-slate-900/90 backdrop-blur-md border border-white/10 rounded-full shadow-2xl opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0">
-        <div className="flex items-center gap-0.5 px-2 mr-1 border-r border-white/10">
-          <button onClick={() => handleZoom(0.9)} className="p-1.5 hover:bg-white/10 rounded-full text-slate-400 hover:text-white transition-colors"><Minus className="h-3.5 w-3.5" /></button>
-          <span className="text-[10px] font-mono font-bold text-emerald-400 w-10 text-center">{Math.round(scale * 100)}%</span>
-          <button onClick={() => handleZoom(1.1)} className="p-1.5 hover:bg-white/10 rounded-full text-slate-400 hover:text-white transition-colors"><Plus className="h-3.5 w-3.5" /></button>
+      {/* IBM Carbon Toolbar (Persistent & Light) */}
+      <div className="absolute top-3 right-3 z-50 flex items-center gap-1 p-1 bg-white/95 backdrop-blur-md border border-slate-200 rounded-sm shadow-xl transition-all duration-300">
+        <div className="flex items-center gap-0.5 px-2 mr-1 border-r border-slate-100">
+          <button onClick={() => handleZoom(0.9)} className="p-1.5 hover:bg-slate-100 rounded text-slate-500 hover:text-slate-900 transition-colors"><Minus className="h-3.5 w-3.5" /></button>
+          <span className="text-[10px] font-mono font-bold text-slate-700 w-10 text-center">{Math.round(scale * 100)}%</span>
+          <button onClick={() => handleZoom(1.1)} className="p-1.5 hover:bg-slate-100 rounded text-slate-500 hover:text-slate-900 transition-colors"><Plus className="h-3.5 w-3.5" /></button>
         </div>
         
-        <div className="flex items-center gap-0.5 px-1 mr-1 border-r border-white/10">
+        <div className="flex items-center gap-0.5 px-1 mr-1 border-r border-slate-100">
           <button 
             onClick={() => { setScale(1); setPosition({ x: 0, y: 0 }); setViewMode('fit'); }}
-            className={cn("px-2 py-1 text-[9px] font-black uppercase tracking-widest rounded-full transition-all", viewMode === 'fit' ? "bg-white text-slate-900" : "text-slate-400 hover:text-white hover:bg-white/5")}
+            className={cn("px-2 py-1 text-[9px] font-black uppercase tracking-widest rounded-sm transition-all", viewMode === 'fit' ? "bg-slate-900 text-white" : "text-slate-500 hover:text-slate-900 hover:bg-slate-100")}
           >Fit</button>
           <button 
             onClick={() => { setScale(1.5); setPosition({ x: 0, y: 0 }); setViewMode('fill'); }}
-            className={cn("px-2 py-1 text-[9px] font-black uppercase tracking-widest rounded-full transition-all", viewMode === 'fill' ? "bg-white text-slate-900" : "text-slate-400 hover:text-white hover:bg-white/5")}
+            className={cn("px-2 py-1 text-[9px] font-black uppercase tracking-widest rounded-sm transition-all", viewMode === 'fill' ? "bg-slate-900 text-white" : "text-slate-500 hover:text-slate-900 hover:bg-slate-100")}
           >Fill</button>
           <button 
             onClick={() => { setScale(1); setPosition({ x: 0, y: 0 }); setViewMode('100%'); }}
-            className={cn("px-2 py-1 text-[9px] font-black uppercase tracking-widest rounded-full transition-all", viewMode === '100%' ? "bg-white text-slate-900" : "text-slate-400 hover:text-white hover:bg-white/5")}
+            className={cn("px-2 py-1 text-[9px] font-black uppercase tracking-widest rounded-sm transition-all", viewMode === '100%' ? "bg-slate-900 text-white" : "text-slate-500 hover:text-slate-900 hover:bg-slate-100")}
           >100%</button>
         </div>
 
         <button 
           onClick={() => setHandToolActive(!handToolActive)}
-          className={cn("p-1.5 rounded-full transition-all", handToolActive ? "bg-emerald-500 text-white" : "text-slate-400 hover:text-white hover:bg-white/5")}
+          className={cn("p-1.5 rounded-sm transition-all", handToolActive ? "bg-emerald-500 text-white" : "text-slate-500 hover:text-slate-900 hover:bg-slate-100")}
         >
           <Hand className="h-3.5 w-3.5" />
         </button>
         
         <button 
           onClick={() => { setScale(1); setPosition({ x: 0, y: 0 }); setHandToolActive(false); setViewMode('fit'); }}
-          className="p-1.5 text-slate-400 hover:text-white hover:bg-white/5 rounded-full transition-all"
+          className="p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-sm transition-all"
         >
           <RefreshCcw className="h-3.5 w-3.5" />
         </button>
