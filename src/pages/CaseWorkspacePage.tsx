@@ -3733,18 +3733,43 @@ function AnalysisTab() {
   const [historyAgentId, setHistoryAgentId] = useState<string | null>(null);
   const [knowledgeAgentId, setKnowledgeAgentId] = useState<string | null>(null);
   const [expandedKnowledgeFolders, setExpandedKnowledgeFolders] = useState<string[]>([]);
+  const [localKnowledgeSelection, setLocalKnowledgeSelection] = useState<Record<string, string[]>>({});
   const [isEditingSummary, setIsEditingSummary] = useState(false);
 
   // Auto-initialize knowledge selection if empty
   useEffect(() => {
-    if (evidenceFiles.length > 0) {
-      setAgents(prev => prev.map(a => 
-        (!a.knowledgeSelection || a.knowledgeSelection.length === 0) 
-        ? { ...a, knowledgeSelection: evidenceFiles.map(f => f.id) } 
-        : a
-      ));
+    if (evidenceFiles.length > 0 && agents.length > 0) {
+      setAgents(prev => {
+        const needsUpdate = prev.some(a => !a.knowledgeSelection || a.knowledgeSelection.length === 0);
+        if (!needsUpdate) return prev;
+        
+        return prev.map(a => 
+          (!a.knowledgeSelection || a.knowledgeSelection.length === 0) 
+          ? { ...a, knowledgeSelection: evidenceFiles.map(f => f.id) } 
+          : a
+        );
+      });
     }
-  }, [evidenceFiles.length]);
+  }, [evidenceFiles, agents.length]);
+
+  // Sync local selection when modal opens
+  const handleOpenKnowledgeModal = (agentId: string) => {
+    const agent = agents.find(a => a.id === agentId);
+    if (agent) {
+      setLocalKnowledgeSelection(prev => ({
+        ...prev,
+        [agentId]: agent.knowledgeSelection || []
+      }));
+    }
+  };
+
+  const handleSaveKnowledge = (agentId: string) => {
+    const selection = localKnowledgeSelection[agentId];
+    if (selection) {
+      setAgents(prev => prev.map(a => a.id === agentId ? { ...a, knowledgeSelection: selection } : a));
+      toast.success("Knowledge sources updated.");
+    }
+  };
   const [summaryEditBuffer, setSummaryEditBuffer] = useState({ time: '', description: '' });
 
   // NEW: Fact Trace States
@@ -4119,7 +4144,7 @@ function AnalysisTab() {
                                            side="right" 
                                            align="start" 
                                            sideOffset={12}
-                                           className="w-[320px] p-0 border-slate-200 shadow-2xl rounded-sm overflow-hidden animate-in fade-in zoom-in-95 duration-200" 
+                                           className="w-[320px] p-0 border-slate-200 shadow-sm rounded-sm overflow-hidden animate-in fade-in zoom-in-95 duration-200" 
                                            onClick={(e) => e.stopPropagation()}
                                         >
                                            <div className="bg-white">
@@ -4128,11 +4153,11 @@ function AnalysisTab() {
                                                  <span className="text-[9px] font-bold text-slate-400 bg-white px-2 py-0.5 border rounded-full">{evidenceFiles.length} Assets</span>
                                               </div>
                                               
-                                              <div className="max-h-[400px] overflow-y-auto p-2 custom-scrollbar">
-                                                 {batches.map((batch) => {
+                                              <div className="max-h-[320px] overflow-y-auto p-2 custom-scrollbar">
+                                                 {batches.map(b => ({ ...b, files: evidenceFiles.filter(f => f.batch_id === b.id) })).filter(b => b.files.length > 0).map((batch) => {
                                                     const filesInBatch = evidenceFiles.filter(f => f.batch_id === batch.id);
                                                     const isExpanded = expandedKnowledgeFolders.includes(batch.id);
-                                                    const selectedInBatch = filesInBatch.filter(f => agent.knowledgeSelection?.includes(f.id));
+                                                    const selectedInBatch = filesInBatch.filter(f => currentAgentSelection.includes(f.id));
                                                     const isBatchFullySelected = selectedInBatch.length === filesInBatch.length && filesInBatch.length > 0;
                                                     const isBatchPartiallySelected = selectedInBatch.length > 0 && selectedInBatch.length < filesInBatch.length;
 
@@ -4180,7 +4205,7 @@ function AnalysisTab() {
                                                           {isExpanded && (
                                                              <div className="ml-6 mt-1 border-l border-slate-100 pl-1 space-y-0.5">
                                                                 {filesInBatch.map((file) => {
-                                                                   const isFileSelected = agent.knowledgeSelection?.includes(file.id);
+                                                                   const isFileSelected = currentAgentSelection.includes(file.id);
                                                                    return (
                                                                       <div 
                                                                          key={file.id}
@@ -4218,15 +4243,25 @@ function AnalysisTab() {
                                                  <div className="flex items-center justify-between mb-2">
                                                     <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none">Active Payload</span>
                                                     <span className="text-[10px] font-black text-slate-900 tabular-nums">
-                                                       {agent.knowledgeSelection?.length || 0} / {evidenceFiles.length}
+                                                       {(localKnowledgeSelection[agent.id] || []).filter(id => evidenceFiles.some(f => f.id === id)).length} / {evidenceFiles.length}
                                                     </span>
                                                  </div>
-                                                 <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden shadow-inner">
+                                                 <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden shadow-inner mb-4">
                                                     <div 
                                                        className="h-full bg-slate-900 transition-all duration-700 ease-out" 
-                                                       style={{ width: `${((agent.knowledgeSelection?.length || 0) / (evidenceFiles.length || 1)) * 100}%` }} 
+                                                       style={{ width: `${(((localKnowledgeSelection[agent.id] || []).filter(id => evidenceFiles.some(f => f.id === id)).length) / (evidenceFiles.length || 1)) * 100}%` }} 
                                                     />
                                                  </div>
+                                                 <Button
+                                                    onClick={(e) => {
+                                                       e.stopPropagation();
+                                                       handleSaveKnowledge(agent.id);
+                                                    }}
+                                                    disabled={JSON.stringify(localKnowledgeSelection[agent.id]) === JSON.stringify(agent.knowledgeSelection)}
+                                                    className="w-full h-9 bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-black uppercase tracking-widest rounded-sm disabled:opacity-30 transition-all"
+                                                 >
+                                                    Save Changes
+                                                 </Button>
                                               </div>
                                            </div>
                                         </DropdownMenuContent>
