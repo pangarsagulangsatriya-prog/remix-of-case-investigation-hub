@@ -4226,15 +4226,43 @@ function AnalysisTab() {
                                           </div>
                                           <div className="border border-slate-200 rounded-none overflow-hidden divide-y divide-slate-100">
                                              {[
-                                                { id: 'time', label: 'Time', value: item.breakdown?.time || item.time || item.time_label, source: 'VOIP_REC_14.WAV', context: 'Detected in radio transmission start at 02:14' },
-                                                { id: 'timezone', label: 'Timezone', value: item.breakdown?.timezone || item.timezone || 'WITA', source: 'System Metadata', context: 'Site local timezone configuration' },
-                                                { id: 'phase', label: 'Phase', value: (item.breakdown?.phase || item.phase || "").replace('_', ' '), source: 'Extraction Logic', context: 'Classified based on event context' },
-                                                { id: 'actor', label: 'Actor', value: item.breakdown?.actor || 'SYSTEM', source: 'SEC14_TELEM_LOG.CSV', context: 'Automated response triggered by SCADA' },
-                                                { id: 'action', label: 'Action', value: item.breakdown?.action || 'NORMAL OPERATION', source: 'Ops Log', context: 'Status reported in daily log' },
-                                                { id: 'object', label: 'Object / Unit', value: item.breakdown?.objectOrUnit || 'CONVEYOR SECTION 14', source: 'Asset Registry', context: 'Matched with ID #CS-14' },
-                                                { id: 'location', label: 'Location', value: item.breakdown?.location || 'SECTION 14', source: 'CCTV_B14_CAM', context: 'Visual verification from zone B camera' },
-                                                { id: 'condition', label: 'Condition', value: item.breakdown?.condition || '85% LOAD CAPACITY', source: 'Weight Bridge S14', context: 'Telemetry reading at 14:05:22' },
-                                                { id: 'outcome', label: 'Outcome', value: item.breakdown?.outcome || 'STEADY STATE', source: 'Post-Event Analysis', context: 'AI synthesized result' },
+                                                { id: 'time', label: 'Time', value: item.breakdown?.time || item.time || item.time_label, 
+                                                   evidence: [
+                                                      { type: 'audio', speaker: 'OPERATOR A', timeframe: '02:14 — 02:22', context: 'Control, ini Operator A. Getaran di Section 14 melebihi batas aman.', source: 'VOIP_REC_14.WAV' }
+                                                   ]
+                                                },
+                                                { id: 'timezone', label: 'Timezone', value: item.breakdown?.timezone || item.timezone || 'WITA', 
+                                                   evidence: [
+                                                      { type: 'doc', page: '01', context: 'Site local timezone configuration for Berau Coal operations.', source: 'SITE_HANDBOOK_2026.PDF' }
+                                                   ]
+                                                },
+                                                { id: 'actor', label: 'Actor', value: item.breakdown?.actor || 'SENSOR SYSTEM', 
+                                                   evidence: [
+                                                      { type: 'doc', page: '142', context: 'Automated vibration monitoring protocol for Titan-X series drive motors.', source: 'MAINTENANCE_LOG_APR.PDF' },
+                                                      { type: 'audio', speaker: 'CONTROL ROOM', timeframe: '02:15 — 02:20', context: 'Diterima Operator A. Sensor kami juga menunjukkan anomali.', source: 'VOIP_REC_14.WAV' }
+                                                   ]
+                                                },
+                                                { id: 'action', label: 'Action', value: item.breakdown?.action || 'VIBRATION ALARM', 
+                                                   evidence: [
+                                                      { type: 'audio', speaker: 'OPERATOR A', timeframe: '02:14 — 02:18', context: 'Mohon dicek segera, alarm vibrasi berbunyi.', source: 'VOIP_REC_14.WAV' },
+                                                      { type: 'doc', page: '04', context: 'System Status: ALARM_VIB_HIGH triggered at 14:10:22', source: 'SCADA_EVENT_EXPORT.CSV' }
+                                                   ]
+                                                },
+                                                { id: 'object', label: 'Object / Unit', value: item.breakdown?.objectOrUnit || 'SECTION 14 MOTOR', 
+                                                   evidence: [
+                                                      { type: 'doc', page: '12', context: 'Drive Motor Unit ID: UNIT_S14_M01', source: 'ASSET_REGISTRY.XLSX' }
+                                                   ]
+                                                },
+                                                { id: 'location', label: 'Location', value: item.breakdown?.location || 'SECTION 14', 
+                                                   evidence: [
+                                                      { type: 'audio', speaker: 'OPERATOR A', timeframe: '02:14 — 02:16', context: 'Saya di lokasi Section 14.', source: 'VOIP_REC_14.WAV' }
+                                                   ]
+                                                },
+                                                { id: 'condition', label: 'Condition', value: item.breakdown?.condition || 'EXCEEDED THRESHOLD', 
+                                                   evidence: [
+                                                      { type: 'doc', page: '08', context: 'Vibration Level: 4.8mm/s (Limit: 2.5mm/s)', source: 'SCADA_EVENT_EXPORT.CSV' }
+                                                   ]
+                                                },
                                              ].map((row, i) => (
                                                 <div key={row.id} className="group">
                                                    <button 
@@ -4253,7 +4281,7 @@ function AnalysisTab() {
                                                          <div className="flex items-center gap-4">
                                                             <div className="flex items-center gap-1.5 px-1.5 py-0.5 bg-slate-50 border border-slate-100 rounded-none">
                                                                <FileText className="h-2.5 w-2.5 text-slate-400" />
-                                                               <span className="text-[7px] font-black text-slate-400 uppercase tracking-tighter">1 TRACE</span>
+                                                               <span className="text-[7px] font-black text-slate-400 uppercase tracking-tighter">{row.evidence.length} {row.evidence.length > 1 ? 'TRACES' : 'TRACE'}</span>
                                                             </div>
                                                             <ChevronDown className={cn("h-3 w-3 text-slate-300 transition-transform duration-200", !expandedEntityRows.includes(row.id) && "-rotate-90")} />
                                                          </div>
@@ -4268,31 +4296,35 @@ function AnalysisTab() {
                                                          </div>
 
                                                          <div className="space-y-4">
-                                                            {/* Citation Block (Diarization Style) */}
-                                                            <div className="bg-white border-2 border-slate-900 p-5 rounded-lg shadow-[4px_4px_0px_rgba(0,0,0,0.06)] space-y-4">
-                                                               <div className="flex items-center gap-3">
-                                                                  {row.id === 'time' || row.id === 'actor' || row.id === 'action' ? (
-                                                                     <>
-                                                                        <span className="text-[10px] font-mono text-slate-400 tracking-tight">02:14 — 02:22</span>
-                                                                        <span className="px-2 py-0.5 bg-slate-900 text-white text-[9px] font-black uppercase tracking-widest rounded-sm">OPERATOR A</span>
-                                                                     </>
-                                                                  ) : (
-                                                                     <div className="flex items-center gap-2">
-                                                                        <div className="h-1.5 w-1.5 rounded-full bg-slate-900" />
-                                                                        <span className="text-[9px] font-black text-slate-900 uppercase tracking-widest">PAGE {Math.floor(Math.random() * 20) + 1}</span>
+                                                            {row.evidence.map((ev, evIdx) => (
+                                                               <div key={evIdx} className="bg-white border-2 border-slate-900 p-5 rounded-lg shadow-[4px_4px_0px_rgba(0,0,0,0.06)] space-y-4">
+                                                                  <div className="flex items-center justify-between">
+                                                                     <div className="flex items-center gap-3">
+                                                                        {ev.type === 'audio' ? (
+                                                                           <>
+                                                                              <span className="text-[10px] font-mono text-slate-400 tracking-tight">{ev.timeframe}</span>
+                                                                              <span className="px-2 py-0.5 bg-slate-900 text-white text-[9px] font-black uppercase tracking-widest rounded-sm">{ev.speaker}</span>
+                                                                           </>
+                                                                        ) : (
+                                                                           <div className="flex items-center gap-2">
+                                                                              <div className="h-1.5 w-1.5 rounded-full bg-slate-900" />
+                                                                              <span className="text-[9px] font-black text-slate-900 uppercase tracking-widest">PAGE {ev.page}</span>
+                                                                           </div>
+                                                                        )}
                                                                      </div>
-                                                                  )}
-                                                               </div>
-                                                               
-                                                               <p className="text-xs font-bold text-slate-800 leading-relaxed italic pr-4">
-                                                                  "{row.context}"
-                                                               </p>
+                                                                     {ev.type === 'audio' ? <Mic className="h-3 w-3 text-slate-200" /> : <DocIcon className="h-3 w-3 text-slate-200" />}
+                                                                  </div>
+                                                                  
+                                                                  <p className="text-xs font-bold text-slate-800 leading-relaxed italic pr-4">
+                                                                     "{ev.context}"
+                                                                  </p>
 
-                                                               <div className="pt-3 border-t border-slate-100 flex items-center gap-2 opacity-60">
-                                                                  <Paperclip className="h-3 w-3 text-slate-400" />
-                                                                  <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">{row.source}</span>
+                                                                  <div className="pt-3 border-t border-slate-100 flex items-center gap-2 opacity-60">
+                                                                     <Paperclip className="h-3 w-3 text-slate-400" />
+                                                                     <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">{ev.source}</span>
+                                                                  </div>
                                                                </div>
-                                                            </div>
+                                                            ))}
                                                          </div>
                                                       </div>
                                                    )}
