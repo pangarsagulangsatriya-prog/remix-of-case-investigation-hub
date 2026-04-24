@@ -129,6 +129,48 @@ interface AgentState {
   };
 }
 
+export type EventBreakdown = {
+  time: string;
+  timezone?: string;
+  phase: "pra_kontak" | "kontak" | "pasca_kontak";
+  actor?: string;
+  actorRole?: string;
+  action?: string;
+  actionCategory?: "inspection" | "movement" | "communication" | "decision" | "response" | "observation" | "system_alert";
+  objectOrUnit?: string;
+  location?: string;
+  condition?: string;
+  outcome?: string;
+};
+
+export type EvidenceTraceLink = {
+  id: string;
+  evidenceType: "audio" | "document";
+  sourceLabel: string;
+  sourceFileName?: string;
+  quote: string;
+  speaker?: string;
+  startTime?: string;
+  endTime?: string;
+  page?: number;
+  relevance: "primary" | "supporting" | "conflicting";
+  confidence: "high" | "medium" | "low";
+};
+
+export interface EnhancedChronologyItem {
+  id: string;
+  phase: "pra_kontak" | "kontak" | "pasca_kontak";
+  time: string;
+  timezone?: string;
+  description: string;
+  breakdown: EventBreakdown;
+  confidence: "high" | "medium" | "low";
+  status: "draft" | "reviewed" | "annotated" | "needs_more_evidence";
+  evidenceLinks: EvidenceTraceLink[];
+  annotations: any[];
+  updatedAt: string;
+}
+
 const formatTime = (seconds: number) => {
   if (isNaN(seconds)) return "00:00";
   const mins = Math.floor(seconds / 60);
@@ -157,7 +199,7 @@ const initialAgentsState: AgentState[] = [
      results: {
         ringkasan: {
            tanggal: "April 05, 2026",
-           jam: "14:23 - 14:45",
+           jam: "14:10 - 14:45",
            lokasi: "Conveyor Zone B, Section 14",
            jenis: "Mechanical Failure & Material Spillage",
            deskripsi: "Tear in conveyor belt led to massive spillage and structural stress at Section 14 conveyor drives.",
@@ -167,93 +209,112 @@ const initialAgentsState: AgentState[] = [
         },
         chronology_items: [
            { 
-             id: 'f1', 
-             phase: 'pre_contact', 
-             time_label: "14:10", 
-             chronology_text: "Vibration sensor alarm start on Section 14 drive motor", 
-             source: 'ai', 
-             annotated_by_human: false, 
-             verification_status: 'ai_generated',
-             created_at: new Date().toISOString(), 
-             updated_at: new Date().toISOString(),
-             support_strength: 0.92,
-             synthesis_summary: "Merged telemetry data from SCADA Section 14 motor with temporal alignment from HSE control log. High consistency observed across vibration delta spikes.",
-             traceability: [
-               {
-                 trace_id: 'tr-101',
-                 source_type: 'other',
-                 source_file_name: 'SCADA_LOG_SEC14_2026.csv',
-                 source_file_id: 'ev-991',
-                 extraction_run_id: 'ext-node-v1',
-                 extracted_content: "Motor 14A: Vibration threshold exceeded at 14:10:04. Current: 4.2mm/s. Limit: 2.5mm/s.",
-                 support_type: 'direct',
-                 confidence_score: 0.98
-               }
-             ]
+             id: 'chrono-001', 
+             phase: 'pra_kontak', 
+             time: "14:10", 
+             timezone: "WITA",
+             description: "Vibration sensor alarm start on Section 14 drive motor", 
+             confidence: "high",
+             status: "draft",
+             breakdown: {
+                time: "14:10",
+                timezone: "WITA",
+                phase: "pra_kontak",
+                actor: "Sensor System",
+                actorRole: "Monitoring System",
+                action: "Vibration alarm triggered",
+                actionCategory: "system_alert",
+                objectOrUnit: "Section 14 drive motor",
+                location: "Section 14",
+                condition: "Vibration exceeded safe threshold",
+                outcome: "Early warning detected before belt rupture"
+             },
+             evidenceLinks: [
+                {
+                   id: 'ev-1',
+                   evidenceType: "audio",
+                   sourceLabel: "Diarization Session",
+                   sourceFileName: "radio_communication_section_14.mp3",
+                   speaker: "Operator A",
+                   startTime: "00:04",
+                   endTime: "00:12",
+                   quote: "Control, ini Operator A. Getaran di Section 14 melebihi batas aman. Mohon dicek.",
+                   relevance: "primary",
+                   confidence: "high"
+                },
+                {
+                   id: 'ev-2',
+                   evidenceType: "audio",
+                   sourceLabel: "Diarization Session",
+                   sourceFileName: "radio_communication_section_14.mp3",
+                   speaker: "Control Room",
+                   startTime: "00:15",
+                   endTime: "00:22",
+                   quote: "Diterima Operator A. Sensor kami juga menunjukkan anomali. Standby.",
+                   relevance: "supporting",
+                   confidence: "high"
+                },
+                {
+                   id: 'ev-3',
+                   evidenceType: "document",
+                   sourceLabel: "Maintenance Log",
+                   sourceFileName: "maintenance_log_section_14.pdf",
+                   page: 3,
+                   quote: "Drive motor Section 14 recorded abnormal vibration above safe threshold before belt rupture.",
+                   relevance: "supporting",
+                   confidence: "medium"
+                }
+             ],
+             annotations: [],
+             updatedAt: new Date().toISOString()
            },
            { 
-             id: 'f2', 
-             phase: 'pre_contact', 
-             time_label: "14:20", 
-             chronology_text: "Operator manual override initiated to maintain throughput", 
-             source: 'ai', 
-             annotated_by_human: false, 
-             verification_status: 'needs_review',
-             created_at: new Date().toISOString(), 
-             updated_at: new Date().toISOString(),
-             support_strength: 0.65,
-             synthesis_summary: "Action inferred from control room keystroke logs and lack of automated response to vibration delta.",
-             traceability: [
-               {
-                 trace_id: 'tr-102',
-                 source_type: 'document',
-                 source_file_name: 'Control_Room_Ops_Log.pdf',
-                 source_file_id: 'ev-992',
-                 extraction_run_id: 'ext-node-v2',
-                 extracted_content: "User: AKHAN - Override [Motor_14A] - Priority: Force_Run",
-                 support_type: 'direct',
-                 confidence_score: 0.85
-               }
-             ]
-           },
-           { id: 'f3', phase: 'pre_contact', time_label: "14:21", chronology_text: "Secondary tension alarm ignored by control room", source: 'ai', annotated_by_human: false, verification_status: 'ai_generated', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-           { 
-             id: 'f4', 
-             phase: 'contact', 
-             time_label: "14:23", 
-             chronology_text: "Belt rupture detected at Section 14 leading to massive spillage", 
-             source: 'ai', 
-             annotated_by_human: false, 
-             verification_status: 'ai_generated',
-             created_at: new Date().toISOString(), 
-             updated_at: new Date().toISOString(),
-             support_strength: 0.95,
-             synthesis_summary: "Critical event synthesized from CCTV-B14 visual rupture detection and simultaneous noise spike in Section 14 Audio Console.",
-             traceability: [
-               {
-                 trace_id: 'tr-201',
-                 source_type: 'image',
-                 source_file_name: 'CCTV-B14-FRAME-1423.jpg',
-                 source_file_id: 'ev-993',
-                 extraction_run_id: 'img-node-v1',
-                 extracted_content: "Scene context: Conveyor Gallery. Object: Belt. Condition: Ruptured. Material: Coal Spillage (est. 2 tons).",
-                 extracted_summary: "Visual confirmation of structural belt failure and lateral material scattering.",
-                 support_type: 'direct',
-                 confidence_score: 0.99
-               },
-               {
-                 trace_id: 'tr-202',
-                 source_type: 'audio',
-                 source_file_name: 'CONV_GALLERY_MIC_B.wav',
-                 source_file_id: 'ev-994',
-                 extraction_run_id: 'aud-node-v1',
-                 timestamp_start: "03:45",
-                 timestamp_end: "03:48",
-                 extracted_content: "[High Impact Snap Sound] followed by sustained mechanical grinding.",
-                 support_type: 'partial',
-                 confidence_score: 0.88
-               }
-             ]
+             id: 'chrono-002', 
+             phase: 'kontak', 
+             time: "14:23", 
+             timezone: "WITA",
+             description: "Belt rupture detected at Section 14 leading to massive spillage", 
+             confidence: "high",
+             status: "draft",
+             breakdown: {
+                time: "14:23",
+                timezone: "WITA",
+                phase: "kontak",
+                actor: "Operator A",
+                actorRole: "Field Operator",
+                action: "Reported belt rupture",
+                actionCategory: "communication",
+                objectOrUnit: "Belt Section 14",
+                location: "Section 14",
+                condition: "Belt rupture occurred during operation",
+                outcome: "Heavy material spillage detected"
+             },
+             evidenceLinks: [
+                {
+                   id: 'ev-4',
+                   evidenceType: "audio",
+                   sourceLabel: "Diarization Session",
+                   sourceFileName: "radio_communication_section_14.mp3",
+                   speaker: "Operator A",
+                   startTime: "02:14",
+                   endTime: "02:22",
+                   quote: "Kontrol! Belt Section 14 robek! Terjadi tumpahan material berat! E-Stop!",
+                   relevance: "primary",
+                   confidence: "high"
+                },
+                {
+                   id: 'ev-5',
+                   evidenceType: "document",
+                   sourceLabel: "Incident Initial Report",
+                   sourceFileName: "incident_initial_report.pdf",
+                   page: 1,
+                   quote: "At approximately 14:23, conveyor belt rupture occurred at Section 14 and caused material spillage.",
+                   relevance: "supporting",
+                   confidence: "high"
+                }
+             ],
+             annotations: [],
+             updatedAt: new Date().toISOString()
            }
         ]
      }
@@ -3477,11 +3538,34 @@ function AnalysisTab() {
   const [isEditingSummary, setIsEditingSummary] = useState(false);
   const [summaryEditBuffer, setSummaryEditBuffer] = useState({ time: '', description: '' });
 
+  // NEW: Fact Trace States
+  const [activeEvidenceConsoleMode, setActiveEvidenceConsoleMode] = useState<"trace" | "diarization" | "analysis">("trace");
+  const [selectedEvidenceLinkId, setSelectedEvidenceLinkId] = useState<string | null>(null);
+  const [draftDescription, setDraftDescription] = useState("");
+  const [expandedEvidenceGroups, setExpandedEvidenceGroups] = useState<string[]>(['audio', 'document']);
+  const [focusedPreview, setFocusedPreview] = useState<EvidenceTraceLink | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
+
   const containerRef = useRef<HTMLDivElement>(null);
   
   const startEditingSummary = (item: any) => {
     setSummaryEditBuffer({ time: item.time_label, description: item.chronology_text });
     setIsEditingSummary(true);
+  };
+
+  const handleSelectChronologyItem = (id: string | null) => {
+    setSelectedChronologyItemId(id);
+    if (id) {
+      setActiveEvidenceConsoleMode("trace");
+      const factAgent = agents.find(a => a.id === 'fact');
+      const item = factAgent?.results?.chronology_items?.find((i: any) => i.id === id);
+      if (item) {
+        setDraftDescription(item.description || item.chronology_text || "");
+        setValidationError(null);
+      }
+      setSelectedEvidenceLinkId(null);
+      setFocusedPreview(null);
+    }
   };
 
   const saveSummaryEdit = (itemId: string, newTime: string, newDesc: string) => {
@@ -3855,7 +3939,7 @@ function AnalysisTab() {
                                           viewMode={factViewMode}
                                           onViewModeChange={setFactViewMode}
                                           selectedItemId={selectedChronologyItemId || undefined}
-                                          onSelectItem={setSelectedChronologyItemId}
+                                          onSelectItem={handleSelectChronologyItem}
                                           onSync={(newItems) => {
                                             setAgents(prev => prev.map(a => a.id === 'fact' ? {
                                               ...a,
@@ -3882,108 +3966,365 @@ function AnalysisTab() {
                            </div>
                         </div>
                  ) : (
-                    <div className="h-full flex flex-col items-center justify-center text-center opacity-20 p-20">
-                       <LayoutGrid className="h-16 w-16 mb-8" />
-                       <h2 className="text-3xl font-black uppercase tracking-[0.3em]">Matrix Idle</h2>
-                       <p className="text-[11px] font-bold uppercase tracking-widest mt-4">Select an agent node to begin synthesis</p>
-                    </div>
-                 )}
-            </div>
-         </div>
+                    {selectedChronologyItemId && selectedAgentId === 'fact' ? (
+                 (() => {
+                   const factAgent = agents.find(a => a.id === 'fact');
+                   const item = factAgent?.results?.chronology_items?.find((i: any) => i.id === selectedChronologyItemId);
+                   
+                   if (!item) return (
+                      <div className="flex-1 flex flex-col items-center justify-center p-12 text-slate-300">
+                         <h4 className="text-[10px] font-black uppercase tracking-[0.2em]">Item Not Found</h4>
+                      </div>
+                   );
 
-         <div className="w-[460px] border-l border-slate-200 bg-white flex flex-col shrink-0 z-20 shadow-[-2px_0_10px_rgba(0,0,0,0.03)] overflow-hidden">
-             {selectedChronologyItemId && selectedAgentId === 'fact' ? (
-                (() => {
-                  const factAgent = agents.find(a => a.id === 'fact');
-                  const item = factAgent?.results?.chronology_items?.find((i: any) => i.id === selectedChronologyItemId);
-                  
-                  if (!item) return (
-                     <div className="flex-1 flex flex-col items-center justify-center p-12 text-slate-300">
-                        <h4 className="text-[10px] font-black uppercase tracking-[0.2em]">Item Not Found</h4>
-                     </div>
-                  );
+                   const audioEvidence = {
+                      diarization: [
+                        { startTime: '00:04', endTime: '00:12', speaker: 'OPERATOR A', text: 'Control, ini Operator A. Getaran di Section 14 melebihi batas aman. Mohon dicek.', confidence: 'High' },
+                        { startTime: '00:15', endTime: '00:22', speaker: 'CONTROL ROOM', text: 'Diterima Operator A. Sensor kami juga menunjukkan anamali. Standby.', confidence: 'High' },
+                        { startTime: '02:14', endTime: '02:22', speaker: 'OPERATOR A', text: 'Kontrol! Belt Section 14 robek! Terjadi tumpahan material berat! E-Stop!', confidence: 'High' }
+                      ],
+                      analysis: {
+                         speakers: [
+                           { name: 'OPERATOR A', role: 'FIELD SUPERVISOR', talkTime: '02:15', style: 'Urgent, Command style', assertiveness: 'High', stressLevel: 'Elevated', confidence: 'High' },
+                           { name: 'CONTROL ROOM', role: 'SAFETY DISPATCHER', talkTime: '01:45', style: 'Analytical, Following protocol', assertiveness: 'Medium', stressLevel: 'Normal', confidence: 'High' }
+                         ]
+                      }
+                   };
 
-                  const audioEvidence = {
-                     diarization: [
-                       { startTime: '00:04', endTime: '00:12', speaker: 'OPERATOR A', text: 'Control, ini Operator A. Getaran di Section 14 melebihi batas aman. Mohon dicek.', confidence: 'High' },
-                       { startTime: '00:15', endTime: '00:22', speaker: 'CONTROL ROOM', text: 'Diterima Operator A. Sensor kami juga menunjukkan anamali. Standby.', confidence: 'High' },
-                       { startTime: '02:14', endTime: '02:22', speaker: 'OPERATOR A', text: 'Kontrol! Belt Section 14 robek! Terjadi tumpahan material berat! E-Stop!', confidence: 'High' }
-                     ],
-                     analysis: {
-                        speakers: [
-                          { name: 'OPERATOR A', role: 'FIELD SUPERVISOR', talkTime: '02:15', style: 'Urgent, Command style', assertiveness: 'High', stressLevel: 'Elevated', confidence: 'High' },
-                          { name: 'CONTROL ROOM', role: 'SAFETY DISPATCHER', talkTime: '01:45', style: 'Analytical, Following protocol', assertiveness: 'Medium', stressLevel: 'Normal', confidence: 'High' }
-                        ]
-                     }
-                  };
+                   if (activeEvidenceConsoleMode === "trace") {
+                     return (
+                        <div className="flex flex-col h-full bg-white overflow-hidden animate-in fade-in slide-in-from-right-4 duration-300">
+                           {/* A. Selected Fact Header */}
+                           <div className="h-12 border-b border-slate-200 flex items-center justify-between px-5 bg-slate-50 shrink-0">
+                              <div className="flex items-center gap-2">
+                                 <Clock className="h-3.5 w-3.5 text-slate-400" />
+                                 <span className="text-[11px] font-mono font-black text-slate-900">{item.time || item.time_label}</span>
+                                 <div className="flex gap-1 ml-2">
+                                    <span className="px-1.5 py-0.5 rounded-sm bg-slate-200 text-slate-600 text-[8px] font-black uppercase tracking-wider">
+                                       {(item.phase || "").replace('_', ' ')}
+                                    </span>
+                                    <span className={cn(
+                                       "px-1.5 py-0.5 rounded-sm text-[8px] font-black uppercase tracking-wider",
+                                       (item.confidence || "high") === 'high' ? "bg-emerald-50 text-emerald-600" : 
+                                       (item.confidence || "high") === 'medium' ? "bg-amber-50 text-amber-600" : "bg-rose-50 text-rose-600"
+                                    )}>
+                                       {item.confidence || "HIGH"}
+                                    </span>
+                                 </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                 <div className="flex bg-slate-200 p-0.5 rounded-sm">
+                                    <button onClick={() => setActiveEvidenceConsoleMode('trace')} className={cn("px-2 py-1 text-[8px] font-black uppercase rounded-sm transition-all", activeEvidenceConsoleMode === 'trace' ? "bg-white shadow-sm text-slate-900" : "text-slate-400")}>Trace</button>
+                                    <button onClick={() => setActiveEvidenceConsoleMode('diarization')} className={cn("px-2 py-1 text-[8px] font-black uppercase rounded-sm transition-all", activeEvidenceConsoleMode === 'diarization' ? "bg-white shadow-sm text-slate-900" : "text-slate-400")}>Diar</button>
+                                 </div>
+                                 <Button variant="ghost" size="sm" onClick={() => setSelectedChronologyItemId(null)} className="h-8 w-8 p-0 text-slate-400 hover:text-slate-600 hover:bg-slate-100">
+                                    <X className="h-4 w-4" />
+                                 </Button>
+                              </div>
+                           </div>
 
-                  return (
-                    <div className="flex flex-col h-full bg-white">
-                       <div className="h-12 border-b border-slate-200 flex items-center justify-between px-5 bg-slate-50/50 shrink-0">
-                          <div className="flex items-center gap-2">
-                             <Brain className="h-4 w-4 text-primary" />
-                             <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest">Evidence Console</span>
-                          </div>
-                          <Button variant="ghost" size="sm" onClick={() => setSelectedChronologyItemId(null)} className="h-8 w-8 p-0 text-slate-400 hover:text-slate-600 hover:bg-slate-100">
-                             <X className="h-4 w-4" />
-                          </Button>
-                       </div>
+                           <div className="flex-1 overflow-y-auto custom-scrollbar">
+                              <div className="p-5 space-y-8">
+                                 {/* Fact Context */}
+                                 <div className="space-y-1">
+                                    <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Selected chronology item</span>
+                                    <p className="text-xs font-bold leading-relaxed text-slate-900">{item.description || item.chronology_text}</p>
+                                 </div>
 
-                       {/* NEW: Editable Item Summary */}
-                       <div className="p-6 border-b border-slate-100 bg-slate-50/30">
-                          {isEditingSummary ? (
-                             <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
-                                <div className="space-y-1">
-                                   <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Incident Time</label>
-                                   <Input 
-                                      type="time" 
-                                      value={summaryEditBuffer.time}
-                                      onChange={(e) => setSummaryEditBuffer({...summaryEditBuffer, time: e.target.value})}
-                                      className="h-10 text-xs font-mono font-bold bg-white border-slate-200"
-                                   />
-                                </div>
-                                <div className="space-y-1">
-                                   <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Chronology Description</label>
-                                   <Textarea 
-                                      value={summaryEditBuffer.description}
-                                      onChange={(e) => setSummaryEditBuffer({...summaryEditBuffer, description: e.target.value})}
-                                      className="min-h-[100px] text-xs font-medium leading-relaxed bg-white border-slate-200"
-                                   />
-                                </div>
-                                <div className="flex gap-2 pt-2">
-                                   <Button 
-                                      onClick={() => saveSummaryEdit(item.id, summaryEditBuffer.time, summaryEditBuffer.description)}
-                                      className="h-8 flex-1 text-[10px] font-black uppercase bg-slate-900"
-                                   >
-                                      Save Changes
-                                   </Button>
-                                   <Button 
-                                      variant="outline"
-                                      onClick={() => setIsEditingSummary(false)}
-                                      className="h-8 px-4 text-[10px] font-black uppercase border-slate-200"
-                                   >
-                                      Cancel
-                                   </Button>
-                                </div>
-                             </div>
-                          ) : (
-                             <div 
-                                onClick={() => startEditingSummary(item)}
-                                className="group cursor-pointer hover:bg-white p-4 -m-4 rounded-sm transition-all border border-transparent hover:border-slate-200 hover:shadow-sm"
-                             >
-                                <div className="flex items-center justify-between mb-2">
-                                   <div className="flex items-center gap-2">
-                                      <Clock className="h-3 w-3 text-slate-400" />
-                                      <span className="text-[11px] font-mono font-black text-slate-900 group-hover:text-primary transition-colors">{item.time_label}</span>
-                                   </div>
-                                   <Pencil className="h-3 w-3 text-slate-300 opacity-0 group-hover:opacity-100 transition-all" />
-                                </div>
-                                <p className="text-xs font-medium leading-relaxed text-slate-600 group-hover:text-slate-900 transition-colors">
-                                   {item.chronology_text}
-                                </p>
-                             </div>
-                          )}
-                       </div>
+                                 {/* B. Event Breakdown */}
+                                 <div className="space-y-4">
+                                    <div className="flex items-center gap-2">
+                                       <LayoutGrid className="h-3 w-3 text-slate-400" />
+                                       <span className="text-[10px] font-black uppercase tracking-widest text-slate-900">Event Breakdown</span>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-px bg-slate-100 border border-slate-100 rounded-sm overflow-hidden shadow-sm">
+                                       {[
+                                          { label: 'Time', value: item.breakdown?.time || item.time || item.time_label },
+                                          { label: 'Timezone', value: item.breakdown?.timezone || item.timezone || '—' },
+                                          { label: 'Phase', value: (item.breakdown?.phase || item.phase || "").replace('_', ' ') },
+                                          { label: 'Actor', value: item.breakdown?.actor || '—' },
+                                          { label: 'Action', value: item.breakdown?.action || '—' },
+                                          { label: 'Object / Unit', value: item.breakdown?.objectOrUnit || '—' },
+                                          { label: 'Location', value: item.breakdown?.location || '—' },
+                                          { label: 'Condition', value: item.breakdown?.condition || '—' },
+                                          { label: 'Outcome', value: item.breakdown?.outcome || '—' },
+                                       ].map((field, i) => (
+                                          <div key={i} className="bg-white p-3 flex flex-col gap-1">
+                                             <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{field.label}</span>
+                                             <span className="text-[10px] font-bold text-slate-900 truncate">{field.value}</span>
+                                          </div>
+                                       ))}
+                                    </div>
+                                 </div>
+
+                                 {/* C. Editable Sentence */}
+                                 <div className="space-y-4">
+                                    <div className="flex items-center gap-2">
+                                       <Pencil className="h-3 w-3 text-slate-400" />
+                                       <span className="text-[10px] font-black uppercase tracking-widest text-slate-900">Chronology Sentence</span>
+                                    </div>
+                                    <div className="space-y-2">
+                                       <Textarea 
+                                          value={draftDescription}
+                                          onChange={(e) => {
+                                             setDraftDescription(e.target.value);
+                                             setValidationError(e.target.value.trim() === "" ? "Chronology sentence is required." : null);
+                                          }}
+                                          className={cn(
+                                             "min-h-[80px] text-xs font-medium leading-relaxed bg-white border-slate-200 focus:border-slate-900 transition-all",
+                                             validationError && "border-rose-500 focus:border-rose-500"
+                                          )}
+                                          placeholder="Edit chronology sentence..."
+                                       />
+                                       {validationError && <p className="text-[9px] font-bold text-rose-500 uppercase tracking-tight">{validationError}</p>}
+                                       <div className="flex gap-2">
+                                          <Button 
+                                             onClick={() => {
+                                                if (draftDescription.trim() === "") {
+                                                   setValidationError("Chronology sentence is required.");
+                                                   return;
+                                                }
+                                                setAgents(prev => prev.map(a => a.id === 'fact' ? {
+                                                   ...a,
+                                                   results: {
+                                                      ...a.results,
+                                                      chronology_items: a.results.chronology_items.map((it: any) => 
+                                                         it.id === item.id ? { ...it, description: draftDescription, chronology_text: draftDescription, status: 'annotated', updatedAt: new Date().toISOString() } : it
+                                                      )
+                                                   }
+                                                } : a));
+                                                toast.success("Chronology updated.");
+                                             }}
+                                             className="h-8 flex-1 text-[9px] font-black uppercase bg-slate-900 hover:bg-slate-800"
+                                          >
+                                             Save Change
+                                          </Button>
+                                          <Button 
+                                             variant="outline"
+                                             onClick={() => setDraftDescription(item.description || item.chronology_text || "")}
+                                             className="h-8 px-4 text-[9px] font-black uppercase border-slate-200"
+                                          >
+                                             Reset
+                                          </Button>
+                                       </div>
+                                    </div>
+                                 </div>
+
+                                 {/* D. Evidence Source Navigator */}
+                                 <div className="space-y-4">
+                                    <div className="flex items-center gap-2">
+                                       <Folders className="h-3.5 w-3.5 text-slate-400" />
+                                       <span className="text-[10px] font-black uppercase tracking-widest text-slate-900">Evidence Sources</span>
+                                    </div>
+                                    
+                                    <div className="space-y-2">
+                                       {/* AUDIO GROUP */}
+                                       <div className="border border-slate-100 rounded-sm">
+                                          <button 
+                                             onClick={() => setExpandedEvidenceGroups(prev => prev.includes('audio') ? prev.filter(g => g !== 'audio') : [...prev, 'audio'])}
+                                             className="w-full flex items-center justify-between p-3 bg-slate-50 hover:bg-slate-100/50 transition-colors"
+                                          >
+                                             <div className="flex items-center gap-2">
+                                                <AudioIcon className="h-3 w-3 text-slate-400" />
+                                                <span className="text-[9px] font-black uppercase tracking-widest text-slate-600">Audio Evidence ({item.evidenceLinks?.filter((l:any) => l.evidenceType === 'audio').length || 0})</span>
+                                             </div>
+                                             {expandedEvidenceGroups.includes('audio') ? <ChevronDown className="h-3 w-3 text-slate-300" /> : <ChevronRight className="h-3 w-3 text-slate-300" />}
+                                          </button>
+                                          
+                                          {expandedEvidenceGroups.includes('audio') && (
+                                             <div className="p-3 space-y-3 bg-white">
+                                                {item.evidenceLinks?.filter((l:any) => l.evidenceType === 'audio').map((link: any) => (
+                                                   <div 
+                                                      key={link.id} 
+                                                      className={cn(
+                                                         "p-3 border rounded-sm transition-all relative",
+                                                         selectedEvidenceLinkId === link.id ? "border-emerald-500 bg-emerald-50/30 shadow-sm" : "border-slate-100 hover:border-slate-200 bg-white"
+                                                      )}
+                                                   >
+                                                      <div className="flex items-center justify-between mb-2">
+                                                         <div className="flex items-center gap-2">
+                                                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">{link.sourceLabel}</span>
+                                                            <span className="px-1.5 py-0.5 bg-slate-900 text-white text-[7px] font-black uppercase rounded-sm">{link.speaker}</span>
+                                                         </div>
+                                                         <div className="flex gap-1">
+                                                            <span className={cn(
+                                                               "text-[7px] font-black uppercase px-1 py-0.5 rounded-sm border",
+                                                               link.relevance === 'primary' ? "bg-slate-900 text-white border-slate-900" : "bg-slate-50 text-slate-500 border-slate-100"
+                                                            )}>{link.relevance}</span>
+                                                         </div>
+                                                      </div>
+                                                      <div className="flex gap-2 mb-3">
+                                                         <Quote className="h-2.5 w-2.5 text-slate-200 shrink-0 mt-0.5" />
+                                                         <p className="text-[10px] font-medium italic text-slate-600 leading-relaxed">"{link.quote}"</p>
+                                                      </div>
+                                                      <div className="flex items-center justify-between pt-2 border-t border-slate-50">
+                                                         <span className="text-[9px] font-mono font-bold text-slate-400">{link.startTime} — {link.endTime}</span>
+                                                         <Button 
+                                                            variant="ghost" 
+                                                            size="sm" 
+                                                            onClick={() => {
+                                                               setSelectedEvidenceLinkId(link.id);
+                                                               setFocusedPreview(link);
+                                                               const previewEl = document.getElementById('evidence-preview-area');
+                                                               previewEl?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                                            }}
+                                                            className="h-6 px-2 text-[8px] font-black uppercase hover:bg-slate-900 hover:text-white transition-colors"
+                                                         >
+                                                            Jump to Segment
+                                                         </Button>
+                                                      </div>
+                                                   </div>
+                                                ))}
+                                             </div>
+                                          )}
+                                       </div>
+
+                                       {/* DOCUMENT GROUP */}
+                                       <div className="border border-slate-100 rounded-sm">
+                                          <button 
+                                             onClick={() => setExpandedEvidenceGroups(prev => prev.includes('document') ? prev.filter(g => g !== 'document') : [...prev, 'document'])}
+                                             className="w-full flex items-center justify-between p-3 bg-slate-50 hover:bg-slate-100/50 transition-colors"
+                                          >
+                                             <div className="flex items-center gap-2">
+                                                <FileText className="h-3 w-3 text-slate-400" />
+                                                <span className="text-[9px] font-black uppercase tracking-widest text-slate-600">Document Trace ({item.evidenceLinks?.filter((l:any) => l.evidenceType === 'document').length || 0})</span>
+                                             </div>
+                                             {expandedEvidenceGroups.includes('document') ? <ChevronDown className="h-3 w-3 text-slate-300" /> : <ChevronRight className="h-3 w-3 text-slate-300" />}
+                                          </button>
+                                          
+                                          {expandedEvidenceGroups.includes('document') && (
+                                             <div className="p-3 space-y-3 bg-white">
+                                                {item.evidenceLinks?.filter((l:any) => l.evidenceType === 'document').map((link: any) => (
+                                                   <div 
+                                                      key={link.id} 
+                                                      className={cn(
+                                                         "p-3 border rounded-sm transition-all relative",
+                                                         selectedEvidenceLinkId === link.id ? "border-emerald-500 bg-emerald-50/30 shadow-sm" : "border-slate-100 hover:border-slate-200 bg-white"
+                                                      )}
+                                                   >
+                                                      <div className="flex items-center justify-between mb-2">
+                                                         <div className="flex items-center gap-2">
+                                                            <DocIcon className="h-3 w-3 text-blue-500" />
+                                                            <span className="text-[8px] font-black text-slate-700 uppercase tracking-tighter truncate max-w-[120px]">{link.sourceFileName}</span>
+                                                            <span className="text-[7px] font-bold text-slate-400">Page {link.page}</span>
+                                                         </div>
+                                                         <span className={cn(
+                                                            "text-[7px] font-black uppercase px-1 py-0.5 rounded-sm border",
+                                                            link.relevance === 'primary' ? "bg-slate-900 text-white border-slate-900" : "bg-slate-50 text-slate-500 border-slate-100"
+                                                         )}>{link.relevance}</span>
+                                                      </div>
+                                                      <p className="text-[10px] font-medium text-slate-600 leading-relaxed mb-3 line-clamp-3">"{link.quote}"</p>
+                                                      <div className="flex items-center justify-end pt-2 border-t border-slate-50">
+                                                         <Button 
+                                                            variant="ghost" 
+                                                            size="sm" 
+                                                            onClick={() => {
+                                                               setSelectedEvidenceLinkId(link.id);
+                                                               setFocusedPreview(link);
+                                                               const previewEl = document.getElementById('evidence-preview-area');
+                                                               previewEl?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                                            }}
+                                                            className="h-6 px-2 text-[8px] font-black uppercase hover:bg-slate-900 hover:text-white transition-colors"
+                                                         >
+                                                            Jump to Excerpt
+                                                         </Button>
+                                                      </div>
+                                                   </div>
+                                                ))}
+                                             </div>
+                                          )}
+                                       </div>
+                                    </div>
+                                 </div>
+
+                                 {/* E. Evidence Preview Area */}
+                                 <div id="evidence-preview-area" className="scroll-mt-6">
+                                    {focusedPreview ? (
+                                       <div className="space-y-4 pt-4 border-t border-slate-100 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                          <div className="flex items-center gap-2">
+                                             <Eye className="h-3.5 w-3.5 text-primary" />
+                                             <span className="text-[10px] font-black uppercase tracking-widest text-slate-900">
+                                                {focusedPreview.evidenceType === 'audio' ? 'Audio Segment Preview' : 'Document Excerpt Preview'}
+                                             </span>
+                                          </div>
+                                          <div className="bg-slate-900 rounded-sm p-5 text-white space-y-4 shadow-xl">
+                                             <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                                                <div className="flex items-center gap-3">
+                                                   {focusedPreview.evidenceType === 'audio' ? <AudioIcon className="h-4 w-4 text-emerald-400" /> : <DocIcon className="h-4 w-4 text-blue-400" />}
+                                                   <div>
+                                                      <p className="text-[10px] font-black uppercase tracking-wider">{focusedPreview.sourceFileName}</p>
+                                                      <p className="text-[8px] font-bold text-white/40 uppercase">
+                                                         {focusedPreview.evidenceType === 'audio' ? `${focusedPreview.speaker} · ${focusedPreview.startTime}—${focusedPreview.endTime}` : `Page ${focusedPreview.page}`}
+                                                      </p>
+                                                   </div>
+                                                </div>
+                                             </div>
+                                             <p className="text-xs font-medium leading-relaxed text-slate-300 italic">"{focusedPreview.quote}"</p>
+                                             <div className="pt-2">
+                                                <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+                                                   <div className="h-full bg-primary w-1/3 animate-pulse" />
+                                                </div>
+                                                <p className="text-[8px] font-bold text-white/30 uppercase mt-2">
+                                                   {focusedPreview.evidenceType === 'audio' ? `Audio preview ready at ${focusedPreview.startTime}—${focusedPreview.endTime}` : `Document preview ready at Page ${focusedPreview.page}`}
+                                                </p>
+                                             </div>
+                                          </div>
+                                       </div>
+                                    ) : (
+                                       <div className="py-12 flex flex-col items-center justify-center border border-dashed border-slate-200 rounded-sm bg-slate-50 opacity-40">
+                                          <Eye className="h-6 w-6 text-slate-300 mb-2" />
+                                          <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Jump to preview evidence</span>
+                                       </div>
+                                    )}
+                                 </div>
+
+                                 {/* F. Reviewer Notes */}
+                                 <div className="space-y-4 pb-20">
+                                    <div className="flex items-center gap-2">
+                                       <MessageSquare className="h-3.5 w-3.5 text-slate-400" />
+                                       <span className="text-[10px] font-black uppercase tracking-widest text-slate-900">Reviewer Notes</span>
+                                    </div>
+                                    <div className="space-y-3">
+                                       <div className="relative">
+                                          <Textarea 
+                                             placeholder="Add reviewer note..."
+                                             className="min-h-[60px] text-[11px] bg-slate-50/50 border-slate-100 focus:bg-white transition-all pr-12 focus:ring-0 focus:border-slate-900"
+                                          />
+                                          <Button className="absolute bottom-2 right-2 h-7 w-7 p-0 bg-slate-900 hover:bg-slate-800 transition-colors">
+                                             <Send className="h-3 w-3" />
+                                          </Button>
+                                       </div>
+                                       <div className="space-y-2">
+                                          <div className="bg-slate-50 p-3 rounded-sm border border-slate-100">
+                                             <p className="text-[11px] text-slate-600 leading-relaxed">Evidence synthesis matches SCADA vibration profile. High confidence in timing.</p>
+                                             <span className="text-[8px] font-bold text-slate-400 uppercase mt-2 block">Today, 11:05 AM</span>
+                                          </div>
+                                       </div>
+                                    </div>
+                                 </div>
+                              </div>
+                           </div>
+                        </div>
+                     );
+                   }
+
+                   return (
+                     <div className="flex flex-col h-full bg-white">
+                        <div className="h-12 border-b border-slate-200 flex items-center justify-between px-5 bg-slate-50/50 shrink-0">
+                           <div className="flex items-center gap-2">
+                              <Brain className="h-4 w-4 text-primary" />
+                              <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest">Evidence Console</span>
+                           </div>
+                           <div className="flex items-center gap-2">
+                              <div className="flex bg-slate-200 p-0.5 rounded-sm">
+                                 <button onClick={() => setActiveEvidenceConsoleMode('trace')} className={cn("px-2 py-1 text-[8px] font-black uppercase rounded-sm transition-all", activeEvidenceConsoleMode === 'trace' ? "bg-white shadow-sm text-slate-900" : "text-slate-400")}>Trace</button>
+                                 <button onClick={() => setActiveEvidenceConsoleMode('diarization')} className={cn("px-2 py-1 text-[8px] font-black uppercase rounded-sm transition-all", activeEvidenceConsoleMode === 'diarization' ? "bg-white shadow-sm text-slate-900" : "text-slate-400")}>Diar</button>
+                              </div>
+                              <Button variant="ghost" size="sm" onClick={() => setSelectedChronologyItemId(null)} className="h-8 w-8 p-0 text-slate-400 hover:text-slate-600 hover:bg-slate-100">
+                                 <X className="h-4 w-4" />
+                              </Button>
+                           </div>
+                        </div>
 
                         <div className="flex-1 flex flex-col overflow-hidden bg-white">
                            {/* Evidence Source Tree */}
@@ -4150,7 +4491,7 @@ function AnalysisTab() {
                                           <div key={idx} className="bg-white border border-slate-200 p-4 rounded-sm hover:border-slate-400 transition-colors group shadow-sm">
                                              <div className="flex items-center justify-between mb-3 pb-3 border-b border-slate-50">
                                                 <div className="flex items-center gap-2">
-                                                   <FileText as DocIcon className="h-3 w-3 text-blue-500" />
+                                                   <DocIcon className="h-3 w-3 text-blue-500" />
                                                    <span className="text-[10px] font-black text-slate-700 uppercase tracking-tighter truncate max-w-[150px]">{cite.source}</span>
                                                    <span className="text-[8px] font-bold text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100">{cite.ref}</span>
                                                 </div>
@@ -4171,10 +4512,10 @@ function AnalysisTab() {
                               )}
                            </div>
                         </div>
+                     </div>
+                   );
+                 })()
 
-                    </div>
-                  );
-                })()
              ) : (
                 <div className="flex-1 flex flex-col items-center justify-center p-12 text-slate-300">
                    <Brain className="h-12 w-12 mb-4 opacity-20" />
