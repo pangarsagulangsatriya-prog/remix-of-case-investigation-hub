@@ -4157,6 +4157,7 @@ function AnalysisTab() {
                                                  {batches.map(b => ({ ...b, files: evidenceFiles.filter(f => f.batch_id === b.id) })).filter(b => b.files.length > 0).map((batch) => {
                                                     const filesInBatch = evidenceFiles.filter(f => f.batch_id === batch.id);
                                                     const isExpanded = expandedKnowledgeFolders.includes(batch.id);
+                                                    const currentAgentSelection = localKnowledgeSelection[agent.id] || agent.knowledgeSelection || [];
                                                     const selectedInBatch = filesInBatch.filter(f => currentAgentSelection.includes(f.id));
                                                     const isBatchFullySelected = selectedInBatch.length === filesInBatch.length && filesInBatch.length > 0;
                                                     const isBatchPartiallySelected = selectedInBatch.length > 0 && selectedInBatch.length < filesInBatch.length;
