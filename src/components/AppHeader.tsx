@@ -11,22 +11,24 @@ export function AppHeader() {
       </div>
 
       <div className="flex items-center gap-2">
-        <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded hover:bg-muted transition-colors">
-          <span>Site Alpha</span>
-          <ChevronDown className="h-3 w-3" />
-        </button>
-
-        <button className="relative p-1.5 rounded hover:bg-muted transition-colors">
-          <Bell className="h-4 w-4 text-muted-foreground" />
-          <span className="absolute top-0.5 right-0.5 h-2 w-2 rounded-full bg-destructive" />
-        </button>
-
-        <button className="flex items-center gap-2 px-2 py-1 rounded hover:bg-muted transition-colors">
-          <div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center">
-            <span className="text-2xs font-semibold text-primary-foreground">JD</span>
+          <div className="flex items-center gap-3 border px-4 py-1.5 rounded-sm bg-slate-50 transition-colors">
+            <span className="text-xs font-bold text-slate-600 uppercase tracking-widest">Site Alpha</span>
+            <ChevronDown className="h-3 w-3 text-slate-400" />
           </div>
-          <ChevronDown className="h-3 w-3 text-muted-foreground" />
-        </button>
+          
+          <div className="flex items-center gap-3">
+            <div className="h-8 w-8 rounded-sm bg-slate-100 flex items-center justify-center relative border">
+              <Bell className="h-4 w-4 text-slate-500" />
+              <div className="absolute top-2 right-2 h-2 w-2 bg-rose-500 rounded-full border-2 border-white" />
+            </div>
+            
+            <div className="flex items-center gap-2 group cursor-pointer pl-2 border-l">
+              <div className="h-8 w-8 rounded-sm bg-emerald-600 flex items-center justify-center text-[11px] font-black text-white ">
+                JD
+              </div>
+              <ChevronDown className="h-3.5 w-3.5 text-slate-400 group-hover:text-slate-600 transition-colors" />
+            </div>
+          </div>
       </div>
     </header>
   );

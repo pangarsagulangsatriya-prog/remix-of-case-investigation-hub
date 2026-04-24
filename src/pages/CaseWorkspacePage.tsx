@@ -825,7 +825,7 @@ function StatusIndicator({ status, type }: { status: string, type: 'extraction' 
   
   return (
     <div className={`
-      inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[10px] font-bold uppercase tracking-wider shadow-sm transition-all
+      inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[10px] font-bold uppercase tracking-wider  transition-all
       ${isAlt ? "bg-emerald-50 text-emerald-700 border-emerald-100" : 
         isProcess ? "bg-amber-50 text-amber-700 border-amber-100" :
         isFail ? "bg-rose-50 text-rose-700 border-rose-100" :
@@ -902,16 +902,16 @@ function ImageViewer({ file }: { file: any }) {
          onMouseLeave={handleMouseUp}>
       
       {/* Utility Bar */}
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 bg-white/95 backdrop-blur-md px-1.5 py-1 rounded-xl border border-slate-200 shadow-2xl flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-all duration-300 transform -translate-y-2 group-hover:translate-y-0 scale-95 group-hover:scale-100">
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-slate-100 rounded-lg" onClick={handleZoomIn} title="Zoom In"><ZoomIn className="h-4 w-4 text-slate-700" /></Button>
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-slate-100 rounded-lg" onClick={handleZoomOut} title="Zoom Out"><ZoomOut className="h-4 w-4 text-slate-700" /></Button>
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 bg-white/95 backdrop-blur-md px-1.5 py-1 rounded-sm border border-slate-200  flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-all duration-300 transform -translate-y-2 group-hover:translate-y-0 scale-95 group-hover:scale-100">
+          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-slate-100 rounded-sm" onClick={handleZoomIn} title="Zoom In"><ZoomIn className="h-4 w-4 text-slate-700" /></Button>
+          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-slate-100 rounded-sm" onClick={handleZoomOut} title="Zoom Out"><ZoomOut className="h-4 w-4 text-slate-700" /></Button>
           <div className="w-px h-4 bg-slate-200 mx-1" />
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-slate-100 rounded-lg" onClick={handleReset} title="Reset View"><RefreshCcw className="h-3.5 w-3.5 text-slate-700" /></Button>
+          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-slate-100 rounded-sm" onClick={handleReset} title="Reset View"><RefreshCcw className="h-3.5 w-3.5 text-slate-700" /></Button>
           <div className="w-px h-4 bg-slate-200 mx-1" />
-          <Button variant="ghost" size="sm" className="h-8 px-2 text-[9px] font-black text-slate-700 hover:bg-slate-100 rounded-lg uppercase tracking-wider" onClick={() => { setZoom(1); setPosition({x:0, y:0}); }}>Fit</Button>
-          <Button variant="ghost" size="sm" className="h-8 px-2 text-[9px] font-black text-slate-700 hover:bg-slate-100 rounded-lg uppercase tracking-wider border border-transparent hover:border-slate-100" onClick={() => setZoom(1.5)}>1.5x</Button>
+          <Button variant="ghost" size="sm" className="h-8 px-2 text-[9px] font-black text-slate-700 hover:bg-slate-100 rounded-sm uppercase tracking-wider" onClick={() => { setZoom(1); setPosition({x:0, y:0}); }}>Fit</Button>
+          <Button variant="ghost" size="sm" className="h-8 px-2 text-[9px] font-black text-slate-700 hover:bg-slate-100 rounded-sm uppercase tracking-wider border border-transparent hover:border-slate-100" onClick={() => setZoom(1.5)}>1.5x</Button>
           <div className="w-px h-4 bg-slate-200 mx-1" />
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-slate-100 rounded-lg" title="Open Original" onClick={() => window.open(file.url, '_blank')}><ExternalLink className="h-3.5 w-3.5 text-slate-700" /></Button>
+          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-slate-100 rounded-sm" title="Open Original" onClick={() => window.open(file.url, '_blank')}><ExternalLink className="h-3.5 w-3.5 text-slate-700" /></Button>
       </div>
 
       <div className="w-full h-full flex items-center justify-center pointer-events-none">
@@ -1116,7 +1116,7 @@ function AIAnalysisPanel({ file }: { file: any }) {
       }`}
     >
       <div className="flex items-center gap-3">
-        <div className={`h-8 w-8 rounded-lg border shadow-sm flex items-center justify-center transition-all ${
+        <div className={`h-8 w-8 rounded-sm border  flex items-center justify-center transition-all ${
           expandedSections.includes(title) ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-400 border-slate-200'
         }`}>
           <Icon className="h-4 w-4" />
@@ -1191,7 +1191,7 @@ function AIAnalysisPanel({ file }: { file: any }) {
               <KVP label="Operation" value={normalizedData.composition_objects.operation_context.replace(/_/g, ' ')} />
               <KVP label="Scene Condition" value={normalizedData.composition_objects.scene_condition.replace(/_/g, ' ')} />
             </div>
-            <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 shadow-inner">
+            <div className="p-4 bg-slate-50 rounded-sm border border-slate-100 shadow-inner">
                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Scene Summary</span>
                <p className="text-[11px] font-bold text-slate-700 leading-relaxed italic">"{normalizedData.composition_objects.scene_summary}"</p>
             </div>
@@ -1201,7 +1201,7 @@ function AIAnalysisPanel({ file }: { file: any }) {
                <div className="grid grid-cols-1 gap-2.5">
                   {normalizedData.composition_objects.detected_assets.length > 0 ? (
                     normalizedData.composition_objects.detected_assets.map((asset, i) => (
-                      <div key={i} className="p-4 border rounded-xl bg-white shadow-sm group hover:border-primary/30 hover:shadow-md transition-all">
+                      <div key={i} className="p-4 border rounded-sm bg-white  group hover:border-primary/30 hover: transition-all">
                         <div className="flex items-center justify-between mb-3">
                            <div className="flex items-center gap-2">
                               <span className="text-[11px] font-black text-slate-800 uppercase tracking-tight">{asset.asset_type.replace(/_/g, ' ')}</span>
@@ -1218,7 +1218,7 @@ function AIAnalysisPanel({ file }: { file: any }) {
                         <div className="mt-3 pt-2.5 border-t border-slate-50 text-[9px] font-black text-slate-300 uppercase tracking-widest">REF ID: {asset.asset_ref}</div>
                       </div>
                     ))
-                  ) : <div className="p-8 text-center border-2 border-dashed rounded-xl text-[10px] text-slate-300 font-black uppercase tracking-widest">No assets detected</div>}
+                  ) : <div className="p-8 text-center border-2 border-dashed rounded-sm text-[10px] text-slate-300 font-black uppercase tracking-widest">No assets detected</div>}
                </div>
             </div>
 
@@ -1227,7 +1227,7 @@ function AIAnalysisPanel({ file }: { file: any }) {
                <div className="space-y-2.5">
                   {normalizedData.composition_objects.detected_traces.length > 0 ? (
                     normalizedData.composition_objects.detected_traces.map((trace, i) => (
-                      <div key={trace.trace_ref} className="p-4 border rounded-xl bg-slate-50/50 flex flex-col gap-2.5">
+                      <div key={trace.trace_ref} className="p-4 border rounded-sm bg-slate-50/50 flex flex-col gap-2.5">
                          <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                               <Chip text={trace.trace_type.replace(/_/g, ' ')} type={trace.observed_or_inferred === 'observed' ? 'observed' : 'inferred'} />
@@ -1242,7 +1242,7 @@ function AIAnalysisPanel({ file }: { file: any }) {
                          </div>
                       </div>
                     ))
-                  ) : <div className="p-6 text-center border border-dashed rounded-xl text-[10px] text-slate-300 font-bold uppercase">No traces detected</div>}
+                  ) : <div className="p-6 text-center border border-dashed rounded-sm text-[10px] text-slate-300 font-bold uppercase">No traces detected</div>}
                </div>
             </div>
 
@@ -1269,7 +1269,7 @@ function AIAnalysisPanel({ file }: { file: any }) {
                <div className="grid grid-cols-1 gap-3">
                   {normalizedData.composition_objects.measurements.length > 0 ? (
                     normalizedData.composition_objects.measurements.map((m, i) => (
-                      <div key={m.measurement_ref} className="p-4 border-2 border-dashed border-primary/20 rounded-xl bg-primary/5">
+                      <div key={m.measurement_ref} className="p-4 border-2 border-dashed border-primary/20 rounded-sm bg-primary/5">
                          <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center gap-2">
                               <span className="text-[10px] font-black text-primary uppercase tracking-[0.1em]">{m.name.replace(/_/g, ' ')}</span>
@@ -1289,7 +1289,7 @@ function AIAnalysisPanel({ file }: { file: any }) {
                          </div>
                       </div>
                     ))
-                  ) : <div className="p-6 text-center border border-dashed rounded-xl text-[10px] text-slate-300 font-bold uppercase">No measurements detected</div>}
+                  ) : <div className="p-6 text-center border border-dashed rounded-sm text-[10px] text-slate-300 font-bold uppercase">No measurements detected</div>}
                </div>
             </div>
           </div>
@@ -1301,7 +1301,7 @@ function AIAnalysisPanel({ file }: { file: any }) {
         <SectionHeader title="People & PPE" icon={Users} />
         {expandedSections.includes("People & PPE") && (
           <div className="p-5 space-y-6 animate-in fade-in slide-in-from-top-1">
-            <div className="flex items-center justify-between p-5 bg-slate-900 rounded-2xl border border-slate-800 shadow-2xl relative overflow-hidden group">
+            <div className="flex items-center justify-between p-5 bg-slate-900 rounded-sm border border-slate-800  relative overflow-hidden group">
                <div className="absolute right-[-20px] top-[-20px] opacity-10 rotate-12 transition-transform group-hover:scale-110">
                   <Users className="h-24 w-24 text-white" />
                </div>
@@ -1311,17 +1311,17 @@ function AIAnalysisPanel({ file }: { file: any }) {
                </div>
                <div className="text-right relative z-10 flex flex-col items-end gap-1">
                   <span className="text-[9px] font-black text-slate-500 uppercase tracking-[0.4em] block">Safety Audit</span>
-                  <div className="px-2 py-1 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-[9px] font-black text-emerald-400 uppercase tracking-widest shadow-sm">Verified Compliant</div>
+                  <div className="px-2 py-1 bg-emerald-500/10 border border-emerald-500/30 rounded-sm text-[9px] font-black text-emerald-400 uppercase tracking-widest ">Verified Compliant</div>
                </div>
             </div>
 
             <div className="space-y-4 pt-2">
                {normalizedData.people_ppe.detected_people.length > 0 ? (
                  normalizedData.people_ppe.detected_people.map((p, i) => (
-                    <div key={p.person_ref} className="p-4 border rounded-2xl space-y-5 bg-white shadow-sm hover:border-slate-300 hover:shadow-md transition-all">
+                    <div key={p.person_ref} className="p-4 border rounded-sm space-y-5 bg-white  hover:border-slate-300 hover: transition-all">
                        <div className="flex items-center justify-between pb-3 border-b border-slate-50">
                           <div className="flex items-center gap-3">
-                             <div className="h-8 w-8 rounded-lg bg-slate-100 flex items-center justify-center text-[10px] font-black text-slate-700 border border-slate-200 shadow-sm font-mono">
+                             <div className="h-8 w-8 rounded-sm bg-slate-100 flex items-center justify-center text-[10px] font-black text-slate-700 border border-slate-200  font-mono">
                                 {p.person_ref}
                              </div>
                              <div className="flex flex-col">
@@ -1346,8 +1346,8 @@ function AIAnalysisPanel({ file }: { file: any }) {
                           </div>
                           <div className="flex flex-wrap gap-2">
                              {normalizedData.people_ppe.ppe_items.filter(item => item.person_ref === p.person_ref).map((item, j) => (
-                                <div key={j} className={`px-3 py-2 rounded-xl border flex items-center gap-4 transition-all ${item.detected ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-50 border-slate-50 opacity-25 grayscale'}`}>
-                                   <div className={`h-2.5 w-2.5 rounded-full shadow-sm transition-all ${item.detected ? (item.properly_worn ? 'bg-emerald-500 shadow-emerald-500/20' : 'bg-rose-500 shadow-rose-500/50 pulse-danger') : 'bg-slate-300'}`} />
+                                <div key={j} className={`px-3 py-2 rounded-sm border flex items-center gap-4 transition-all ${item.detected ? 'bg-white border-slate-200 ' : 'bg-slate-50 border-slate-50 opacity-25 grayscale'}`}>
+                                   <div className={`h-2.5 w-2.5 rounded-full  transition-all ${item.detected ? (item.properly_worn ? 'bg-emerald-500 shadow-emerald-500/20' : 'bg-rose-500 shadow-rose-500/50 pulse-danger') : 'bg-slate-300'}`} />
                                    <div className="flex flex-col gap-0.5 min-w-[50px]">
                                       <span className="text-[10px] font-black uppercase text-slate-800 tracking-tighter leading-none">{item.item.replace(/_/g, ' ')}</span>
                                       <span className="text-[8px] font-bold text-slate-400 leading-none mt-1">{item.visibility?.toUpperCase() || "N/A"}</span>
@@ -1361,7 +1361,7 @@ function AIAnalysisPanel({ file }: { file: any }) {
                        </div>
                     </div>
                  ))
-               ) : <div className="p-10 text-center border-2 border-dashed rounded-2xl text-[10px] text-slate-300 font-black uppercase tracking-widest">No personnel extracted</div>}
+               ) : <div className="p-10 text-center border-2 border-dashed rounded-sm text-[10px] text-slate-300 font-black uppercase tracking-widest">No personnel extracted</div>}
             </div>
           </div>
         )}
@@ -1388,7 +1388,7 @@ function AIAnalysisPanel({ file }: { file: any }) {
                  { label: "Signage & Warning Visible", active: normalizedData.environment.signage_present },
                  { label: "Traffic Control Devices", active: normalizedData.environment.traffic_control_present },
                ].map((item, i) => (
-                 <div key={i} className={`p-4 rounded-xl border flex items-center justify-between transition-all ${item.active ? 'bg-emerald-50/40 border-emerald-100 shadow-sm' : 'bg-slate-50/50 border-slate-100 grayscale opacity-50'}`}>
+                 <div key={i} className={`p-4 rounded-sm border flex items-center justify-between transition-all ${item.active ? 'bg-emerald-50/40 border-emerald-100 ' : 'bg-slate-50/50 border-slate-100 grayscale opacity-50'}`}>
                     <span className="text-[10px] font-bold uppercase text-slate-600 tracking-tight">{item.label}</span>
                     <div className={`p-1 rounded-full ${item.active ? 'bg-emerald-500' : 'bg-slate-200'}`}>
                        {item.active ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}
@@ -1402,7 +1402,7 @@ function AIAnalysisPanel({ file }: { file: any }) {
                <div className="flex flex-wrap gap-2.5">
                   {normalizedData.environment.dust_smoke_spillage.length > 0 ? (
                     normalizedData.environment.dust_smoke_spillage.map((s, i) => (
-                      <div key={i} className="px-3.5 py-2 bg-amber-50 text-amber-800 border-2 border-amber-100/50 text-[10px] font-black uppercase rounded-xl shadow-sm italic">
+                      <div key={i} className="px-3.5 py-2 bg-amber-50 text-amber-800 border-2 border-amber-100/50 text-[10px] font-black uppercase rounded-sm  italic">
                         {s}
                       </div>
                     ))
@@ -1410,7 +1410,7 @@ function AIAnalysisPanel({ file }: { file: any }) {
                </div>
             </div>
 
-            <div className="py-4 px-5 bg-slate-50 rounded-2xl border-2 border-slate-100 shadow-inner">
+            <div className="py-4 px-5 bg-slate-50 rounded-sm border-2 border-slate-100 shadow-inner">
                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-2">Detailed Environment Read</span>
                <p className="text-[11px] font-bold text-slate-700 leading-relaxed pr-2 italic opacity-85">"{normalizedData.environment.environment_summary}"</p>
             </div>
@@ -1420,14 +1420,14 @@ function AIAnalysisPanel({ file }: { file: any }) {
 
       {/* Initial Interpretation */}
       <div className="bg-white">
-        <div className="ring-2 ring-slate-900/5 shadow-2xl relative z-10 m-3 rounded-[24px] overflow-hidden border-2 border-slate-900 bg-white">
+        <div className="ring-2 ring-slate-900/5  relative z-10 m-3 rounded-[24px] overflow-hidden border-2 border-slate-900 bg-white">
           <SectionHeader title="Initial Interpretation" icon={Brain} />
           {expandedSections.includes("Initial Interpretation") && (
             <div className="p-6 space-y-10 animate-in fade-in slide-in-from-top-2">
               <div className="space-y-5">
                  <div className="flex items-center justify-between border-b-2 border-slate-900 pb-2.5">
                     <div className="flex items-center gap-2.5">
-                       <div className="h-6 w-6 bg-slate-900 rounded-lg flex items-center justify-center text-white text-[11px] font-black shadow-lg">?</div>
+                       <div className="h-6 w-6 bg-slate-900 rounded-sm flex items-center justify-center text-white text-[11px] font-black ">?</div>
                        <span className="text-xs font-black text-slate-900 uppercase tracking-[0.25em]">Observed Facts</span>
                     </div>
                     <div className="px-2 py-0.5 bg-slate-100 rounded text-[9px] font-black text-slate-500 uppercase tracking-[0.1em]">Verified Vision</div>
@@ -1450,14 +1450,14 @@ function AIAnalysisPanel({ file }: { file: any }) {
                            )}
                         </div>
                       ))
-                    ) : <div className="text-[11px] text-slate-300 font-bold uppercase text-center p-6 border border-dashed rounded-xl">No facts documented in current frame</div>}
+                    ) : <div className="text-[11px] text-slate-300 font-bold uppercase text-center p-6 border border-dashed rounded-sm">No facts documented in current frame</div>}
                  </div>
               </div>
 
               <div className="space-y-5">
                  <div className="flex items-center justify-between border-b-2 border-indigo-600 pb-2.5">
                     <div className="flex items-center gap-2.5">
-                       <div className="h-6 w-6 bg-indigo-600 rounded-lg flex items-center justify-center text-white text-[11px] font-black shadow-lg">!</div>
+                       <div className="h-6 w-6 bg-indigo-600 rounded-sm flex items-center justify-center text-white text-[11px] font-black ">!</div>
                        <span className="text-xs font-black text-indigo-700 uppercase tracking-[0.25em]">Inferred Points</span>
                     </div>
                     <div className="px-2 py-0.5 bg-indigo-50 rounded text-[9px] font-black text-indigo-400 uppercase tracking-[0.1em]">AI Synthetic Reasoning</div>
@@ -1472,13 +1472,13 @@ function AIAnalysisPanel({ file }: { file: any }) {
                               <ConfidenceChip level={(p.confidence || "medium").toLowerCase() as any} />
                            </div>
                            <p className="text-[12px] font-black text-slate-700 leading-relaxed pr-6 italic font-serif">"{p.inference_text}"</p>
-                           <div className="mt-2.5 flex items-center gap-2 text-[9px] font-black text-indigo-400 uppercase tracking-[0.2em] bg-indigo-50/50 py-1.5 px-3 rounded-lg border border-indigo-100/50 w-fit">
+                           <div className="mt-2.5 flex items-center gap-2 text-[9px] font-black text-indigo-400 uppercase tracking-[0.2em] bg-indigo-50/50 py-1.5 px-3 rounded-sm border border-indigo-100/50 w-fit">
                               <Brain className="h-3.5 w-3.5" />
                               Evidence Basis: {p.basis.join(', ')}
                            </div>
                         </div>
                       ))
-                    ) : <div className="text-[11px] text-slate-300 font-bold uppercase text-center p-6 border border-dashed rounded-xl">No synthetic inferences calculated</div>}
+                    ) : <div className="text-[11px] text-slate-300 font-bold uppercase text-center p-6 border border-dashed rounded-sm">No synthetic inferences calculated</div>}
                  </div>
               </div>
 
@@ -1493,7 +1493,7 @@ function AIAnalysisPanel({ file }: { file: any }) {
                  <div className="grid grid-cols-1 gap-3">
                     {normalizedData.initial_interpretation.hazard_signals.length > 0 ? (
                       normalizedData.initial_interpretation.hazard_signals.map((h, i) => (
-                        <div key={i} className="p-5 bg-rose-50 border-2 border-rose-100/50 rounded-2xl relative overflow-hidden group hover:bg-rose-100/30 transition-all hover:border-rose-200">
+                        <div key={i} className="p-5 bg-rose-50 border-2 border-rose-100/50 rounded-sm relative overflow-hidden group hover:bg-rose-100/30 transition-all hover:border-rose-200">
                            <div className="absolute right-[-10px] top-[-10px] opacity-[0.03] group-hover:opacity-10 transition-opacity rotate-12 scale-110">
                               <AlertTriangle className="h-20 w-20 text-rose-900" />
                            </div>
@@ -1505,7 +1505,7 @@ function AIAnalysisPanel({ file }: { file: any }) {
                            <div className="text-[9px] font-black text-rose-500 uppercase tracking-[0.15em] opacity-80 relative z-10 bg-white/50 w-fit px-2 py-0.5 rounded border border-rose-100">Protocol Basis: {h.evidence_basis}</div>
                         </div>
                       ))
-                    ) : <div className="bg-emerald-50 text-emerald-800 p-6 border-2 border-emerald-100 rounded-2xl text-center text-[10px] font-black uppercase tracking-[0.3em] flex items-center justify-center gap-3"><CheckCircle className="h-4 w-4" /> NO HAZARDS DOCUMENTED</div>}
+                    ) : <div className="bg-emerald-50 text-emerald-800 p-6 border-2 border-emerald-100 rounded-sm text-center text-[10px] font-black uppercase tracking-[0.3em] flex items-center justify-center gap-3"><CheckCircle className="h-4 w-4" /> NO HAZARDS DOCUMENTED</div>}
                  </div>
               </div>
 
@@ -1516,7 +1516,7 @@ function AIAnalysisPanel({ file }: { file: any }) {
                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-1">Negative Findings (Absent Items)</span>
                        <div className="grid grid-cols-1 gap-2">
                           {normalizedData.initial_interpretation.negative_findings.map((n, i) => (
-                             <div key={i} className="flex items-center justify-between p-3 bg-slate-50 border rounded-xl hover:bg-white transition-all group">
+                             <div key={i} className="flex items-center justify-between p-3 bg-slate-50 border rounded-sm hover:bg-white transition-all group">
                                 <div className="flex items-center gap-3">
                                    <div className="h-2 w-2 rounded-full bg-slate-300 shadow-inner group-hover:bg-primary transition-colors" />
                                    <span className="text-[11px] font-black text-slate-800 uppercase tracking-tight">{n.item.replace(/_/g, ' ')}</span>
@@ -1535,7 +1535,7 @@ function AIAnalysisPanel({ file }: { file: any }) {
                           <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-1">Unknown Variables</span>
                           <div className="flex flex-col gap-2">
                              {normalizedData.initial_interpretation.unknowns.map((u, i) => (
-                                <div key={i} className="px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-[10px] font-bold text-slate-500 shadow-sm leading-tight group hover:border-slate-400 transition-all">
+                                <div key={i} className="px-4 py-2.5 bg-white border border-slate-200 rounded-sm text-[10px] font-bold text-slate-500  leading-tight group hover:border-slate-400 transition-all">
                                    <span className="text-slate-300 mr-2 font-mono">?</span> {u}
                                 </div>
                              ))}
@@ -1546,7 +1546,7 @@ function AIAnalysisPanel({ file }: { file: any }) {
                           <span className="text-[10px] font-black text-rose-500 uppercase tracking-widest pl-1">Protocol Review Tokens</span>
                           <div className="flex flex-col gap-2">
                              {normalizedData.initial_interpretation.review_flags.map((r, i) => (
-                                <div key={i} className="flex items-start gap-3 p-3 bg-rose-50/40 border border-rose-100 rounded-xl group hover:bg-rose-50 hover:border-rose-200 transition-all">
+                                <div key={i} className="flex items-start gap-3 p-3 bg-rose-50/40 border border-rose-100 rounded-sm group hover:bg-rose-50 hover:border-rose-200 transition-all">
                                    <div className="h-1.5 w-1.5 rounded-full bg-rose-500 mt-1.5 shrink-0 shadow-[0_0_5px_rgba(244,63,94,0.5)]" />
                                    <span className="text-[10px] font-black text-rose-800 leading-snug tracking-tight">{r}</span>
                                 </div>
@@ -1587,7 +1587,7 @@ function AIAnalysisPanel({ file }: { file: any }) {
                     {normalizedData.initial_interpretation.needs_human_validation && (
                        <div className="flex flex-col items-end gap-2.5">
                           <span className="text-[10px] font-black text-amber-500 uppercase tracking-[0.3em] animate-pulse">Validation Sequence Pending</span>
-                          <div className="flex items-center gap-2.5 py-2 px-4 bg-amber-500/10 border-2 border-amber-500/30 rounded-2xl shadow-lg ring-1 ring-amber-500/20">
+                          <div className="flex items-center gap-2.5 py-2 px-4 bg-amber-500/10 border-2 border-amber-500/30 rounded-sm  ring-1 ring-amber-500/20">
                              <Loader2 className="h-3.5 w-3.5 text-amber-500 animate-spin" />
                              <span className="text-[11px] font-black text-amber-500 uppercase tracking-tighter">Human Review Mandatory</span>
                           </div>
@@ -1605,26 +1605,26 @@ function AIAnalysisPanel({ file }: { file: any }) {
   return (
     <div className="flex flex-col h-full bg-white">
       {/* Console Header */}
-      <div className="px-6 py-5 shrink-0 flex items-center justify-between bg-white border-b sticky top-0 z-[60] shadow-sm backdrop-blur-md bg-white/80">
+      <div className="px-6 py-5 shrink-0 flex items-center justify-between bg-white border-b sticky top-0 z-[60]  backdrop-blur-md bg-white/80">
          <div className="flex flex-col gap-1">
             <div className="flex items-center gap-3">
-               <div className="h-6 w-6 bg-slate-900 rounded-lg flex items-center justify-center shadow-md">
+               <div className="h-6 w-6 bg-slate-900 rounded-sm flex items-center justify-center ">
                   <Brain className="h-3.5 w-3.5 text-white" />
                </div>
                <span className="text-[12px] font-black text-slate-900 uppercase tracking-[0.3em]">Extraction Matrix</span>
             </div>
             <span className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.15em] opacity-60 ml-9">SINGLE IMAGE SYNTHESIS • CS-2026-5208 • v7.0-PRO</span>
          </div>
-         <div className="flex items-center gap-2 p-1.5 bg-slate-100/80 rounded-2xl border border-slate-200/50 shadow-inner">
+         <div className="flex items-center gap-2 p-1.5 bg-slate-100/80 rounded-sm border border-slate-200/50 shadow-inner">
             <button 
               onClick={() => setViewMode("Structured")}
-              className={`px-5 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all duration-300 transform active:scale-95 ${viewMode === "Structured" ? "bg-white text-primary shadow-[0_4px_12px_rgba(0,0,0,0.1)] ring-1 ring-slate-200" : "text-slate-400 hover:text-slate-600"}`}
+              className={`px-5 py-2 text-[10px] font-black uppercase tracking-widest rounded-sm transition-all duration-300 transform active:scale-95 ${viewMode === "Structured" ? "bg-white text-primary shadow-[0_4px_12px_rgba(0,0,0,0.1)] ring-1 ring-slate-200" : "text-slate-400 hover:text-slate-600"}`}
             >
               STRUCTURED
             </button>
             <button 
               onClick={() => setViewMode("JSON")}
-              className={`px-5 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all duration-300 transform active:scale-95 ${viewMode === "JSON" ? "bg-white text-primary shadow-[0_4px_12px_rgba(0,0,0,0.1)] ring-1 ring-slate-200" : "text-slate-400 hover:text-slate-600"}`}
+              className={`px-5 py-2 text-[10px] font-black uppercase tracking-widest rounded-sm transition-all duration-300 transform active:scale-95 ${viewMode === "JSON" ? "bg-white text-primary shadow-[0_4px_12px_rgba(0,0,0,0.1)] ring-1 ring-slate-200" : "text-slate-400 hover:text-slate-600"}`}
             >
               JSON CORE
             </button>
@@ -1653,7 +1653,7 @@ function AIAnalysisPanel({ file }: { file: any }) {
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  className="h-9 px-4 text-[10px] font-black text-[#c9d1d9] hover:bg-[#30363d] hover:text-white border border-[#30363d] rounded-xl transition-all shadow-md group active:scale-95"
+                  className="h-9 px-4 text-[10px] font-black text-[#c9d1d9] hover:bg-[#30363d] hover:text-white border border-[#30363d] rounded-sm transition-all  group active:scale-95"
                   onClick={() => {
                     navigator.clipboard.writeText(JSON.stringify(normalizedData, null, 2));
                     toast.success("JSON Payload mirrored to clipboard");
@@ -1743,7 +1743,7 @@ function AudioRightPanel({
   const AccSection = ({ id, title, icon: Icon, count, children }: any) => {
     const open = expandedSections.includes(id);
     return (
-      <div className={`border rounded-lg overflow-hidden transition-all ${open ? 'ring-1 ring-primary/15 shadow-sm' : 'hover:border-slate-200'}`}>
+      <div className={`border rounded-sm overflow-hidden transition-all ${open ? 'ring-1 ring-primary/15 ' : 'hover:border-slate-200'}`}>
         <button
           onClick={() => toggle(id)}
           className={`w-full flex items-center justify-between px-3 py-2 text-left transition-colors ${open ? 'bg-slate-50/80 border-b border-slate-100' : 'bg-white hover:bg-slate-50/40'}`}
@@ -1781,7 +1781,7 @@ function AudioRightPanel({
     if (viewMode === 'JSON') {
       return (
         <div className="p-3">
-          <div className="bg-[#0d1117] rounded-xl p-4 overflow-hidden border border-slate-800 shadow-2xl">
+          <div className="bg-[#0d1117] rounded-sm p-4 overflow-hidden border border-slate-800 ">
             <pre className="text-[11px] font-mono text-[#79c0ff] leading-relaxed overflow-auto max-h-[700px] custom-scrollbar selection:bg-primary/30">
               {JSON.stringify(data, null, 2)}
             </pre>
@@ -1833,7 +1833,7 @@ function AudioRightPanel({
                <KVP label="Stage" value={(data as any).investigation_stage || 'Evidence Ingestion'} />
                <KVP label="Speakers" value={`${data.speaker_profiles.length} detected`} />
              </div>
-             <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-100">
+             <div className="p-2.5 bg-slate-50 rounded-sm border border-slate-100">
                <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide block mb-1">Conversation Setting</span>
                <span className="text-[10px] font-bold text-slate-600">{(data as any).conversation_setting || 'Remote Radio (Site Alpha)'}</span>
              </div>
@@ -1844,10 +1844,10 @@ function AudioRightPanel({
         <AccSection id="speaker_registry" title="Speaker Registry" icon={Users} count={data.speaker_profiles.length}>
           <div className="space-y-2">
             {data.speaker_profiles.map((s: any) => (
-              <div key={s.speaker_id} className="p-3 border rounded-xl bg-white hover:bg-slate-50/50 transition-all border-slate-100 group shadow-sm">
+              <div key={s.speaker_id} className="p-3 border rounded-sm bg-white hover:bg-slate-50/50 transition-all border-slate-100 group ">
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-center gap-2">
-                    <div className="h-6 w-6 rounded-lg bg-slate-100 flex items-center justify-center text-[10px] font-black text-slate-400 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+                    <div className="h-6 w-6 rounded-sm bg-slate-100 flex items-center justify-center text-[10px] font-black text-slate-400 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
                       {s.speaker_id.split('_')[1]}
                     </div>
                     <div>
@@ -1878,7 +1878,7 @@ function AudioRightPanel({
                <span className="text-[9px] font-black text-slate-900 uppercase tracking-[0.2em] mb-3 block px-1">Evidence Statements</span>
                <div className="space-y-2">
                  {(data as any).factual_statements.map((f: any, i: number) => (
-                   <div key={i} className="flex gap-2.5 p-2.5 border rounded-xl bg-white hover:bg-slate-50/50 transition-all">
+                   <div key={i} className="flex gap-2.5 p-2.5 border rounded-sm bg-white hover:bg-slate-50/50 transition-all">
                      <TsBtn time={f.timestamp} />
                      <div className="flex-1 min-w-0">
                        <p className="text-[10px] font-bold text-slate-800 leading-snug mb-2 italic">"{f.fact_text}"</p>
@@ -1898,7 +1898,7 @@ function AudioRightPanel({
                <div className="relative pl-3 border-l border-slate-100 ml-2 space-y-4">
                  {(data as any).timeline_events.map((ev: any, i: number) => (
                    <div key={i} className="relative">
-                     <div className="absolute -left-[16.5px] top-1.5 h-2 w-2 rounded-full bg-slate-200 border-2 border-white shadow-sm" />
+                     <div className="absolute -left-[16.5px] top-1.5 h-2 w-2 rounded-full bg-slate-200 border-2 border-white " />
                      <div className="flex items-center gap-1.5 mb-1">
                         <TsBtn time={ev.timestamp} />
                         <span className="text-[9px] font-bold text-slate-400">· {ev.actor}</span>
@@ -1923,7 +1923,7 @@ function AudioRightPanel({
                const items = rpc[key] || [];
                if (items.length === 0) return null;
                return (
-                 <div key={key} className="p-3 border rounded-xl bg-slate-50/30">
+                 <div key={key} className="p-3 border rounded-sm bg-slate-50/30">
                     <div className="flex items-center gap-2 mb-2">
                       <Icon className="h-3.5 w-3.5 text-slate-400" />
                       <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">{label}</span>
@@ -1948,7 +1948,7 @@ function AudioRightPanel({
              {/* Contradictions */}
              <div className="space-y-2">
                {(data as any).contradictions_and_gaps.map((c: any, i: number) => (
-                 <div key={i} className="p-3 border border-rose-100 rounded-xl bg-rose-50/30">
+                 <div key={i} className="p-3 border border-rose-100 rounded-sm bg-rose-50/30">
                    <div className="flex items-center gap-2 mb-2">
                      <TsBtn time={c.timestamp} />
                      <Chip label={c.type} variant="critical" />
@@ -1963,7 +1963,7 @@ function AudioRightPanel({
                <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest block mb-2">Human Review Tokens</span>
                <div className="space-y-1.5">
                  {(data as any).review_meta.needs_human_review.map((token: string, i: number) => (
-                   <div key={i} className="flex items-center gap-2 px-2.5 py-1.5 bg-slate-50 rounded-lg border border-slate-100">
+                   <div key={i} className="flex items-center gap-2 px-2.5 py-1.5 bg-slate-50 rounded-sm border border-slate-100">
                       <Eye className="h-3 w-3 text-primary" />
                       <span className="text-[10px] font-bold text-slate-600">{token}</span>
                    </div>
@@ -1971,7 +1971,7 @@ function AudioRightPanel({
                </div>
              </div>
 
-             <div className="flex items-center justify-between p-3 bg-emerald-50 border border-emerald-100 rounded-xl mt-4">
+             <div className="flex items-center justify-between p-3 bg-emerald-50 border border-emerald-100 rounded-sm mt-4">
                <div className="flex items-center gap-2">
                  <CheckCircle2 className="h-4 w-4 text-emerald-600" />
                  <span className="text-[10px] font-black text-emerald-900 uppercase">Analysis Confidence</span>
@@ -2010,7 +2010,7 @@ function AudioRightPanel({
                 <h3 className="text-[12px] font-black text-slate-900 uppercase tracking-wider">Diarization Session</h3>
                 <span className="text-[9px] font-bold text-slate-400">Audio Forensic Evidence Log · Site Alpha</span>
               </div>
-              <button className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[10px] font-black text-slate-600 hover:bg-slate-50 transition-all shadow-sm">
+              <button className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-sm text-[10px] font-black text-slate-600 hover:bg-slate-50 transition-all ">
                 <Download className="h-3.5 w-3.5" />
                 EXPORT RAW
               </button>
@@ -2040,13 +2040,13 @@ function AudioRightPanel({
                 placeholder="Search transcript evidence..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-[11px] font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-slate-300"
+                className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-sm text-[11px] font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-slate-300"
               />
            </div>
            <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
               <button 
                 onClick={() => setSpeakerFilter(null)}
-                className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase whitespace-nowrap transition-all ${!speakerFilter ? 'bg-slate-900 text-white shadow-md' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}`}
+                className={`px-2.5 py-1 rounded-sm text-[9px] font-black uppercase whitespace-nowrap transition-all ${!speakerFilter ? 'bg-slate-900 text-white ' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}`}
               >
                 All Speakers
               </button>
@@ -2054,7 +2054,7 @@ function AudioRightPanel({
                 <button 
                   key={s.speaker_id}
                   onClick={() => setSpeakerFilter(s.speaker_id)}
-                  className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase whitespace-nowrap transition-all ${speakerFilter === s.speaker_id ? 'bg-primary text-white shadow-md' : 'bg-slate-100 text-slate-400 hover:bg-primary/5 hover:text-primary'}`}
+                  className={`px-2.5 py-1 rounded-sm text-[9px] font-black uppercase whitespace-nowrap transition-all ${speakerFilter === s.speaker_id ? 'bg-primary text-white ' : 'bg-slate-100 text-slate-400 hover:bg-primary/5 hover:text-primary'}`}
                 >
                   {s.speaker_label}
                 </button>
@@ -2062,7 +2062,7 @@ function AudioRightPanel({
               <div className="ml-auto flex items-center gap-2">
                 <button 
                   onClick={() => setShowLowConfOnly(!showLowConfOnly)}
-                  className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-[9px] font-black uppercase transition-all ${showLowConfOnly ? 'bg-amber-100 text-amber-900 ring-1 ring-amber-200' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}
+                  className={`flex items-center gap-1.5 px-2 py-1 rounded-sm text-[9px] font-black uppercase transition-all ${showLowConfOnly ? 'bg-amber-100 text-amber-900 ring-1 ring-amber-200' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}
                 >
                   <AlertCircle className="h-3 w-3" />
                   FLAGGED ONLY
@@ -2083,9 +2083,9 @@ function AudioRightPanel({
                 <div
                   key={seg.segment_id}
                   onClick={() => seek(seg.start_time)}
-                  className={`group relative flex gap-4 p-3 rounded-2xl cursor-pointer transition-all border border-transparent ${
+                  className={`group relative flex gap-4 p-3 rounded-sm cursor-pointer transition-all border border-transparent ${
                     active
-                      ? 'bg-slate-900 text-white shadow-xl ring-2 ring-primary/40 -translate-y-0.5 z-10'
+                      ? 'bg-slate-900 text-white  ring-2 ring-primary/40 -translate-y-0.5 z-10'
                       : 'hover:bg-slate-50 hover:border-slate-100'
                   }`}
                 >
@@ -2104,7 +2104,7 @@ function AudioRightPanel({
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
-                        <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider shadow-sm ${
+                        <span className={`px-2 py-0.5 rounded-sm text-[9px] font-black uppercase tracking-wider  ${
                           active 
                             ? 'bg-primary text-white' 
                             : seg.speaker_id === 'SPK_01' ? 'bg-amber-50 text-amber-700 border border-amber-100' : 'bg-indigo-50 text-indigo-700 border border-indigo-100'
@@ -2179,7 +2179,7 @@ function AudioRightPanel({
               onClick={() => setActiveTab(tab)}
               className={`px-3 py-1 rounded text-[10px] font-black tracking-widest uppercase transition-all ${
                 activeTab === tab
-                  ? 'bg-white text-primary shadow-sm ring-1 ring-slate-200/60'
+                  ? 'bg-white text-primary  ring-1 ring-slate-200/60'
                   : 'text-slate-400 hover:text-slate-600'
               }`}
             >
@@ -2196,7 +2196,7 @@ function AudioRightPanel({
                 key={mode}
                 onClick={() => setViewMode(mode)}
                 className={`px-2 py-0.5 text-[8px] font-black uppercase rounded transition-all ${
-                  viewMode === mode ? 'bg-white text-primary shadow-sm' : 'text-slate-400 hover:text-slate-600'
+                  viewMode === mode ? 'bg-white text-primary ' : 'text-slate-400 hover:text-slate-600'
                 }`}
               >
                 {mode}
@@ -2230,7 +2230,7 @@ function OverviewTab() {
     <div className="flex flex-col h-full bg-slate-50/10 overflow-auto">
       <div className="p-6 grid grid-cols-3 gap-6">
         <div className="col-span-2 space-y-6">
-           <div className="bg-white border rounded-lg shadow-sm p-5">
+           <div className="bg-white border rounded-sm  p-5">
               <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-50">
                  <div className="flex items-center gap-2">
                     <div className="h-8 w-8 bg-primary/5 rounded flex items-center justify-center text-primary font-bold text-xs border border-primary/10">IQ</div>
@@ -2248,7 +2248,7 @@ function OverviewTab() {
                     Investigation into the <span className="text-primary font-bold">Conveyor Belt Failure (CS-2026-0147)</span> at Site Alpha. Preliminary extraction from witness interviews and maintenance logs indicate a structural tear in <span className="text-amber-600 font-bold">Section 14</span>, likely caused by a failed roller bearing. Current evidence confidence is high (92%). PEEPO analysis in progress.
                  </p>
                  <div className="flex gap-4">
-                    <div className="flex-1 bg-slate-50 border rounded-lg p-3">
+                    <div className="flex-1 bg-slate-50 border rounded-sm p-3">
                        <span className="text-[9px] font-bold text-slate-400 uppercase block mb-1">Key Findings</span>
                        <ul className="space-y-1.5">
                           <li className="text-[11px] font-bold text-slate-700 flex items-center gap-2">
@@ -2259,7 +2259,7 @@ function OverviewTab() {
                           </li>
                        </ul>
                     </div>
-                    <div className="flex-1 bg-slate-50 border rounded-lg p-3">
+                    <div className="flex-1 bg-slate-50 border rounded-sm p-3">
                        <span className="text-[9px] font-bold text-slate-400 uppercase block mb-1">Risk Classification</span>
                        <div className="flex flex-wrap gap-1.5 mt-1">
                           <span className="px-2 py-0.5 rounded-full bg-rose-50 border border-rose-100 text-[9px] font-bold text-rose-600 uppercase">Mechanical Failure</span>
@@ -2270,7 +2270,7 @@ function OverviewTab() {
               </div>
            </div>
 
-           <div className="bg-white border rounded-lg shadow-sm p-5">
+           <div className="bg-white border rounded-sm  p-5">
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] block mb-4">Event Chronology Visualization</span>
               <div className="relative h-32 w-full flex items-end justify-between px-4 pb-8">
                  <div className="absolute bottom-6 left-0 right-0 h-px bg-slate-200" />
@@ -2281,7 +2281,7 @@ function OverviewTab() {
                    { t: "14:47", h: 60, label: "E-Stop Activated", type: "action" },
                  ].map((p, i) => (
                    <div key={i} className="relative flex flex-col items-center group">
-                      <div className="text-[9px] font-bold text-slate-400 mb-2 invisible group-hover:visible absolute -top-4 whitespace-nowrap bg-white border px-1.5 rounded shadow-sm z-10">{p.label}</div>
+                      <div className="text-[9px] font-bold text-slate-400 mb-2 invisible group-hover:visible absolute -top-4 whitespace-nowrap bg-white border px-1.5 rounded  z-10">{p.label}</div>
                       <div className={`w-3 rounded-t-sm transition-all ${p.type === 'event' ? 'bg-rose-500' : p.type === 'action' ? 'bg-primary' : 'bg-slate-300'}`} style={{ height: `${p.h}%` }} />
                       <span className="absolute -bottom-6 text-[10px] font-bold text-slate-500">{p.t}</span>
                    </div>
@@ -2291,7 +2291,7 @@ function OverviewTab() {
         </div>
 
         <div className="space-y-6">
-           <div className="bg-slate-900 rounded-xl p-5 text-white shadow-xl">
+           <div className="bg-slate-900 rounded-sm p-5 text-white ">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-4">Case Statistics</span>
               <div className="grid grid-cols-2 gap-4">
                  <div>
@@ -2313,7 +2313,7 @@ function OverviewTab() {
               </div>
            </div>
 
-           <div className="bg-white border rounded-lg shadow-sm p-4">
+           <div className="bg-white border rounded-sm  p-4">
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-3 border-b pb-2">Investigation Team</span>
               <div className="space-y-3">
                  {[
@@ -2363,9 +2363,9 @@ function DeleteConfirmationModal({
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300" onClick={onClose} />
-      <div className="bg-white rounded-lg shadow-2xl w-full max-w-md relative z-10 overflow-hidden animate-in zoom-in-95 duration-300 border border-slate-200">
+      <div className="bg-white rounded-sm  w-full max-w-md relative z-10 overflow-hidden animate-in zoom-in-95 duration-300 border border-slate-200">
         <div className="p-6">
-          <div className="h-12 w-12 rounded-xl bg-rose-50 flex items-center justify-center mb-4">
+          <div className="h-12 w-12 rounded-sm bg-rose-50 flex items-center justify-center mb-4">
              <Trash2 className="h-6 w-6 text-rose-500" />
           </div>
           <h3 className="text-xl font-bold text-slate-900 border-none p-0 mb-2">Delete Evidence File</h3>
@@ -2376,13 +2376,13 @@ function DeleteConfirmationModal({
           <div className="space-y-4">
             <div>
                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Security Challenge</label>
-               <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-2 select-none pointer-events-none flex flex-col items-center">
+               <div className="bg-slate-50 p-4 rounded-sm border border-slate-100 mb-2 select-none pointer-events-none flex flex-col items-center">
                   <span className="text-[10px] text-slate-400 uppercase font-black mb-1">Type the code to confirm deletion</span>
                   <span className="text-3xl font-extrabold text-slate-300 tracking-[0.5em]">{captchaCode}</span>
                </div>
                <input 
                   autoFocus
-                  className="w-full h-12 border rounded-xl px-4 text-center font-black text-xl tracking-[0.2em] focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 outline-none transition-all placeholder:text-slate-200"
+                  className="w-full h-12 border rounded-sm px-4 text-center font-black text-xl tracking-[0.2em] focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 outline-none transition-all placeholder:text-slate-200"
                   placeholder="0000"
                   maxLength={4}
                   value={captchaInput}
@@ -2397,7 +2397,7 @@ function DeleteConfirmationModal({
            <Button 
               onClick={onConfirm} 
               disabled={!isConfirmed}
-              className={`h-11 px-8 font-black uppercase tracking-widest transition-all ${isConfirmed ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-lg shadow-rose-500/20' : 'bg-slate-100 text-slate-300 cursor-not-allowed'}`}
+              className={`h-11 px-8 font-black uppercase tracking-widest transition-all ${isConfirmed ? 'bg-rose-600 hover:bg-rose-700 text-white  shadow-rose-500/20' : 'bg-slate-100 text-slate-300 cursor-not-allowed'}`}
            >
               Confirm Delete
            </Button>
@@ -2476,18 +2476,18 @@ function DeleteFolderModal({
         className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200"
         onClick={!isDeleting ? onClose : undefined}
       />
-      <div className="relative z-10 bg-white rounded-lg shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 animate-in zoom-in-95 duration-200">
+      <div className="relative z-10 bg-white rounded-sm  w-full max-w-md overflow-hidden border border-slate-200 animate-in zoom-in-95 duration-200">
 
         {/* Header */}
         <div className="px-6 pt-6 pb-5">
           <div className="flex items-start justify-between mb-4">
-            <div className="h-10 w-10 rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-center">
+            <div className="h-10 w-10 rounded-sm bg-rose-50 border border-rose-100 flex items-center justify-center">
               <Trash2 className="h-5 w-5 text-rose-500" />
             </div>
             {!isDeleting && (
               <button
                 onClick={onClose}
-                className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors text-slate-400"
+                className="p-1.5 hover:bg-slate-100 rounded-sm transition-colors text-slate-400"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -2501,7 +2501,7 @@ function DeleteFolderModal({
         </div>
 
         {/* Folder info */}
-        <div className="mx-6 mb-5 rounded-xl border border-slate-100 bg-slate-50/60 overflow-hidden">
+        <div className="mx-6 mb-5 rounded-sm border border-slate-100 bg-slate-50/60 overflow-hidden">
           <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-100">
             <Folders className="h-4 w-4 text-primary/60 shrink-0" />
             <div className="flex-1 min-w-0">
@@ -2530,7 +2530,7 @@ function DeleteFolderModal({
         </div>
 
         {/* Warning */}
-        <div className="mx-6 mb-5 flex items-start gap-2 px-3 py-2.5 rounded-lg bg-amber-50 border border-amber-100">
+        <div className="mx-6 mb-5 flex items-start gap-2 px-3 py-2.5 rounded-sm bg-amber-50 border border-amber-100">
           <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0 mt-0.5" />
           <p className="text-[10px] font-medium text-amber-700 leading-relaxed">
             This action will remove the folder and its contents from Evidence Control. This cannot be undone.
@@ -2552,7 +2552,7 @@ function DeleteFolderModal({
                   disabled={captchaVerified}
                   onClick={() => handleIconClick(correct)}
                   className={[
-                    "flex-1 flex flex-col items-center gap-1.5 py-3 rounded-xl border transition-all",
+                    "flex-1 flex flex-col items-center gap-1.5 py-3 rounded-sm border transition-all",
                     isSelected
                       ? "bg-emerald-50 border-emerald-200 text-emerald-600 cursor-default"
                       : wrongAttempt && !correct
@@ -2590,7 +2590,7 @@ function DeleteFolderModal({
             className={[
               "h-9 px-6 text-xs font-black uppercase tracking-widest transition-all",
               captchaVerified && !isDeleting
-                ? "bg-rose-600 hover:bg-rose-700 text-white shadow-sm shadow-rose-200"
+                ? "bg-rose-600 hover:bg-rose-700 text-white  shadow-rose-200"
                 : "bg-slate-100 text-slate-300 cursor-not-allowed",
             ].join(" ")}
           >
@@ -2779,7 +2779,7 @@ function ExtractionTab({
                  placeholder="Search identifiers..."
                  value={searchQuery}
                  onChange={(e) => setSearchQuery(e.target.value)}
-                 className="w-full bg-white border border-slate-200 rounded-xl py-2.5 pl-9 pr-4 text-xs font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none shadow-sm"
+                 className="w-full bg-white border border-slate-200 rounded-sm py-2.5 pl-9 pr-4 text-xs font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none "
                />
              </div>
           </div>
@@ -2795,9 +2795,9 @@ function ExtractionTab({
               <button
                 key={f.id}
                 onClick={() => setActiveFilter(f.id)}
-                className={`flex-1 flex flex-col items-center justify-center py-2.5 rounded-lg border-2 transition-all ${
+                className={`flex-1 flex flex-col items-center justify-center py-2.5 rounded-sm border-2 transition-all ${
                   activeFilter === f.id
-                    ? "bg-[#0f172a] text-white border-[#0f172a] shadow-md scale-[1.02]"
+                    ? "bg-[#0f172a] text-white border-[#0f172a]  scale-[1.02]"
                     : "bg-white text-slate-400 border-slate-100 hover:bg-slate-50 hover:text-slate-600 hover:border-slate-200"
                 }`}
               >
@@ -2809,7 +2809,7 @@ function ExtractionTab({
           
           <Button 
             onClick={() => setIsUploadModalOpen(true)}
-            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-4 rounded-xl shadow-lg shadow-emerald-600/10 transition-all flex items-center justify-center gap-2 group"
+            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-4 rounded-sm  shadow-emerald-600/10 transition-all flex items-center justify-center gap-2 group"
           >
             <div className="h-6 w-6 rounded-full bg-white/20 flex items-center justify-center text-white group-hover:scale-110 transition-transform">
               <Plus className="h-4 w-4" />
@@ -2847,14 +2847,14 @@ function ExtractionTab({
                     <div
                       key={file.id}
                       onClick={() => setSelectedFile(file)}
-                      className={`group flex items-center justify-between p-2.5 rounded-xl cursor-pointer transition-all ${
+                      className={`group flex items-center justify-between p-2.5 rounded-sm cursor-pointer transition-all ${
                         selectedFile?.id === file.id 
                         ? "bg-primary/5 border-primary/10 shadow-[0_4px_12px_rgba(37,99,235,0.08)]" 
                         : "hover:bg-slate-50 border-transparent"
                       } border`}
                     >
                       <div className="flex items-center gap-2.5 overflow-hidden">
-                        <div className={`p-1.5 rounded-lg transition-colors ${selectedFile?.id === file.id ? "bg-white text-primary shadow-sm" : "bg-slate-100 text-slate-400 group-hover:bg-white"}`}>
+                        <div className={`p-1.5 rounded-sm transition-colors ${selectedFile?.id === file.id ? "bg-white text-primary " : "bg-slate-100 text-slate-400 group-hover:bg-white"}`}>
                           {getFileIcon(file.type)}
                         </div>
                         <div className="overflow-hidden">
@@ -2945,7 +2945,7 @@ function ExtractionTab({
                   />
               ) : (
                 <div className="flex flex-col items-center justify-center p-12 text-center">
-                   <div className="h-20 w-20 rounded-[2.5rem] bg-white shadow-2xl flex items-center justify-center mb-8 border border-white/50 animate-in fade-in zoom-in duration-700">
+                   <div className="h-20 w-20 rounded-[2.5rem] bg-white  flex items-center justify-center mb-8 border border-white/50 animate-in fade-in zoom-in duration-700">
                       <Folders className="h-10 w-10 text-slate-200" />
                    </div>
                    <h3 className="text-sm font-black text-slate-800 uppercase tracking-[0.2em] mb-3">No Evidence Selected</h3>
@@ -2967,7 +2967,7 @@ function ExtractionTab({
                 {selectedFile.type === "Document" && (
                     <div className="p-8 space-y-6">
                         <div className="flex items-center gap-3 mb-6">
-                            <div className="h-10 w-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600 border border-indigo-100 shadow-sm">
+                            <div className="h-10 w-10 bg-indigo-50 rounded-sm flex items-center justify-center text-indigo-600 border border-indigo-100 ">
                                 <FileText className="h-5 w-5" />
                             </div>
                             <div>
@@ -3026,7 +3026,7 @@ function AdaptiveSourcePreview({
   if (file.type === "Audio") return <AudioPreview file={file} currentTime={audioCurrentTime} setCurrentTime={setAudioCurrentTime} isPlaying={audioIsPlaying} setIsPlaying={setAudioIsPlaying} playbackSpeed={audioPlaybackSpeed} setPlaybackSpeed={setAudioPlaybackSpeed} audioRef={audioRef} />;
   if (file.type === "Video") return <VideoPreview file={file} currentTime={videoCurrentTime} setCurrentTime={setVideoCurrentTime} isPlaying={videoIsPlaying} setIsPlaying={setVideoIsPlaying} videoRef={videoRef} />;
   return (
-    <div className="flex flex-col items-center justify-center p-20 text-slate-300 opacity-50 bg-white/50 rounded-2xl border-2 border-dashed border-slate-200">
+    <div className="flex flex-col items-center justify-center p-20 text-slate-300 opacity-50 bg-white/50 rounded-sm border-2 border-dashed border-slate-200">
        <Folders className="h-12 w-12 mb-4" />
        <span className="text-[10px] font-black uppercase tracking-[0.2em]">Preview not available for this modality</span>
     </div>
@@ -3035,7 +3035,7 @@ function AdaptiveSourcePreview({
 
 function ImagePreview({ file }: { file: any }) {
   return (
-    <div className="relative w-full aspect-video bg-[#0f172a] rounded-2xl overflow-hidden shadow-2xl group border border-slate-800 ring-1 ring-white/10">
+    <div className="relative w-full aspect-video bg-[#0f172a] rounded-sm overflow-hidden  group border border-slate-800 ring-1 ring-white/10">
       <img src={file.url} alt={file.name} className="w-full h-full object-contain" />
       <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500">
          <span className="text-[10px] font-black text-white uppercase tracking-widest block">{file.name}</span>
@@ -3080,7 +3080,7 @@ function AudioPreview({ file, currentTime, setCurrentTime, isPlaying, setIsPlayi
   };
 
   return (
-    <div className="w-full max-w-2xl bg-white border border-slate-200 rounded-3xl p-8 shadow-2xl relative overflow-hidden group">
+    <div className="w-full max-w-2xl bg-white border border-slate-200 rounded-3xl p-8  relative overflow-hidden group">
        <audio 
          ref={audioRef} 
          src={file.url} 
@@ -3089,7 +3089,7 @@ function AudioPreview({ file, currentTime, setCurrentTime, isPlaying, setIsPlayi
        />
        <div className="absolute top-0 right-0 w-48 h-48 bg-primary/5 blur-[80px] rounded-full pointer-events-none" />
        <div className="flex flex-col items-center gap-6 relative z-10">
-          <div className="h-20 w-20 rounded-[2.5rem] bg-slate-900 flex items-center justify-center text-white shadow-xl shadow-slate-900/10 group-hover:scale-110 transition-transform duration-700">
+          <div className="h-20 w-20 rounded-[2.5rem] bg-slate-900 flex items-center justify-center text-white  shadow-slate-900/10 group-hover:scale-110 transition-transform duration-700">
              <AudioIcon className="h-8 w-8" />
           </div>
           <div className="text-center space-y-1">
@@ -3117,7 +3117,7 @@ function AudioPreview({ file, currentTime, setCurrentTime, isPlaying, setIsPlayi
              <button className="p-2 hover:text-slate-900 transition-colors" onClick={() => { if(audioRef.current) audioRef.current.currentTime = 0; }}><RefreshCcw className="h-4 w-4" /></button>
              <button 
                 onClick={togglePlay}
-                className="h-14 w-14 bg-slate-900 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-slate-800 transition-all hover:scale-105 active:scale-95"
+                className="h-14 w-14 bg-slate-900 text-white rounded-full flex items-center justify-center  hover:bg-slate-800 transition-all hover:scale-105 active:scale-95"
              >
                 {isPlaying ? <Pause className="h-6 w-6 fill-current" /> : <Play className="h-6 w-6 fill-current ml-1" />}
              </button>
@@ -3130,17 +3130,17 @@ function AudioPreview({ file, currentTime, setCurrentTime, isPlaying, setIsPlayi
 
 function VideoPreview({ file, currentTime, setCurrentTime, isPlaying, setIsPlaying, videoRef }: any) {
   return (
-    <div className="relative w-full aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl group border border-slate-800 ring-1 ring-white/10">
+    <div className="relative w-full aspect-video bg-black rounded-sm overflow-hidden  group border border-slate-800 ring-1 ring-white/10">
       <video ref={videoRef} src={file.url} className="w-full h-full object-contain" />
       <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20">
-         <button className="h-16 w-16 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center text-white border border-white/20 hover:scale-110 active:scale-95 transition-all shadow-2xl">
+         <button className="h-16 w-16 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center text-white border border-white/20 hover:scale-110 active:scale-95 transition-all ">
             <Play className="h-7 w-7 fill-current ml-1" />
          </button>
       </div>
       <div className="absolute inset-x-0 bottom-0 p-5 bg-gradient-to-t from-black/90 to-transparent flex items-center justify-between">
          <div className="flex flex-col gap-0.5">
-            <span className="text-[10px] font-black text-white uppercase tracking-widest shadow-sm">{file.name}</span>
-            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter shadow-sm">CCTV Feed · Site Alpha Zone B</span>
+            <span className="text-[10px] font-black text-white uppercase tracking-widest ">{file.name}</span>
+            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter ">CCTV Feed · Site Alpha Zone B</span>
          </div>
          <div className="flex items-center gap-3">
             <span className="text-[10px] font-black text-white tabular-nums">00:14 / 05:00</span>
@@ -3183,8 +3183,8 @@ function ImageExtractionConsole({ file }: { file: any }) {
             <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter mt-1 opacity-60">Evidence ID: {file.id.slice(0,8)}</span>
          </div>
          <div className="flex items-center gap-1 p-0.5 bg-slate-200/50 rounded-md border shadow-inner">
-            <button onClick={() => setViewMode("Structured")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "Structured" ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>Structured</button>
-            <button onClick={() => setViewMode("JSON")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "JSON" ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>JSON</button>
+            <button onClick={() => setViewMode("Structured")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "Structured" ? "bg-white text-slate-900 " : "text-slate-400 hover:text-slate-600"}`}>Structured</button>
+            <button onClick={() => setViewMode("JSON")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "JSON" ? "bg-white text-slate-900 " : "text-slate-400 hover:text-slate-600"}`}>JSON</button>
          </div>
       </div>
 
@@ -3207,7 +3207,7 @@ function ImageExtractionConsole({ file }: { file: any }) {
                      </div>
                   </div>
                ))}
-               <div className="bg-slate-900 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden group">
+               <div className="bg-slate-900 rounded-sm p-6 text-white  relative overflow-hidden group">
                   <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 blur-[60px] rounded-full pointer-events-none" />
                   <span className="text-[10px] font-black text-primary uppercase tracking-[0.4em] block mb-4 relative z-10">Forensic Integrity Score</span>
                   <div className="flex items-baseline gap-2 relative z-10">
@@ -3224,7 +3224,7 @@ function ImageExtractionConsole({ file }: { file: any }) {
                </div>
             </>
          ) : (
-            <div className="bg-[#0f1419] rounded-2xl border border-slate-800 p-6 overflow-hidden shadow-2xl relative">
+            <div className="bg-[#0f1419] rounded-sm border border-slate-800 p-6 overflow-hidden  relative">
                <div className="absolute top-0 right-0 p-2 opacity-20"><FileSearch className="h-10 w-10 text-white" /></div>
                <pre className="text-[10.5px] font-mono text-primary leading-relaxed custom-scrollbar max-h-none overflow-visible">
                   {JSON.stringify(properties, null, 2)}
@@ -3234,7 +3234,7 @@ function ImageExtractionConsole({ file }: { file: any }) {
       </div>
 
       <div className="p-6 border-t bg-white shrink-0">
-         <Button className="w-full h-11 bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-black uppercase tracking-[0.2em] rounded-xl shadow-lg hover:shadow-slate-200 transition-all">
+         <Button className="w-full h-11 bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-black uppercase tracking-[0.2em] rounded-sm  hover:shadow-slate-200 transition-all">
             <RefreshCcw className="h-4 w-4 mr-2" /> RE-ANALYZE EVIDENCE
          </Button>
       </div>
@@ -3354,7 +3354,7 @@ function AudioExtractionConsole({ file, onJump, currentTime }: { file: any, onJu
             onClick={() => setActiveTab(tab)}
             className={`flex-1 py-1.5 px-3 text-[10px] font-black uppercase tracking-[0.15em] rounded-md transition-all ${
               activeTab === tab
-              ? "bg-slate-900 text-white shadow-md ring-1 ring-slate-900"
+              ? "bg-slate-900 text-white  ring-1 ring-slate-900"
               : "text-slate-400 hover:text-slate-600 hover:bg-slate-50"
             }`}
           >
@@ -3372,8 +3372,8 @@ function AudioExtractionConsole({ file, onJump, currentTime }: { file: any, onJu
                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter mt-1 opacity-60">Audio Protocol Matrix v2.1</span>
               </div>
               <div className="flex items-center gap-1 p-0.5 bg-slate-200/50 rounded-md border shadow-inner">
-                 <button onClick={() => setViewMode("Structured")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "Structured" ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>Structured</button>
-                 <button onClick={() => setViewMode("JSON")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "JSON" ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>JSON</button>
+                 <button onClick={() => setViewMode("Structured")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "Structured" ? "bg-white text-slate-900 " : "text-slate-400 hover:text-slate-600"}`}>Structured</button>
+                 <button onClick={() => setViewMode("JSON")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "JSON" ? "bg-white text-slate-900 " : "text-slate-400 hover:text-slate-600"}`}>JSON</button>
               </div>
             </div>
 
@@ -3384,7 +3384,7 @@ function AudioExtractionConsole({ file, onJump, currentTime }: { file: any, onJu
               />
             ) : (
               <div className="p-4 bg-[#0d1117] min-h-full">
-                <div className="rounded-xl overflow-hidden border border-[#30363d] shadow-2xl">
+                <div className="rounded-sm overflow-hidden border border-[#30363d] ">
                   <div className="bg-[#161b22] px-4 py-2.5 border-b border-[#30363d] flex items-center justify-between">
                     <div className="flex items-center gap-3">
                        <div className="flex gap-1.5">
@@ -3677,7 +3677,7 @@ function AnalysisTab() {
                <Button 
                   onClick={startFullChain}
                   disabled={globalStatus === 'running'}
-                  className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-[10px] uppercase tracking-wider h-10 shadow-sm border-none group"
+                  className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-[10px] uppercase tracking-wider h-10  border-none group"
                >
                   <Play className="h-3 w-3 mr-2 group-hover:translate-x-0.5 transition-transform" /> Execute Full Chain
                </Button>
@@ -3691,12 +3691,12 @@ function AnalysisTab() {
                         key={agent.id}
                         onClick={() => setSelectedAgentId(agent.id)}
                         className={`
-                           group relative flex flex-col p-5 rounded-2xl border bg-white transition-all cursor-pointer overflow-hidden
-                           ${selectedAgentId === agent.id ? "border-slate-900 shadow-xl ring-1 ring-slate-900/5 -translate-y-0.5" : "border-slate-200 hover:border-slate-300 shadow-sm hover:shadow-md"}
+                           group relative flex flex-col p-5 rounded-sm border bg-white transition-all cursor-pointer overflow-hidden
+                           ${selectedAgentId === agent.id ? "border-slate-900  ring-1 ring-slate-900/5 -translate-y-0.5" : "border-slate-200 hover:border-slate-300  hover:"}
                         `}
                      >
                         <div className="flex items-start justify-between mb-4">
-                           <div className={`h-12 w-12 rounded-2xl border flex items-center justify-center transition-all ${selectedAgentId === agent.id ? "bg-slate-900 text-white border-slate-900 shadow-lg shadow-slate-900/20" : "bg-white text-slate-400 border-slate-100"}`}>
+                           <div className={`h-12 w-12 rounded-sm border flex items-center justify-center transition-all ${selectedAgentId === agent.id ? "bg-slate-900 text-white border-slate-900  shadow-slate-900/20" : "bg-white text-slate-400 border-slate-100"}`}>
                               <agent.icon className="h-5 w-5" />
                            </div>
                            <div className="flex flex-col items-end gap-2">
@@ -3725,7 +3725,7 @@ function AnalysisTab() {
                               <Button 
                                  onClick={(e) => { e.stopPropagation(); stopSingleAgent(agent.id); }}
                                  variant="outline" 
-                                 className="col-span-2 h-10 bg-rose-50 hover:bg-rose-100 border-rose-100 text-rose-600 text-[10px] font-black uppercase tracking-[0.1em] rounded-xl transition-all"
+                                 className="col-span-2 h-10 bg-rose-50 hover:bg-rose-100 border-rose-100 text-rose-600 text-[10px] font-black uppercase tracking-[0.1em] rounded-sm transition-all"
                               >
                                  <XCircle className="h-4 w-4 mr-2" /> Stop Node
                               </Button>
@@ -3733,7 +3733,7 @@ function AnalysisTab() {
                               <>
                                  <Button 
                                     onClick={(e) => { e.stopPropagation(); setPreRunAgentId(agent.id); }}
-                                    className="h-10 bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-black uppercase tracking-[0.1em] rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.15)] transition-all hover:-translate-y-0.5 active:translate-y-0"
+                                    className="h-10 bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-black uppercase tracking-[0.1em] rounded-sm shadow-[0_4px_12px_rgba(0,0,0,0.15)] transition-all hover:-translate-y-0.5 active:translate-y-0"
                                  >
                                     <Play className="h-3.5 w-3.5 mr-2 fill-current" /> {agent.runCount > 0 ? "Rerun" : "Execute"}
                                  </Button>
@@ -3741,13 +3741,13 @@ function AnalysisTab() {
                                     <Button 
                                        variant="outline" 
                                        onClick={(e) => { e.stopPropagation(); setHistoryAgentId(agent.id); }}
-                                       className="flex-1 h-10 bg-white border-slate-200 text-slate-500 text-[10px] font-black uppercase tracking-[0.1em] rounded-xl hover:bg-slate-50 transition-colors"
+                                       className="flex-1 h-10 bg-white border-slate-200 text-slate-500 text-[10px] font-black uppercase tracking-[0.1em] rounded-sm hover:bg-slate-50 transition-colors"
                                     >
                                        <History className="h-4 w-4" />
                                     </Button>
                                     <Button 
                                        variant="outline" 
-                                       className="flex-1 h-10 bg-white border-slate-200 text-slate-500 text-[10px] font-black uppercase tracking-[0.1em] rounded-xl hover:bg-slate-50 transition-colors"
+                                       className="flex-1 h-10 bg-white border-slate-200 text-slate-500 text-[10px] font-black uppercase tracking-[0.1em] rounded-sm hover:bg-slate-50 transition-colors"
                                     >
                                        <Settings className="h-4 w-4" />
                                     </Button>
@@ -3768,7 +3768,7 @@ function AnalysisTab() {
          </div>
 
          <div className="flex-1 flex flex-col min-w-0 bg-[#f0f2f4]">
-            <div className="h-12 bg-white border-b border-slate-200 flex items-center justify-between px-6 shadow-sm z-30">
+            <div className="h-12 bg-white border-b border-slate-200 flex items-center justify-between px-6  z-30">
                <div className="flex items-center gap-6">
                   <div className="flex items-center gap-2">
                      <Grid className="h-4 w-4 text-slate-400" />
@@ -3838,7 +3838,7 @@ function AnalysisTab() {
                                      ) : (
                                         <div className="flex flex-col h-full">
                                            <h2 className="text-[32px] font-black text-slate-800 mb-8 tracking-tighter uppercase">{slides[activeSlide]?.title}</h2>
-                                           <div className="flex-1 bg-[#1a1c23] rounded-lg p-6 overflow-hidden border border-slate-700 shadow-2xl relative">
+                                           <div className="flex-1 bg-[#1a1c23] rounded-sm p-6 overflow-hidden border border-slate-700  relative">
                                               <pre className="text-[12px] font-mono text-emerald-400/90 leading-tight h-full overflow-auto custom-scrollbar">
                                                  {JSON.stringify(slides[activeSlide]?.content, null, 2)}
                                               </pre>
@@ -3871,16 +3871,16 @@ function AnalysisTab() {
                       </div>
                       <Button onClick={() => setActiveSlide(prev => Math.min((slides.length || 1) - 1, prev + 1))} variant="ghost" size="sm" className="h-8 w-8 p-0 border"><ChevronRight className="h-4 w-4" /></Button>
                    </div>
-                   <div className="flex items-center gap-1 bg-slate-100/50 border border-slate-200 rounded-lg p-1">
+                   <div className="flex items-center gap-1 bg-slate-100/50 border border-slate-200 rounded-sm p-1">
                       <Button onClick={() => setCanvasZoom(Math.max(20, canvasZoom - 10))} variant="ghost" className="h-7 w-7 p-0"><ZoomOut className="h-3.5 w-3.5" /></Button>
-                      <Button onClick={fitToWorkspace} variant="ghost" className="h-7 px-2 text-[9px] font-black text-slate-600 bg-white border shadow-sm rounded">AUTO FIT</Button>
+                      <Button onClick={fitToWorkspace} variant="ghost" className="h-7 px-2 text-[9px] font-black text-slate-600 bg-white border  rounded">AUTO FIT</Button>
                       <div className="w-12 text-center font-bold text-[10px] text-slate-700">{canvasZoom}%</div>
                       <Button onClick={() => setCanvasZoom(Math.min(200, canvasZoom + 10))} variant="ghost" className="h-7 w-7 p-0"><ZoomIn className="h-3.5 w-3.5" /></Button>
                    </div>
                 </div>
                 <div className="flex items-center gap-2">
                    <Button variant="ghost" className="h-8 w-8 p-0 border hover:bg-slate-50"><Maximize2 className="h-4 w-4" /></Button>
-                   <Button onClick={handleSaveArtifact} disabled={isSaving} className="h-9 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black uppercase tracking-widest px-6 rounded-lg">
+                   <Button onClick={handleSaveArtifact} disabled={isSaving} className="h-9 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black uppercase tracking-widest px-6 rounded-sm">
                       {isSaving ? "Syncing..." : "Sync to Case"}
                    </Button>
                 </div>
@@ -3932,7 +3932,7 @@ function AnalysisTab() {
                   <div className="flex-1 overflow-y-auto custom-scrollbar">
                     {selectedAgentId ? (
                        <div className="p-6 space-y-8">
-                          <div className="bg-slate-50 border rounded-xl p-5 space-y-4">
+                          <div className="bg-slate-50 border rounded-sm p-5 space-y-4">
                              <div className="flex items-center gap-2 border-b border-slate-200 pb-2 mb-2">
                                 <Settings className="h-3.5 w-3.5 text-slate-400" />
                                 <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Node Properties</span>
@@ -3959,9 +3959,9 @@ function AnalysisTab() {
                              </div>
                              <div className="grid grid-cols-2 gap-3">
                                 {slides.map((s, i) => (
-                                   <div key={s.id} onClick={() => setActiveSlide(i)} className={`group p-4 rounded-xl border-2 transition-all cursor-pointer relative overflow-hidden ${activeSlide === i ? 'bg-white border-blue-500' : 'bg-white border-slate-100 hover:border-slate-200'}`}>
+                                   <div key={s.id} onClick={() => setActiveSlide(i)} className={`group p-4 rounded-sm border-2 transition-all cursor-pointer relative overflow-hidden ${activeSlide === i ? 'bg-white border-blue-500' : 'bg-white border-slate-100 hover:border-slate-200'}`}>
                                       <div className="flex items-start justify-between mb-3">
-                                         <div className={`h-8 w-8 rounded-lg border flex items-center justify-center ${activeSlide === i ? "bg-blue-600 text-white" : "bg-slate-50 text-slate-400"}`}>
+                                         <div className={`h-8 w-8 rounded-sm border flex items-center justify-center ${activeSlide === i ? "bg-blue-600 text-white" : "bg-slate-50 text-slate-400"}`}>
                                             <FileCode className="h-4 w-4" />
                                          </div>
                                          <span className="text-[8px] font-black text-slate-400 uppercase">Slide {i + 1}</span>
@@ -3972,7 +3972,7 @@ function AnalysisTab() {
                              </div>
                           </div>
 
-                          <div className="bg-amber-50/30 border border-amber-100 rounded-xl p-5 space-y-3">
+                          <div className="bg-amber-50/30 border border-amber-100 rounded-sm p-5 space-y-3">
                              <div className="flex items-center gap-2">
                                 <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
                                 <span className="text-[10px] font-bold text-amber-700 uppercase tracking-widest">Reasoning Gap</span>
@@ -3988,7 +3988,7 @@ function AnalysisTab() {
                     )}
                   </div>
                   <div className="p-5 border-t bg-white shrink-0">
-                     <Button onClick={handleExport} disabled={isExporting} className="w-full h-11 bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-black uppercase tracking-[0.2em] rounded-xl">
+                     <Button onClick={handleExport} disabled={isExporting} className="w-full h-11 bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-black uppercase tracking-[0.2em] rounded-sm">
                         {isExporting ? "Exporting..." : "Publish Presentation"}
                      </Button>
                   </div>
@@ -4028,7 +4028,7 @@ function ReportsTab() {
              { title: "Internal Compliance Review", version: "V1.0", date: "Yesterday", status: "in_review" },
              { title: "Executive Safety Summary", version: "V0.8", date: "2d ago", status: "draft" },
            ].map((r, i) => (
-             <div key={i} className={`p-3 rounded-lg border cursor-pointer ${i === 0 ? 'bg-primary/5 border-primary/20' : 'bg-white border-transparent'}`}>
+             <div key={i} className={`p-3 rounded-sm border cursor-pointer ${i === 0 ? 'bg-primary/5 border-primary/20' : 'bg-white border-transparent'}`}>
                 <div className="flex justify-between items-start mb-1">
                    <h4 className="text-xs font-bold text-slate-800 leading-tight">{r.title}</h4>
                    <span className="px-1.5 py-0.5 rounded bg-slate-100 text-[9px] font-bold text-slate-500">{r.version}</span>
@@ -4044,7 +4044,7 @@ function ReportsTab() {
 
       <div className="flex-1 flex flex-col items-center p-8 overflow-auto">
          <div className="w-full max-w-[800px] flex flex-col gap-6">
-            <div className="flex items-center justify-between bg-white px-6 py-4 rounded-xl border shadow-sm w-full mb-8">
+            <div className="flex items-center justify-between bg-white px-6 py-4 rounded-sm border  w-full mb-8">
                <h2 className="text-lg font-bold text-slate-900 border-none p-0">Initial Investigation Report V1.2</h2>
                <div className="flex items-center gap-2">
                   <Button variant="outline" className="h-9 font-bold text-xs">Preview PDF</Button>
@@ -4059,7 +4059,7 @@ function ReportsTab() {
                  { title: "3. Analysis & Root Cause", content: "Click to insert AI PEEPO proof-points...", ai: false },
                  { title: "4. Preventive Actions", content: "Replacement of roller support bracket with industrial Grade 8 steel...", ai: false },
                ].map((section, idx) => (
-                  <div key={idx} className="group relative bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-all">
+                  <div key={idx} className="group relative bg-white border border-slate-200 rounded-sm p-6  hover: transition-all">
                      <div className="flex items-center justify-between mb-4 border-b border-slate-50 pb-2">
                         <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest">{section.title}</h4>
                         <div className="flex gap-1.5">
@@ -4082,9 +4082,9 @@ function ReviewTab() {
     <div className="flex h-full bg-slate-50/10">
       <div className="flex-1 overflow-auto p-8">
         <div className="max-w-4xl mx-auto space-y-8">
-          <div className="bg-white border rounded-lg shadow-sm p-8 flex items-center justify-between">
+          <div className="bg-white border rounded-sm  p-8 flex items-center justify-between">
              <div className="flex items-center gap-4">
-                <div className="h-12 w-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100 shadow-sm">
+                <div className="h-12 w-12 rounded-sm bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100 ">
                    <CheckCircle2 className="h-6 w-6" />
                 </div>
                 <div>
@@ -4098,7 +4098,7 @@ function ReviewTab() {
              </div>
           </div>
 
-          <div className="bg-white border rounded-lg shadow-sm overflow-hidden">
+          <div className="bg-white border rounded-sm  overflow-hidden">
             <div className="px-6 py-4 border-b bg-slate-50/50 flex items-center justify-between">
                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Formal Approval Chain</span>
                <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-100 uppercase">Board Review In-Progress</span>
@@ -4113,8 +4113,8 @@ function ReviewTab() {
                ].map((step, i) => (
                 <div key={step.role} className="flex flex-col items-center gap-3 relative z-10 w-48 text-center">
                    <div className={`h-10 w-10 rounded-full border-4 flex items-center justify-center transition-all ${
-                     step.status === "reviewed" || step.status === "submitted" ? "bg-emerald-500 border-white text-white shadow-lg shadow-emerald-500/20" :
-                     step.status === "pending" ? "bg-amber-500 border-white text-white shadow-lg shadow-amber-500/20 animate-pulse" :
+                     step.status === "reviewed" || step.status === "submitted" ? "bg-emerald-500 border-white text-white  shadow-emerald-500/20" :
+                     step.status === "pending" ? "bg-amber-500 border-white text-white  shadow-amber-500/20 animate-pulse" :
                      "bg-slate-100 border-white text-slate-400"
                    }`}>
                       {step.status === "reviewed" || step.status === "submitted" ? <Check className="h-4 w-4" /> : step.status === "pending" ? <Clock className="h-4 w-4" /> : (i+1)}
@@ -4141,11 +4141,11 @@ function AuditTrailTab() {
 
   return (
     <div className="flex flex-col h-full bg-slate-50/10 h-screen overflow-hidden">
-      <div className="h-12 border-b bg-white flex items-center justify-between px-6 shrink-0 shadow-sm relative z-10">
+      <div className="h-12 border-b bg-white flex items-center justify-between px-6 shrink-0  relative z-10">
          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Audit Logs</span>
       </div>
       <div className="flex-1 overflow-auto p-4">
-         <div className="bg-white border rounded-lg shadow-sm overflow-hidden overflow-x-auto">
+         <div className="bg-white border rounded-sm  overflow-hidden overflow-x-auto">
             <table className="w-full text-left">
               <thead>
                 <tr className="bg-slate-50 border-b">
@@ -4266,7 +4266,7 @@ function AudioAnalysisPanel({ file, currentTime, onJump }: { file: any, currentT
             onClick={() => setActiveTab(tab)}
             className={`flex-1 py-1.5 px-3 text-[10px] font-black uppercase tracking-[0.15em] rounded-md transition-all ${
               activeTab === tab
-              ? "bg-slate-900 text-white shadow-md ring-1 ring-slate-900"
+              ? "bg-slate-900 text-white  ring-1 ring-slate-900"
               : "text-slate-400 hover:text-slate-600 hover:bg-slate-50"
             }`}
           >
@@ -4284,8 +4284,8 @@ function AudioAnalysisPanel({ file, currentTime, onJump }: { file: any, currentT
                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter mt-1 opacity-60">Audio Protocol Matrix v2.1</span>
               </div>
               <div className="flex items-center gap-1 p-0.5 bg-slate-200/50 rounded-md border shadow-inner">
-                 <button onClick={() => setViewMode("Structured")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "Structured" ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>Structured</button>
-                 <button onClick={() => setViewMode("JSON")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "JSON" ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>JSON</button>
+                 <button onClick={() => setViewMode("Structured")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "Structured" ? "bg-white text-slate-900 " : "text-slate-400 hover:text-slate-600"}`}>Structured</button>
+                 <button onClick={() => setViewMode("JSON")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "JSON" ? "bg-white text-slate-900 " : "text-slate-400 hover:text-slate-600"}`}>JSON</button>
               </div>
             </div>
 
@@ -4296,7 +4296,7 @@ function AudioAnalysisPanel({ file, currentTime, onJump }: { file: any, currentT
               />
             ) : (
               <div className="p-4 bg-[#0d1117] min-h-full">
-                <div className="rounded-xl overflow-hidden border border-[#30363d] shadow-2xl">
+                <div className="rounded-sm overflow-hidden border border-[#30363d] ">
                   <div className="bg-[#161b22] px-4 py-2.5 border-b border-[#30363d] flex items-center justify-between">
                     <div className="flex items-center gap-3">
                        <div className="flex gap-1.5">
@@ -4347,7 +4347,7 @@ function AudioExtractionStructured({ data, onJump }: { data: any, onJump: (s: nu
       className={`w-full flex items-center justify-between px-5 py-3 transition-all ${expandedSections.includes(title) ? 'bg-slate-50/50 border-b' : 'hover:bg-slate-50/30'}`}
     >
       <div className="flex items-center gap-3">
-        <div className={`p-1.5 rounded-lg border shadow-sm ${expandedSections.includes(title) ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-400'}`}>
+        <div className={`p-1.5 rounded-sm border  ${expandedSections.includes(title) ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-400'}`}>
           <Icon className="h-3.5 w-3.5" />
         </div>
         <div className="flex flex-col items-start">
@@ -4413,10 +4413,10 @@ function AudioExtractionStructured({ data, onJump }: { data: any, onJump: (s: nu
          {expandedSections.includes("Speaker Profiles") && (
            <div className="p-5 space-y-3 bg-white animate-in fade-in slide-in-from-top-1">
               {data.extraction_summary.speaker_profiles.map((s: any) => (
-                <div key={s.speaker_id} className="p-4 border rounded-xl bg-slate-50/40 hover:bg-white hover:border-slate-300 transition-all group">
+                <div key={s.speaker_id} className="p-4 border rounded-sm bg-slate-50/40 hover:bg-white hover:border-slate-300 transition-all group">
                    <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-100">
                       <div className="flex items-center gap-3">
-                         <div className="h-8 w-8 rounded-full bg-slate-900 flex items-center justify-center text-[10px] font-black text-white shadow-lg">
+                         <div className="h-8 w-8 rounded-full bg-slate-900 flex items-center justify-center text-[10px] font-black text-white ">
                             {s.speaker_id === 'SPK_01' ? 'OP' : 'CR'}
                          </div>
                          <div className="flex flex-col">
@@ -4444,7 +4444,7 @@ function AudioExtractionStructured({ data, onJump }: { data: any, onJump: (s: nu
          {expandedSections.includes("Communication Events") && (
            <div className="p-5 space-y-2.5 bg-white animate-in fade-in slide-in-from-top-1">
               {data.extraction_summary.communication_events.map((e: any, i: number) => (
-                <div key={i} className="flex gap-4 p-3 hover:bg-slate-50 rounded-xl transition-all cursor-pointer group" onClick={() => onJump(parseInt(e.timestamp.split(':')[1]))}>
+                <div key={i} className="flex gap-4 p-3 hover:bg-slate-50 rounded-sm transition-all cursor-pointer group" onClick={() => onJump(parseInt(e.timestamp.split(':')[1]))}>
                    <div className="flex flex-col items-center shrink-0 pt-0.5">
                       <span className="text-[10px] font-black text-primary bg-primary/5 px-1.5 py-0.5 rounded leading-none tabular-nums group-hover:bg-primary group-hover:text-white transition-all">{e.timestamp}</span>
                       <div className="w-[1.5px] flex-1 bg-slate-100 my-2" />
@@ -4514,7 +4514,7 @@ function AudioExtractionStructured({ data, onJump }: { data: any, onJump: (s: nu
                  <div className="grid grid-cols-1 gap-2">
                     {Object.entries(data.extraction_summary.risk_and_procedure_clues).map(([key, mentions]: any) => (
                        mentions.length > 0 && (
-                         <div key={key} className="p-3 bg-slate-50 border rounded-xl">
+                         <div key={key} className="p-3 bg-slate-50 border rounded-sm">
                             <span className="text-[9px] font-black text-slate-400 uppercase block mb-1.5">{key.replace(/_/g, ' ')}</span>
                             <div className="space-y-1.5">
                                {mentions.map((m: string, i: number) => (
@@ -4543,7 +4543,7 @@ function AudioExtractionStructured({ data, onJump }: { data: any, onJump: (s: nu
                             <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">{key.replace(/_/g, ' ')}</span>
                             <div className="space-y-1">
                                {signals.map((s: string, i: number) => (
-                                  <div key={i} className="p-2 bg-amber-50/50 border border-amber-100/50 rounded-lg text-[10px] font-bold text-amber-800 leading-snug">
+                                  <div key={i} className="p-2 bg-amber-50/50 border border-amber-100/50 rounded-sm text-[10px] font-bold text-amber-800 leading-snug">
                                      {s}
                                   </div>
                                ))}
@@ -4555,7 +4555,7 @@ function AudioExtractionStructured({ data, onJump }: { data: any, onJump: (s: nu
               </div>
 
               {/* Review Meta */}
-              <div className="bg-slate-900 rounded-xl p-5 text-white shadow-xl relative overflow-hidden">
+              <div className="bg-slate-900 rounded-sm p-5 text-white  relative overflow-hidden">
                  <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 blur-[60px] rounded-full pointer-events-none" />
                  <span className="text-[10px] font-black text-primary uppercase tracking-[0.3em] block mb-3 relative z-10">Review Status Matrix</span>
                  <div className="space-y-3 relative z-10">
@@ -4596,7 +4596,7 @@ function AudioSceneSession({ data, currentTime, onJump }: { data: any, currentTi
 
   return (
     <div className="flex flex-col h-full bg-slate-50/10">
-      <div className="px-5 py-3 border-b bg-white flex items-center justify-between shadow-sm sticky top-0 z-30">
+      <div className="px-5 py-3 border-b bg-white flex items-center justify-between  sticky top-0 z-30">
          <div className="flex flex-col">
             <div className="flex items-center gap-2">
                <MessageSquare className="h-3.5 w-3.5 text-slate-900" />
@@ -4604,7 +4604,7 @@ function AudioSceneSession({ data, currentTime, onJump }: { data: any, currentTi
             </div>
             <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter mt-0.5">{data.scene_session.full_diarization.length} Segments • {data.scene_session.speaker_count} Speakers</span>
          </div>
-         <Button variant="ghost" size="sm" className="h-8 px-3 text-[10px] font-black text-slate-600 hover:bg-slate-100 border rounded-lg transition-all shadow-sm">
+         <Button variant="ghost" size="sm" className="h-8 px-3 text-[10px] font-black text-slate-600 hover:bg-slate-100 border rounded-sm transition-all ">
            <Copy className="h-3.5 w-3.5 mr-2 opacity-60" /> Export RAW
          </Button>
       </div>
@@ -4619,10 +4619,10 @@ function AudioSceneSession({ data, currentTime, onJump }: { data: any, currentTi
                 const parts = seg.start_time.split(':').map(Number);
                 onJump(parts.length === 3 ? parts[0] * 3600 + parts[1] * 60 + parts[2] : parts[0] * 60 + parts[1]);
               }}
-              className={`group flex flex-col gap-3 p-4 rounded-xl border transition-all duration-500 cursor-pointer relative overflow-hidden ${
+              className={`group flex flex-col gap-3 p-4 rounded-sm border transition-all duration-500 cursor-pointer relative overflow-hidden ${
                 active 
-                ? "bg-white border-slate-900 shadow-xl scale-[1.01] z-10" 
-                : "bg-white/60 border-slate-100 hover:border-slate-300 hover:bg-white hover:shadow-md"
+                ? "bg-white border-slate-900  scale-[1.01] z-10" 
+                : "bg-white/60 border-slate-100 hover:border-slate-300 hover:bg-white hover:"
               }`}
             >
               {active && <div className="absolute top-0 left-0 w-1.5 h-full bg-slate-900" />}
@@ -4684,7 +4684,7 @@ function VideoAnalysisPanel({ file, currentTime, onJump }: { file: any, currentT
             onClick={() => setActiveTab(tab)}
             className={`flex-1 py-1.5 px-3 text-[10px] font-black uppercase tracking-widest rounded-md transition-all ${
               activeTab === tab
-              ? "bg-primary text-white shadow-sm"
+              ? "bg-primary text-white "
               : "text-slate-400 hover:text-slate-600 hover:bg-slate-50"
             }`}
           >
@@ -4699,14 +4699,14 @@ function VideoAnalysisPanel({ file, currentTime, onJump }: { file: any, currentT
              <div className="flex items-center justify-between mb-4">
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Intelligence Layer</span>
                 <div className="flex items-center gap-1 p-0.5 bg-slate-100 rounded-md border shadow-inner">
-                   <button onClick={() => setViewMode("Structured")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "Structured" ? "bg-white text-primary shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>Structured</button>
-                   <button onClick={() => setViewMode("JSON")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "JSON" ? "bg-white text-primary shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>JSON</button>
+                   <button onClick={() => setViewMode("Structured")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "Structured" ? "bg-white text-primary " : "text-slate-400 hover:text-slate-600"}`}>Structured</button>
+                   <button onClick={() => setViewMode("JSON")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "JSON" ? "bg-white text-primary " : "text-slate-400 hover:text-slate-600"}`}>JSON</button>
                 </div>
              </div>
              {viewMode === "Structured" ? (
                <VideoExtractionStructured data={videoExtractionRefined} onJump={onJump} />
              ) : (
-               <div className="bg-slate-900 rounded-xl p-4 overflow-hidden border border-slate-800 shadow-2xl mt-4">
+               <div className="bg-slate-900 rounded-sm p-4 overflow-hidden border border-slate-800  mt-4">
                   <pre className="text-[10px] font-mono text-emerald-400 leading-relaxed overflow-auto max-h-[1000px] custom-scrollbar">
                      {JSON.stringify(videoExtractionRefined, null, 2)}
                   </pre>
@@ -4727,13 +4727,13 @@ function VideoExtractionStructured({ data, onJump }: { data: typeof videoExtract
   const toggle = (s: string) => setExpandedSections(p => p.includes(s) ? p.filter(x => x !== s) : [...p, s]);
 
   const ExtractionSection = ({ title, icon: Icon, count, children }: any) => (
-    <div className={`border border-slate-100 rounded-xl overflow-hidden mb-2 transition-all duration-300 ${expandedSections.includes(title) ? 'shadow-sm border-primary/10' : 'hover:border-slate-200'}`}>
+    <div className={`border border-slate-100 rounded-sm overflow-hidden mb-2 transition-all duration-300 ${expandedSections.includes(title) ? ' border-primary/10' : 'hover:border-slate-200'}`}>
       <button 
         onClick={() => toggle(title)}
         className={`w-full flex items-center justify-between px-3 py-2.5 transition-colors ${expandedSections.includes(title) ? 'bg-slate-50/50 border-b border-slate-50' : 'bg-white'}`}
       >
         <div className="flex items-center gap-2.5">
-          <div className={`p-1.5 rounded-lg border shadow-sm ${expandedSections.includes(title) ? 'bg-primary text-white border-primary' : 'bg-white text-slate-400'}`}>
+          <div className={`p-1.5 rounded-sm border  ${expandedSections.includes(title) ? 'bg-primary text-white border-primary' : 'bg-white text-slate-400'}`}>
             <Icon className="h-3.5 w-3.5" />
           </div>
           <span className={`text-[11px] font-black uppercase tracking-tight transition-colors ${expandedSections.includes(title) ? 'text-slate-900' : 'text-slate-600'}`}>
@@ -4777,7 +4777,7 @@ function VideoExtractionStructured({ data, onJump }: { data: typeof videoExtract
             <div 
               key={s.id} 
               onClick={() => onJump(s.seconds)}
-              className="p-2.5 rounded-lg border border-slate-50 bg-slate-50/30 hover:bg-white hover:border-primary/20 hover:shadow-sm cursor-pointer transition-all group"
+              className="p-2.5 rounded-sm border border-slate-50 bg-slate-50/30 hover:bg-white hover:border-primary/20 hover: cursor-pointer transition-all group"
             >
               <div className="flex items-center justify-between mb-1">
                 <span className="text-[10px] font-black text-primary bg-primary/5 px-1.5 py-0.5 rounded tabular-nums">{s.timestamp}</span>
@@ -4798,7 +4798,7 @@ function VideoExtractionStructured({ data, onJump }: { data: typeof videoExtract
       <ExtractionSection title="Actor Profiles" icon={Users} count={data.actor_profiles.length}>
         <div className="space-y-2">
           {data.actor_profiles.map((a) => (
-            <div key={a.actor_id} className="p-3 rounded-xl border border-slate-100 bg-white shadow-sm">
+            <div key={a.actor_id} className="p-3 rounded-sm border border-slate-100 bg-white ">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[11px] font-black text-slate-900 uppercase tracking-tight">{a.actor_label}</span>
                 <ConfidenceChip level={a.confidence.toLowerCase() as any} />
@@ -4807,7 +4807,7 @@ function VideoExtractionStructured({ data, onJump }: { data: typeof videoExtract
                 <MetadataField label="Role" value={a.probable_role} />
                 <MetadataField label="Screen Time" value={a.screen_time} />
               </div>
-              <div className="p-2 rounded-lg bg-slate-50 border border-slate-100 space-y-1.5">
+              <div className="p-2 rounded-sm bg-slate-50 border border-slate-100 space-y-1.5">
                  <div className="flex items-center justify-between text-[9px] font-bold">
                     <span className="text-slate-400">Activity:</span>
                     <span className="text-slate-700">{a.activity}</span>
@@ -4832,7 +4832,7 @@ function VideoExtractionStructured({ data, onJump }: { data: typeof videoExtract
             <div 
               key={i} 
               onClick={() => onJump(e.seconds)}
-              className="flex gap-3 p-2 rounded-lg hover:bg-slate-50 cursor-pointer group"
+              className="flex gap-3 p-2 rounded-sm hover:bg-slate-50 cursor-pointer group"
             >
               <span className="text-[10px] font-black text-slate-400 tabular-nums pt-0.5">{e.timestamp}</span>
               <div className="flex-1 space-y-1">
@@ -4872,7 +4872,7 @@ function VideoExtractionStructured({ data, onJump }: { data: typeof videoExtract
       <ExtractionSection title="Equipment & Object Signals" icon={Cpu}>
         <div className="grid gap-2">
           {data.equipment_and_object_signals.map((o, i) => (
-            <div key={i} onClick={() => onJump(o.seconds)} className="p-2.5 rounded-lg bg-slate-50 border border-transparent hover:bg-white hover:border-slate-100 hover:shadow-sm cursor-pointer group">
+            <div key={i} onClick={() => onJump(o.seconds)} className="p-2.5 rounded-sm bg-slate-50 border border-transparent hover:bg-white hover:border-slate-100 hover: cursor-pointer group">
               <div className="flex items-center justify-between mb-1.5">
                  <span className="text-[11px] font-black text-slate-900 uppercase tracking-tight">{o.object}</span>
                  <span className="text-[9px] font-black text-primary bg-primary/5 px-1.5 py-0.5 rounded">{o.timestamp}</span>
@@ -4897,7 +4897,7 @@ function VideoExtractionStructured({ data, onJump }: { data: typeof videoExtract
               <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.1em] mb-1.5 block">{key.replace(/_/g, ' ')}</span>
               <div className="space-y-1.5">
                 {items.map((item: any, i: number) => (
-                  <div key={i} onClick={() => onJump(item.seconds)} className="p-2 bg-rose-50/50 border border-rose-100 rounded-lg group cursor-pointer">
+                  <div key={i} onClick={() => onJump(item.seconds)} className="p-2 bg-rose-50/50 border border-rose-100 rounded-sm group cursor-pointer">
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-[9px] font-black text-rose-700 tracking-tight uppercase">{item.category}</span>
                       <span className="text-[9px] font-bold text-rose-300 tabular-nums">{item.timestamp}</span>
@@ -4935,7 +4935,7 @@ function VideoExtractionStructured({ data, onJump }: { data: typeof videoExtract
              <span className="text-[10px] font-black text-slate-400 uppercase block">Needs Human Review</span>
              <ul className="space-y-1.5">
                 {data.review_meta.needs_review.map((r, i) => (
-                  <li key={i} className="flex items-center gap-2 p-2 bg-amber-50 border border-amber-100 rounded-lg border-dashed">
+                  <li key={i} className="flex items-center gap-2 p-2 bg-amber-50 border border-amber-100 rounded-sm border-dashed">
                     <AlertCircle className="h-3.5 w-3.5 text-amber-500" />
                     <span className="text-[11px] font-bold text-amber-800 leading-tight">{r}</span>
                   </li>
@@ -4973,10 +4973,10 @@ function VideoSceneSession({ currentTime, onJump }: { currentTime: number, onJum
             <div
               key={seg.id}
               onClick={() => onJump(seg.seconds)}
-              className={`group flex items-start gap-4 p-4 rounded-xl border transition-all duration-300 cursor-pointer relative overflow-hidden active:scale-[0.98] ${
+              className={`group flex items-start gap-4 p-4 rounded-sm border transition-all duration-300 cursor-pointer relative overflow-hidden active:scale-[0.98] ${
                 isActive 
-                ? "bg-white border-primary ring-1 ring-primary/20 shadow-xl translate-x-1" 
-                : "bg-white border-slate-100 hover:border-primary/30 hover:shadow-md hover:bg-slate-50/50"
+                ? "bg-white border-primary ring-1 ring-primary/20  translate-x-1" 
+                : "bg-white border-slate-100 hover:border-primary/30 hover: hover:bg-slate-50/50"
               }`}
             >
               {isActive && <div className="absolute top-0 left-0 w-1.5 h-full bg-primary" />}
@@ -5110,13 +5110,13 @@ export default function CaseWorkspacePage() {
   return (
     <AppLayout hideHeader>
       <div className="flex flex-col h-full bg-slate-50/10 h-screen overflow-hidden">
-        <div className="bg-white border-b px-6 py-4 flex items-center justify-between shrink-0 shadow-sm relative z-30">
+        <div className="bg-white border-b px-6 py-4 flex items-center justify-between shrink-0  relative z-30">
           <div className="flex items-center gap-4">
             <Button 
               variant="ghost" 
               size="sm" 
               onClick={() => navigate('/cases')}
-              className="h-9 w-9 p-0 rounded-full hover:bg-slate-100 text-slate-500 border border-slate-100 shadow-sm"
+              className="h-9 w-9 p-0 rounded-full hover:bg-slate-100 text-slate-500 border border-slate-100 "
             >
               <ArrowLeft className="h-4.5 w-4.5" />
             </Button>
@@ -5148,11 +5148,11 @@ export default function CaseWorkspacePage() {
                  Next <ChevronRight className="h-3.5 w-3.5" />
                </Button>
             </div>
-            <Button className="h-9 font-bold px-4 bg-slate-900 text-white shadow-md">Submit Case</Button>
+            <Button className="h-9 font-bold px-4 bg-slate-900 text-white ">Submit Case</Button>
           </div>
         </div>
 
-        <div className="bg-white border-b h-12 flex items-center justify-between px-6 shrink-0 relative z-20 shadow-sm">
+        <div className="bg-white border-b h-12 flex items-center justify-between px-6 shrink-0 relative z-20 ">
           <div className="flex gap-1 h-full items-center">
             {tabs.map((tab) => (
               <button
@@ -5163,7 +5163,7 @@ export default function CaseWorkspacePage() {
                 }`}
               >
                 {tab}
-                {activeTab === tab && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary shadow-md" />}
+                {activeTab === tab && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary " />}
               </button>
             ))}
           </div>
@@ -5206,10 +5206,10 @@ function PreRunModal({ agent, onClose, onRun }: { agent: AgentState, onClose: ()
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200">
       <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden border border-slate-200">
+      <div className="relative w-full max-w-md bg-white rounded-sm  overflow-hidden border border-slate-200">
         <div className="h-14 border-b border-slate-100 flex items-center justify-between px-6 bg-slate-50/50">
           <div className="flex items-center gap-3">
-             <div className="h-8 w-8 rounded-lg bg-slate-900 text-white flex items-center justify-center shadow-lg shadow-slate-900/10">
+             <div className="h-8 w-8 rounded-sm bg-slate-900 text-white flex items-center justify-center  shadow-slate-900/10">
                 <agent.icon className="h-4 w-4" />
              </div>
              <div>
@@ -5223,7 +5223,7 @@ function PreRunModal({ agent, onClose, onRun }: { agent: AgentState, onClose: ()
         </div>
 
         <div className="p-6 space-y-6">
-          <div className="bg-slate-50 rounded-xl p-5 border border-slate-100 space-y-4">
+          <div className="bg-slate-50 rounded-sm p-5 border border-slate-100 space-y-4">
              <div className="flex flex-col">
                 <span className="text-[9px] font-black text-slate-400 uppercase mb-2">Agent Context</span>
                 <span className="text-[14px] font-black text-slate-900 uppercase tracking-tight leading-none">{agent.name}</span>
@@ -5252,20 +5252,20 @@ function PreRunModal({ agent, onClose, onRun }: { agent: AgentState, onClose: ()
                 </div>
              </div>
              <div className="grid grid-cols-2 gap-3">
-                <div className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm">
+                <div className="p-4 bg-white border border-slate-100 rounded-sm ">
                    <div className="text-[18px] font-black text-slate-900 leading-none">{agent.tokenEstimate?.toLocaleString()}</div>
                    <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-2 flex items-center gap-1">
                       Est. Tokens <HelpCircle className="h-2.5 w-2.5" />
                    </div>
                 </div>
-                <div className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm">
+                <div className="p-4 bg-white border border-slate-100 rounded-sm ">
                    <div className="text-[18px] font-black text-slate-900 leading-none">12</div>
                    <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-2">Source Evidence</div>
                 </div>
              </div>
           </div>
 
-          <div className="bg-amber-50/50 border border-amber-100 border-dashed rounded-xl p-4 flex gap-3">
+          <div className="bg-amber-50/50 border border-amber-100 border-dashed rounded-sm p-4 flex gap-3">
              <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0" />
              <div className="space-y-1">
                 <span className="text-[10px] font-black text-amber-800 uppercase block tracking-wider">Token Consumption Warning</span>
@@ -5277,10 +5277,10 @@ function PreRunModal({ agent, onClose, onRun }: { agent: AgentState, onClose: ()
         </div>
 
         <div className="p-6 pt-0 flex gap-3">
-          <Button variant="outline" onClick={onClose} className="flex-1 h-11 text-[11px] font-black uppercase tracking-widest rounded-xl">
+          <Button variant="outline" onClick={onClose} className="flex-1 h-11 text-[11px] font-black uppercase tracking-widest rounded-sm">
              Cancel
           </Button>
-          <Button onClick={() => onRun(isRerun)} className="flex-1 h-11 bg-slate-900 hover:bg-black text-white text-[11px] font-black uppercase tracking-widest rounded-xl shadow-xl shadow-slate-900/10">
+          <Button onClick={() => onRun(isRerun)} className="flex-1 h-11 bg-slate-900 hover:bg-black text-white text-[11px] font-black uppercase tracking-widest rounded-sm  shadow-slate-900/10">
              {isRerun ? "Confirm Rerun" : "Confirm Execute"}
           </Button>
         </div>
@@ -5291,7 +5291,7 @@ function PreRunModal({ agent, onClose, onRun }: { agent: AgentState, onClose: ()
 
 function AgentHistoryPanel({ agent, onClose }: { agent: AgentState, onClose: () => void }) {
   return (
-    <div className="fixed inset-y-0 right-0 w-[420px] bg-white border-l border-slate-200 z-[100] shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
+    <div className="fixed inset-y-0 right-0 w-[420px] bg-white border-l border-slate-200 z-[100]  flex flex-col animate-in slide-in-from-right duration-300">
       <div className="h-16 border-b border-slate-100 flex items-center justify-between px-6 bg-slate-50/50">
         <div className="flex items-center gap-3">
            <History className="h-5 w-5 text-slate-400" />
@@ -5322,7 +5322,7 @@ function AgentHistoryPanel({ agent, onClose }: { agent: AgentState, onClose: () 
                   <div className={`h-1.5 w-1.5 rounded-full ${run.status === 'completed' ? 'bg-emerald-500' : 'bg-rose-500'}`} />
                </div>
                
-               <div className="bg-white border border-slate-100 rounded-xl p-4 shadow-sm hover:border-slate-300 transition-all cursor-default">
+               <div className="bg-white border border-slate-100 rounded-sm p-4  hover:border-slate-300 transition-all cursor-default">
                   <div className="flex items-start justify-between mb-4">
                      <div className="flex flex-col">
                         <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Timestamp</span>
@@ -5351,7 +5351,7 @@ function AgentHistoryPanel({ agent, onClose }: { agent: AgentState, onClose: () 
                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Triggered by: <span className="text-slate-800">{run.triggered_by}</span></span>
                   </div>
 
-                  <div className="bg-slate-50/50 rounded-lg p-3 border border-slate-50">
+                  <div className="bg-slate-50/50 rounded-sm p-3 border border-slate-50">
                      <p className="text-[11px] font-bold text-slate-500 leading-snug italic">
                         "{run.summary || "No summary provided for this run."}"
                      </p>
@@ -5368,13 +5368,13 @@ function AgentHistoryPanel({ agent, onClose }: { agent: AgentState, onClose: () 
            <span className="text-[10px] font-black text-slate-900 uppercase">{agent.runCount} Total Runs</span>
         </div>
         <div className="grid grid-cols-2 gap-3">
-           <div className="bg-white p-3 rounded-lg border shadow-sm">
+           <div className="bg-white p-3 rounded-sm border ">
               <div className="text-[14px] font-black text-slate-900 leading-none">
                  {agent.history.reduce((a, b) => a + (b.token_usage || 0), 0).toLocaleString()}
               </div>
               <div className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">Total Tokens</div>
            </div>
-           <div className="bg-white p-3 rounded-lg border shadow-sm">
+           <div className="bg-white p-3 rounded-sm border ">
               <div className="text-[14px] font-black text-slate-900 leading-none">
                  {(agent.history.reduce((a, b) => a + (b.duration_ms || 0), 0) / 1000).toFixed(1)}s
               </div>
