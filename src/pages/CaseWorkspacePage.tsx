@@ -4328,7 +4328,6 @@ function AnalysisTab() {
                                                 </div>
                                              ))}
                                           </div>
-                                          </div>
                                        </div>
                                     </div>
                                  </div>
