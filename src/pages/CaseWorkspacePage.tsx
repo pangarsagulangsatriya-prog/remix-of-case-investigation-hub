@@ -4362,6 +4362,7 @@ function AnalysisTab() {
                                  <div className="flex items-center gap-2">
                                     <div className="flex bg-slate-200 p-0.5 rounded-sm">
                                        <button onClick={() => setActiveEvidenceConsoleMode('trace')} className={cn("px-2 py-1 text-[8px] font-black uppercase rounded-sm transition-all", activeEvidenceConsoleMode === 'trace' ? "bg-white shadow-sm text-slate-900" : "text-slate-400")}>Trace</button>
+                                       <button onClick={() => setActiveEvidenceConsoleMode('actor')} className={cn("px-2 py-1 text-[8px] font-black uppercase rounded-sm transition-all", activeEvidenceConsoleMode === 'actor' ? "bg-white shadow-sm text-slate-900" : "text-slate-400")}>Actor</button>
                                        <button onClick={() => setActiveEvidenceConsoleMode('diarization')} className={cn("px-2 py-1 text-[8px] font-black uppercase rounded-sm transition-all", activeEvidenceConsoleMode === 'diarization' ? "bg-white shadow-sm text-slate-900" : "text-slate-400")}>Diar</button>
                                     </div>
                                     <Button variant="ghost" size="sm" onClick={() => setSelectedChronologyItemId(null)} className="h-8 w-8 p-0 text-slate-400 hover:text-slate-600 hover:bg-slate-100">
@@ -4371,6 +4372,109 @@ function AnalysisTab() {
                               </div>
 
                               <div className="flex-1 flex flex-col overflow-hidden bg-white">
+                                 {activeEvidenceConsoleMode === 'actor' ? (
+                                    <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-8 animate-in slide-in-from-right-4 duration-500">
+                                       {/* Profile Header: Enterprise ID Style */}
+                                       <div className="border border-slate-900 bg-white p-6 rounded-none shadow-[8px_8px_0px_rgba(0,0,0,0.05)] relative overflow-hidden group">
+                                          <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity">
+                                             <Brain className="h-24 w-24 text-slate-900 -mr-6 -mt-6 rotate-12" />
+                                          </div>
+                                          
+                                          <div className="flex gap-8 relative z-10">
+                                             {/* Left: Avatar & QR */}
+                                             <div className="flex flex-col gap-4 shrink-0">
+                                                <div className="h-32 w-32 border-2 border-slate-900 bg-slate-50 overflow-hidden rounded-none relative">
+                                                   <img 
+                                                      src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200&h=200" 
+                                                      alt="Actor Profile"
+                                                      className="h-full w-full object-cover grayscale"
+                                                   />
+                                                   <div className="absolute bottom-0 left-0 right-0 bg-slate-900/80 text-white text-[7px] font-black uppercase text-center py-1">IDENTITY VERIFIED</div>
+                                                </div>
+                                                <div className="p-2 border border-slate-200 bg-white flex flex-col items-center gap-1">
+                                                   <div className="h-12 w-12 bg-slate-100 flex items-center justify-center">
+                                                      <Copy className="h-6 w-6 text-slate-300" />
+                                                   </div>
+                                                   <span className="text-[6px] font-black text-slate-400 uppercase tracking-widest">NPK: 61230944</span>
+                                                </div>
+                                             </div>
+
+                                             {/* Right: Primary Info */}
+                                             <div className="flex-1 flex flex-col justify-between py-1">
+                                                <div className="space-y-1">
+                                                   <div className="flex items-center gap-2">
+                                                      <span className="px-2 py-0.5 bg-amber-500 text-white text-[8px] font-black uppercase tracking-widest rounded-none italic">OPERATOR</span>
+                                                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Site Production Area 2</span>
+                                                   </div>
+                                                   <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tighter leading-none">BAGAS PRAMONO</h2>
+                                                   <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">NPK ID: 61230944</p>
+                                                </div>
+
+                                                <div className="flex gap-4">
+                                                   <div className="flex flex-col">
+                                                      <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest">Division</span>
+                                                      <span className="text-[10px] font-black text-slate-900 uppercase">ALL DIVISION</span>
+                                                   </div>
+                                                   <div className="flex flex-col border-l border-slate-200 pl-4">
+                                                      <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest">Company</span>
+                                                      <span className="text-[10px] font-black text-slate-900 uppercase italic">PT Pamapersada Nusantara</span>
+                                                   </div>
+                                                </div>
+                                             </div>
+                                          </div>
+                                       </div>
+
+                                       {/* Actor Intelligence: Detailed Entity Grid */}
+                                       <div className="space-y-4">
+                                          <div className="flex items-center justify-between">
+                                             <div className="flex items-center gap-2">
+                                                <Users className="h-4 w-4 text-slate-400" />
+                                                <span className="text-[10px] font-black uppercase tracking-widest text-slate-900">Actor Intelligence Profile</span>
+                                             </div>
+                                             <div className="flex items-center gap-2">
+                                                <div className="h-1.5 w-1.5 bg-emerald-500" />
+                                                <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">Verification Active</span>
+                                             </div>
+                                          </div>
+
+                                          <div className="border border-slate-200 bg-slate-200 flex flex-col gap-px rounded-none overflow-hidden">
+                                             {[
+                                                { label: 'Full Name', value: 'Bagas Pramono' },
+                                                { label: 'NPK / Employee ID', value: '61230944' },
+                                                { label: 'Functional Position', value: 'Operator' },
+                                                { label: 'Structural Position', value: 'OPERATOR TP' },
+                                                { label: 'Work Location', value: 'Site Production Area 2' },
+                                                { label: 'Division', value: 'ALL DIVISION' },
+                                                { label: 'Employment Status', value: 'EKSTERNAL' },
+                                                { label: 'Hiring Date', value: '02 Nov 2023' },
+                                                { label: 'Birth Info', value: 'Kebumen, 01 Oct 2002' },
+                                                { label: 'Contact (Personal)', value: '089525781130' },
+                                                { label: 'Email Address', value: 'xtav1.06.bagaspramono@gmail.com' },
+                                                { label: 'Emergency Contact', value: 'Karmi Ibu (0895329820979)' },
+                                             ].map((field, idx) => (
+                                                <div key={idx} className="grid grid-cols-[160px_1fr] gap-px bg-slate-200">
+                                                   <div className="bg-slate-50 p-3 flex items-center">
+                                                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{field.label}</span>
+                                                   </div>
+                                                   <div className="bg-white p-3 flex items-center group transition-colors hover:bg-slate-50">
+                                                      <span className="text-[10px] font-black text-slate-900 uppercase tracking-tight">{field.value}</span>
+                                                   </div>
+                                                </div>
+                                             ))}
+                                          </div>
+
+                                          <div className="pt-4 flex justify-end gap-3">
+                                             <Button variant="outline" className="rounded-none border-slate-200 text-[9px] font-black uppercase tracking-widest h-9">
+                                                <Copy className="h-3 w-3 mr-2" /> Copy Profile
+                                             </Button>
+                                             <Button className="rounded-none bg-slate-900 text-white text-[9px] font-black uppercase tracking-widest h-9 px-6 shadow-[4px_4px_0px_rgba(0,0,0,0.1)]">
+                                                <FileJson className="h-3 w-3 mr-2 text-emerald-400" /> Export JSON
+                                             </Button>
+                                          </div>
+                                       </div>
+                                    </div>
+                                 ) : (
+                                    <div className="flex-1 flex flex-col overflow-hidden bg-white">
                                  <div className="px-5 py-4 border-b border-slate-100 space-y-1 bg-white shrink-0">
                                     <div className="space-y-1">
                                        <button 
