@@ -20,6 +20,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
+  Book,
+  BookOpen,
   Upload,
   ArrowLeft,
   Play,
@@ -134,6 +136,7 @@ interface AgentState {
     canStop: boolean;
     canRerun: boolean;
   };
+  knowledgeSelection?: string[];
 }
 
 export type EventBreakdown = {
@@ -203,6 +206,7 @@ const initialAgentsState: AgentState[] = [
        { run_id: "r-102", agent_id: "fact", started_at: "2026-04-20T10:42:00Z", ended_at: "2026-04-20T10:42:04Z", triggered_by: "Current User", status: "completed", token_usage: 2140, duration_ms: 4200, summary: "Rerun after evidence update" }
      ],
      backendCapabilities: { canPause: false, canResume: false, canStop: true, canRerun: true },
+     knowledgeSelection: ['Audio Recording', 'Internal Document', 'External Document', 'Photos & Media'],
      results: {
         ringkasan: {
            tanggal: "April 05, 2026",
@@ -453,6 +457,7 @@ const initialAgentsState: AgentState[] = [
         { run_id: "r-101", agent_id: "peepo", started_at: "2026-04-20T09:00:00Z", ended_at: "2026-04-20T09:00:15Z", triggered_by: "System", status: "completed", token_usage: 2450, duration_ms: 15000, summary: "PEEPO violation analysis completed." }
      ],
      backendCapabilities: { canPause: false, canResume: false, canStop: true, canRerun: true },
+     knowledgeSelection: ['Audio Recording', 'Internal Document', 'External Document', 'Photos & Media'],
      results: {
         people: [
            "Sdr Fadhli tidak memastikan pada saat penurunan vessel setelah dumping",
@@ -503,6 +508,7 @@ const initialAgentsState: AgentState[] = [
         { run_id: "r-202", agent_id: "ipls", started_at: "2026-04-20T10:00:00Z", ended_at: "2026-04-20T10:00:10Z", triggered_by: "System", status: "completed", token_usage: 650, duration_ms: 10000, summary: "5-Layer Defensive Classification completed." }
      ],
      backendCapabilities: { canPause: false, canResume: false, canStop: true, canRerun: true },
+     knowledgeSelection: ['Audio Recording', 'Internal Document', 'External Document', 'Photos & Media'],
      results: {
         layers: [
            {
@@ -564,6 +570,7 @@ const initialAgentsState: AgentState[] = [
         { run_id: "r-303", agent_id: "prev", started_at: "2026-04-20T11:00:00Z", ended_at: "2026-04-20T11:00:20Z", triggered_by: "System", status: "completed", token_usage: 1250, duration_ms: 20000, summary: "Corrective Action Plan generated." }
      ],
      backendCapabilities: { canPause: false, canResume: false, canStop: true, canRerun: true },
+     knowledgeSelection: ['Audio Recording', 'Internal Document', 'External Document', 'Photos & Media'],
      results: {
         root_cause_actions: [
            { no: 1, layer: "III.10, III.13", hierarchy: "Administrasi", action: "Sanksi Administratif terhadap operator Sdr. Ryo Triharseno sesuai peraturan yang ada di PTBC", pic: "Sholeh Hadi H.", due_date: "4 Desember 2025", status: "OPEN" },
@@ -3719,6 +3726,7 @@ function AnalysisTab() {
   const [isSaving, setIsSaving] = useState(false);
   const [preRunAgentId, setPreRunAgentId] = useState<string | null>(null);
   const [historyAgentId, setHistoryAgentId] = useState<string | null>(null);
+  const [knowledgeAgentId, setKnowledgeAgentId] = useState<string | null>(null);
   const [isEditingSummary, setIsEditingSummary] = useState(false);
   const [summaryEditBuffer, setSummaryEditBuffer] = useState({ time: '', description: '' });
 
@@ -3862,7 +3870,7 @@ function AnalysisTab() {
       setAgents(prev => prev.map(a => a.id === nextId ? { 
           ...a, 
           status: 'running', 
-          microStatus: 'Initializing engine context...', 
+          microStatus: `Reading ${a.knowledgeSelection?.length || 0} selected folders...`, 
           triggeredBy: execMode === 'full' ? 'System' : 'Current User' 
       } : a));
 
@@ -3913,7 +3921,7 @@ function AnalysisTab() {
     setAgents(prev => prev.map(a => a.id === agentId ? { 
       ...a, 
       status: 'running', 
-      microStatus: isRerun ? 'Reprocessing...' : 'Executing...',
+      microStatus: isRerun ? `Reprocessing with ${a.knowledgeSelection?.length || 0} knowledge sources...` : `Reading ${a.knowledgeSelection?.length || 0} selected folders...`,
       triggeredBy: 'Current User'
     } : a));
     
@@ -3947,7 +3955,7 @@ function AnalysisTab() {
         }
         return a;
       }));
-      toast.success(`${agents.find(ag => ag.id === agentId)?.name} analysis finished.`);
+      toast.success(`${agents.find(ag => ag.id === agentId)?.name} finished using ${agents.find(ag => ag.id === agentId)?.knowledgeSelection?.length} knowledge folders.`);
     }, 4000);
   };
 
@@ -4077,15 +4085,73 @@ function AnalysisTab() {
                                     >
                                        <History className="h-4 w-4" />
                                     </Button>
-                                    <Button 
-                                       variant="outline" 
-                                       className="flex-1 h-10 bg-white border-slate-200 text-slate-500 text-[10px] font-black uppercase tracking-[0.1em] rounded-sm hover:bg-slate-50 transition-colors"
-                                    >
-                                       <Settings className="h-4 w-4" />
-                                    </Button>
+                                     <Button 
+                                        variant="outline" 
+                                        onClick={(e) => { e.stopPropagation(); setKnowledgeAgentId(knowledgeAgentId === agent.id ? null : agent.id); }}
+                                        className={cn(
+                                           "flex-1 h-10 border-slate-200 text-[10px] font-black uppercase tracking-[0.1em] rounded-sm transition-all",
+                                           knowledgeAgentId === agent.id ? "bg-slate-900 text-emerald-400 border-slate-900 shadow-lg" : "bg-white text-slate-500 hover:bg-slate-50"
+                                        )}
+                                     >
+                                        <Book className="h-4 w-4" />
+                                     </Button>
                                  </div>
                               </>
                            )}
+
+                         {/* Knowledge Selector (Optimistic Inline UI) */}
+                         {knowledgeAgentId === agent.id && (
+                            <div className="mt-4 pt-4 border-t border-slate-100 animate-in slide-in-from-top-2 duration-200">
+                               <div className="flex items-center justify-between mb-3">
+                                  <span className="text-[9px] font-black text-slate-900 uppercase tracking-widest flex items-center gap-1.5">
+                                     <BookOpen className="h-3 w-3 text-emerald-500" /> Knowledge Selection
+                                  </span>
+                                  <span className="text-[8px] font-bold text-slate-400 uppercase">{agent.knowledgeSelection?.length} Folders</span>
+                               </div>
+                               <div className="space-y-1.5">
+                                  {['Audio Recording', 'Internal Document', 'External Document', 'Photos & Media'].map((folder) => {
+                                     const isSelected = agent.knowledgeSelection?.includes(folder);
+                                     return (
+                                        <div 
+                                           key={folder}
+                                           onClick={(e) => {
+                                              e.stopPropagation();
+                                              setAgents(prev => prev.map(a => a.id === agent.id ? {
+                                                 ...a,
+                                                 knowledgeSelection: isSelected 
+                                                    ? a.knowledgeSelection?.filter(f => f !== folder)
+                                                    : [...(a.knowledgeSelection || []), folder]
+                                              } : a));
+                                           }}
+                                           className={cn(
+                                              "flex items-center justify-between p-2 rounded-sm cursor-pointer transition-all border",
+                                              isSelected ? "bg-emerald-50 border-emerald-100 shadow-sm" : "bg-slate-50/50 border-transparent hover:bg-slate-50"
+                                           )}
+                                        >
+                                           <span className={cn("text-[9px] font-bold uppercase tracking-tight", isSelected ? "text-emerald-700" : "text-slate-500")}>
+                                              {folder}
+                                           </span>
+                                           <div className={cn(
+                                              "h-3.5 w-3.5 rounded-full border flex items-center justify-center transition-all",
+                                              isSelected ? "bg-emerald-500 border-emerald-500" : "bg-white border-slate-200"
+                                           )}>
+                                              {isSelected && <Check className="h-2 w-2 text-white stroke-[4]" />}
+                                           </div>
+                                        </div>
+                                     );
+                                  })}
+                               </div>
+                               <div className="mt-4 flex items-center gap-2">
+                                  <div className="h-1 flex-1 bg-slate-100 rounded-full overflow-hidden">
+                                     <div 
+                                        className="h-full bg-emerald-500 transition-all duration-500" 
+                                        style={{ width: `${((agent.knowledgeSelection?.length || 0) / 4) * 100}%` }} 
+                                     />
+                                  </div>
+                                  <span className="text-[8px] font-black text-slate-300 uppercase">Coverage</span>
+                               </div>
+                            </div>
+                         )}
                         </div>
 
                         {agent.status === 'running' && (
