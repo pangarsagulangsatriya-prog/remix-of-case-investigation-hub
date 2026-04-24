@@ -5,7 +5,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/AppLayout";
 import { StatusChip, SeverityChip, ConfidenceChip } from "@/components/StatusChip";
 import { useCase, useUpdateCase, useCases } from "@/hooks/useCases";
-import { useEvidence, useDeleteFile, useUploadEvidence, useUpdateBatch } from "@/hooks/useEvidence";
+import { useEvidence, useDeleteFile, useUploadEvidence, useUpdateBatch, useMoveFile } from "@/hooks/useEvidence";
 import { useAuditLogs, useInsertAuditLog } from "@/hooks/useAuditLogs";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
@@ -2865,6 +2865,81 @@ function DeleteFolderModal({
   );
 }
 
+function FileRow({ 
+  file, 
+  isSelected, 
+  onSelect, 
+  onMove,
+  batches 
+}: { 
+  file: any, 
+  isSelected: boolean, 
+  onSelect: () => void, 
+  onMove: (fileId: string, batchId: string | null) => void,
+  batches: any[]
+}) {
+  return (
+    <div
+      onClick={onSelect}
+      className={cn(
+        "group flex items-center justify-between p-2 rounded-sm cursor-pointer transition-all border-l-2",
+        isSelected 
+          ? "bg-slate-100 border-primary" 
+          : "hover:bg-slate-50 border-transparent"
+      )}
+    >
+      <div className="flex items-center gap-3 overflow-hidden">
+        <div className={cn(
+          "h-7 w-7 rounded flex items-center justify-center shrink-0 border shadow-sm transition-colors",
+          isSelected ? "bg-white text-primary border-primary/20" : "bg-white text-slate-400 group-hover:text-slate-600"
+        )}>
+          {getFileIcon(file.type)}
+        </div>
+        <div className="overflow-hidden">
+          <p className={cn(
+            "text-[11px] font-bold truncate leading-tight",
+            isSelected ? "text-slate-900" : "text-slate-600 group-hover:text-slate-900"
+          )}>
+            {file.name}
+          </p>
+          <div className="flex items-center gap-2">
+            <span className="text-[9px] text-slate-400 font-bold uppercase tracking-tight">{file.type}</span>
+            {file.review_status === 'reviewed' && <CheckCircle2 className="h-2.5 w-2.5 text-emerald-500" />}
+          </div>
+        </div>
+      </div>
+
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+          <button className="p-1 hover:bg-white rounded text-slate-300 hover:text-slate-900 transition-all opacity-0 group-hover:opacity-100">
+            <MoreVertical className="h-3.5 w-3.5" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuSeparator />
+          <div className="px-2 py-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest">Move to</div>
+          <DropdownMenuItem 
+            onClick={() => onMove(file.id, null)}
+            disabled={!file.batch_id}
+            className="text-[10px] font-bold"
+          >
+            <Folder className="h-3.5 w-3.5 mr-2 text-slate-400" /> Root Directory
+          </DropdownMenuItem>
+          {batches.filter(b => b.type === "Folder" && b.id !== file.batch_id).map(batch => (
+            <DropdownMenuItem 
+              key={batch.id} 
+              onClick={() => onMove(file.id, batch.id)}
+              className="text-[10px] font-bold"
+            >
+              <Folder className="h-3.5 w-3.5 mr-2 text-primary/60" /> {batch.name}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
+}
+
 function ExtractionTab({ 
   evidenceFiles, 
   batches, 
@@ -2880,11 +2955,12 @@ function ExtractionTab({
   caseId: string,
   onUploadComplete: (groups: CompletedGroup[]) => void
 }) {
-  const [activeFilter, setActiveFilter] = useState("All Files");
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedBatches, setExpandedBatches] = useState<string[]>([]);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  
+  const moveFileMutation = useMoveFile();
 
   // Lifted audio state — shared between center player and right panel
   const [audioCurrentTime, setAudioCurrentTime] = useState(0);
@@ -2973,18 +3049,35 @@ function ExtractionTab({
     }
   };
 
-  const filteredFiles = evidenceFiles.filter(f => {
-    const matchesFilter = activeFilter === "All Files" 
-      ? true 
-      : f.type === activeFilter;
-    const matchesSearch = f.name.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesFilter && matchesSearch;
-  });
+  const filteredFiles = useMemo(() => {
+    return evidenceFiles.filter(f => 
+      f.name.toLowerCase().includes(searchQuery.toLowerCase())
+    ).sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+  }, [evidenceFiles, searchQuery]);
 
-  const groupedFiles = batches.map(batch => ({
-    ...batch,
-    files: filteredFiles.filter(f => f.batch_id === batch.id)
-  })).filter(b => b.files.length > 0);
+  const looseFiles = useMemo(() => {
+    return filteredFiles.filter(f => !f.batch_id);
+  }, [filteredFiles]);
+
+  const folderGroups = useMemo(() => {
+    return batches
+      .filter(b => b.type !== "Loose Files")
+      .map(batch => ({
+        ...batch,
+        files: filteredFiles.filter(f => f.batch_id === batch.id)
+      }))
+      .filter(b => b.files.length > 0 || b.type === "Folder")
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [batches, filteredFiles]);
+
+  const handleMoveFile = async (fileId: string, batchId: string | null) => {
+    try {
+      await moveFileMutation.mutateAsync({ fileId, batchId });
+      toast.success(batchId ? "File moved to folder." : "File moved to root.");
+    } catch (error) {
+      toast.error("Failed to move file.");
+    }
+  };
 
   const goToNext = () => {
     const allFiles = filteredFiles;
@@ -3048,121 +3141,84 @@ function ExtractionTab({
              </div>
           </div>
           
-          <div className="flex gap-2">
-            {[
-              { id: "All Files", label: "ALL", icon: Folder },
-              { id: "Document", label: "DOCS", icon: DocIcon },
-              { id: "Image", label: "IMAGES", icon: ImageIcon },
-              { id: "Audio", label: "AUDIO", icon: AudioIcon },
-              { id: "Video", label: "VIDEO", icon: VideoIcon }
-            ].map((f) => (
-              <button
-                key={f.id}
-                onClick={() => setActiveFilter(f.id)}
-                className={`flex-1 flex flex-col items-center justify-center py-2 rounded-sm border transition-all ${
-                  activeFilter === f.id
-                    ? "bg-[#0f172a] text-white border-[#0f172a]"
-                    : "bg-white text-slate-400 border-slate-100 hover:bg-slate-50 hover:text-slate-600 hover:border-slate-200"
-                }`}
-              >
-                <f.icon className={`h-3.5 w-3.5 mb-1 ${activeFilter === f.id ? "text-white" : "text-slate-400"}`} strokeWidth={activeFilter === f.id ? 2.5 : 2} />
-                <span className="text-[8px] font-black uppercase tracking-widest">{f.label}</span>
-              </button>
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-0">
+          <div className="space-y-0.5">
+            {/* Loose Files (Root) */}
+            {looseFiles.map((file) => (
+              <FileRow 
+                key={file.id} 
+                file={file} 
+                isSelected={selectedFile?.id === file.id}
+                onSelect={() => setSelectedFile(file)}
+                onMove={handleMoveFile}
+                batches={batches}
+              />
             ))}
-          </div>
-        </div>
 
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-6">
-          {activeFilter === "All Files" ? (
-            groupedFiles.map((batch) => (
-              <div key={batch.id} className="space-y-2">
-                <div className="flex items-center justify-between group/folder">
+            {/* Folders */}
+            {folderGroups.map((batch) => (
+              <div key={batch.id} className="group/folder">
+                <div 
+                  onClick={() => toggleBatch(batch.id)}
+                  className={cn(
+                    "flex items-center gap-2 px-3 py-2 hover:bg-slate-50 cursor-pointer transition-all border-l-2 border-transparent",
+                    expandedBatches.includes(batch.id) ? "bg-slate-50/50 border-primary/20" : ""
+                  )}
+                >
+                  <ChevronRight className={cn(
+                    "h-3 w-3 text-slate-400 transition-transform duration-150",
+                    expandedBatches.includes(batch.id) ? "rotate-90" : ""
+                  )} />
+                  <Folder className={cn("h-4 w-4", expandedBatches.includes(batch.id) ? "text-primary" : "text-slate-400")} />
+                  <span className="text-[11px] font-bold text-slate-700 uppercase tracking-tight flex-1">{batch.name}</span>
+                  <span className="text-[9px] font-black text-slate-300 mr-2">{batch.files.length}</span>
+                  
                   <button 
-                    onClick={() => toggleBatch(batch.id)}
-                    className="flex items-center gap-2 group flex-1"
-                  >
-                    <ChevronDown className={`h-3.5 w-3.5 text-slate-400 transition-transform duration-300 ${expandedBatches.includes(batch.id) ? "" : "-rotate-90"}`} />
-                    <div className="flex items-center gap-2">
-                      <Folders className="h-3.5 w-3.5 text-primary" />
-                      <span className="text-[11px] font-black text-slate-900 uppercase tracking-tighter">{batch.name}</span>
-                    </div>
-                    <span className="text-[9px] font-bold text-slate-300 bg-slate-50 px-1.5 rounded-full ml-1">{batch.files.length}</span>
-                  </button>
-                  <button 
-                    onClick={() => openDeleteFolderModal(batch)}
+                    onClick={(e) => { e.stopPropagation(); openDeleteFolderModal(batch); }}
                     className="p-1 hover:bg-rose-50 rounded text-slate-300 hover:text-rose-500 transition-all opacity-0 group-hover/folder:opacity-100"
                   >
                      <Trash2 className="h-3 w-3" />
                   </button>
                 </div>
-                
+
                 {expandedBatches.includes(batch.id) && (
-                  <div className="space-y-1 ml-4 border-l-2 border-slate-50 pl-2">
-                    {batch.files.map((file: any) => (
-                      <div
-                        key={file.id}
-                        onClick={() => setSelectedFile(file)}
-                        className={`group flex items-center justify-between p-2.5 rounded-sm cursor-pointer transition-all ${
-                          selectedFile?.id === file.id 
-                          ? "bg-primary/5 border-primary/10 " 
-                          : "hover:bg-slate-50 border-transparent"
-                        } border`}
-                      >
-                        <div className="flex items-center gap-2.5 overflow-hidden">
-                          <div className={`p-1.5 rounded-sm transition-colors ${selectedFile?.id === file.id ? "bg-white text-primary " : "bg-slate-100 text-slate-400 group-hover:bg-white"}`}>
-                            {getFileIcon(file.type)}
-                          </div>
-                          <div className="overflow-hidden">
-                            <p className={`text-[11px] font-bold truncate leading-none mb-1 ${selectedFile?.id === file.id ? "text-primary" : "text-slate-700"}`}>
-                              {file.name}
-                            </p>
-                            <div className="flex items-center gap-2">
-                              <span className="text-[9px] text-slate-400 font-bold uppercase tracking-tight">{file.type}</span>
-                               {file.review_status === 'reviewed' && <CheckCircle2 className="h-2.5 w-2.5 text-emerald-500" />}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                  <div className="ml-4 border-l border-slate-100">
+                    {batch.files.length === 0 ? (
+                      <div className="py-2 px-8 text-[9px] font-bold text-slate-300 uppercase tracking-widest italic">Empty Folder</div>
+                    ) : (
+                      batch.files.map((file: any) => (
+                        <FileRow 
+                          key={file.id} 
+                          file={file} 
+                          isSelected={selectedFile?.id === file.id}
+                          onSelect={() => setSelectedFile(file)}
+                          onMove={handleMoveFile}
+                          batches={batches}
+                        />
+                      ))
+                    )}
                   </div>
                 )}
               </div>
-            ))
-          ) : (
-            <div className="space-y-1">
-              {filteredFiles.map((file: any) => (
-                <div
-                  key={file.id}
-                  onClick={() => setSelectedFile(file)}
-                  className={`group flex items-center justify-between p-2.5 rounded-sm cursor-pointer transition-all ${
-                    selectedFile?.id === file.id 
-                    ? "bg-primary/5 border-primary/10 " 
-                    : "hover:bg-slate-50 border-transparent"
-                  } border`}
+            ))}
+
+            {filteredFiles.length === 0 && (
+              <div className="py-20 flex flex-col items-center justify-center text-center px-6">
+                <div className="h-12 w-12 bg-slate-50 rounded-full flex items-center justify-center mb-4 border border-dashed border-slate-200">
+                  <Box className="h-6 w-6 text-slate-300" />
+                </div>
+                <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">No files yet</h3>
+                <p className="text-[10px] font-medium text-slate-300 mb-6 max-w-[160px]">Start by uploading evidence to your repository</p>
+                <Button 
+                  onClick={() => setIsUploadModalOpen(true)}
+                  variant="outline"
+                  className="h-9 border-slate-200 text-slate-500 text-[10px] font-black uppercase tracking-widest rounded-sm hover:bg-slate-50"
                 >
-                  <div className="flex items-center gap-2.5 overflow-hidden">
-                    <div className={`p-1.5 rounded-sm transition-colors ${selectedFile?.id === file.id ? "bg-white text-primary " : "bg-slate-100 text-slate-400 group-hover:bg-white"}`}>
-                      {getFileIcon(file.type)}
-                    </div>
-                    <div className="overflow-hidden">
-                      <p className={`text-[11px] font-bold truncate leading-none mb-1 ${selectedFile?.id === file.id ? "text-primary" : "text-slate-700"}`}>
-                        {file.name}
-                      </p>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[9px] text-slate-400 font-bold uppercase tracking-tight">{file.type}</span>
-                         {file.review_status === 'reviewed' && <CheckCircle2 className="h-2.5 w-2.5 text-emerald-500" />}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-              {filteredFiles.length === 0 && (
-                <div className="py-12 text-center">
-                  <span className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">No {activeFilter}s found</span>
-                </div>
-              )}
-            </div>
-          )}
+                  <Upload className="h-3.5 w-3.5 mr-2" /> Upload
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
           
 

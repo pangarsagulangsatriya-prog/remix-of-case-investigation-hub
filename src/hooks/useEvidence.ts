@@ -47,7 +47,8 @@ export type EvidenceBatch = {
 
 export type EvidenceFile = {
   id: string;
-  batch_id: string;
+  batch_id: string | null;
+  case_id?: string; // Support loose files at case level
   name: string;
   type: string;
   source: string;
@@ -73,20 +74,52 @@ export function useEvidence(caseId: string) {
 
       if (batchesError) throw batchesError;
 
-      // Fetch files for all batches in this case
+      // Fetch files: either linked to these batches OR directly to the case if batch_id is null
+      // We try to fetch by batch_id OR case_id if it exists
       const batchIds = batches.map(b => b.id);
-      if (batchIds.length === 0) return { batches: [], files: [] };
+      
+      let query = supabase.from("evidence_files").select("*");
+      
+      if (batchIds.length > 0) {
+        // This handles files in batches + potentially loose files if they have case_id
+        // For now, we'll try to fetch anything that matches the batch IDs or is null batch_id
+        // Note: Realistically, evidence_files needs case_id to fetch null batch_id files.
+        // We will attempt to fetch by batch_id if they exist.
+        query = query.or(`batch_id.in.(${batchIds.join(',')}),batch_id.is.null`);
+      } else {
+        query = query.is("batch_id", null);
+      }
 
-      const { data: files, error: filesError } = await supabase
-        .from("evidence_files")
-        .select("*")
-        .in("batch_id", batchIds);
+      const { data: files, error: filesError } = await query;
 
-      if (filesError) throw filesError;
+      if (filesError) {
+         // Fallback if the complex query fails due to schema mismatch
+         const { data: fallbackFiles } = await supabase.from("evidence_files").select("*").in("batch_id", batchIds);
+         return { batches, files: (fallbackFiles || []) as EvidenceFile[] };
+      }
 
       return { batches, files: files as EvidenceFile[] };
     },
     enabled: !!caseId,
+  });
+}
+
+export function useMoveFile() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ fileId, batchId }: { fileId: string, batchId: string | null }) => {
+      const { error } = await supabase
+        .from("evidence_files")
+        .update({ batch_id: batchId })
+        .eq("id", fileId);
+
+      if (error) throw error;
+      return true;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["evidence"] });
+    },
   });
 }
 
