@@ -707,7 +707,6 @@ const FactDefaultView: React.FC<{
                       <tr className="bg-slate-50/50 border-b">
                         <th className="px-5 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest w-32">Time</th>
                         <th className="px-5 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Description</th>
-                        <th className="px-5 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest w-40 text-right">Verification</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50">
@@ -781,42 +780,20 @@ const FactDefaultView: React.FC<{
                                         variant="ghost" 
                                         size="sm" 
                                         onClick={(e) => { e.stopPropagation(); onEdit(item); }}
-                                        className="h-6 w-6 p-0 hover:bg-slate-200 rounded"
+                                        className="h-7 px-3 text-[9px] font-black uppercase tracking-widest gap-2 hover:bg-slate-100 border border-slate-100 rounded-sm"
                                       >
-                                        <Pencil className="h-3 w-3 text-slate-400" />
+                                        <Pencil className="h-3 w-3 text-slate-400" /> Edit Detail
                                       </Button>
                                   </div>
                                 </div>
                               )}
                             </td>
-                            <td className="px-5 py-4 align-top text-right">
-                              <div className="flex flex-col items-end gap-1.5">
-                                <div className={cn("flex items-center gap-1.5 px-2 py-0.5 rounded-sm text-[8px] font-black uppercase tracking-widest border", status.color)}>
-                                   <status.icon className="h-2.5 w-2.5" /> {status.label}
-                                </div>
-                                {item.annotated_by_human && (
-                                   <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tight">{item.updated_by || "System"} Review</span>
-                                )}
-                                {item.support_strength !== undefined && (
-                                   <div className="flex items-center gap-2 mt-1">
-                                      <div className="h-1 w-12 bg-slate-100 rounded-full overflow-hidden">
-                                         <div 
-                                           className={cn("h-full rounded-full",
-                                             item.support_strength > 0.8 ? "bg-emerald-500" : 
-                                             item.support_strength > 0.5 ? "bg-amber-500" : "bg-rose-500"
-                                           )} 
-                                           style={{ width: `${item.support_strength * 100}%` }} 
-                                         />
-                                      </div>
-                                   </div>
-                                )}
-                              </div>
-                            </td>
+
                           </tr>
                         );
                       }) : (
                         <tr>
-                          <td colSpan={3} className="px-5 py-8 text-center text-slate-300 text-[10px] font-black uppercase tracking-widest">
+                          <td colSpan={2} className="px-5 py-8 text-center text-slate-300 text-[10px] font-black uppercase tracking-widest">
                             No data available
                           </td>
                         </tr>
