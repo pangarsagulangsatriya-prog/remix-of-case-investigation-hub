@@ -711,84 +711,31 @@ const FactDefaultView: React.FC<{
                     </thead>
                     <tbody className="divide-y divide-slate-50">
                       {phaseItems.length > 0 ? phaseItems.map((item) => {
-                        const isEditing = editingId === item.id;
                         const isSelected = selectedItemId === item.id;
-                        const status = STATUS_CONFIG[item.verification_status];
 
                         return (
                           <tr 
                             key={item.id} 
-                            onClick={() => !isEditing && onSelectItem(item.id)}
+                            onClick={() => onSelectItem(item.id)}
                             className={cn(
                               "group transition-all cursor-pointer relative", 
-                              isEditing ? "bg-primary/5 cursor-default" : isSelected ? "bg-slate-100/80 " : "hover:bg-slate-50/50"
+                              isSelected ? "bg-slate-100/80 " : "hover:bg-slate-50/50"
                             )}
                           >
                             <td className="px-5 py-4 align-top">
-                              {isEditing ? (
-                                <Input 
-                                  value={editBuffer.time_label}
-                                  onChange={(e) => setEditBuffer({ ...editBuffer, time_label: e.target.value })}
-                                  className="h-8 font-mono text-[11px] font-bold border-slate-300"
-                                />
-                              ) : (
-                                <div className="flex flex-col gap-1">
-                                  <span className={cn("text-[11px] font-mono font-black", config.textColor)}>{item.time_label}</span>
-                                </div>
-                              )}
+                              <div className="flex flex-col gap-1">
+                                <span className={cn("text-[11px] font-mono font-black", config.textColor)}>{item.time_label}</span>
+                              </div>
                             </td>
                             <td className="px-5 py-4 align-top">
-                              {isEditing ? (
-                                <div className="space-y-4">
-                                  <Textarea 
-                                    value={editBuffer.chronology_text}
-                                    onChange={(e) => setEditBuffer({ ...editBuffer, chronology_text: e.target.value })}
-                                    className="min-h-[80px] text-xs font-medium leading-relaxed resize-none border-slate-300"
-                                  />
-                                  <div className="grid grid-cols-2 gap-2">
-                                     <div className="space-y-1">
-                                        <span className="text-[8px] font-black text-slate-400 uppercase">Verification Status</span>
-                                        <select 
-                                          value={editBuffer.verification_status}
-                                          onChange={(e) => setEditBuffer({ ...editBuffer, verification_status: e.target.value as VerificationStatus })}
-                                          className="w-full h-8 bg-white border border-slate-200 rounded px-2 text-[10px] font-bold"
-                                        >
-                                          {Object.entries(STATUS_CONFIG).map(([k, v]) => (
-                                             <option key={k} value={k}>{v.label}</option>
-                                          ))}
-                                        </select>
-                                     </div>
-                                  </div>
-                                  <div className="flex items-center gap-2 pt-2">
-                                    <Button size="sm" onClick={onSave} className="h-7 px-3 bg-slate-900 text-[9px] uppercase font-black tracking-widest">
-                                      <Check className="h-3 w-3 mr-1.5" /> Commit Change
-                                    </Button>
-                                    <Button size="sm" variant="ghost" onClick={onCancel} className="h-7 px-3 text-[9px] uppercase font-black tracking-widest">
-                                      Cancel
-                                    </Button>
-                                  </div>
-                                </div>
-                              ) : (
-                                <div className="relative group/edit">
-                                  <p className={cn("text-xs font-medium leading-relaxed pr-8 transition-colors", 
-                                    isSelected ? "text-slate-900" : "text-slate-700"
-                                  )}>
-                                    {item.chronology_text}
-                                  </p>
-                                  <div className="flex items-center gap-1.5 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                     <Button 
-                                        variant="ghost" 
-                                        size="sm" 
-                                        onClick={(e) => { e.stopPropagation(); onEdit(item); }}
-                                        className="h-7 px-3 text-[9px] font-black uppercase tracking-widest gap-2 hover:bg-slate-100 border border-slate-100 rounded-sm"
-                                      >
-                                        <Pencil className="h-3 w-3 text-slate-400" /> Edit Detail
-                                      </Button>
-                                  </div>
-                                </div>
-                              )}
+                              <div className="relative">
+                                <p className={cn("text-xs font-medium leading-relaxed pr-8 transition-colors", 
+                                  isSelected ? "text-slate-900" : "text-slate-700"
+                                )}>
+                                  {item.chronology_text}
+                                </p>
+                              </div>
                             </td>
-
                           </tr>
                         );
                       }) : (
