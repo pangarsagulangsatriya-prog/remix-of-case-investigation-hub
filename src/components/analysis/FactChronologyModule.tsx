@@ -701,15 +701,15 @@ const FactDefaultView: React.FC<{
                   <div className="h-px flex-1 bg-slate-200" />
                 </div>
 
-                <div className="bg-white border rounded-sm overflow-hidden">
-                  <table className="w-full text-left">
+                <div className="bg-white border-l border-t border-slate-200 overflow-hidden">
+                  <table className="w-full text-left border-collapse">
                     <thead>
-                      <tr className="bg-slate-50/50 border-b">
-                        <th className="px-5 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest w-32">Time</th>
-                        <th className="px-5 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Description</th>
+                      <tr className="bg-slate-50/80">
+                        <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest w-32 border-r border-b border-slate-200 bg-slate-50/30">Time</th>
+                        <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest border-r border-b border-slate-200 bg-slate-50/30">Description</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-50">
+                    <tbody className="">
                       {phaseItems.length > 0 ? phaseItems.map((item) => {
                         const isSelected = selectedItemId === item.id;
 
@@ -722,12 +722,12 @@ const FactDefaultView: React.FC<{
                               isSelected ? "bg-slate-100/80 " : "hover:bg-slate-50/50"
                             )}
                           >
-                            <td className="px-5 py-4 align-top">
+                            <td className="px-5 py-4 align-top border-r border-b border-slate-200">
                               <div className="flex flex-col gap-1">
                                 <span className={cn("text-[11px] font-mono font-black", config.textColor)}>{item.time_label}</span>
                               </div>
                             </td>
-                            <td className="px-5 py-4 align-top">
+                            <td className="px-5 py-4 align-top border-r border-b border-slate-200">
                               <div className="relative">
                                 <p className={cn("text-xs font-medium leading-relaxed pr-8 transition-colors", 
                                   isSelected ? "text-slate-900" : "text-slate-700"
@@ -740,7 +740,7 @@ const FactDefaultView: React.FC<{
                         );
                       }) : (
                         <tr>
-                          <td colSpan={2} className="px-5 py-8 text-center text-slate-300 text-[10px] font-black uppercase tracking-widest">
+                          <td colSpan={2} className="px-5 py-8 text-center text-slate-300 text-[10px] font-black uppercase tracking-widest border-r border-b border-slate-200">
                             No data available
                           </td>
                         </tr>
