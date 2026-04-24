@@ -4154,52 +4154,52 @@ function AnalysisTab() {
 
                                  <div className="flex-1 overflow-y-auto custom-scrollbar">
                                     <div className="p-5 space-y-8">
-                                       {/* Fact Context - Interactive Decomposition */}
+                                       {/* Fact Context - Interactive Decomposition (IBM Carbon Style) */}
                                        <div className="space-y-3">
-                                          <div className="flex items-center justify-between">
-                                             <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Fact Decomposition</span>
-                                             <div className="flex items-center gap-1">
-                                                <div className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
+                                          <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                                             <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Fact Decomposition</span>
+                                             <div className="flex items-center gap-1.5">
+                                                <div className="h-1.5 w-1.5 bg-blue-600" />
                                                 <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">AI Entity Extraction</span>
                                              </div>
                                           </div>
                                           
-                                          <div className="flex flex-wrap gap-y-2 gap-x-1.5 p-4 bg-slate-50 border border-slate-100 rounded-sm shadow-inner">
+                                          <div className="flex flex-wrap gap-y-2 gap-x-2 p-4 bg-white border border-slate-200 rounded-none">
                                              {item.decomposition ? (
                                                 <TooltipProvider delayDuration={100}>
                                                    {item.decomposition.map((part: any, i: number) => (
                                                       part.type === 'TEXT' ? (
-                                                         <span key={i} className="text-xs font-bold leading-relaxed text-slate-800 self-center">{part.text}</span>
+                                                         <span key={i} className="text-xs font-medium leading-relaxed text-slate-800 self-center">{part.text}</span>
                                                       ) : (
                                                          <Tooltip key={i}>
                                                             <TooltipTrigger asChild>
                                                                <span className={cn(
-                                                                  "px-2 py-0.5 rounded-sm text-[10px] font-black uppercase border cursor-help transition-all hover:scale-105 select-none",
-                                                                  part.type === 'AKTOR' ? "bg-purple-100 text-purple-700 border-purple-200" :
-                                                                  part.type === 'AKSI' ? "bg-amber-100 text-amber-700 border-amber-200" :
-                                                                  part.type === 'OBJEK' ? "bg-blue-100 text-blue-700 border-blue-200" :
-                                                                  part.type === 'LOKASI' ? "bg-indigo-100 text-indigo-700 border-indigo-200" :
-                                                                  part.type === 'KONTEKS' ? "bg-teal-100 text-teal-700 border-teal-200" :
-                                                                  part.type === 'HASIL' ? "bg-rose-100 text-rose-700 border-rose-200" :
-                                                                  part.type === 'WAKTU' ? "bg-slate-100 text-slate-700 border-slate-200" :
-                                                                  "bg-slate-200 text-slate-800 border-slate-300"
+                                                                  "px-2 py-1 rounded-none text-[9px] font-black uppercase border cursor-help transition-colors select-none",
+                                                                  part.type === 'AKTOR' ? "bg-slate-50 text-slate-900 border-purple-500" :
+                                                                  part.type === 'AKSI' ? "bg-slate-50 text-slate-900 border-amber-500" :
+                                                                  part.type === 'OBJEK' ? "bg-slate-50 text-slate-900 border-blue-500" :
+                                                                  part.type === 'LOKASI' ? "bg-slate-50 text-slate-900 border-indigo-500" :
+                                                                  part.type === 'KONTEKS' ? "bg-slate-50 text-slate-900 border-teal-500" :
+                                                                  part.type === 'HASIL' ? "bg-slate-50 text-slate-900 border-rose-500" :
+                                                                  part.type === 'WAKTU' ? "bg-slate-50 text-slate-900 border-slate-400" :
+                                                                  "bg-slate-50 text-slate-900 border-slate-200"
                                                                )}>
                                                                   {part.text}
                                                                </span>
                                                             </TooltipTrigger>
-                                                            <TooltipContent side="top" className="bg-slate-900 text-white border-none text-[9px] font-black uppercase tracking-[0.1em] px-3 py-1.5 rounded-sm">
-                                                               <div className="flex flex-col gap-0.5">
-                                                                  <span className="text-white/40 text-[7px] tracking-widest mb-1">ENTITY CLASSIFICATION</span>
+                                                            <TooltipContent side="top" className="bg-slate-900 text-white rounded-none border-none text-[8px] font-black uppercase tracking-[0.2em] px-3 py-2">
+                                                               <div className="flex flex-col gap-1">
+                                                                  <span className="text-white/30 tracking-[0.3em]">CLASSIFICATION</span>
                                                                   <div className="flex items-center gap-2">
                                                                      <div className={cn(
-                                                                        "h-1.5 w-1.5 rounded-full",
-                                                                        part.type === 'AKTOR' ? "bg-purple-400" :
-                                                                        part.type === 'AKSI' ? "bg-amber-400" :
-                                                                        part.type === 'OBJEK' ? "bg-blue-400" :
-                                                                        part.type === 'LOKASI' ? "bg-indigo-400" :
-                                                                        part.type === 'KONTEKS' ? "bg-teal-400" :
-                                                                        part.type === 'HASIL' ? "bg-rose-400" :
-                                                                        "bg-slate-400"
+                                                                        "h-1.5 w-1.5",
+                                                                        part.type === 'AKTOR' ? "bg-purple-500" :
+                                                                        part.type === 'AKSI' ? "bg-amber-500" :
+                                                                        part.type === 'OBJEK' ? "bg-blue-500" :
+                                                                        part.type === 'LOKASI' ? "bg-indigo-500" :
+                                                                        part.type === 'KONTEKS' ? "bg-teal-500" :
+                                                                        part.type === 'HASIL' ? "bg-rose-500" :
+                                                                        "bg-slate-500"
                                                                      )} />
                                                                      <span className="text-white">
                                                                         {part.type === 'AKTOR' ? 'Aktor / Pelaku' :
@@ -4224,13 +4224,13 @@ function AnalysisTab() {
                                           </div>
                                        </div>
 
-                                       {/* B. Event Breakdown */}
+                                       {/* B. Event Breakdown (IBM Carbon Style) */}
                                        <div className="space-y-4">
                                           <div className="flex items-center gap-2">
                                              <LayoutGrid className="h-3 w-3 text-slate-400" />
                                              <span className="text-[10px] font-black uppercase tracking-widest text-slate-900">Event Breakdown</span>
                                           </div>
-                                          <div className="grid grid-cols-2 gap-px bg-slate-100 border border-slate-100 rounded-sm overflow-hidden shadow-sm">
+                                          <div className="grid grid-cols-2 gap-px bg-slate-200 border border-slate-200 rounded-none overflow-hidden">
                                              {[
                                                 { label: 'Time', value: item.breakdown?.time || item.time || item.time_label },
                                                 { label: 'Timezone', value: item.breakdown?.timezone || item.timezone || '—' },
@@ -4243,12 +4243,17 @@ function AnalysisTab() {
                                                 { label: 'Outcome', value: item.breakdown?.outcome || '—' },
                                              ].map((row, i) => (
                                                 <div key={i} className="bg-white p-3 space-y-1">
-                                                   <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">{row.label}</span>
-                                                   <p className="text-[10px] font-bold text-slate-800 uppercase truncate">{row.value}</p>
+                                                   <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{row.label}</span>
+                                                   <p className="text-[10px] font-bold text-slate-900 uppercase truncate">{row.value}</p>
                                                 </div>
                                              ))}
                                           </div>
                                        </div>
+                                    </div>
+                                 </div>
+                              </div>
+                           );
+                        }
                                     </div>
                                  </div>
                               </div>
