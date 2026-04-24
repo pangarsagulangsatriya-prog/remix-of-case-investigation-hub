@@ -181,7 +181,7 @@ export default function CaseListPage() {
                       <th>Status</th>
                       <th>Owner</th>
 
-                      <th className="pr-4">Updated</th>
+                      <th className="text-right pr-4">Updated</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -202,7 +202,7 @@ export default function CaseListPage() {
 
                         <td className="pr-4 py-2.5">
                           <div className="flex items-center justify-end gap-2">
-                            <span className="text-xs text-slate-500 font-medium mr-4">{new Date(c.updated_at).toLocaleDateString()}</span>
+                            <span className="text-xs text-slate-500 font-medium">{new Date(c.updated_at).toLocaleDateString()}</span>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                                 <Button variant="ghost" size="sm" className="h-7 w-7 p-0 hover:bg-slate-200">
