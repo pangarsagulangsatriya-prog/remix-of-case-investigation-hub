@@ -4153,15 +4153,7 @@ function AnalysisTab() {
                                           </div>
                                           
                                           <div className="space-y-4 p-4 bg-white border border-slate-200 rounded-none">
-                                             <div className="flex flex-wrap gap-2 pb-3 border-b border-slate-50">
-                                                <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-50 border border-slate-200">
-                                                   <Clock className="h-3 w-3 text-slate-400" />
-                                                   <span className="text-[9px] font-black text-slate-700 uppercase">{item.time_label || item.time}</span>
-                                                </div>
-                                                <div className="px-2 py-1 bg-slate-50 border border-slate-200">
-                                                   <span className="text-[9px] font-black text-slate-500 uppercase">{(item.phase || "").replace('_', ' ')}</span>
-                                                </div>
-                                             </div>
+
 
                                              <div className="flex flex-wrap gap-y-2 gap-x-2">
                                                 {item.decomposition ? (
