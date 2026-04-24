@@ -3727,7 +3727,7 @@ function AudioExtractionConsole({ file, onJump, currentTime }: { file: any, onJu
 function AnalysisTab() {
   const [agents, setAgents] = useState<AgentState[]>(initialAgentsState);
   const [factViewMode, setFactViewMode] = useState<'slide' | 'default'>('default');
-  const [selectedChronologyItemId, setSelectedChronologyItemId] = useState<string | null>(null);
+  const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
 
   const [activeEvidenceType, setActiveEvidenceType] = useState('audio_diarization');
   const [expandedFolders, setExpandedFolders] = useState<string[]>(['audio', 'document']);
@@ -3762,8 +3762,8 @@ function AnalysisTab() {
     setIsEditingSummary(true);
   };
 
-  const handleSelectChronologyItem = (id: string | null) => {
-    setSelectedChronologyItemId(id);
+  const handleSelectRow = (id: string | null) => {
+    setSelectedRowId(id);
     if (id) {
       setActiveEvidenceConsoleMode("trace");
       const factAgent = agents.find(a => a.id === 'fact');
@@ -4146,8 +4146,8 @@ function AnalysisTab() {
                                        metadata={slides[activeSlide]?.content.metadata}
                                        viewMode={factViewMode}
                                        onViewModeChange={setFactViewMode}
-                                       selectedItemId={selectedChronologyItemId || undefined}
-                                       onSelectItem={handleSelectChronologyItem}
+                                       selectedItemId={selectedRowId || undefined}
+                                       onSelectItem={handleSelectRow}
                                        onSync={(newItems) => {
                                           setAgents(prev => prev.map(a => a.id === 'fact' ? {
                                              ...a,
@@ -4208,9 +4208,20 @@ function AnalysisTab() {
                                                       { label: 'Email Address', value: 'xtav1.06.bagaspramono@gmail.com' },
                                                       { label: 'Emergency Contact', value: 'Karmi Ibu (0895329820979)' },
                                                    ].map((field, idx) => (
-                                                      <div key={idx} className="grid grid-cols-[240px_1fr] gap-px bg-slate-200">
-                                                         <div className="bg-slate-50 p-4 flex items-center"><span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{field.label}</span></div>
-                                                         <div className="bg-white p-4 flex items-center group transition-colors hover:bg-slate-50"><span className="text-sm font-black text-slate-900 uppercase tracking-tight">{field.value}</span></div>
+                                                      <div 
+                                                         key={idx} 
+                                                         onClick={() => handleSelectRow(field.label)}
+                                                         className={cn(
+                                                            "grid grid-cols-[240px_1fr] gap-px bg-slate-200 cursor-pointer transition-all",
+                                                            selectedRowId === field.label ? "ring-2 ring-slate-900 z-10 scale-[1.01] shadow-xl" : ""
+                                                         )}
+                                                      >
+                                                         <div className={cn("p-4 flex items-center transition-colors", selectedRowId === field.label ? "bg-slate-900" : "bg-slate-50")}>
+                                                            <span className={cn("text-[10px] font-black uppercase tracking-widest", selectedRowId === field.label ? "text-emerald-400" : "text-slate-400")}>{field.label}</span>
+                                                         </div>
+                                                         <div className={cn("p-4 flex items-center group transition-colors", selectedRowId === field.label ? "bg-slate-800" : "bg-white hover:bg-slate-50")}>
+                                                            <span className={cn("text-sm font-black uppercase tracking-tight", selectedRowId === field.label ? "text-white" : "text-slate-900")}>{field.value}</span>
+                                                         </div>
                                                       </div>
                                                    ))}
                                                 </div>
@@ -4238,29 +4249,58 @@ function AnalysisTab() {
                                                     </div>
                                                     
                                                     <div className="border-2 border-slate-900 bg-white rounded-none shadow-[12px_12px_0px_rgba(0,0,0,0.05)] overflow-hidden">
-                                                       {[
-                                                          { id: 'people', label: 'People', color: 'bg-emerald-50' },
-                                                          { id: 'equipment', label: 'Equipment', color: 'bg-white' },
-                                                          { id: 'environment', label: 'Environment', color: 'bg-emerald-50' },
-                                                          { id: 'procedures', label: 'Process', color: 'bg-white' },
-                                                          { id: 'organisation', label: 'Organization', color: 'bg-emerald-50' },
-                                                       ].map((section, sIdx) => (
-                                                          <div key={section.id} className={`grid grid-cols-[200px_1fr] border-b border-slate-200 last:border-0 ${section.color}`}>
-                                                             <div className="border-r border-slate-200 p-8 flex items-center justify-center bg-slate-50/50">
-                                                                <span className="text-2xl font-black text-slate-900 uppercase tracking-tighter text-center">{section.label}</span>
-                                                             </div>
-                                                             <div className="p-6">
-                                                                <ul className="space-y-3">
-                                                                   {(selectedAgent?.results?.[section.id] || []).map((item: string, iIdx: number) => (
-                                                                      <li key={iIdx} className="flex gap-3 text-sm text-slate-700 leading-relaxed group">
-                                                                         <div className="h-1.5 w-1.5 rounded-full bg-slate-400 mt-2 shrink-0 group-hover:bg-[#8ba861] transition-colors" />
-                                                                         <span className="font-medium">{item}</span>
-                                                                      </li>
-                                                                   ))}
-                                                                </ul>
-                                                             </div>
-                                                          </div>
-                                                       ))}
+                                                       <table className="w-full border-collapse">
+                                                          <thead>
+                                                             <tr className="bg-slate-200 border-b-2 border-slate-900">
+                                                                <th className="p-3 text-[10px] font-black text-slate-600 uppercase border-r border-slate-300 w-32 text-center">CATEGORY</th>
+                                                                <th className="p-3 text-[10px] font-black text-slate-600 uppercase text-left">FORENSIC FINDING</th>
+                                                                <th className="p-3 text-[10px] font-black text-slate-600 uppercase w-32 text-center">CONFIDENCE</th>
+                                                                <th className="p-3 text-[10px] font-black text-slate-600 uppercase w-32 text-center">TRACE</th>
+                                                             </tr>
+                                                          </thead>
+                                                          <tbody>
+                                                             {['people', 'equipment', 'environment', 'procedures', 'organisation'].map(cat => (
+                                                                (selectedAgent?.results?.[cat] || []).map((item: any, idx: number) => (
+                                                                   <tr 
+                                                                      key={`${cat}-${idx}`} 
+                                                                      onClick={() => handleSelectRow(item.id || item)}
+                                                                      className={cn(
+                                                                         "border-b border-slate-200 transition-all cursor-pointer group",
+                                                                         selectedRowId === (item.id || item) ? "bg-slate-900 text-white shadow-[0_0_20px_rgba(0,0,0,0.15)] relative z-10" : "bg-white hover:bg-slate-50"
+                                                                      )}
+                                                                   >
+                                                                      <td className={cn(
+                                                                         "p-4 text-[10px] font-black border-r border-slate-100 text-center uppercase tracking-widest",
+                                                                         selectedRowId === (item.id || item) ? "text-emerald-400" : "text-slate-400"
+                                                                      )}>
+                                                                         {cat}
+                                                                      </td>
+                                                                      <td className="p-4">
+                                                                         <div className="flex gap-3">
+                                                                            <div className={cn(
+                                                                               "h-1.5 w-1.5 rounded-full mt-2 shrink-0 transition-colors",
+                                                                               selectedRowId === (item.id || item) ? "bg-emerald-400" : "bg-slate-300 group-hover:bg-[#8ba861]"
+                                                                            )} />
+                                                                            <span className={cn(
+                                                                               "text-sm font-medium leading-relaxed",
+                                                                               selectedRowId === (item.id || item) ? "text-white" : "text-slate-700"
+                                                                            )}>{item.label || item}</span>
+                                                                         </div>
+                                                                      </td>
+                                                                      <td className="p-4 text-center">
+                                                                         <span className={cn(
+                                                                            "text-[10px] font-black uppercase tracking-tighter",
+                                                                            selectedRowId === item.id ? "text-emerald-400" : "text-slate-400"
+                                                                         )}>98% HIGH</span>
+                                                                      </td>
+                                                                      <td className="p-4 text-center">
+                                                                         <Search className={cn("h-3.5 w-3.5 mx-auto", selectedRowId === item.id ? "text-emerald-400" : "text-slate-300")} />
+                                                                      </td>
+                                                                   </tr>
+                                                                ))
+                                                             ))}
+                                                          </tbody>
+                                                       </table>
                                                     </div>
 
                                                     <div className="grid grid-cols-2 gap-6">
@@ -4302,7 +4342,14 @@ function AnalysisTab() {
                                                              </div>
                                                              <div className="p-4 space-y-3 flex-1 bg-[#f1f6ea]/30">
                                                                 {layer.items.map((item: any, idx: number) => (
-                                                                   <div key={idx} className="flex gap-3 group">
+                                                                    <div 
+                                                                       key={idx} 
+                                                                       onClick={() => handleSelectRow(item.id)}
+                                                                       className={cn(
+                                                                          "flex gap-3 group cursor-pointer p-2 rounded-sm transition-all",
+                                                                          selectedRowId === item.id ? "bg-slate-900 text-white shadow-md ring-1 ring-slate-900" : "hover:bg-slate-100"
+                                                                       )}
+                                                                    >
                                                                       <div className="mt-1 shrink-0">
                                                                          {item.status === 'rootcause' ? (
                                                                             <div className="h-4 w-4 rounded-full border-2 border-red-500 flex items-center justify-center">
@@ -4399,7 +4446,14 @@ function AnalysisTab() {
                                                                 </thead>
                                                                 <tbody>
                                                                    {(section.data || []).map((item: any, idx: number) => (
-                                                                      <tr key={idx} className="border-b border-slate-200 bg-white hover:bg-slate-50 transition-colors">
+                                                                       <tr 
+                                                                          key={idx} 
+                                                                          onClick={() => handleSelectRow(item.id)}
+                                                                          className={cn(
+                                                                             "border-b border-slate-200 transition-colors cursor-pointer",
+                                                                             selectedRowId === item.id ? "bg-slate-900 text-white shadow-[0_0_15px_rgba(0,0,0,0.1)] relative z-10" : "bg-white hover:bg-slate-50"
+                                                                          )}
+                                                                       >
                                                                          <td className="p-4 text-[11px] font-bold text-slate-900 border-r border-slate-100 text-center">{item.no}</td>
                                                                          <td className="p-4 text-[11px] font-black text-slate-500 border-r border-slate-100 text-center">{item.layer}</td>
                                                                          <td className="p-4 text-[11px] font-bold text-slate-900 border-r border-slate-100 text-center uppercase tracking-tighter">{item.hierarchy}</td>
@@ -4452,14 +4506,31 @@ function AnalysisTab() {
 
                {/* Right Sidebar: Fact Trace Panel */}
                <div className="w-[460px] border-l border-slate-200 bg-white flex flex-col shrink-0">
-                  {selectedChronologyItemId && selectedAgentId === 'fact' ? (
+                  {selectedRowId ? (
                      (() => {
-                        const factAgent = agents.find(a => a.id === 'fact');
-                        const item = factAgent?.results?.chronology_items?.find((i: any) => i.id === selectedChronologyItemId);
+                        const agent = agents.find(a => a.id === selectedAgentId);
+                        let item = agent?.results?.chronology_items?.find((i: any) => i.id === selectedRowId) || 
+                                     agent?.results?.layers?.flatMap((l: any) => l.items).find((i: any) => i.id === selectedRowId) ||
+                                     agent?.results?.root_cause_actions?.find((i: any) => i.id === selectedRowId) ||
+                                     agent?.results?.non_conformity_actions?.find((i: any) => i.id === selectedRowId) ||
+                                     agent?.results?.improvement_actions?.find((i: any) => i.id === selectedRowId);
+                        
+                        // Fallback for ID-less items (Actor attributes or PEEPO findings)
+                        if (!item && selectedRowId) {
+                           item = { 
+                              id: selectedRowId, 
+                              label: selectedRowId,
+                              timestamp: "Forensic Synthesis",
+                              status: "Verified",
+                              description: `Automatic trace synthesis for finding: "${selectedRowId}". Linked to Case CS-2026-0147.`
+                           };
+                        }
                         
                         if (!item) return (
                            <div className="flex-1 flex flex-col items-center justify-center p-12 text-slate-300">
-                              <h4 className="text-[10px] font-black uppercase tracking-[0.2em]">Item Not Found</h4>
+                              <Search className="h-12 w-12 mb-4 opacity-20" />
+                              <h4 className="text-[10px] font-black uppercase tracking-[0.2em]">Finding Not Resolved</h4>
+                              <p className="text-[8px] font-bold text-slate-400 uppercase mt-2">Select a row to view forensic evidence</p>
                            </div>
                         );
 
