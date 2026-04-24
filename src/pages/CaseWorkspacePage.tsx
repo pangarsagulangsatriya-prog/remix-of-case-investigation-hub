@@ -4245,6 +4245,65 @@ function AnalysisTab() {
                                              ))}
                                           </div>
                                        </div>
+
+                                       {/* C. Linked Evidence Accordion */}
+                                       <div className="border-t border-slate-100 pt-6">
+                                          <button 
+                                             onClick={() => setIsEvidenceExpanded(!isEvidenceExpanded)}
+                                             className="w-full flex items-center justify-between group"
+                                          >
+                                             <div className="flex items-center gap-2">
+                                                <div className="p-1 bg-slate-50 border border-slate-200 rounded-none group-hover:bg-slate-100 transition-colors">
+                                                   <FileSearch className="h-3 w-3 text-slate-400" />
+                                                </div>
+                                                <span className="text-[10px] font-black uppercase tracking-widest text-slate-900">Linked Evidence Trace</span>
+                                             </div>
+                                             <div className="flex items-center gap-2">
+                                                <span className="text-[8px] font-black text-slate-300 uppercase tracking-tighter">3 Sources</span>
+                                                {isEvidenceExpanded ? <ChevronDown className="h-3 w-3 text-slate-400" /> : <ChevronRight className="h-3 w-3 text-slate-400" />}
+                                             </div>
+                                          </button>
+
+                                          {isEvidenceExpanded && (
+                                             <div className="mt-4 space-y-4 animate-in slide-in-from-top-2 duration-300">
+                                                {/* Evidence Item 1: Audio */}
+                                                <div className="border border-slate-200 bg-white p-4 space-y-3 rounded-none shadow-[2px_2px_0px_rgba(0,0,0,0.05)]">
+                                                   <div className="flex items-center justify-between">
+                                                      <div className="flex items-center gap-2">
+                                                         <span className="text-[9px] font-mono text-slate-400">02:14 — 02:22</span>
+                                                         <span className="px-1.5 py-0.5 bg-slate-900 text-white text-[8px] font-black uppercase tracking-widest">OPERATOR A</span>
+                                                      </div>
+                                                      <div className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+                                                   </div>
+                                                   <p className="text-[11px] font-bold text-slate-800 leading-relaxed italic">
+                                                      "Kontrol! Belt Section 14 robek! Terjadi tumpahan material berat! E-Stop!"
+                                                   </p>
+                                                   <div className="pt-2 border-t border-slate-50 flex items-center justify-between">
+                                                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Source: VOIP_REC_14.WAV</span>
+                                                      <Button variant="ghost" className="h-5 px-2 text-[8px] font-black uppercase text-blue-600 hover:text-blue-700 p-0">Play Clip</Button>
+                                                   </div>
+                                                </div>
+
+                                                {/* Evidence Item 2: SCADA Log */}
+                                                <div className="border border-slate-200 bg-white p-4 space-y-3 rounded-none shadow-[2px_2px_0px_rgba(0,0,0,0.05)]">
+                                                   <div className="flex items-center justify-between">
+                                                      <div className="flex items-center gap-2">
+                                                         <span className="text-[9px] font-mono text-slate-400">14:05:22.481</span>
+                                                         <span className="px-1.5 py-0.5 bg-slate-100 text-slate-600 border border-slate-200 text-[8px] font-black uppercase tracking-widest">SCADA SYSTEM</span>
+                                                      </div>
+                                                      <div className="h-1.5 w-1.5 rounded-full bg-rose-500" />
+                                                   </div>
+                                                   <div className="bg-slate-50 p-2 font-mono text-[9px] text-slate-600 border border-slate-100">
+                                                      ERR_VIB_THRESHOLD_EXCEEDED: UNIT_S14_M01 | VAL: 4.8mm/s
+                                                   </div>
+                                                   <div className="pt-2 border-t border-slate-50 flex items-center justify-between">
+                                                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Source: SEC14_TELEM_LOG.CSV</span>
+                                                      <Button variant="ghost" className="h-5 px-2 text-[8px] font-black uppercase text-blue-600 hover:text-blue-700 p-0">View Raw</Button>
+                                                   </div>
+                                                </div>
+                                             </div>
+                                          )}
+                                       </div>
                                     </div>
                                  </div>
                               </div>
