@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/tooltip";
 import {
   Book,
-  BookOpen,
+  BookText,
   Upload,
   ArrowLeft,
   Play,
@@ -4085,73 +4085,72 @@ function AnalysisTab() {
                                     >
                                        <History className="h-4 w-4" />
                                     </Button>
-                                     <Button 
-                                        variant="outline" 
-                                        onClick={(e) => { e.stopPropagation(); setKnowledgeAgentId(knowledgeAgentId === agent.id ? null : agent.id); }}
-                                        className={cn(
-                                           "flex-1 h-10 border-slate-200 text-[10px] font-black uppercase tracking-[0.1em] rounded-sm transition-all",
-                                           knowledgeAgentId === agent.id ? "bg-slate-900 text-emerald-400 border-slate-900 shadow-lg" : "bg-white text-slate-500 hover:bg-slate-50"
-                                        )}
-                                     >
-                                        <Book className="h-4 w-4" />
-                                     </Button>
+                                     <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                           <Button 
+                                              variant="outline" 
+                                              onClick={(e) => e.stopPropagation()}
+                                              className={cn(
+                                                 "flex-1 h-10 border-slate-200 text-[10px] font-black uppercase tracking-[0.1em] rounded-sm transition-all",
+                                                 knowledgeAgentId === agent.id ? "bg-slate-900 text-emerald-400 border-slate-900 shadow-lg" : "bg-white text-slate-500 hover:bg-slate-50"
+                                              )}
+                                           >
+                                              <BookText className="h-4 w-4" />
+                                           </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end" className="w-[240px] p-0 border-slate-200 shadow-2xl rounded-sm overflow-hidden" onClick={(e) => e.stopPropagation()}>
+                                           <div className="bg-white p-4">
+                                              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Knowledge Sources</h3>
+                                              <div className="space-y-1">
+                                                 {['Audio Recording', 'Internal Document', 'External Document', 'Photos & Media'].map((folder) => {
+                                                    const isSelected = agent.knowledgeSelection?.includes(folder);
+                                                    return (
+                                                       <div 
+                                                          key={folder}
+                                                          onClick={(e) => {
+                                                             e.preventDefault();
+                                                             e.stopPropagation();
+                                                             setAgents(prev => prev.map(a => a.id === agent.id ? {
+                                                                ...a,
+                                                                knowledgeSelection: isSelected 
+                                                                   ? a.knowledgeSelection?.filter(f => f !== folder)
+                                                                   : [...(a.knowledgeSelection || []), folder]
+                                                             } : a));
+                                                          }}
+                                                          className="flex items-center gap-3 p-2 hover:bg-slate-50 rounded-sm cursor-pointer transition-colors group"
+                                                       >
+                                                          <div className={cn(
+                                                             "h-5 w-5 rounded border-2 flex items-center justify-center transition-all",
+                                                             isSelected ? "bg-[#1e293b] border-[#1e293b]" : "bg-white border-slate-200 group-hover:border-slate-300"
+                                                          )}>
+                                                             {isSelected && <Check className="h-3 w-3 text-white stroke-[4]" />}
+                                                          </div>
+                                                          <span className={cn("text-xs font-semibold tracking-tight", isSelected ? "text-slate-900" : "text-slate-500")}>
+                                                             {folder}
+                                                          </span>
+                                                       </div>
+                                                    );
+                                                 })}
+                                              </div>
+                                              
+                                              <div className="mt-6 pt-4 border-t border-slate-100">
+                                                 <div className="flex items-center justify-between mb-2">
+                                                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Active Coverage</span>
+                                                    <span className="text-[9px] font-bold text-emerald-600">{((agent.knowledgeSelection?.length || 0) / 4) * 100}%</span>
+                                                 </div>
+                                                 <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
+                                                    <div 
+                                                       className="h-full bg-emerald-500 transition-all duration-500" 
+                                                       style={{ width: `${((agent.knowledgeSelection?.length || 0) / 4) * 100}%` }} 
+                                                    />
+                                                 </div>
+                                              </div>
+                                           </div>
+                                        </DropdownMenuContent>
+                                     </DropdownMenu>
                                  </div>
                               </>
                            )}
-
-                         {/* Knowledge Selector (Optimistic Inline UI) */}
-                         {knowledgeAgentId === agent.id && (
-                            <div className="mt-4 pt-4 border-t border-slate-100 animate-in slide-in-from-top-2 duration-200">
-                               <div className="flex items-center justify-between mb-3">
-                                  <span className="text-[9px] font-black text-slate-900 uppercase tracking-widest flex items-center gap-1.5">
-                                     <BookOpen className="h-3 w-3 text-emerald-500" /> Knowledge Selection
-                                  </span>
-                                  <span className="text-[8px] font-bold text-slate-400 uppercase">{agent.knowledgeSelection?.length} Folders</span>
-                               </div>
-                               <div className="space-y-1.5">
-                                  {['Audio Recording', 'Internal Document', 'External Document', 'Photos & Media'].map((folder) => {
-                                     const isSelected = agent.knowledgeSelection?.includes(folder);
-                                     return (
-                                        <div 
-                                           key={folder}
-                                           onClick={(e) => {
-                                              e.stopPropagation();
-                                              setAgents(prev => prev.map(a => a.id === agent.id ? {
-                                                 ...a,
-                                                 knowledgeSelection: isSelected 
-                                                    ? a.knowledgeSelection?.filter(f => f !== folder)
-                                                    : [...(a.knowledgeSelection || []), folder]
-                                              } : a));
-                                           }}
-                                           className={cn(
-                                              "flex items-center justify-between p-2 rounded-sm cursor-pointer transition-all border",
-                                              isSelected ? "bg-emerald-50 border-emerald-100 shadow-sm" : "bg-slate-50/50 border-transparent hover:bg-slate-50"
-                                           )}
-                                        >
-                                           <span className={cn("text-[9px] font-bold uppercase tracking-tight", isSelected ? "text-emerald-700" : "text-slate-500")}>
-                                              {folder}
-                                           </span>
-                                           <div className={cn(
-                                              "h-3.5 w-3.5 rounded-full border flex items-center justify-center transition-all",
-                                              isSelected ? "bg-emerald-500 border-emerald-500" : "bg-white border-slate-200"
-                                           )}>
-                                              {isSelected && <Check className="h-2 w-2 text-white stroke-[4]" />}
-                                           </div>
-                                        </div>
-                                     );
-                                  })}
-                               </div>
-                               <div className="mt-4 flex items-center gap-2">
-                                  <div className="h-1 flex-1 bg-slate-100 rounded-full overflow-hidden">
-                                     <div 
-                                        className="h-full bg-emerald-500 transition-all duration-500" 
-                                        style={{ width: `${((agent.knowledgeSelection?.length || 0) / 4) * 100}%` }} 
-                                     />
-                                  </div>
-                                  <span className="text-[8px] font-black text-slate-300 uppercase">Coverage</span>
-                               </div>
-                            </div>
-                         )}
                         </div>
 
                         {agent.status === 'running' && (
