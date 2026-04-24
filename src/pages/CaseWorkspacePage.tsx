@@ -4260,11 +4260,7 @@ function AnalysisTab() {
                               </div>
                            );
                         }
-                                    </div>
-                                 </div>
-                              </div>
-                           );
-                        }
+
 
                         return (
                            <div className="flex flex-col h-full bg-white animate-in fade-in duration-300">
