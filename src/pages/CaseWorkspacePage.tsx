@@ -14,6 +14,12 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   Upload,
   ArrowLeft,
   Play,
@@ -206,8 +212,7 @@ const initialAgentsState: AgentState[] = [
            departemen: "Mining Operations",
            sumber_bukti: "SCADA, CCTV-B14, HSE Logs",
            severity: "High"
-        },
-        chronology_items: [
+        },         chronology_items: [
             { 
               id: 'chrono-001', 
               phase: 'pre_contact', 
@@ -219,6 +224,13 @@ const initialAgentsState: AgentState[] = [
               status: "reviewed",
               verification_status: "human_verified",
               annotated_by_human: true,
+              decomposition: [
+                 { text: "Normal operation", type: "AKSI" },
+                 { text: ": ", type: "TEXT" },
+                 { text: "Section 14", type: "LOKASI" },
+                 { text: " conveyor belt", type: "OBJEK" },
+                 { text: " carrying material at 85% capacity", type: "KONTEKS" }
+              ],
               breakdown: {
                  time: "14:05",
                  timezone: "WITA",
@@ -249,6 +261,14 @@ const initialAgentsState: AgentState[] = [
               status: "draft",
               verification_status: "ai_generated",
               annotated_by_human: false,
+              decomposition: [
+                 { text: "Vibration sensor alert", type: "AKSI" },
+                 { text: " on ", type: "TEXT" },
+                 { text: "Section 14", type: "LOKASI" },
+                 { text: " drive motor", type: "OBJEK" },
+                 { text: " detected by ", type: "TEXT" },
+                 { text: "SCADA", type: "AKTOR" }
+              ],
               breakdown: {
                  time: "14:10",
                  timezone: "WITA",
@@ -279,6 +299,13 @@ const initialAgentsState: AgentState[] = [
               status: "draft",
               verification_status: "ai_generated",
               annotated_by_human: false,
+              decomposition: [
+                 { text: "Belt rupture", type: "AKSI" },
+                 { text: " occurred at ", type: "TEXT" },
+                 { text: "Section 14", type: "LOKASI" },
+                 { text: ", leading to ", type: "TEXT" },
+                 { text: "massive material spillage", type: "HASIL" }
+              ],
               breakdown: {
                  time: "14:23",
                  timezone: "WITA",
@@ -309,6 +336,13 @@ const initialAgentsState: AgentState[] = [
               status: "reviewed",
               verification_status: "human_verified",
               annotated_by_human: true,
+              decomposition: [
+                 { text: "Operator A", type: "AKTOR" },
+                 { text: " triggered ", type: "TEXT" },
+                 { text: "Emergency Stop", type: "AKSI" },
+                 { text: " and reported rupture to ", type: "TEXT" },
+                 { text: "Control Room", type: "LOKASI" }
+              ],
               breakdown: {
                  time: "14:24",
                  timezone: "WITA",
@@ -339,6 +373,13 @@ const initialAgentsState: AgentState[] = [
               status: "draft",
               verification_status: "ai_generated",
               annotated_by_human: false,
+              decomposition: [
+                 { text: "Maintenance team", type: "AKTOR" },
+                 { text: " arrived at ", type: "TEXT" },
+                 { text: "Section 14", type: "LOKASI" },
+                 { text: " to ", type: "TEXT" },
+                 { text: "assess damage and contain spillage", type: "AKSI" }
+              ],
               breakdown: {
                  time: "14:30",
                  timezone: "WITA",
@@ -369,6 +410,13 @@ const initialAgentsState: AgentState[] = [
               status: "draft",
               verification_status: "ai_generated",
               annotated_by_human: false,
+              decomposition: [
+                 { text: "Section 14", type: "LOKASI" },
+                 { text: " isolated, ", type: "TEXT" },
+                 { text: "cleanup operation", type: "AKSI" },
+                 { text: " commenced under ", type: "TEXT" },
+                 { text: "HSE supervision", type: "KONTEKS" }
+              ],
               breakdown: {
                  time: "14:45",
                  timezone: "WITA",
@@ -4106,10 +4154,74 @@ function AnalysisTab() {
 
                                  <div className="flex-1 overflow-y-auto custom-scrollbar">
                                     <div className="p-5 space-y-8">
-                                       {/* Fact Context */}
-                                       <div className="space-y-1">
-                                          <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Selected chronology item</span>
-                                          <p className="text-xs font-bold leading-relaxed text-slate-900">{item.description || item.chronology_text}</p>
+                                       {/* Fact Context - Interactive Decomposition */}
+                                       <div className="space-y-3">
+                                          <div className="flex items-center justify-between">
+                                             <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Fact Decomposition</span>
+                                             <div className="flex items-center gap-1">
+                                                <div className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
+                                                <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">AI Entity Extraction</span>
+                                             </div>
+                                          </div>
+                                          
+                                          <div className="flex flex-wrap gap-y-2 gap-x-1.5 p-4 bg-slate-50 border border-slate-100 rounded-sm shadow-inner">
+                                             {item.decomposition ? (
+                                                <TooltipProvider delayDuration={100}>
+                                                   {item.decomposition.map((part: any, i: number) => (
+                                                      part.type === 'TEXT' ? (
+                                                         <span key={i} className="text-xs font-bold leading-relaxed text-slate-800 self-center">{part.text}</span>
+                                                      ) : (
+                                                         <Tooltip key={i}>
+                                                            <TooltipTrigger asChild>
+                                                               <span className={cn(
+                                                                  "px-2 py-0.5 rounded-sm text-[10px] font-black uppercase border cursor-help transition-all hover:scale-105 select-none",
+                                                                  part.type === 'AKTOR' ? "bg-purple-100 text-purple-700 border-purple-200" :
+                                                                  part.type === 'AKSI' ? "bg-amber-100 text-amber-700 border-amber-200" :
+                                                                  part.type === 'OBJEK' ? "bg-blue-100 text-blue-700 border-blue-200" :
+                                                                  part.type === 'LOKASI' ? "bg-indigo-100 text-indigo-700 border-indigo-200" :
+                                                                  part.type === 'KONTEKS' ? "bg-teal-100 text-teal-700 border-teal-200" :
+                                                                  part.type === 'HASIL' ? "bg-rose-100 text-rose-700 border-rose-200" :
+                                                                  part.type === 'WAKTU' ? "bg-slate-100 text-slate-700 border-slate-200" :
+                                                                  "bg-slate-200 text-slate-800 border-slate-300"
+                                                               )}>
+                                                                  {part.text}
+                                                               </span>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent side="top" className="bg-slate-900 text-white border-none text-[9px] font-black uppercase tracking-[0.1em] px-3 py-1.5 rounded-sm">
+                                                               <div className="flex flex-col gap-0.5">
+                                                                  <span className="text-white/40 text-[7px] tracking-widest mb-1">ENTITY CLASSIFICATION</span>
+                                                                  <div className="flex items-center gap-2">
+                                                                     <div className={cn(
+                                                                        "h-1.5 w-1.5 rounded-full",
+                                                                        part.type === 'AKTOR' ? "bg-purple-400" :
+                                                                        part.type === 'AKSI' ? "bg-amber-400" :
+                                                                        part.type === 'OBJEK' ? "bg-blue-400" :
+                                                                        part.type === 'LOKASI' ? "bg-indigo-400" :
+                                                                        part.type === 'KONTEKS' ? "bg-teal-400" :
+                                                                        part.type === 'HASIL' ? "bg-rose-400" :
+                                                                        "bg-slate-400"
+                                                                     )} />
+                                                                     <span className="text-white">
+                                                                        {part.type === 'AKTOR' ? 'Aktor / Pelaku' :
+                                                                         part.type === 'AKSI' ? 'Aksi / Kejadian' :
+                                                                         part.type === 'OBJEK' ? 'Objek / Target' :
+                                                                         part.type === 'LOKASI' ? 'Lokasi / Unit' :
+                                                                         part.type === 'KONTEKS' ? 'Konteks / Cara' :
+                                                                         part.type === 'HASIL' ? 'Hasil / Dampak' :
+                                                                         part.type === 'WAKTU' ? 'Waktu / Durasi' :
+                                                                         part.type}
+                                                                     </span>
+                                                                  </div>
+                                                               </div>
+                                                            </TooltipContent>
+                                                         </Tooltip>
+                                                      )
+                                                   ))}
+                                                </TooltipProvider>
+                                             ) : (
+                                                <p className="text-xs font-bold leading-relaxed text-slate-900">{item.description || item.chronology_text}</p>
+                                             )}
+                                          </div>
                                        </div>
 
                                        {/* B. Event Breakdown */}
