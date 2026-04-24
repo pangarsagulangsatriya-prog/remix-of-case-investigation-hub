@@ -352,7 +352,7 @@ import {
 import { UploadModal, CompletedGroup } from "@/components/UploadModal";
 
 // Mock types removed. Using data from hooks.
-const tabs = ["Overview", "Evidence Review", "Analysis", "Reports", "Review", "Audit Trail"];
+const tabs = ["Overview", "Evidence Review", "Review", "Audit Trail"];
 
 const progressSteps = [
   { label: "Evidence", done: true },

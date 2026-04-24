@@ -186,9 +186,7 @@ export default function CaseListPage() {
                       <th>Severity</th>
                       <th>Status</th>
                       <th>Owner</th>
-                      <th className="text-center">Evidence</th>
-                      <th className="text-center">Reports</th>
-                      <th className="text-center">Pending</th>
+
                       <th className="pr-4">Updated</th>
                     </tr>
                   </thead>
@@ -207,11 +205,7 @@ export default function CaseListPage() {
                         <td className="py-2.5"><SeverityChip severity={(c.severity || "medium").toLowerCase() as any} /></td>
                         <td className="py-2.5"><StatusChip status={c.status as any} /></td>
                         <td className="text-xs text-slate-700 font-medium">Admin</td>
-                        <td className="text-xs text-center font-medium text-slate-600">0</td>
-                        <td className="text-xs text-center font-medium text-slate-600">0</td>
-                        <td className="text-xs text-center">
-                          <span className="text-slate-300">—</span>
-                        </td>
+
                         <td className="pr-4 py-2.5">
                           <div className="flex items-center justify-end gap-2">
                             <span className="text-xs text-slate-500 font-medium mr-4">{new Date(c.updated_at).toLocaleDateString()}</span>
@@ -309,32 +303,7 @@ export default function CaseListPage() {
                     ))}
                   </div>
 
-                  {/* Summary (for Expanded/Manager feel) */}
-                  <div className="space-y-2">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Summary</span>
-                    <p className="text-xs text-slate-600 leading-relaxed font-medium bg-slate-50/50 p-3 rounded-lg border border-slate-100 italic">
-                      {selectedCase.summary}
-                    </p>
-                  </div>
 
-                  {/* Metrics */}
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="bg-slate-50 rounded-lg p-3 border border-slate-100 flex flex-col items-center">
-                      <Paperclip className="h-3.5 w-3.5 text-slate-400 mb-1" />
-                      <span className="text-lg font-bold text-slate-800 leading-none">{selectedCase.evidenceCount}</span>
-                      <span className="text-[9px] text-slate-500 uppercase font-bold tracking-wider mt-1">Evidence</span>
-                    </div>
-                    <div className="bg-slate-50 rounded-lg p-3 border border-slate-100 flex flex-col items-center">
-                      <FileText className="h-3.5 w-3.5 text-slate-400 mb-1" />
-                      <span className="text-lg font-bold text-slate-800 leading-none">{selectedCase.reportsCount}</span>
-                      <span className="text-[9px] text-slate-500 uppercase font-bold tracking-wider mt-1">Reports</span>
-                    </div>
-                    <div className="bg-slate-50 rounded-lg p-3 border border-slate-100 flex flex-col items-center">
-                      <MessageSquare className="h-3.5 w-3.5 text-slate-400 mb-1" />
-                      <span className="text-lg font-bold text-status-review leading-none">{selectedCase.pendingReview}</span>
-                      <span className="text-[9px] text-slate-500 uppercase font-bold tracking-wider mt-1">Pending</span>
-                    </div>
-                  </div>
 
                   {/* Progress Matrix */}
                   <div className="space-y-3">
@@ -367,9 +336,7 @@ export default function CaseListPage() {
                   Open Workspace <ExternalLink className="h-3 w-3" />
                 </Button>
                 <div className="flex gap-2">
-                  <Button variant="outline" className="flex-1 h-8 text-xs font-bold bg-white border-slate-200">
-                    Analysis
-                  </Button>
+
                   <Button 
                     variant="outline" 
                     className="flex-1 h-8 text-xs font-bold bg-white border-slate-200 text-rose-600 hover:bg-rose-50 hover:border-rose-200 transition-all"
@@ -564,23 +531,7 @@ function CaseGridCard({
             <span className="text-[11px] font-bold text-slate-400">{new Date(caseData.updated_at).toLocaleDateString()}</span>
           </div>
 
-          {/* Metrics Grid */}
-          <div className="flex items-center gap-4 border-t border-slate-100 pt-3">
-            <div className="flex items-center gap-1.5" title="Evidence Count">
-              <Paperclip className="h-3.5 w-3.5 text-slate-400" />
-              <span className="text-xs font-bold text-slate-700">0</span>
-            </div>
-            <div className="flex items-center gap-1.5" title="Reports Count">
-              <FileText className="h-3.5 w-3.5 text-slate-400" />
-              <span className="text-xs font-bold text-slate-700">0</span>
-            </div>
-            {false && (
-              <div className="flex items-center gap-1.5" title="Pending Reviews">
-                <MessageSquare className="h-3.5 w-3.5 text-status-review" />
-                <span className="text-xs font-bold text-status-review">0</span>
-              </div>
-            )}
-          </div>
+
         </div>
       </div>
 
