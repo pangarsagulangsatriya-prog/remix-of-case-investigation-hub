@@ -4227,259 +4227,463 @@ function AnalysisTab() {
                                                 </div>
                                              </div>
                                           </div>
-                                        ) : selectedAgentId === 'peepo' ? (
-                                           <div className="flex flex-col h-full bg-white overflow-hidden animate-in fade-in duration-500">
-                                              <div className="h-16 border-b border-slate-200 flex items-center justify-between px-8 bg-slate-50/30 shrink-0">
-                                                 <div className="flex items-center gap-3">
-                                                    <Brain className="h-5 w-5 text-slate-900" />
-                                                    <h2 className="text-xl font-black text-slate-900 uppercase tracking-tighter">PEEPO Factor Analysis</h2>
-                                                 </div>
-                                                 <div className="flex items-center gap-2">
-                                                    <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse" />
-                                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Synthesis Complete</span>
-                                                 </div>
-                                              </div>
-                                              <div className="flex-1 overflow-y-auto custom-scrollbar p-8 space-y-10 bg-slate-50/10">
-                                                 <div className="max-w-5xl mx-auto space-y-8">
-                                                    <div className="bg-[#8ba861] p-3 border-2 border-slate-900 shadow-[4px_4px_0px_rgba(0,0,0,1)]">
-                                                       <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
-                                                          <ShieldAlert className="h-4 w-4" />
-                                                          TABEL PEEPO - Kejadian Pelanggaran PD UNIT DTMB 26
-                                                       </h3>
-                                                    </div>
-                                                    
-                                                    <div className="border-2 border-slate-900 bg-white rounded-none shadow-[12px_12px_0px_rgba(0,0,0,0.05)] overflow-hidden">
-                                                       <table className="w-full border-collapse">
-                                                          <thead>
-                                                             <tr className="bg-slate-200 border-b-2 border-slate-900">
-                                                                <th className="p-3 text-[10px] font-black text-slate-600 uppercase border-r border-slate-300 w-32 text-center">CATEGORY</th>
-                                                                <th className="p-3 text-[10px] font-black text-slate-600 uppercase text-left">FORENSIC FINDING</th>
-                                                                <th className="p-3 text-[10px] font-black text-slate-600 uppercase w-32 text-center">CONFIDENCE</th>
-                                                                <th className="p-3 text-[10px] font-black text-slate-600 uppercase w-32 text-center">TRACE</th>
-                                                             </tr>
-                                                          </thead>
-                                                          <tbody>
-                                                             {['people', 'equipment', 'environment', 'procedures', 'organisation'].map(cat => (
-                                                                (selectedAgent?.results?.[cat] || []).map((item: any, idx: number) => (
-                                                                   <tr 
-                                                                      key={`${cat}-${idx}`} 
-                                                                      onClick={() => handleSelectRow(item.id || item)}
-                                                                      className={cn(
-                                                                         "border-b border-slate-200 transition-all cursor-pointer group",
-                                                                         selectedRowId === (item.id || item) ? "bg-slate-900 text-white shadow-[0_0_20px_rgba(0,0,0,0.15)] relative z-10" : "bg-white hover:bg-slate-50"
-                                                                      )}
-                                                                   >
-                                                                      <td className={cn(
-                                                                         "p-4 text-[10px] font-black border-r border-slate-100 text-center uppercase tracking-widest",
-                                                                         selectedRowId === (item.id || item) ? "text-emerald-400" : "text-slate-400"
-                                                                      )}>
-                                                                         {cat}
-                                                                      </td>
-                                                                      <td className="p-4">
-                                                                         <div className="flex gap-3">
-                                                                            <div className={cn(
-                                                                               "h-1.5 w-1.5 rounded-full mt-2 shrink-0 transition-colors",
-                                                                               selectedRowId === (item.id || item) ? "bg-emerald-400" : "bg-slate-300 group-hover:bg-[#8ba861]"
-                                                                            )} />
-                                                                            <span className={cn(
-                                                                               "text-sm font-medium leading-relaxed",
-                                                                               selectedRowId === (item.id || item) ? "text-white" : "text-slate-700"
-                                                                            )}>{item.label || item}</span>
-                                                                         </div>
-                                                                      </td>
-                                                                      <td className="p-4 text-center">
-                                                                         <span className={cn(
-                                                                            "text-[10px] font-black uppercase tracking-tighter",
-                                                                            selectedRowId === item.id ? "text-emerald-400" : "text-slate-400"
-                                                                         )}>98% HIGH</span>
-                                                                      </td>
-                                                                      <td className="p-4 text-center">
-                                                                         <Search className={cn("h-3.5 w-3.5 mx-auto", selectedRowId === item.id ? "text-emerald-400" : "text-slate-300")} />
-                                                                      </td>
-                                                                   </tr>
-                                                                ))
-                                                             ))}
-                                                          </tbody>
-                                                       </table>
-                                                    </div>
+                                                                                 ) : selectedAgentId === 'peepo' ? (
+                                            <div className="flex flex-col h-full bg-slate-50/10 animate-in fade-in duration-500 overflow-hidden">
+                                               <div className="h-12 flex items-center justify-between px-5 border-b border-slate-200 bg-white shrink-0">
+                                                  <div className="flex items-center gap-2">
+                                                     <div className="h-2 w-2 rounded-full bg-[#8ba861]" />
+                                                     <h2 className="text-[10px] font-black text-slate-900 uppercase tracking-widest">PEEPO Factor Analysis Sheet</h2>
+                                                  </div>
+                                                  <div className="flex items-center gap-2">
+                                                     <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse" />
+                                                     <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Synthesis Complete</span>
+                                                  </div>
+                                               </div>
+                                               
+                                               <div className="flex-1 overflow-auto p-6 scrollbar-thin">
+                                                  <div className="max-w-5xl mx-auto space-y-8 pb-12">
+                                                     {[
+                                                        { id: 'people', label: 'People (Individu)' },
+                                                        { id: 'environment', label: 'Environment (Lingkungan)' },
+                                                        { id: 'equipment', label: 'Equipment (Peralatan)' },
+                                                        { id: 'procedures', label: 'Procedures (Prosedur)' },
+                                                        { id: 'organisation', label: 'Organisation (Organisasi)' },
+                                                     ].map((section) => (
+                                                        <div key={section.id} className="space-y-3">
+                                                           <div className="flex items-center gap-3">
+                                                              <span className="px-2.5 py-1 rounded text-[9px] font-black text-white uppercase tracking-widest bg-slate-900">
+                                                                 {section.label}
+                                                              </span>
+                                                              <div className="h-px flex-1 bg-slate-200" />
+                                                           </div>
+                                                           <div className="bg-white border-l border-t border-slate-200 overflow-hidden shadow-sm">
+                                                              <table className="w-full text-left border-collapse">
+                                                                 <thead>
+                                                                    <tr className="bg-slate-50/80">
+                                                                       <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest w-24 border-r border-b border-slate-200 bg-slate-50/30">ID</th>
+                                                                       <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest border-r border-b border-slate-200 bg-slate-50/30">Forensic Finding</th>
+                                                                       <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest w-32 border-r border-b border-slate-200 bg-slate-50/30">Traceability</th>
+                                                                    </tr>
+                                                                 </thead>
+                                                                 <tbody>
+                                                                    {(selectedAgent?.results?.[section.id] || []).map((item: any, idx: number) => {
+                                                                       const isSelected = selectedRowId === (item.id || item);
+                                                                       return (
+                                                                          <tr 
+                                                                             key={item.id || idx} 
+                                                                             onClick={() => handleSelectRow(item.id || item)}
+                                                                             className={cn(
+                                                                                "group transition-all cursor-pointer",
+                                                                                isSelected ? "bg-slate-100/80" : "hover:bg-slate-50/50"
+                                                                             )}
+                                                                          >
+                                                                             <td className="px-5 py-4 align-top border-r border-b border-slate-200">
+                                                                                <span className="text-[11px] font-mono font-black text-slate-400">#{section.id.slice(0, 1).toUpperCase()}{idx + 1}</span>
+                                                                             </td>
+                                                                             <td className="px-5 py-4 align-top border-r border-b border-slate-200">
+                                                                                <p className={cn(
+                                                                                   "text-[11px] font-bold leading-relaxed pr-8",
+                                                                                   isSelected ? "text-slate-900" : "text-slate-700"
+                                                                                )}>
+                                                                                   {item.label || item}
+                                                                                </p>
+                                                                             </td>
+                                                                             <td className="px-5 py-4 align-top border-r border-b border-slate-200 text-center">
+                                                                                <Search className={cn("h-3.5 w-3.5 mx-auto", isSelected ? "text-slate-900" : "text-slate-300")} />
+                                                                             </td>
+                                                                          </tr>
+                                                                       );
+                                                                    })}
+                                                                 </tbody>
+                                                              </table>
+                                                           </div>
+                                                        </div>
+                                                     ))}
 
-                                                    <div className="grid grid-cols-2 gap-6">
-                                                       <div className="border border-slate-200 bg-white p-6 shadow-sm relative overflow-hidden">
-                                                          <div className="absolute top-0 left-0 w-1 h-full bg-amber-500" />
-                                                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-2">Ringkasan Analisis</span>
-                                                          <p className="text-sm font-bold text-slate-900 leading-snug">{selectedAgent?.results?.ringkasan}</p>
-                                                       </div>
-                                                       <div className="border border-slate-200 bg-slate-900 p-6 shadow-sm relative overflow-hidden">
-                                                          <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500" />
-                                                          <span className="text-[9px] font-black text-emerald-400/50 uppercase tracking-widest block mb-2">Synthesis Indicator</span>
-                                                          <p className="text-sm font-black text-white italic tracking-tight">{selectedAgent?.results?.synthesis}</p>
-                                                       </div>
-                                                    </div>
-                                                 </div>
-                                              </div>
-                                           </div>
-                                        ) : selectedAgentId === 'ipls' ? (
-                                           <div className="flex flex-col h-full bg-white overflow-hidden animate-in fade-in duration-500">
-                                              <div className="h-16 border-b border-slate-200 flex items-center justify-between px-8 bg-slate-50/30 shrink-0">
-                                                 <div className="flex items-center gap-3">
-                                                    <Layers className="h-5 w-5 text-slate-900" />
-                                                    <h2 className="text-xl font-black text-slate-900 uppercase tracking-tighter">Integrated Profile Layer (IPLS)</h2>
-                                                 </div>
-                                                 <div className="flex items-center gap-2">
-                                                    <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse" />
-                                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Defensive Audit Complete</span>
-                                                 </div>
-                                              </div>
-                                              <div className="flex-1 overflow-y-auto custom-scrollbar p-6 bg-slate-50/10">
-                                                 <div className="max-w-[1400px] mx-auto space-y-6">
-                                                    {/* Defensive Layers Grid */}
-                                                    <div className="grid grid-cols-5 gap-px bg-slate-200 border-2 border-slate-900 shadow-[12px_12px_0px_rgba(0,0,0,0.05)]">
-                                                       {(selectedAgent?.results?.layers || []).map((layer: any) => (
-                                                          <div key={layer.id} className="bg-white flex flex-col min-h-[500px]">
-                                                             <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex flex-col items-center gap-1">
-                                                                <span className="text-[10px] font-black text-[#8ba861] uppercase tracking-widest italic">Layer {["I", "II", "III", "IV", "V"][layer.id - 1]}</span>
-                                                                <h3 className="text-[11px] font-black text-slate-900 uppercase tracking-tight text-center leading-tight min-h-[32px] flex items-center">{layer.title}</h3>
-                                                             </div>
-                                                             <div className="p-4 space-y-3 flex-1 bg-[#f1f6ea]/30">
-                                                                {layer.items.map((item: any, idx: number) => (
-                                                                    <div 
-                                                                       key={idx} 
-                                                                       onClick={() => handleSelectRow(item.id)}
-                                                                       className={cn(
-                                                                          "flex gap-3 group cursor-pointer p-2 rounded-sm transition-all",
-                                                                          selectedRowId === item.id ? "bg-slate-900 text-white shadow-md ring-1 ring-slate-900" : "hover:bg-slate-100"
-                                                                       )}
-                                                                    >
-                                                                      <div className="mt-1 shrink-0">
-                                                                         {item.status === 'rootcause' ? (
-                                                                            <div className="h-4 w-4 rounded-full border-2 border-red-500 flex items-center justify-center">
-                                                                               <div className="h-1.5 w-1.5 rounded-full bg-red-500" />
-                                                                            </div>
-                                                                         ) : item.status === 'non-conformity' ? (
-                                                                            <div className="h-4 w-4 rounded-full border-2 border-amber-500 flex items-center justify-center">
-                                                                               <div className="h-1.5 w-1.5 rounded-full bg-amber-500" />
-                                                                            </div>
-                                                                         ) : (
-                                                                            <div className="h-4 w-4 rounded-full border-2 border-emerald-500 flex items-center justify-center">
-                                                                               <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                                                                            </div>
-                                                                         )}
-                                                                      </div>
-                                                                      <div className="space-y-1">
-                                                                         <span className="text-[10px] font-bold text-slate-400">{item.id}.</span>
-                                                                         <p className="text-[10px] font-black text-slate-800 leading-tight uppercase tracking-tight group-hover:text-slate-900 transition-colors">{item.label}</p>
-                                                                      </div>
-                                                                   </div>
-                                                                ))}
-                                                             </div>
-                                                          </div>
-                                                       ))}
-                                                    </div>
-
-                                                    {/* Legend and Summary */}
-                                                    <div className="grid grid-cols-[1fr_400px] gap-6">
-                                                       <div className="bg-slate-900 p-6 flex items-center justify-between shadow-sm border border-slate-800">
-                                                          <div className="flex items-center gap-10">
-                                                             <div className="flex items-center gap-3">
-                                                                <div className="h-5 w-5 rounded-full border-2 border-red-500 flex items-center justify-center"><div className="h-2 w-2 rounded-full bg-red-500" /></div>
-                                                                <span className="text-[10px] font-black text-white uppercase tracking-widest">Rootcause</span>
-                                                             </div>
-                                                             <div className="flex items-center gap-3">
-                                                                <div className="h-5 w-5 rounded-full border-2 border-amber-500 flex items-center justify-center"><div className="h-2 w-2 rounded-full bg-amber-500" /></div>
-                                                                <span className="text-[10px] font-black text-white uppercase tracking-widest">Non Conformity</span>
-                                                             </div>
-                                                             <div className="flex items-center gap-3">
-                                                                <div className="h-5 w-5 rounded-full border-2 border-emerald-500 flex items-center justify-center"><div className="h-2 w-2 rounded-full bg-emerald-500" /></div>
-                                                                <span className="text-[10px] font-black text-white uppercase tracking-widest">Improvement</span>
-                                                             </div>
-                                                          </div>
-                                                          <div className="flex items-center gap-3 border-l border-slate-700 pl-10">
-                                                             <img src="https://upload.wikimedia.org/wikipedia/commons/d/df/Berau_Coal_Energy_logo.png" alt="Berau Coal" className="h-4 opacity-50 grayscale invert" />
-                                                          </div>
-                                                       </div>
-                                                       <div className="bg-white border-2 border-slate-900 p-6 shadow-[8px_8px_0px_rgba(0,0,0,0.05)] relative overflow-hidden">
-                                                          <div className="absolute top-0 right-0 w-16 h-16 bg-slate-50 flex items-center justify-center -mr-8 -mt-8 rotate-45">
-                                                             <AlertTriangle className="h-6 w-6 text-amber-500 -rotate-45 mt-4" />
-                                                          </div>
-                                                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Investigation Priority</span>
-                                                          <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight mb-2">{selectedAgent?.results?.priority_layer}</h4>
-                                                          <p className="text-[10px] font-bold text-slate-500 leading-relaxed uppercase">{selectedAgent?.results?.summary}</p>
-                                                       </div>
-                                                    </div>
-                                                 </div>
-                                              </div>
-                                           </div>
-                                        ) : selectedAgentId === 'prev' ? (
-                                           <div className="flex flex-col h-full bg-white overflow-hidden animate-in fade-in duration-500">
-                                              <div className="h-16 border-b border-slate-200 flex items-center justify-between px-8 bg-slate-50/30 shrink-0">
-                                                 <div className="flex items-center gap-3">
-                                                    <HardHat className="h-5 w-5 text-slate-900" />
-                                                    <h2 className="text-xl font-black text-slate-900 uppercase tracking-tighter">Prevention Action Plan</h2>
-                                                 </div>
-                                                 <div className="flex items-center gap-2">
-                                                    <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse" />
-                                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Plan Generated</span>
-                                                 </div>
-                                              </div>
-                                              <div className="flex-1 overflow-y-auto custom-scrollbar p-8 bg-slate-50/10">
-                                                 <div className="max-w-[1600px] mx-auto space-y-12">
-                                                    
-                                                    {[
-                                                       { id: 'root', title: 'Root Cause', color: 'text-red-600', data: selectedAgent?.results?.root_cause_actions },
-                                                       { id: 'nc', title: 'Non Conformity', color: 'text-amber-500', data: selectedAgent?.results?.non_conformity_actions },
-                                                       { id: 'imp', title: 'Improvement', color: 'text-emerald-600', data: selectedAgent?.results?.improvement_actions },
-                                                    ].map((section) => (
-                                                       <div key={section.id} className="space-y-4">
-                                                          <h3 className={`text-2xl font-black uppercase tracking-tight ${section.color}`}>{section.title}</h3>
-                                                          <div className="border-2 border-slate-900 shadow-[12px_12px_0px_rgba(0,0,0,0.05)] overflow-hidden">
-                                                             <table className="w-full border-collapse">
-                                                                <thead>
-                                                                   <tr className="bg-slate-200 border-b-2 border-slate-900">
-                                                                      <th className="p-3 text-[10px] font-black text-slate-600 uppercase border-r border-slate-300 w-12 text-center">NO</th>
-                                                                      <th className="p-3 text-[10px] font-black text-slate-600 uppercase border-r border-slate-300 w-24 text-center">LAYER</th>
-                                                                      <th className="p-3 text-[10px] font-black text-slate-600 uppercase border-r border-slate-300 w-32 text-center">HIRARKI KONTROL</th>
-                                                                      <th className="p-3 text-[10px] font-black text-slate-600 uppercase border-r border-slate-300 text-left">TINDAKAN PERBAIKAN</th>
-                                                                      <th className="p-3 text-[10px] font-black text-slate-600 uppercase border-r border-slate-300 w-40 text-center">PENANGGUNG JAWAB</th>
-                                                                      <th className="p-3 text-[10px] font-black text-slate-600 uppercase border-r border-slate-300 w-32 text-center">DUE DATE</th>
-                                                                      <th className="p-3 text-[10px] font-black text-slate-600 uppercase w-32 text-center">STATUS</th>
-                                                                   </tr>
-                                                                </thead>
-                                                                <tbody>
-                                                                   {(section.data || []).map((item: any, idx: number) => (
-                                                                       <tr 
-                                                                          key={idx} 
-                                                                          onClick={() => handleSelectRow(item.id)}
-                                                                          className={cn(
-                                                                             "border-b border-slate-200 transition-colors cursor-pointer",
-                                                                             selectedRowId === item.id ? "bg-slate-900 text-white shadow-[0_0_15px_rgba(0,0,0,0.1)] relative z-10" : "bg-white hover:bg-slate-50"
-                                                                          )}
-                                                                       >
-                                                                         <td className="p-4 text-[11px] font-bold text-slate-900 border-r border-slate-100 text-center">{item.no}</td>
-                                                                         <td className="p-4 text-[11px] font-black text-slate-500 border-r border-slate-100 text-center">{item.layer}</td>
-                                                                         <td className="p-4 text-[11px] font-bold text-slate-900 border-r border-slate-100 text-center uppercase tracking-tighter">{item.hierarchy}</td>
-                                                                         <td className="p-4 text-[11px] font-black text-slate-900 border-r border-slate-100 uppercase tracking-tight leading-tight">{item.action}</td>
-                                                                         <td className="p-4 text-[11px] font-bold text-slate-700 border-r border-slate-100 text-center">{item.pic}</td>
-                                                                         <td className="p-4 text-[11px] font-bold text-slate-500 border-r border-slate-100 text-center">{item.due_date}</td>
-                                                                         <td className="p-0 border-r border-slate-100">
-                                                                            <div className={cn(
-                                                                               "h-full w-full p-4 flex items-center justify-center font-black text-[10px] tracking-widest",
-                                                                               item.status === 'OPEN' ? "bg-red-600 text-white" :
-                                                                               item.status === 'PROGRESS' ? "bg-yellow-400 text-slate-900" :
-                                                                               "bg-emerald-600 text-white"
-                                                                            )}>
-                                                                               {item.status}
-                                                                            </div>
-                                                                         </td>
-                                                                      </tr>
-                                                                   ))}
-                                                                </tbody>
-                                                             </table>
-                                                          </div>
-                                                       </div>
-                                                    ))}
-                                                 </div>
-                                              </div>
-                                           </div>
+                                                     {/* Summary & Synthesis Indicator */}
+                                                     <div className="grid grid-cols-2 gap-6 pt-4">
+                                                        <div className="bg-white border-l border-t border-slate-200 p-6 shadow-sm rounded-sm">
+                                                           <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-2">Analysis Summary</span>
+                                                           <p className="text-[11px] font-bold text-slate-600 leading-relaxed italic">"{selectedAgent?.results?.ringkasan}"</p>
+                                                        </div>
+                                                        <div className="bg-slate-900 p-6 shadow-sm border border-slate-800 rounded-sm">
+                                                           <span className="text-[9px] font-black text-emerald-400/50 uppercase tracking-widest block mb-2">Synthesis Intelligence</span>
+                                                           <p className="text-[11px] font-black text-white uppercase tracking-tight leading-relaxed">{selectedAgent?.results?.synthesis}</p>
+                                                        </div>
+                                                     </div>
+                                                  </div>
+                                               </div>
+                                            </div>
+                                         ) : selectedAgentId === 'ipls' ? (
+                                            <div className="flex flex-col h-full bg-slate-50/10 animate-in fade-in duration-500 overflow-hidden">
+                                               <div className="h-12 flex items-center justify-between px-5 border-b border-slate-200 bg-white shrink-0">
+                                                  <div className="flex items-center gap-2">
+                                                     <div className="h-2 w-2 rounded-full bg-[#8ba861]" />
+                                                     <h2 className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Integrated Profile Layer (IPLS) Sheet</h2>
+                                                  </div>
+                                                  <div className="flex items-center gap-2">
+                                                     <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse" />
+                                                     <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Defensive Audit Complete</span>
+                                                  </div>
+                                               </div>
+                                               
+                                               <div className="flex-1 overflow-auto p-6 scrollbar-thin">
+                                                  <div className="max-w-[1400px] mx-auto space-y-8 pb-12">
+                                                     {(selectedAgent?.results?.layers || []).map((layer: any) => (
+                                                        <div key={layer.id} className="space-y-3">
+                                                           <div className="flex items-center gap-3">
+                                                              <span className="px-2.5 py-1 rounded text-[9px] font-black text-white uppercase tracking-widest bg-slate-900">
+                                                                 Layer {["I", "II", "III", "IV", "V"][layer.id - 1]}: {layer.title}
+                                                              </span>
+                                                              <div className="h-px flex-1 bg-slate-200" />
+                                                           </div>
+                                                           <div className="bg-white border-l border-t border-slate-200 overflow-hidden shadow-sm">
+                                                              <table className="w-full text-left border-collapse">
+                                                                 <thead>
+                                                                    <tr className="bg-slate-50/80">
+                                                                       <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest w-24 border-r border-b border-slate-200 bg-slate-50/30">STATUS</th>
+                                                                       <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest border-r border-b border-slate-200 bg-slate-50/30">Defensive Audit Point</th>
+                                                                       <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest w-32 border-r border-b border-slate-200 bg-slate-50/30">Traceability</th>
+                                                                    </tr>
+                                                                 </thead>
+                                                                 <tbody>
+                                                                    {layer.items.map((item: any, idx: number) => {
+                                                                       const isSelected = selectedRowId === item.id;
+                                                                       return (
+                                                                          <tr 
+                                                                             key={item.id || idx} 
+                                                                             onClick={() => handleSelectRow(item.id)}
+                                                                             className={cn(
+                                                                                "group transition-all cursor-pointer",
+                                                                                isSelected ? "bg-slate-100/80" : "hover:bg-slate-50/50"
+                                                                             )}
+                                                                          >
+                                                                             <td className="px-5 py-4 align-top border-r border-b border-slate-200">
+                                                                                <div className="flex justify-center">
+                                                                                   {item.status === 'rootcause' ? (
+                                                                                      <div className="h-4 w-4 rounded-full border-2 border-red-500 flex items-center justify-center">
+                                                                                         <div className="h-1.5 w-1.5 rounded-full bg-red-500" />
+                                                                                      </div>
+                                                                                   ) : item.status === 'non-conformity' ? (
+                                                                                      <div className="h-4 w-4 rounded-full border-2 border-amber-500 flex items-center justify-center">
+                                                                                         <div className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                                                                                      </div>
+                                                                                   ) : (
+                                                                                      <div className="h-4 w-4 rounded-full border-2 border-emerald-500 flex items-center justify-center">
+                                                                                         <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                                                                                      </div>
+                                                                                   )}
+                                                                                </div>
+                                                                             </td>
+                                                                             <td className="px-5 py-4 align-top border-r border-b border-slate-200">
+                                                                                <p className={cn(
+                                                                                   "text-[11px] font-bold leading-relaxed pr-8",
+                                                                                   isSelected ? "text-slate-900" : "text-slate-700"
+                                                                                )}>
+                                                                                   {item.label}
+                                                                                </p>
+                                                                             </td>
+                                                                             <td className="px-5 py-4 align-top border-r border-b border-slate-200 text-center">
+                                                                                <Search className={cn("h-3.5 w-3.5 mx-auto", isSelected ? "text-slate-900" : "text-slate-300")} />
+                                                                             </td>
+                                                                          </tr>
+                                                                       );
+                                                                    })}
+                                                                 </tbody>
+                                                              </table>
+                                                           </div>
+                                                        </div>
+                                                     ))}
+                                                  </div>
+                                               </div>
+                                            </div>
+                                                                                       ) : selectedAgentId === 'ipls' ? (
+                                            <div className="flex flex-col h-full bg-slate-50/10 animate-in fade-in duration-500 overflow-hidden">
+                                               <div className="h-12 flex items-center justify-between px-5 border-b border-slate-200 bg-white shrink-0">
+                                                  <div className="flex items-center gap-2">
+                                                     <div className="h-2 w-2 rounded-full bg-[#8ba861]" />
+                                                     <h2 className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Integrated Profile Layer (IPLS) Sheet</h2>
+                                                  </div>
+                                                  <div className="flex items-center gap-2">
+                                                     <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse" />
+                                                     <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Defensive Audit Complete</span>
+                                                  </div>
+                                               </div>
+                                               
+                                               <div className="flex-1 overflow-auto p-6 scrollbar-thin">
+                                                  <div className="max-w-[1400px] mx-auto space-y-8 pb-12">
+                                                     {(selectedAgent?.results?.layers || []).map((layer: any) => (
+                                                        <div key={layer.id} className="space-y-3">
+                                                           <div className="flex items-center gap-3">
+                                                              <span className="px-2.5 py-1 rounded text-[9px] font-black text-white uppercase tracking-widest bg-slate-900">
+                                                                 Layer {["I", "II", "III", "IV", "V"][layer.id - 1]}: {layer.title}
+                                                              </span>
+                                                              <div className="h-px flex-1 bg-slate-200" />
+                                                           </div>
+                                                           <div className="bg-white border-l border-t border-slate-200 overflow-hidden shadow-sm">
+                                                              <table className="w-full text-left border-collapse">
+                                                                 <thead>
+                                                                    <tr className="bg-slate-50/80">
+                                                                       <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest w-24 border-r border-b border-slate-200 bg-slate-50/30">STATUS</th>
+                                                                       <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest border-r border-b border-slate-200 bg-slate-50/30">Defensive Audit Point</th>
+                                                                       <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest w-32 border-r border-b border-slate-200 bg-slate-50/30">Traceability</th>
+                                                                    </tr>
+                                                                 </thead>
+                                                                 <tbody>
+                                                                    {layer.items.map((item: any, idx: number) => {
+                                                                       const isSelected = selectedRowId === item.id;
+                                                                       return (
+                                                                          <tr 
+                                                                             key={item.id || idx} 
+                                                                             onClick={() => handleSelectRow(item.id)}
+                                                                             className={cn(
+                                                                                "group transition-all cursor-pointer",
+                                                                                isSelected ? "bg-slate-100/80" : "hover:bg-slate-50/50"
+                                                                             )}
+                                                                          >
+                                                                             <td className="px-5 py-4 align-top border-r border-b border-slate-200">
+                                                                                <div className="flex justify-center">
+                                                                                   {item.status === 'rootcause' ? (
+                                                                                      <div className="h-4 w-4 rounded-full border-2 border-red-500 flex items-center justify-center">
+                                                                                         <div className="h-1.5 w-1.5 rounded-full bg-red-500" />
+                                                                                      </div>
+                                                                                   ) : item.status === 'non-conformity' ? (
+                                                                                      <div className="h-4 w-4 rounded-full border-2 border-amber-500 flex items-center justify-center">
+                                                                                         <div className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                                                                                      </div>
+                                                                                   ) : (
+                                                                                      <div className="h-4 w-4 rounded-full border-2 border-emerald-500 flex items-center justify-center">
+                                                                                         <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                                                                                      </div>
+                                                                                   )}
+                                                                                </div>
+                                                                             </td>
+                                                                             <td className="px-5 py-4 align-top border-r border-b border-slate-200">
+                                                                                <p className={cn(
+                                                                                   "text-[11px] font-bold leading-relaxed pr-8",
+                                                                                   isSelected ? "text-slate-900" : "text-slate-700"
+                                                                                )}>
+                                                                                   {item.label}
+                                                                                </p>
+                                                                             </td>
+                                                                             <td className="px-5 py-4 align-top border-r border-b border-slate-200 text-center">
+                                                                                <Search className={cn("h-3.5 w-3.5 mx-auto", isSelected ? "text-slate-900" : "text-slate-300")} />
+                                                                             </td>
+                                                                          </tr>
+                                                                       );
+                                                                    })}
+                                                                 </tbody>
+                                                              </table>
+                                                           </div>
+                                                        </div>
+                                                     ))}
+                                                  </div>
+                                               </div>
+                                            </div>
+                                         ) : selectedAgentId === 'prev' ? (
+                                            <div className="flex flex-col h-full bg-slate-50/10 animate-in fade-in duration-500 overflow-hidden">
+                                               <div className="h-12 flex items-center justify-between px-5 border-b border-slate-200 bg-white shrink-0">
+                                                  <div className="flex items-center gap-2">
+                                                     <div className="h-2 w-2 rounded-full bg-[#8ba861]" />
+                                                     <h2 className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Prevention Action Plan Sheet</h2>
+                                                  </div>
+                                                  <div className="flex items-center gap-2">
+                                                     <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse" />
+                                                     <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Plan Finalized</span>
+                                                  </div>
+                                               </div>
+                                               
+                                               <div className="flex-1 overflow-auto p-6 scrollbar-thin">
+                                                  <div className="max-w-[1600px] mx-auto space-y-10 pb-12">
+                                                     {[
+                                                        { id: 'root', title: 'Root Cause Actions', color: 'bg-red-500', data: selectedAgent?.results?.root_cause_actions },
+                                                        { id: 'nc', title: 'Non Conformity Actions', color: 'bg-amber-500', data: selectedAgent?.results?.non_conformity_actions },
+                                                        { id: 'imp', title: 'Improvement Actions', color: 'bg-emerald-500', data: selectedAgent?.results?.improvement_actions },
+                                                     ].map((section) => (
+                                                        <div key={section.id} className="space-y-3">
+                                                           <div className="flex items-center gap-3">
+                                                              <span className={cn("px-2.5 py-1 rounded text-[9px] font-black text-white uppercase tracking-widest", section.color)}>
+                                                                 {section.title}
+                                                              </span>
+                                                              <div className="h-px flex-1 bg-slate-200" />
+                                                           </div>
+                                                           <div className="bg-white border-l border-t border-slate-200 overflow-hidden shadow-sm">
+                                                              <table className="w-full text-left border-collapse">
+                                                                 <thead>
+                                                                    <tr className="bg-slate-50/80">
+                                                                       <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest w-12 border-r border-b border-slate-200 bg-slate-50/30">NO</th>
+                                                                       <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest w-24 border-r border-b border-slate-200 bg-slate-50/30">LAYER</th>
+                                                                       <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest w-32 border-r border-b border-slate-200 bg-slate-50/30">CONTROL</th>
+                                                                       <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest border-r border-b border-slate-200 bg-slate-50/30">Prevention Action</th>
+                                                                       <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest w-32 border-r border-b border-slate-200 bg-slate-50/30">PIC</th>
+                                                                       <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest w-24 border-r border-b border-slate-200 bg-slate-50/30">DUE DATE</th>
+                                                                       <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest w-24 border-b border-slate-200 bg-slate-50/30 text-center">STATUS</th>
+                                                                    </tr>
+                                                                 </thead>
+                                                                 <tbody>
+                                                                    {(section.data || []).map((item: any, idx: number) => {
+                                                                       const isSelected = selectedRowId === item.id;
+                                                                       return (
+                                                                          <tr 
+                                                                             key={item.id || idx} 
+                                                                             onClick={() => handleSelectRow(item.id)}
+                                                                             className={cn(
+                                                                                "group transition-all cursor-pointer",
+                                                                                isSelected ? "bg-slate-100/80" : "hover:bg-slate-50/50"
+                                                                             )}
+                                                                          >
+                                                                             <td className="px-5 py-4 align-top border-r border-b border-slate-200 text-center text-[11px] font-mono font-black text-slate-400">
+                                                                                {item.no}
+                                                                             </td>
+                                                                             <td className="px-5 py-4 align-top border-r border-b border-slate-200 text-center text-[10px] font-black text-slate-500 uppercase">
+                                                                                {item.layer}
+                                                                             </td>
+                                                                             <td className="px-5 py-4 align-top border-r border-b border-slate-200 text-center text-[10px] font-black text-slate-900 uppercase tracking-tighter">
+                                                                                {item.hierarchy}
+                                                                             </td>
+                                                                             <td className="px-5 py-4 align-top border-r border-b border-slate-200">
+                                                                                <p className={cn(
+                                                                                   "text-[11px] font-bold leading-relaxed pr-8 uppercase tracking-tight",
+                                                                                   isSelected ? "text-slate-900" : "text-slate-700"
+                                                                                )}>
+                                                                                   {item.action}
+                                                                                </p>
+                                                                             </td>
+                                                                             <td className="px-5 py-4 align-top border-r border-b border-slate-200 text-center text-[10px] font-bold text-slate-600">
+                                                                                {item.pic}
+                                                                             </td>
+                                                                             <td className="px-5 py-4 align-top border-r border-b border-slate-200 text-center text-[10px] font-mono text-slate-500">
+                                                                                {item.due_date}
+                                                                             </td>
+                                                                             <td className="p-0 border-b border-slate-200">
+                                                                                <div className={cn(
+                                                                                   "h-12 flex items-center justify-center text-[9px] font-black tracking-widest uppercase",
+                                                                                   item.status === 'OPEN' ? "bg-red-50 text-red-600" :
+                                                                                   item.status === 'PROGRESS' ? "bg-amber-50 text-amber-600" :
+                                                                                   "bg-emerald-50 text-emerald-600"
+                                                                                )}>
+                                                                                   {item.status}
+                                                                                </div>
+                                                                             </td>
+                                                                          </tr>
+                                                                       );
+                                                                    })}
+                                                                 </tbody>
+                                                              </table>
+                                                           </div>
+                                                        </div>
+                                                     ))}
+                                                  </div>
+                                               </div>
+                                            </div>
+                                                                             </td>
+                                                                          </tr>
+                                                                       );
+                                                                    })}
+                                                                 </tbody>
+                                                              </table>
+                                                           </div>
+                                                        </div>
+                                                     ))}
+                                                  </div>
+                                               </div>
+                                            </div>
+                                         ) : selectedAgentId === 'prev' ? (
+                                            <div className="flex flex-col h-full bg-slate-50/10 animate-in fade-in duration-500 overflow-hidden">
+                                               <div className="h-12 flex items-center justify-between px-5 border-b border-slate-200 bg-white shrink-0">
+                                                  <div className="flex items-center gap-2">
+                                                     <div className="h-2 w-2 rounded-full bg-[#8ba861]" />
+                                                     <h2 className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Prevention Action Plan Sheet</h2>
+                                                  </div>
+                                                  <div className="flex items-center gap-2">
+                                                     <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse" />
+                                                     <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Plan Finalized</span>
+                                                  </div>
+                                               </div>
+                                               
+                                               <div className="flex-1 overflow-auto p-6 scrollbar-thin">
+                                                  <div className="max-w-[1600px] mx-auto space-y-10 pb-12">
+                                                     {[
+                                                        { id: 'root', title: 'Root Cause Actions', color: 'bg-red-500', data: selectedAgent?.results?.root_cause_actions },
+                                                        { id: 'nc', title: 'Non Conformity Actions', color: 'bg-amber-500', data: selectedAgent?.results?.non_conformity_actions },
+                                                        { id: 'imp', title: 'Improvement Actions', color: 'bg-emerald-500', data: selectedAgent?.results?.improvement_actions },
+                                                     ].map((section) => (
+                                                        <div key={section.id} className="space-y-3">
+                                                           <div className="flex items-center gap-3">
+                                                              <span className={cn("px-2.5 py-1 rounded text-[9px] font-black text-white uppercase tracking-widest", section.color)}>
+                                                                 {section.title}
+                                                              </span>
+                                                              <div className="h-px flex-1 bg-slate-200" />
+                                                           </div>
+                                                           <div className="bg-white border-l border-t border-slate-200 overflow-hidden shadow-sm">
+                                                              <table className="w-full text-left border-collapse">
+                                                                 <thead>
+                                                                    <tr className="bg-slate-50/80">
+                                                                       <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest w-12 border-r border-b border-slate-200 bg-slate-50/30">NO</th>
+                                                                       <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest w-24 border-r border-b border-slate-200 bg-slate-50/30">LAYER</th>
+                                                                       <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest w-32 border-r border-b border-slate-200 bg-slate-50/30">CONTROL</th>
+                                                                       <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest border-r border-b border-slate-200 bg-slate-50/30">Prevention Action</th>
+                                                                       <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest w-32 border-r border-b border-slate-200 bg-slate-50/30">PIC</th>
+                                                                       <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest w-24 border-r border-b border-slate-200 bg-slate-50/30">DUE DATE</th>
+                                                                       <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest w-24 border-b border-slate-200 bg-slate-50/30 text-center">STATUS</th>
+                                                                    </tr>
+                                                                 </thead>
+                                                                 <tbody>
+                                                                    {(section.data || []).map((item: any, idx: number) => {
+                                                                       const isSelected = selectedRowId === item.id;
+                                                                       return (
+                                                                          <tr 
+                                                                             key={item.id || idx} 
+                                                                             onClick={() => handleSelectRow(item.id)}
+                                                                             className={cn(
+                                                                                "group transition-all cursor-pointer",
+                                                                                isSelected ? "bg-slate-100/80" : "hover:bg-slate-50/50"
+                                                                             )}
+                                                                          >
+                                                                             <td className="px-5 py-4 align-top border-r border-b border-slate-200 text-center text-[11px] font-mono font-black text-slate-400">
+                                                                                {item.no}
+                                                                             </td>
+                                                                             <td className="px-5 py-4 align-top border-r border-b border-slate-200 text-center text-[10px] font-black text-slate-500 uppercase">
+                                                                                {item.layer}
+                                                                             </td>
+                                                                             <td className="px-5 py-4 align-top border-r border-b border-slate-200 text-center text-[10px] font-black text-slate-900 uppercase tracking-tighter">
+                                                                                {item.hierarchy}
+                                                                             </td>
+                                                                             <td className="px-5 py-4 align-top border-r border-b border-slate-200">
+                                                                                <p className={cn(
+                                                                                   "text-[11px] font-bold leading-relaxed pr-8 uppercase tracking-tight",
+                                                                                   isSelected ? "text-slate-900" : "text-slate-700"
+                                                                                )}>
+                                                                                   {item.action}
+                                                                                </p>
+                                                                             </td>
+                                                                             <td className="px-5 py-4 align-top border-r border-b border-slate-200 text-center text-[10px] font-bold text-slate-600">
+                                                                                {item.pic}
+                                                                             </td>
+                                                                             <td className="px-5 py-4 align-top border-r border-b border-slate-200 text-center text-[10px] font-mono text-slate-500">
+                                                                                {item.due_date}
+                                                                             </td>
+                                                                             <td className="p-0 border-b border-slate-200">
+                                                                                <div className={cn(
+                                                                                   "h-12 flex items-center justify-center text-[9px] font-black tracking-widest uppercase",
+                                                                                   item.status === 'OPEN' ? "bg-red-50 text-red-600" :
+                                                                                   item.status === 'PROGRESS' ? "bg-amber-50 text-amber-600" :
+                                                                                   "bg-emerald-50 text-emerald-600"
+                                                                                )}>
+                                                                                   {item.status}
+                                                                                </div>
+                                                                             </td>
+                                                                          </tr>
+                                                                       );
+                                                                    })}
+                                                                 </tbody>
+                                                              </table>
+                                                           </div>
+                                                        </div>
+                                                     ))}
+                                                  </div>
+                                               </div>
+                                            </div>
                                         ) : (
                                            <div className="flex-1 bg-[#1a1c23] rounded-sm p-6 overflow-hidden border border-slate-700 relative">
                                               <pre className="text-[12px] font-mono text-emerald-400/90 leading-tight h-full overflow-auto custom-scrollbar">
