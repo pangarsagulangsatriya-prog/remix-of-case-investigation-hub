@@ -735,12 +735,6 @@ const FactDefaultView: React.FC<{
                               ) : (
                                 <div className="flex flex-col gap-1">
                                   <span className={cn("text-[11px] font-mono font-black", config.textColor)}>{item.time_label}</span>
-                                  {item.traceability && (
-                                     <div className="flex items-center gap-1 opacity-40">
-                                        <Layers className="h-2.5 w-2.5" />
-                                        <span className="text-[8px] font-black uppercase tracking-tighter">{item.traceability.length} Sources</span>
-                                     </div>
-                                  )}
                                 </div>
                               )}
                             </td>
@@ -783,9 +777,6 @@ const FactDefaultView: React.FC<{
                                     {item.chronology_text}
                                   </p>
                                   <div className="flex items-center gap-1.5 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                     <span className="text-[8px] font-black text-primary uppercase tracking-[0.15em] flex items-center gap-1">
-                                        <Target className="h-2.5 w-2.5" /> Audit Traceable
-                                     </span>
                                      <Button 
                                         variant="ghost" 
                                         size="sm" 
