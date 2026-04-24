@@ -3665,6 +3665,7 @@ function AnalysisTab() {
   const [expandedEvidenceGroups, setExpandedEvidenceGroups] = useState<string[]>(['audio', 'document']);
   const [focusedPreview, setFocusedPreview] = useState<EvidenceTraceLink | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [isEvidenceExpanded, setIsEvidenceExpanded] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
   
