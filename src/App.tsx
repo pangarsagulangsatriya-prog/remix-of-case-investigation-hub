@@ -11,7 +11,7 @@ import ReviewApprovalPage from "./pages/ReviewApprovalPage";
 import AuditTrailPage from "./pages/AuditTrailPage";
 import AdminPage from "./pages/AdminPage";
 import ExecutiveViewPage from "./pages/ExecutiveViewPage";
-import EvidenceGlobalPage from "./pages/EvidenceGlobalPage";
+
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,7 +28,7 @@ const App = () => (
           <Route path="/cases" element={<CaseListPage />} />
           <Route path="/cases/new" element={<CreateCasePage />} />
           <Route path="/cases/:caseId" element={<CaseWorkspacePage />} />
-          <Route path="/evidence" element={<EvidenceGlobalPage />} />
+
           <Route path="/review" element={<ReviewApprovalPage />} />
           <Route path="/audit-trail" element={<AuditTrailPage />} />
           <Route path="/admin" element={<AdminPage />} />
