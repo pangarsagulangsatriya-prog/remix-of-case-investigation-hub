@@ -2772,15 +2772,23 @@ function ExtractionTab({
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Evidence Repository</span>
                 <span className="text-[10px] font-bold text-primary bg-primary/5 px-2 py-0.5 rounded-full">{evidenceFiles.length} Objects</span>
              </div>
-             <div className="relative group">
-               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 group-focus-within:text-primary transition-colors" />
-               <input 
-                 type="text" 
-                 placeholder="Search identifiers..."
-                 value={searchQuery}
-                 onChange={(e) => setSearchQuery(e.target.value)}
-                 className="w-full bg-white border border-slate-200 rounded-sm py-2.5 pl-9 pr-4 text-xs font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none "
-               />
+             <div className="flex gap-2">
+               <div className="relative group flex-1">
+                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 group-focus-within:text-primary transition-colors" />
+                 <input 
+                   type="text" 
+                   placeholder="Search..."
+                   value={searchQuery}
+                   onChange={(e) => setSearchQuery(e.target.value)}
+                   className="w-full h-9 bg-white border border-slate-200 rounded-sm pl-9 pr-4 text-[11px] font-bold focus:ring-1 focus:ring-primary/20 focus:border-primary transition-all outline-none "
+                 />
+               </div>
+               <Button 
+                 onClick={() => setIsUploadModalOpen(true)}
+                 className="h-9 bg-emerald-600 hover:bg-emerald-700 text-white font-black px-3 rounded-sm text-[10px] uppercase tracking-widest gap-1.5 shrink-0"
+               >
+                 <Plus className="h-3.5 w-3.5" /> ADD
+               </Button>
              </div>
           </div>
           
@@ -2795,27 +2803,17 @@ function ExtractionTab({
               <button
                 key={f.id}
                 onClick={() => setActiveFilter(f.id)}
-                className={`flex-1 flex flex-col items-center justify-center py-2.5 rounded-sm border-2 transition-all ${
+                className={`flex-1 flex flex-col items-center justify-center py-2 rounded-sm border transition-all ${
                   activeFilter === f.id
-                    ? "bg-[#0f172a] text-white border-[#0f172a]  scale-[1.02]"
+                    ? "bg-[#0f172a] text-white border-[#0f172a]"
                     : "bg-white text-slate-400 border-slate-100 hover:bg-slate-50 hover:text-slate-600 hover:border-slate-200"
                 }`}
               >
-                <f.icon className={`h-4 w-4 mb-1.5 ${activeFilter === f.id ? "text-white" : "text-slate-400"}`} strokeWidth={activeFilter === f.id ? 2.5 : 2} />
-                <span className="text-[9px] font-black uppercase tracking-widest">{f.label}</span>
+                <f.icon className={`h-3.5 w-3.5 mb-1 ${activeFilter === f.id ? "text-white" : "text-slate-400"}`} strokeWidth={activeFilter === f.id ? 2.5 : 2} />
+                <span className="text-[8px] font-black uppercase tracking-widest">{f.label}</span>
               </button>
             ))}
           </div>
-          
-          <Button 
-            onClick={() => setIsUploadModalOpen(true)}
-            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-4 rounded-sm  shadow-emerald-600/10 transition-all flex items-center justify-center gap-2 group"
-          >
-            <div className="h-6 w-6 rounded-full bg-white/20 flex items-center justify-center text-white group-hover:scale-110 transition-transform">
-              <Plus className="h-4 w-4" />
-            </div>
-            <span className="text-xs uppercase tracking-[0.2em]">Upload</span>
-          </Button>
         </div>
 
         <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-6">
