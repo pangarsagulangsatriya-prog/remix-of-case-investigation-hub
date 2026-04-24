@@ -4249,20 +4249,34 @@ function AnalysisTab() {
                                                          <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{row.label}</span>
                                                       </div>
                                                       <div className="bg-white p-3 flex items-center justify-between">
-                                                         <p className="text-[10px] font-bold text-slate-900 uppercase truncate">{row.value}</p>
-                                                         {expandedEntityRows.includes(row.id) ? <ChevronDown className="h-3 w-3 text-slate-300" /> : <ChevronRight className="h-3 w-3 text-slate-200 opacity-0 group-hover:opacity-100 transition-opacity" />}
+                                                         <div className="flex items-center gap-3">
+                                                            <p className="text-[10px] font-bold text-slate-900 uppercase truncate">{row.value}</p>
+                                                            <div className="flex items-center gap-1.5 px-1.5 py-0.5 bg-blue-50 border border-blue-100 rounded-none animate-in fade-in duration-500">
+                                                               <FileSearch className="h-2.5 w-2.5 text-blue-500" />
+                                                               <span className="text-[7px] font-black text-blue-600 uppercase tracking-tighter">1 TRACE</span>
+                                                            </div>
+                                                         </div>
+                                                         <ChevronDown className={cn("h-3 w-3 text-slate-300 transition-transform duration-200", !expandedEntityRows.includes(row.id) && "-rotate-90")} />
                                                       </div>
                                                    </button>
                                                    
                                                    {expandedEntityRows.includes(row.id) && (
-                                                      <div className="bg-slate-50 border-t border-slate-100 p-3 space-y-2 animate-in slide-in-from-top-1 duration-200">
-                                                         <div className="flex items-center gap-2">
-                                                            <div className="h-1.5 w-1.5 rounded-full bg-blue-500" />
-                                                            <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Evidence Source</span>
+                                                      <div className="bg-slate-50/80 border-t border-slate-100 p-4 space-y-3 animate-in slide-in-from-top-1 duration-300">
+                                                         <div className="flex items-center justify-between">
+                                                            <div className="flex items-center gap-2">
+                                                               <div className="h-1 w-3 bg-blue-500" />
+                                                               <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Forensic Source Trace</span>
+                                                            </div>
+                                                            <span className="text-[7px] font-bold text-slate-300 uppercase">Verifiable Artifact</span>
                                                          </div>
-                                                         <div className="pl-3.5 space-y-1">
-                                                            <p className="text-[9px] font-bold text-slate-700 uppercase">{row.source}</p>
-                                                            <p className="text-[9px] text-slate-500 leading-tight italic">"{row.context}"</p>
+                                                         <div className="pl-5 border-l border-slate-200 space-y-1.5">
+                                                            <div className="flex items-center gap-2">
+                                                               <Paperclip className="h-2.5 w-2.5 text-slate-400" />
+                                                               <p className="text-[9px] font-bold text-slate-700 uppercase tracking-tight">{row.source}</p>
+                                                            </div>
+                                                            <div className="bg-white/50 border border-slate-100 p-2 rounded-none">
+                                                               <p className="text-[9px] text-slate-500 leading-relaxed italic">"{row.context}"</p>
+                                                            </div>
                                                          </div>
                                                       </div>
                                                    )}
