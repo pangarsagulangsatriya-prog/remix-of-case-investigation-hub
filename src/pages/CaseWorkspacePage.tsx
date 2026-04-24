@@ -2803,6 +2803,7 @@ function ExtractionTab({
                 <f.icon className={`h-4 w-4 mb-1.5 ${activeFilter === f.id ? "text-white" : "text-slate-400"}`} strokeWidth={activeFilter === f.id ? 2.5 : 2} />
                 <span className="text-[9px] font-black uppercase tracking-widest">{f.label}</span>
               </button>
+            ))}
           </div>
           
           <Button 
