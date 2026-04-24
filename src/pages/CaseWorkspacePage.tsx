@@ -3709,6 +3709,11 @@ function AudioExtractionConsole({ file, onJump, currentTime }: { file: any, onJu
 
 
 function AnalysisTab() {
+  const { caseId } = useParams<{ caseId: string }>();
+  const { data: evidence } = useEvidence(caseId!);
+  const evidenceFiles = evidence?.files || [];
+  const batches = evidence?.batches || [];
+
   const [agents, setAgents] = useState<AgentState[]>(initialAgentsState);
   const [factViewMode, setFactViewMode] = useState<'slide' | 'default'>('default');
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
@@ -3727,7 +3732,19 @@ function AnalysisTab() {
   const [preRunAgentId, setPreRunAgentId] = useState<string | null>(null);
   const [historyAgentId, setHistoryAgentId] = useState<string | null>(null);
   const [knowledgeAgentId, setKnowledgeAgentId] = useState<string | null>(null);
+  const [expandedKnowledgeFolders, setExpandedKnowledgeFolders] = useState<string[]>([]);
   const [isEditingSummary, setIsEditingSummary] = useState(false);
+
+  // Auto-initialize knowledge selection if empty
+  useEffect(() => {
+    if (evidenceFiles.length > 0) {
+      setAgents(prev => prev.map(a => 
+        (!a.knowledgeSelection || a.knowledgeSelection.length === 0) 
+        ? { ...a, knowledgeSelection: evidenceFiles.map(f => f.id) } 
+        : a
+      ));
+    }
+  }, [evidenceFiles.length]);
   const [summaryEditBuffer, setSummaryEditBuffer] = useState({ time: '', description: '' });
 
   // NEW: Fact Trace States
@@ -3870,7 +3887,7 @@ function AnalysisTab() {
       setAgents(prev => prev.map(a => a.id === nextId ? { 
           ...a, 
           status: 'running', 
-          microStatus: `Reading ${a.knowledgeSelection?.length || 0} selected folders...`, 
+          microStatus: `Analyzing ${a.knowledgeSelection?.length || 0} evidence assets...`, 
           triggeredBy: execMode === 'full' ? 'System' : 'Current User' 
       } : a));
 
@@ -3921,7 +3938,7 @@ function AnalysisTab() {
     setAgents(prev => prev.map(a => a.id === agentId ? { 
       ...a, 
       status: 'running', 
-      microStatus: isRerun ? `Reprocessing with ${a.knowledgeSelection?.length || 0} knowledge sources...` : `Reading ${a.knowledgeSelection?.length || 0} selected folders...`,
+      microStatus: isRerun ? `Reprocessing with ${a.knowledgeSelection?.length || 0} evidence assets...` : `Analyzing ${a.knowledgeSelection?.length || 0} evidence assets...`,
       triggeredBy: 'Current User'
     } : a));
     
@@ -3955,7 +3972,7 @@ function AnalysisTab() {
         }
         return a;
       }));
-      toast.success(`${agents.find(ag => ag.id === agentId)?.name} finished using ${agents.find(ag => ag.id === agentId)?.knowledgeSelection?.length} knowledge folders.`);
+      toast.success(`${agents.find(ag => ag.id === agentId)?.name} finished using ${agents.find(ag => ag.id === agentId)?.knowledgeSelection?.length} evidence assets.`);
     }, 4000);
   };
 
@@ -4098,50 +4115,116 @@ function AnalysisTab() {
                                               <BookText className="h-4 w-4" />
                                            </Button>
                                         </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end" className="w-[240px] p-0 border-slate-200 shadow-2xl rounded-sm overflow-hidden" onClick={(e) => e.stopPropagation()}>
-                                           <div className="bg-white p-4">
-                                              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Knowledge Sources</h3>
-                                              <div className="space-y-1">
-                                                 {['Audio Recording', 'Internal Document', 'External Document', 'Photos & Media'].map((folder) => {
-                                                    const isSelected = agent.knowledgeSelection?.includes(folder);
+                                        <DropdownMenuContent 
+                                           side="right" 
+                                           align="start" 
+                                           sideOffset={12}
+                                           className="w-[320px] p-0 border-slate-200 shadow-2xl rounded-sm overflow-hidden animate-in fade-in zoom-in-95 duration-200" 
+                                           onClick={(e) => e.stopPropagation()}
+                                        >
+                                           <div className="bg-white">
+                                              <div className="p-4 border-b border-slate-50 bg-slate-50/30 flex items-center justify-between">
+                                                 <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Knowledge Sources</h3>
+                                                 <span className="text-[9px] font-bold text-slate-400 bg-white px-2 py-0.5 border rounded-full">{evidenceFiles.length} Assets</span>
+                                              </div>
+                                              
+                                              <div className="max-h-[400px] overflow-y-auto p-2 custom-scrollbar">
+                                                 {batches.map((batch) => {
+                                                    const filesInBatch = evidenceFiles.filter(f => f.batch_id === batch.id);
+                                                    const isExpanded = expandedKnowledgeFolders.includes(batch.id);
+                                                    const selectedInBatch = filesInBatch.filter(f => agent.knowledgeSelection?.includes(f.id));
+                                                    const isBatchFullySelected = selectedInBatch.length === filesInBatch.length && filesInBatch.length > 0;
+                                                    const isBatchPartiallySelected = selectedInBatch.length > 0 && selectedInBatch.length < filesInBatch.length;
+
                                                     return (
-                                                       <div 
-                                                          key={folder}
-                                                          onClick={(e) => {
-                                                             e.preventDefault();
-                                                             e.stopPropagation();
-                                                             setAgents(prev => prev.map(a => a.id === agent.id ? {
-                                                                ...a,
-                                                                knowledgeSelection: isSelected 
-                                                                   ? a.knowledgeSelection?.filter(f => f !== folder)
-                                                                   : [...(a.knowledgeSelection || []), folder]
-                                                             } : a));
-                                                          }}
-                                                          className="flex items-center gap-3 p-2 hover:bg-slate-50 rounded-sm cursor-pointer transition-colors group"
-                                                       >
-                                                          <div className={cn(
-                                                             "h-5 w-5 rounded border-2 flex items-center justify-center transition-all",
-                                                             isSelected ? "bg-[#1e293b] border-[#1e293b]" : "bg-white border-slate-200 group-hover:border-slate-300"
-                                                          )}>
-                                                             {isSelected && <Check className="h-3 w-3 text-white stroke-[4]" />}
+                                                       <div key={batch.id} className="mb-1">
+                                                          <div 
+                                                             className={cn(
+                                                                "flex items-center gap-2 p-2 rounded-sm hover:bg-slate-50 cursor-pointer transition-colors group",
+                                                                isExpanded ? "bg-slate-50/50" : ""
+                                                             )}
+                                                             onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setExpandedKnowledgeFolders(prev => 
+                                                                   prev.includes(batch.id) ? prev.filter(id => id !== batch.id) : [...prev, batch.id]
+                                                                );
+                                                             }}
+                                                          >
+                                                             <div 
+                                                                className={cn(
+                                                                   "h-4 w-4 rounded border flex items-center justify-center transition-all",
+                                                                   isBatchFullySelected ? "bg-slate-900 border-slate-900" : 
+                                                                   isBatchPartiallySelected ? "bg-slate-400 border-slate-400" : "bg-white border-slate-200"
+                                                                )}
+                                                                onClick={(e) => {
+                                                                   e.stopPropagation();
+                                                                   const fileIds = filesInBatch.map(f => f.id);
+                                                                   setAgents(prev => prev.map(a => a.id === agent.id ? {
+                                                                      ...a,
+                                                                      knowledgeSelection: isBatchFullySelected 
+                                                                         ? a.knowledgeSelection?.filter(id => !fileIds.includes(id))
+                                                                         : [...new Set([...(a.knowledgeSelection || []), ...fileIds])]
+                                                                   } : a));
+                                                                }}
+                                                             >
+                                                                {isBatchFullySelected && <Check className="h-2.5 w-2.5 text-white stroke-[4]" />}
+                                                                {isBatchPartiallySelected && <div className="h-0.5 w-2 bg-white" />}
+                                                             </div>
+                                                             <div className="flex items-center gap-2 flex-1 overflow-hidden">
+                                                                <Folder className={cn("h-3.5 w-3.5", isExpanded ? "text-primary" : "text-slate-400")} />
+                                                                <span className="text-[11px] font-bold text-slate-700 uppercase tracking-tight truncate">{batch.name}</span>
+                                                             </div>
+                                                             <ChevronRight className={cn("h-3 w-3 text-slate-300 transition-transform", isExpanded ? "rotate-90" : "")} />
                                                           </div>
-                                                          <span className={cn("text-xs font-semibold tracking-tight", isSelected ? "text-slate-900" : "text-slate-500")}>
-                                                             {folder}
-                                                          </span>
+
+                                                          {isExpanded && (
+                                                             <div className="ml-6 mt-1 border-l border-slate-100 pl-1 space-y-0.5">
+                                                                {filesInBatch.map((file) => {
+                                                                   const isFileSelected = agent.knowledgeSelection?.includes(file.id);
+                                                                   return (
+                                                                      <div 
+                                                                         key={file.id}
+                                                                         onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            setAgents(prev => prev.map(a => a.id === agent.id ? {
+                                                                               ...a,
+                                                                               knowledgeSelection: isFileSelected 
+                                                                                  ? a.knowledgeSelection?.filter(id => id !== file.id)
+                                                                                  : [...(a.knowledgeSelection || []), file.id]
+                                                                            } : a));
+                                                                         }}
+                                                                         className="flex items-center gap-2.5 p-1.5 hover:bg-slate-50 rounded-sm cursor-pointer transition-colors"
+                                                                      >
+                                                                         <div className={cn(
+                                                                            "h-3.5 w-3.5 rounded border flex items-center justify-center transition-all",
+                                                                            isFileSelected ? "bg-emerald-500 border-emerald-500" : "bg-white border-slate-200"
+                                                                         )}>
+                                                                            {isFileSelected && <Check className="h-2 w-2 text-white stroke-[4]" />}
+                                                                         </div>
+                                                                         <span className={cn("text-[10px] font-semibold truncate flex-1", isFileSelected ? "text-slate-900" : "text-slate-400")}>
+                                                                            {file.name}
+                                                                         </span>
+                                                                      </div>
+                                                                   );
+                                                                })}
+                                                             </div>
+                                                          )}
                                                        </div>
                                                     );
                                                  })}
                                               </div>
                                               
-                                              <div className="mt-6 pt-4 border-t border-slate-100">
+                                              <div className="p-4 border-t border-slate-50 bg-slate-50/10">
                                                  <div className="flex items-center justify-between mb-2">
-                                                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Active Coverage</span>
-                                                    <span className="text-[9px] font-bold text-emerald-600">{((agent.knowledgeSelection?.length || 0) / 4) * 100}%</span>
+                                                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none">Active Payload</span>
+                                                    <span className="text-[10px] font-black text-slate-900 tabular-nums">
+                                                       {agent.knowledgeSelection?.length || 0} / {evidenceFiles.length}
+                                                    </span>
                                                  </div>
-                                                 <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
+                                                 <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden shadow-inner">
                                                     <div 
-                                                       className="h-full bg-emerald-500 transition-all duration-500" 
-                                                       style={{ width: `${((agent.knowledgeSelection?.length || 0) / 4) * 100}%` }} 
+                                                       className="h-full bg-slate-900 transition-all duration-700 ease-out" 
+                                                       style={{ width: `${((agent.knowledgeSelection?.length || 0) / (evidenceFiles.length || 1)) * 100}%` }} 
                                                     />
                                                  </div>
                                               </div>
