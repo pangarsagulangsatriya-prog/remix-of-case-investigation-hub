@@ -3900,12 +3900,7 @@ function AnalysisTab() {
                        <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest">Synthesis Console</span>
                     </div>
                     <div className="flex items-center gap-2">
-                       <Button variant="ghost" size="sm" className="h-7 px-2 text-[9px] font-bold text-slate-400 border">
-                          <History className="h-3.5 w-3.5 mr-1" /> Log
-                       </Button>
-                       <Button variant="ghost" size="sm" className="h-7 px-2 text-[9px] font-bold text-primary border border-primary/20">
-                          Rerun Node
-                       </Button>
+
                     </div>
                   </div>
 
