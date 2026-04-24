@@ -467,20 +467,49 @@ const initialAgentsState: AgentState[] = [
      name: 'PEEPO Reasoning', 
      icon: Brain, 
      purpose: 'Analyze People, Environment, Equipment, Procedures, and Org factors.', 
-     status: 'idle', 
+     status: 'completed', 
      dependencies: ['actor'],
-     runCount: 0,
+     runCount: 1,
      tokenEstimate: 3500,
-     history: [],
+     history: [
+        { run_id: "r-101", agent_id: "peepo", started_at: "2026-04-20T09:00:00Z", ended_at: "2026-04-20T09:00:15Z", triggered_by: "System", status: "completed", token_usage: 2450, duration_ms: 15000, summary: "PEEPO violation analysis completed." }
+     ],
      backendCapabilities: { canPause: false, canResume: false, canStop: true, canRerun: true },
      results: {
-        people: ["Operator fatigue suspected", "Training gap on Section 14 override"],
-        environment: ["High dust levels impacting sensors", "Limited visibility in sector"],
-        equipment: ["Belt tensioner fatigue", "Sensor calibration drift"],
-        procedures: ["Incomplete lockout-tagout log", "Delayed radio relay"],
-        organisation: ["Shift swap overlap issues"],
-        ringkasan: "A combination of equipment fatigue and procedure gaps was the primary driver.",
-        synthesis: "Factor convergence score: High (Critical)"
+        people: [
+           "Sdr Fadhli tidak memastikan pada saat penurunan vessel setelah dumping",
+           "Pengawas tidak memastikan penganturan MP CR CPP pada saat shift berjalan, actual hanya 1 orang saja berada di CR",
+           "Sdr Ali Akbar menginformasikan bahwa DTMB 26 Lever dump DTMB 26 tidak sesuai dengan petunjuknya sudah sejak awal digunakan",
+           "Sdr Fadhli tidak melakukan komunikasi ke CR CPP",
+           "Kompetensi pelaku dan saksi tidak ada deviasi"
+        ],
+        environment: [
+           "Cuaca saat kejadian cerah",
+           "Lebar jalan 10,9 m",
+           "Tinggi Jembatan 6,7 m",
+           "Tinggi vessel posisi tipping 7,3 m"
+        ],
+        equipment: [
+           "Kondisi lever dump DTMB 26 terbalik",
+           "Historical Maintenance DTMB 26 tidak ada kejadian terkait",
+           "SKO Unit DTMB26 valid",
+           "CCTV mengarah ke Lokasi kejadian, namun tidak dilakukan intervensi langsung",
+           "Sudah dilakukan inspeksi paska kejadian dan ditemukan kondisi lever dump terbalik",
+           "Posisi Lever Dump DTMB 20 Netral pada saat kejadian",
+           "Portal safety dump 1 ditabrak"
+        ],
+        procedures: [
+           "Terdapat JSA akan tetapi lengkap dengan poin step dumping dan skema pengawasan CPP",
+           "P2H DTMB 26 no deviasi",
+           "Pengecekan HP Sdr Fadhli awal shift tidak ada deviasi"
+        ],
+        organisation: [
+           "Tindakan dari insiden sebelumnya adalah pemasangan portal sebelum jembatan laying, namun portal tersebut tidak kokoh",
+           "Sdr Fadhli tidak melakukan speak up ketika menemukan lever dump terbalik",
+           "Belum ada sensor reminder ketika posisi dump belum turun"
+        ],
+        ringkasan: "Insiden diakibatkan oleh kombinasi kelalaian operasional (People), kondisi teknis peralatan (Equipment), dan keterbatasan kontrol organisasi.",
+        synthesis: "Risk Factor Level: High (Immediate Corrective Action Required)"
      }
   },
   { 
@@ -4129,12 +4158,76 @@ function AnalysisTab() {
                                                 </div>
                                              </div>
                                           </div>
-                                       ) : (
-                                          <div className="flex-1 bg-[#1a1c23] rounded-sm p-6 overflow-hidden border border-slate-700 relative">
-                                             <pre className="text-[12px] font-mono text-emerald-400/90 leading-tight h-full overflow-auto custom-scrollbar">
-                                                {JSON.stringify(slides[activeSlide]?.content, null, 2)}
-                                             </pre>
-                                          </div>
+                                        ) : selectedAgentId === 'peepo' ? (
+                                           <div className="flex flex-col h-full bg-white overflow-hidden animate-in fade-in duration-500">
+                                              <div className="h-16 border-b border-slate-200 flex items-center justify-between px-8 bg-slate-50/30 shrink-0">
+                                                 <div className="flex items-center gap-3">
+                                                    <Brain className="h-5 w-5 text-slate-900" />
+                                                    <h2 className="text-xl font-black text-slate-900 uppercase tracking-tighter">PEEPO Factor Analysis</h2>
+                                                 </div>
+                                                 <div className="flex items-center gap-2">
+                                                    <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse" />
+                                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Synthesis Complete</span>
+                                                 </div>
+                                              </div>
+                                              <div className="flex-1 overflow-y-auto custom-scrollbar p-8 space-y-10 bg-slate-50/10">
+                                                 <div className="max-w-5xl mx-auto space-y-8">
+                                                    <div className="bg-[#8ba861] p-3 border-2 border-slate-900 shadow-[4px_4px_0px_rgba(0,0,0,1)]">
+                                                       <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
+                                                          <ShieldAlert className="h-4 w-4" />
+                                                          TABEL PEEPO - Kejadian Pelanggaran PD UNIT DTMB 26
+                                                       </h3>
+                                                    </div>
+                                                    
+                                                    <div className="border-2 border-slate-900 bg-white rounded-none shadow-[12px_12px_0px_rgba(0,0,0,0.05)] overflow-hidden">
+                                                       {[
+                                                          { id: 'people', label: 'People', color: 'bg-emerald-50' },
+                                                          { id: 'equipment', label: 'Equipment', color: 'bg-white' },
+                                                          { id: 'environment', label: 'Environment', color: 'bg-emerald-50' },
+                                                          { id: 'procedures', label: 'Process', color: 'bg-white' },
+                                                          { id: 'organisation', label: 'Organization', color: 'bg-emerald-50' },
+                                                       ].map((section, sIdx) => (
+                                                          <div key={section.id} className={`grid grid-cols-[200px_1fr] border-b border-slate-200 last:border-0 ${section.color}`}>
+                                                             <div className="border-r border-slate-200 p-8 flex items-center justify-center bg-slate-50/50">
+                                                                <span className="text-2xl font-black text-slate-900 uppercase tracking-tighter text-center">{section.label}</span>
+                                                             </div>
+                                                             <div className="p-6">
+                                                                <ul className="space-y-3">
+                                                                   {(selectedAgent?.results?.[section.id] || []).map((item: string, iIdx: number) => (
+                                                                      <li key={iIdx} className="flex gap-3 text-sm text-slate-700 leading-relaxed group">
+                                                                         <div className="h-1.5 w-1.5 rounded-full bg-slate-400 mt-2 shrink-0 group-hover:bg-[#8ba861] transition-colors" />
+                                                                         <span className="font-medium">{item}</span>
+                                                                      </li>
+                                                                   ))}
+                                                                </ul>
+                                                             </div>
+                                                          </div>
+                                                       ))}
+                                                    </div>
+
+                                                    <div className="grid grid-cols-2 gap-6">
+                                                       <div className="border border-slate-200 bg-white p-6 shadow-sm relative overflow-hidden">
+                                                          <div className="absolute top-0 left-0 w-1 h-full bg-amber-500" />
+                                                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-2">Ringkasan Analisis</span>
+                                                          <p className="text-sm font-bold text-slate-900 leading-snug">{selectedAgent?.results?.ringkasan}</p>
+                                                       </div>
+                                                       <div className="border border-slate-200 bg-slate-900 p-6 shadow-sm relative overflow-hidden">
+                                                          <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500" />
+                                                          <span className="text-[9px] font-black text-emerald-400/50 uppercase tracking-widest block mb-2">Synthesis Indicator</span>
+                                                          <p className="text-sm font-black text-white italic tracking-tight">{selectedAgent?.results?.synthesis}</p>
+                                                       </div>
+                                                    </div>
+                                                 </div>
+                                              </div>
+                                           </div>
+                                        ) : (
+                                           <div className="flex-1 bg-[#1a1c23] rounded-sm p-6 overflow-hidden border border-slate-700 relative">
+                                              <pre className="text-[12px] font-mono text-emerald-400/90 leading-tight h-full overflow-auto custom-scrollbar">
+                                                 {JSON.stringify(slides[activeSlide]?.content, null, 2)}
+                                              </pre>
+                                           </div>
+                                        )
+
                                        )}
                                     </div>
                                  )}
