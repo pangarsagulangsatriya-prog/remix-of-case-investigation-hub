@@ -1,10 +1,10 @@
 // BUILD_VERSION: 2026-04-16T19:35:00 — force redeploy with diarization + 6-layer extraction
 import React, { useState, useEffect, useRef, useMemo } from "react"; 
 import { FactChronologyModule, ChronologyItem, TraceabilityPanel, VerificationStatus, STATUS_CONFIG } from "@/components/analysis/FactChronologyModule";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/AppLayout";
 import { StatusChip, SeverityChip, ConfidenceChip } from "@/components/StatusChip";
-import { useCase, useUpdateCase } from "@/hooks/useCases";
+import { useCase, useUpdateCase, useCases } from "@/hooks/useCases";
 import { useEvidence, useDeleteFile, useUploadEvidence, useUpdateBatch } from "@/hooks/useEvidence";
 import { useAuditLogs, useInsertAuditLog } from "@/hooks/useAuditLogs";
 import { supabase } from "@/lib/supabase";
@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Upload,
+  ArrowLeft,
   Play,
   Pause,
   Brain,
@@ -5055,12 +5056,18 @@ function VideoSceneSession({ currentTime, onJump }: { currentTime: number, onJum
 
 export default function CaseWorkspacePage() {
   const { caseId } = useParams<{ caseId: string }>();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("Evidence Review");
   const [selectedFile, setSelectedFile] = useState<any>(null);
 
   // Real Data Hooks
+  const { data: cases } = useCases();
   const { data: caseData, isLoading: caseLoading, refetch: refetchCase } = useCase(caseId!);
   const { data: evidence, isLoading: evidenceLoading, refetch: refetchEvidence } = useEvidence(caseId!);
+
+  const currentIndex = cases?.findIndex(c => c.id === caseId) ?? -1;
+  const prevCase = currentIndex > 0 ? cases![currentIndex - 1] : null;
+  const nextCase = currentIndex < (cases?.length ?? 0) - 1 ? cases![currentIndex + 1] : null;
 
   const uploadEvidence = useUploadEvidence();
 
@@ -5101,16 +5108,46 @@ export default function CaseWorkspacePage() {
   }
 
   return (
-    <AppLayout>
+    <AppLayout hideHeader>
       <div className="flex flex-col h-full bg-slate-50/10 h-screen overflow-hidden">
         <div className="bg-white border-b px-6 py-4 flex items-center justify-between shrink-0 shadow-sm relative z-30">
+          <div className="flex items-center gap-4">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => navigate('/cases')}
+              className="h-9 w-9 p-0 rounded-full hover:bg-slate-100 text-slate-500 border border-slate-100 shadow-sm"
+            >
+              <ArrowLeft className="h-4.5 w-4.5" />
+            </Button>
             <div>
               <h1 className="text-xl font-bold tracking-tight text-slate-900 border-none p-0 flex items-center gap-2 leading-none">
                 {caseData?.title || "Loading Case..."} <span className="text-slate-400 font-mono text-sm leading-none ml-1">#{caseData?.case_number || caseId}</span>
               </h1>
             </div>
+          </div>
           
           <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 border-r pr-4 border-slate-100">
+               <Button
+                 variant="ghost"
+                 size="sm"
+                 disabled={!prevCase}
+                 onClick={() => navigate(`/cases/${prevCase?.id}`)}
+                 className="h-8 px-2 text-[10px] font-black uppercase tracking-widest gap-1 text-slate-400 hover:text-slate-900 transition-all"
+               >
+                 <ChevronLeft className="h-3.5 w-3.5" /> Previous
+               </Button>
+               <Button
+                 variant="ghost"
+                 size="sm"
+                 disabled={!nextCase}
+                 onClick={() => navigate(`/cases/${nextCase?.id}`)}
+                 className="h-8 px-2 text-[10px] font-black uppercase tracking-widest gap-1 text-slate-400 hover:text-slate-900 transition-all"
+               >
+                 Next <ChevronRight className="h-3.5 w-3.5" />
+               </Button>
+            </div>
             <Button className="h-9 font-bold px-4 bg-slate-900 text-white shadow-md">Submit Case</Button>
           </div>
         </div>
