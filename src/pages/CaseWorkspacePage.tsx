@@ -579,20 +579,37 @@ const initialAgentsState: AgentState[] = [
      name: 'Prevention Engine', 
      icon: HardHat, 
      purpose: 'Generate corrective actions and predictive risk mitigations.', 
-     status: 'idle', 
+     status: 'completed', 
      dependencies: ['ipls'],
-     runCount: 0,
+     runCount: 1,
      tokenEstimate: 2000,
-     history: [],
+     history: [
+        { run_id: "r-303", agent_id: "prev", started_at: "2026-04-20T11:00:00Z", ended_at: "2026-04-20T11:00:20Z", triggered_by: "System", status: "completed", token_usage: 1250, duration_ms: 20000, summary: "Corrective Action Plan generated." }
+     ],
      backendCapabilities: { canPause: false, canResume: false, canStop: true, canRerun: true },
      results: {
-        actions: [
-           { id: "A1", desc: "Automated tensioner shutdown logic upgrade", priority: "Critical", owner: "Maintenance" },
-           { id: "A2", desc: "Enhanced radio relay frequency testing", priority: "High", owner: "Ops" }
+        root_cause_actions: [
+           { no: 1, layer: "III.10, III.13", hierarchy: "Administrasi", action: "Sanksi Administratif terhadap operator Sdr. Ryo Triharseno sesuai peraturan yang ada di PTBC", pic: "Sholeh Hadi H.", due_date: "4 Desember 2025", status: "OPEN" },
+           { no: 2, layer: "III.10, III.13", hierarchy: "Praktek kerja", action: "Melaksanakan saresehan/FGD kepada seluruh operator terkait pengelolaan waktu istirahat dan cara pelaksanaan P2H perangkat DMS/MH02", pic: "All DH", due_date: "27 November 2025", status: "PROGRESS" },
+           { no: 3, layer: "III.10", hierarchy: "Praktek kerja", action: "Pelaksanaan observasi oleh layer 2 terhadap aktifitas pelaksanaan P2H perangkat MH02 setiap awal shift", pic: "All DH", due_date: "27 November 2025", status: "OPEN" },
+           { no: 4, layer: "III.10", hierarchy: "Administrasi", action: "Membuat IM perkuatan kewajiban pelaksanaan P2H perangkat MH02 setiap awal shift", pic: "B. Fredy Juni P.", due_date: "4 Desember 2025", status: "OPEN" }
         ],
-        prioritas: "Critical",
-        risiko: "Moderate residual risk",
-        fokus_monitoring: "Section 14 Telemetry"
+        non_conformity_actions: [
+           { no: 1, layer: "V.5", hierarchy: "Administrasi", action: "Melaksanakan FGD kepada operator dan pengawas mengenai pentingnya pelaporan awal insiden langsung ke CCR ERG PTBC", pic: "All DH", due_date: "27 November 2025", status: "OPEN" },
+           { no: 2, layer: "IV.4", hierarchy: "Praktek Kerja", action: "Pemeriksaan secara visual kondisi kabel MH02 saat unit dilakukan service", pic: "Fahrudin Aris W", due_date: "27 November 2025", status: "OPEN" },
+           { no: 3, layer: "IV.4, I.2", hierarchy: "Administrasi", action: "Membuat standard kriteria prioritas dan lama offline dari perangkat MH02 yang akan dilakukan perbaikan", pic: "Fahrudin Aris W", due_date: "4 Desember 2025", status: "OPEN" },
+           { no: 4, layer: "IV.7", hierarchy: "Administrasi", action: "Pembuatan skema flow proses penarikan video post event cctv mess ketika mengalami kerusakan jaringan", pic: "Samsul Khairi", due_date: "4 Desember 2025", status: "OPEN" },
+           { no: 7, layer: "III.17", hierarchy: "Praktek kerja", action: "Melaksanakan FGD kepada operator terkait berani speak up ketika mengalami permasalah baik di pekerjaan maupun di luar pekerjaan", pic: "All DH", due_date: "27 November 2025", status: "OPEN" },
+           { no: 8, layer: "II.4", hierarchy: "Praktek kerja", action: "Melaksanakan FGD kepada tim pengawas SIDAK mess agar melaporkan setiap deviasi melalui SAP", pic: "Samsul Khairi", due_date: "27 November 2025", status: "OPEN" },
+           { no: 9, layer: "II.4", hierarchy: "Administrasi", action: "CNC kepada Sdri. Helena", pic: "Samsul Khairi", due_date: "27 November 2025", status: "CLOSE" },
+           { no: 10, layer: "I.2", hierarchy: "Administrasi", action: "Membuat instruksi kerja pelaksanaan P2H perangkat MH02", pic: "Aryanno Supono", due_date: "4 Desember 2025", status: "OPEN" }
+        ],
+        improvement_actions: [
+           { no: 1, layer: "IV.7", hierarchy: "Rekayasa", action: "Percepatan pemasangan CCTV pada segmen yang mengcover Jalan Ubud Pit J Barat", pic: "Fahrudin Aris W", due_date: "27 November 2025", status: "OPEN" },
+           { no: 2, layer: "II.10", hierarchy: "Praktek Kerja", action: "Membuat campaign yang mengingatkan operator terkait P2H perangkat MH02 dan tindak lanjut jika MH02 mengalami offline", pic: "M. S. Rifai", due_date: "4 Desember 2025", status: "OPEN" }
+        ],
+        summary: "Total 14 Corrective Actions identified. High priority given to Administrative controls for Root Cause mitigation.",
+        completion_rate: "7.1%"
      }
   }
 ];
@@ -4345,6 +4362,70 @@ function AnalysisTab() {
                                                  </div>
                                               </div>
                                            </div>
+                                        ) : selectedAgentId === 'prev' ? (
+                                           <div className="flex flex-col h-full bg-white overflow-hidden animate-in fade-in duration-500">
+                                              <div className="h-16 border-b border-slate-200 flex items-center justify-between px-8 bg-slate-50/30 shrink-0">
+                                                 <div className="flex items-center gap-3">
+                                                    <HardHat className="h-5 w-5 text-slate-900" />
+                                                    <h2 className="text-xl font-black text-slate-900 uppercase tracking-tighter">Prevention Action Plan</h2>
+                                                 </div>
+                                                 <div className="flex items-center gap-2">
+                                                    <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse" />
+                                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Plan Generated</span>
+                                                 </div>
+                                              </div>
+                                              <div className="flex-1 overflow-y-auto custom-scrollbar p-8 bg-slate-50/10">
+                                                 <div className="max-w-[1600px] mx-auto space-y-12">
+                                                    
+                                                    {[
+                                                       { id: 'root', title: 'Root Cause', color: 'text-red-600', data: selectedAgent?.results?.root_cause_actions },
+                                                       { id: 'nc', title: 'Non Conformity', color: 'text-amber-500', data: selectedAgent?.results?.non_conformity_actions },
+                                                       { id: 'imp', title: 'Improvement', color: 'text-emerald-600', data: selectedAgent?.results?.improvement_actions },
+                                                    ].map((section) => (
+                                                       <div key={section.id} className="space-y-4">
+                                                          <h3 className={`text-2xl font-black uppercase tracking-tight ${section.color}`}>{section.title}</h3>
+                                                          <div className="border-2 border-slate-900 shadow-[12px_12px_0px_rgba(0,0,0,0.05)] overflow-hidden">
+                                                             <table className="w-full border-collapse">
+                                                                <thead>
+                                                                   <tr className="bg-slate-200 border-b-2 border-slate-900">
+                                                                      <th className="p-3 text-[10px] font-black text-slate-600 uppercase border-r border-slate-300 w-12 text-center">NO</th>
+                                                                      <th className="p-3 text-[10px] font-black text-slate-600 uppercase border-r border-slate-300 w-24 text-center">LAYER</th>
+                                                                      <th className="p-3 text-[10px] font-black text-slate-600 uppercase border-r border-slate-300 w-32 text-center">HIRARKI KONTROL</th>
+                                                                      <th className="p-3 text-[10px] font-black text-slate-600 uppercase border-r border-slate-300 text-left">TINDAKAN PERBAIKAN</th>
+                                                                      <th className="p-3 text-[10px] font-black text-slate-600 uppercase border-r border-slate-300 w-40 text-center">PENANGGUNG JAWAB</th>
+                                                                      <th className="p-3 text-[10px] font-black text-slate-600 uppercase border-r border-slate-300 w-32 text-center">DUE DATE</th>
+                                                                      <th className="p-3 text-[10px] font-black text-slate-600 uppercase w-32 text-center">STATUS</th>
+                                                                   </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                   {(section.data || []).map((item: any, idx: number) => (
+                                                                      <tr key={idx} className="border-b border-slate-200 bg-white hover:bg-slate-50 transition-colors">
+                                                                         <td className="p-4 text-[11px] font-bold text-slate-900 border-r border-slate-100 text-center">{item.no}</td>
+                                                                         <td className="p-4 text-[11px] font-black text-slate-500 border-r border-slate-100 text-center">{item.layer}</td>
+                                                                         <td className="p-4 text-[11px] font-bold text-slate-900 border-r border-slate-100 text-center uppercase tracking-tighter">{item.hierarchy}</td>
+                                                                         <td className="p-4 text-[11px] font-black text-slate-900 border-r border-slate-100 uppercase tracking-tight leading-tight">{item.action}</td>
+                                                                         <td className="p-4 text-[11px] font-bold text-slate-700 border-r border-slate-100 text-center">{item.pic}</td>
+                                                                         <td className="p-4 text-[11px] font-bold text-slate-500 border-r border-slate-100 text-center">{item.due_date}</td>
+                                                                         <td className="p-0 border-r border-slate-100">
+                                                                            <div className={cn(
+                                                                               "h-full w-full p-4 flex items-center justify-center font-black text-[10px] tracking-widest",
+                                                                               item.status === 'OPEN' ? "bg-red-600 text-white" :
+                                                                               item.status === 'PROGRESS' ? "bg-yellow-400 text-slate-900" :
+                                                                               "bg-emerald-600 text-white"
+                                                                            )}>
+                                                                               {item.status}
+                                                                            </div>
+                                                                         </td>
+                                                                      </tr>
+                                                                   ))}
+                                                                </tbody>
+                                                             </table>
+                                                          </div>
+                                                       </div>
+                                                    ))}
+                                                 </div>
+                                              </div>
+                                           </div>
                                         ) : (
                                            <div className="flex-1 bg-[#1a1c23] rounded-sm p-6 overflow-hidden border border-slate-700 relative">
                                               <pre className="text-[12px] font-mono text-emerald-400/90 leading-tight h-full overflow-auto custom-scrollbar">
@@ -4353,7 +4434,7 @@ function AnalysisTab() {
                                            </div>
                                         )
 
-                                        )}
+                                        }
                                      </div>
                                   )}
                                </div>
