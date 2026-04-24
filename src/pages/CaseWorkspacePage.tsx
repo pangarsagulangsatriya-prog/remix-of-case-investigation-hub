@@ -3066,7 +3066,7 @@ function ExtractionTab({
         ...batch,
         files: filteredFiles.filter(f => f.batch_id === batch.id)
       }))
-      .filter(b => b.files.length > 0 || b.type === "Folder")
+      .filter(b => b.files.length > 0)
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [batches, filteredFiles]);
 
