@@ -60,6 +60,7 @@ import {
   Copy,
   ZoomIn,
   ZoomOut,
+  Quote,
   RefreshCcw,
   HardHat,
   Footprints,
@@ -3459,7 +3460,9 @@ function AnalysisTab() {
   const [agents, setAgents] = useState<AgentState[]>(initialAgentsState);
   const [factViewMode, setFactViewMode] = useState<'slide' | 'default'>('default');
   const [selectedChronologyItemId, setSelectedChronologyItemId] = useState<string | null>(null);
-  const [activeConsoleTab, setActiveConsoleTab] = useState<'diarization' | 'analysis'>('diarization');
+
+  const [activeEvidenceType, setActiveEvidenceType] = useState('audio_diarization');
+  const [expandedFolders, setExpandedFolders] = useState<string[]>(['audio', 'document']);
   const [execMode, setExecMode] = useState<"idle" | "full" | "manual">("idle");
   const [globalStatus, setGlobalStatus] = useState<"idle" | "running" | "blocked" | "completed" | "stopped" | "failed">("idle");
   const [chainQueue, setChainQueue] = useState<string[]>([]);
@@ -3982,85 +3985,193 @@ function AnalysisTab() {
                           )}
                        </div>
 
-                       <div className="flex border-b border-slate-200 shrink-0">
-                          <button onClick={() => setActiveConsoleTab('diarization')} className={cn("flex-1 h-12 text-[10px] font-black uppercase tracking-widest transition-all border-r border-slate-200", activeConsoleTab === 'diarization' ? "bg-slate-900 text-white" : "text-slate-400 hover:bg-slate-50")}>Diarization</button>
-                          <button onClick={() => setActiveConsoleTab('analysis')} className={cn("flex-1 h-12 text-[10px] font-black uppercase tracking-widest transition-all", activeConsoleTab === 'analysis' ? "bg-slate-900 text-white" : "text-slate-400 hover:bg-slate-50")}>Analysis</button>
-                       </div>
-                       <div className="flex-1 overflow-y-auto custom-scrollbar p-6 pb-20">
-                          {activeConsoleTab === 'diarization' ? (
-                             <div className="space-y-6">
-                                <div className="flex items-center justify-between mb-4">
-                                   <div className="flex items-center gap-2">
-                                      <MessageSquare className="h-3 w-3 text-slate-400" />
-                                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-900">Diarization Session</span>
-                                   </div>
-                                </div>
-                                {audioEvidence.diarization.map((seg, idx) => (
-                                   <div key={idx} className="border-l-2 border-slate-900 pl-4 py-1 space-y-2 group">
-                                      <div className="flex items-center justify-between">
-                                         <div className="flex items-center gap-3">
-                                            <span className="text-[10px] font-mono font-black text-slate-400">{seg.startTime} — {seg.endTime}</span>
-                                            <span className="px-2 py-0.5 bg-slate-900 text-white text-[8px] font-black uppercase rounded-sm">{seg.speaker}</span>
-                                         </div>
-                                         <span className="text-[9px] font-black text-emerald-600 uppercase">High</span>
-                                      </div>
-                                      <p className="text-xs font-medium leading-relaxed text-slate-700 italic">"{seg.text}"</p>
-                                   </div>
-                                ))}
-                             </div>
-                          ) : (
-                             <div className="space-y-8">
-                                <div className="flex items-center justify-between">
-                                   <div className="flex flex-col">
-                                      <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">Intelligence Hub</span>
-                                      <span className="text-[11px] font-black uppercase tracking-widest text-slate-900">Audio Protocol Matrix V2.1</span>
-                                   </div>
-                                   <div className="flex bg-slate-100 p-0.5 rounded-sm">
-                                      <button className="px-3 py-1 text-[8px] font-black uppercase bg-white shadow-sm rounded-sm">Structured</button>
-                                      <button className="px-3 py-1 text-[8px] font-black uppercase text-slate-400">JSON</button>
-                                   </div>
-                                </div>
+                        <div className="flex-1 flex flex-col overflow-hidden bg-white">
+                           {/* Evidence Source Tree */}
+                           <div className="px-5 py-4 border-b border-slate-100 space-y-1 bg-white shrink-0">
+                              {/* Audio Folder */}
+                              <div className="space-y-1">
+                                 <button 
+                                    onClick={() => setExpandedFolders(prev => prev.includes('audio') ? prev.filter(f => f !== 'audio') : [...prev, 'audio'])}
+                                    className="w-full flex items-center justify-between p-2 hover:bg-slate-50 rounded-sm group transition-colors"
+                                 >
+                                    <div className="flex items-center gap-2">
+                                       <Folders className="h-3.5 w-3.5 text-slate-400 group-hover:text-primary transition-colors" />
+                                       <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 group-hover:text-slate-900 transition-colors">Audio Evidence</span>
+                                    </div>
+                                    {expandedFolders.includes('audio') ? <ChevronDown className="h-3 w-3 text-slate-300" /> : <ChevronRight className="h-3 w-3 text-slate-300" />}
+                                 </button>
+                                 
+                                 {expandedFolders.includes('audio') && (
+                                    <div className="ml-4 pl-2 border-l border-slate-100 space-y-0.5 animate-in slide-in-from-top-1 duration-200">
+                                       <button 
+                                          onClick={() => setActiveEvidenceType('audio_diarization')}
+                                          className={cn(
+                                             "w-full flex items-center gap-2 p-2 rounded-sm text-[9px] font-black uppercase tracking-widest transition-all text-left",
+                                             activeEvidenceType === 'audio_diarization' ? "bg-slate-900 text-white shadow-sm" : "text-slate-400 hover:bg-slate-50 hover:text-slate-600"
+                                          )}
+                                       >
+                                          <AudioIcon className={cn("h-3 w-3", activeEvidenceType === 'audio_diarization' ? "text-emerald-400" : "text-slate-300")} />
+                                          Diarization Session
+                                       </button>
+                                       <button 
+                                          onClick={() => setActiveEvidenceType('audio_analysis')}
+                                          className={cn(
+                                             "w-full flex items-center gap-2 p-2 rounded-sm text-[9px] font-black uppercase tracking-widest transition-all text-left",
+                                             activeEvidenceType === 'audio_analysis' ? "bg-slate-900 text-white shadow-sm" : "text-slate-400 hover:bg-slate-50 hover:text-slate-600"
+                                          )}
+                                       >
+                                          <Activity className={cn("h-3 w-3", activeEvidenceType === 'audio_analysis' ? "text-blue-400" : "text-slate-300")} />
+                                          Protocol Analysis
+                                       </button>
+                                    </div>
+                                 )}
+                              </div>
 
-                                <div className="space-y-4">
-                                   {audioEvidence.analysis.speakers.map((s, idx) => (
-                                      <div key={idx} className="border border-slate-200 p-5 rounded-sm hover:border-slate-400 transition-colors">
-                                         <div className="flex items-center justify-between mb-6">
-                                            <div className="flex items-center gap-4">
-                                               <div className="h-10 w-10 bg-slate-900 text-white flex items-center justify-center rounded-sm font-black text-xs">
-                                                  {s.name.split(' ').map(n => n[0]).join('')}
-                                               </div>
-                                               <div>
-                                                  <h4 className="text-xs font-black uppercase tracking-wider text-slate-900">{s.name}</h4>
-                                                  <p className="text-[9px] font-bold text-slate-400 uppercase">{s.role}</p>
-                                               </div>
-                                            </div>
-                                            <span className="text-[9px] font-black text-emerald-600 uppercase">High</span>
-                                         </div>
+                              {/* Document Folder */}
+                              <div className="space-y-1">
+                                 <button 
+                                    onClick={() => setExpandedFolders(prev => prev.includes('document') ? prev.filter(f => f !== 'document') : [...prev, 'document'])}
+                                    className="w-full flex items-center justify-between p-2 hover:bg-slate-50 rounded-sm group transition-colors"
+                                 >
+                                    <div className="flex items-center gap-2">
+                                       <Folders className="h-3.5 w-3.5 text-slate-400 group-hover:text-primary transition-colors" />
+                                       <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 group-hover:text-slate-900 transition-colors">Document Trace</span>
+                                    </div>
+                                    {expandedFolders.includes('document') ? <ChevronDown className="h-3 w-3 text-slate-300" /> : <ChevronRight className="h-3 w-3 text-slate-300" />}
+                                 </button>
+                                 
+                                 {expandedFolders.includes('document') && (
+                                    <div className="ml-4 pl-2 border-l border-slate-100 space-y-0.5 animate-in slide-in-from-top-1 duration-200">
+                                       <button 
+                                          onClick={() => setActiveEvidenceType('doc_citation')}
+                                          className={cn(
+                                             "w-full flex items-center gap-2 p-2 rounded-sm text-[9px] font-black uppercase tracking-widest transition-all text-left",
+                                             activeEvidenceType === 'doc_citation' ? "bg-slate-900 text-white shadow-sm" : "text-slate-400 hover:bg-slate-50 hover:text-slate-600"
+                                          )}
+                                       >
+                                          <Quote className={cn("h-3 w-3", activeEvidenceType === 'doc_citation' ? "text-amber-400" : "text-slate-300")} />
+                                          Forensic Citations
+                                       </button>
+                                    </div>
+                                 )}
+                              </div>
+                           </div>
 
-                                         <div className="grid grid-cols-2 gap-y-6 gap-x-12">
-                                            <div className="space-y-1">
-                                               <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Talk Time</span>
-                                               <p className="text-xs font-bold text-slate-900">{s.talkTime}</p>
-                                            </div>
-                                            <div className="space-y-1">
-                                               <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Style</span>
-                                               <p className="text-xs font-bold text-slate-900">{s.style}</p>
-                                            </div>
-                                            <div className="space-y-1">
-                                               <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Assertiveness</span>
-                                               <p className="text-xs font-bold text-slate-900">{s.assertiveness}</p>
-                                            </div>
-                                            <div className="space-y-1">
-                                               <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Stress Level</span>
-                                               <p className="text-xs font-bold text-slate-900">{s.stressLevel}</p>
-                                            </div>
-                                         </div>
-                                      </div>
-                                   ))}
-                                </div>
-                             </div>
-                          )}
-                       </div>
+                           <div className="flex-1 overflow-y-auto custom-scrollbar p-6 pb-20 bg-slate-50/20">
+                              {activeEvidenceType === 'audio_diarization' && (
+                                 <div className="space-y-6">
+                                    <div className="flex items-center justify-between mb-4">
+                                       <div className="flex items-center gap-2">
+                                          <MessageSquare className="h-3 w-3 text-slate-400" />
+                                          <span className="text-[10px] font-black uppercase tracking-widest text-slate-900">Diarization Session</span>
+                                       </div>
+                                    </div>
+                                    {audioEvidence.diarization.map((seg, idx) => (
+                                       <div key={idx} className="border-l-2 border-slate-900 pl-4 py-1 group bg-white p-3 rounded-sm border-r border-t border-b border-slate-100 shadow-sm mb-4">
+                                          <div className="flex items-center justify-between mb-2">
+                                             <div className="flex items-center gap-3">
+                                                <span className="text-[10px] font-mono font-black text-slate-400">{seg.startTime} — {seg.endTime}</span>
+                                                <span className="px-2 py-0.5 bg-slate-900 text-white text-[8px] font-black uppercase rounded-sm">{seg.speaker}</span>
+                                             </div>
+                                             <span className="text-[9px] font-black text-emerald-600 uppercase">High</span>
+                                          </div>
+                                          <p className="text-xs font-medium leading-relaxed text-slate-700 italic">"{seg.text}"</p>
+                                       </div>
+                                    ))}
+                                 </div>
+                              )}
+
+                              {activeEvidenceType === 'audio_analysis' && (
+                                 <div className="space-y-8">
+                                    <div className="flex items-center justify-between">
+                                       <div className="flex flex-col">
+                                          <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">Intelligence Hub</span>
+                                          <span className="text-[11px] font-black uppercase tracking-widest text-slate-900">Audio Protocol Matrix V2.1</span>
+                                       </div>
+                                       <div className="flex bg-slate-100 p-0.5 rounded-sm">
+                                          <button className="px-3 py-1 text-[8px] font-black uppercase bg-white shadow-sm rounded-sm">Structured</button>
+                                          <button className="px-3 py-1 text-[8px] font-black uppercase text-slate-400">JSON</button>
+                                       </div>
+                                    </div>
+
+                                    <div className="space-y-4">
+                                       {audioEvidence.analysis.speakers.map((s, idx) => (
+                                          <div key={idx} className="border border-slate-200 p-5 rounded-sm hover:border-slate-400 transition-colors bg-white shadow-sm">
+                                             <div className="flex items-center justify-between mb-6">
+                                                <div className="flex items-center gap-4">
+                                                   <div className="h-10 w-10 bg-slate-900 text-white flex items-center justify-center rounded-sm font-black text-xs">
+                                                      {s.name.split(' ').map(n => n[0]).join('')}
+                                                   </div>
+                                                   <div>
+                                                      <h4 className="text-xs font-black uppercase tracking-wider text-slate-900">{s.name}</h4>
+                                                      <p className="text-[9px] font-bold text-slate-400 uppercase">{s.role}</p>
+                                                   </div>
+                                                </div>
+                                                <span className="text-[9px] font-black text-emerald-600 uppercase">High</span>
+                                             </div>
+
+                                             <div className="grid grid-cols-2 gap-y-6 gap-x-12">
+                                                <div className="space-y-1">
+                                                   <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Talk Time</span>
+                                                   <p className="text-xs font-bold text-slate-900">{s.talkTime}</p>
+                                                </div>
+                                                <div className="space-y-1">
+                                                   <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Style</span>
+                                                   <p className="text-xs font-bold text-slate-900">{s.style}</p>
+                                                </div>
+                                                <div className="space-y-1">
+                                                   <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Assertiveness</span>
+                                                   <p className="text-xs font-bold text-slate-900">{s.assertiveness}</p>
+                                                </div>
+                                                <div className="space-y-1">
+                                                   <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Stress Level</span>
+                                                   <p className="text-xs font-bold text-slate-900">{s.stressLevel}</p>
+                                                </div>
+                                             </div>
+                                          </div>
+                                       ))}
+                                    </div>
+                                 </div>
+                              )}
+
+                              {activeEvidenceType === 'doc_citation' && (
+                                 <div className="space-y-6">
+                                    <div className="flex items-center justify-between mb-4">
+                                       <div className="flex items-center gap-2">
+                                          <FileText className="h-3.5 w-3.5 text-slate-400" />
+                                          <span className="text-[10px] font-black uppercase tracking-widest text-slate-900">Document Citations</span>
+                                       </div>
+                                    </div>
+                                    <div className="space-y-4">
+                                       {[
+                                          { source: 'SOP-SAFE-01.pdf', ref: 'Page 12', text: 'Operator must initiate E-Stop immediately upon detection of belt rupture or abnormal oscillation levels.', confidence: 'High' },
+                                          { source: 'Maintenance_Log_CS.xlsx', ref: 'Row 442', text: 'Sensor F-14 calibration check overdue by 14 days at time of incident.', confidence: 'Medium' }
+                                       ].map((cite, idx) => (
+                                          <div key={idx} className="bg-white border border-slate-200 p-4 rounded-sm hover:border-slate-400 transition-colors group shadow-sm">
+                                             <div className="flex items-center justify-between mb-3 pb-3 border-b border-slate-50">
+                                                <div className="flex items-center gap-2">
+                                                   <FileText as DocIcon className="h-3 w-3 text-blue-500" />
+                                                   <span className="text-[10px] font-black text-slate-700 uppercase tracking-tighter truncate max-w-[150px]">{cite.source}</span>
+                                                   <span className="text-[8px] font-bold text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100">{cite.ref}</span>
+                                                </div>
+                                                <div className={cn("text-[8px] font-black uppercase px-2 py-0.5 rounded border", cite.confidence === 'High' ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-amber-50 text-amber-600 border-amber-100")}>
+                                                   {cite.confidence}
+                                                </div>
+                                             </div>
+                                             <div className="flex gap-3">
+                                                <Quote className="h-3 w-3 text-slate-200 shrink-0" />
+                                                <p className="text-[11px] font-medium leading-relaxed text-slate-600 italic">
+                                                   "{cite.text}"
+                                                </p>
+                                             </div>
+                                          </div>
+                                       ))}
+                                    </div>
+                                 </div>
+                              )}
+                           </div>
+                        </div>
+
                     </div>
                   );
                 })()
