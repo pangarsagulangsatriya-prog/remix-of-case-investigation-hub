@@ -3803,36 +3803,7 @@ function AnalysisTab() {
          </div>
 
          <div className="flex-1 flex flex-col min-w-0 bg-[#f0f2f4]">
-            <div className="h-12 bg-white border-b border-slate-200 flex items-center justify-between px-6  z-30">
-               <div className="flex items-center gap-6">
-                  <div className="flex items-center gap-2">
-                     <Grid className="h-4 w-4 text-slate-400" />
-                     <span className="text-[10px] font-bold text-slate-700 uppercase tracking-widest">Analysis Matrix</span>
-                  </div>
-                  <div className="h-4 w-px bg-slate-200" />
-                  <div className="flex items-center gap-6">
-                     {['Fact', 'Actor', 'PEEPO', 'IPLS', 'Prev'].map((node, i) => {
-                        const ag = agents.find(a => a.name.includes(node));
-                        return (
-                           <div key={node} className="flex items-center gap-2">
-                              <div className={`
-                                 h-4 w-4 rounded-full border flex items-center justify-center text-[8px] font-black
-                                 ${ag?.status === 'completed' ? 'bg-emerald-500 border-emerald-500 text-white' : 
-                                   ag?.status === 'running' ? 'border-primary text-primary animate-pulse' : 
-                                   'bg-white border-slate-200 text-slate-300'}
-                              `}>{i + 1}</div>
-                              <span className={`text-[9px] font-black uppercase tracking-wider ${ag?.status === 'completed' ? 'text-slate-800' : 'text-slate-300'}`}>{node}</span>
-                           </div>
-                        );
-                     })}
-                  </div>
-               </div>
-               <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" className="h-8 text-[10px] font-bold gap-2 bg-white">
-                     <ZoomIn className="h-3.5 w-3.5" /> Full Screen
-                  </Button>
-               </div>
-            </div>
+
 
             <div ref={containerRef} className="flex-1 relative overflow-auto custom-scrollbar p-10 flex items-start justify-center">
                  {selectedAgentId ? (
