@@ -4251,9 +4251,9 @@ function AnalysisTab() {
                                                       <div className="bg-white p-3 flex items-center justify-between">
                                                          <p className="text-[10px] font-bold text-slate-900 uppercase truncate">{row.value}</p>
                                                          <div className="flex items-center gap-4">
-                                                            <div className="flex items-center gap-1.5 px-1.5 py-0.5 bg-blue-50 border border-blue-100 rounded-none">
-                                                               <FileText className="h-2.5 w-2.5 text-blue-500" />
-                                                               <span className="text-[7px] font-black text-blue-600 uppercase tracking-tighter">1 TRACE</span>
+                                                            <div className="flex items-center gap-1.5 px-1.5 py-0.5 bg-slate-50 border border-slate-100 rounded-none">
+                                                               <FileText className="h-2.5 w-2.5 text-slate-400" />
+                                                               <span className="text-[7px] font-black text-slate-400 uppercase tracking-tighter">1 TRACE</span>
                                                             </div>
                                                             <ChevronDown className={cn("h-3 w-3 text-slate-300 transition-transform duration-200", !expandedEntityRows.includes(row.id) && "-rotate-90")} />
                                                          </div>
@@ -4261,15 +4261,15 @@ function AnalysisTab() {
                                                    </button>
                                                    
                                                    {expandedEntityRows.includes(row.id) && (
-                                                      <div className="bg-slate-50 border-t border-slate-100 p-4 space-y-4 animate-in slide-in-from-top-1 duration-300">
+                                                      <div className="bg-slate-50/50 border-t border-slate-100 p-4 space-y-4 animate-in slide-in-from-top-1 duration-300">
                                                          <div className="flex items-center gap-2">
-                                                            <div className="h-0.5 w-3 bg-blue-500" />
-                                                            <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest leading-none">Evidence Citations</span>
+                                                            <div className="h-0.5 w-3 bg-slate-400" />
+                                                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none">Evidence Citations</span>
                                                          </div>
 
                                                          <div className="space-y-3">
                                                             {/* Citation Block */}
-                                                            <div className="bg-white border border-slate-200 p-4 rounded-none shadow-[2px_2px_0px_rgba(0,0,0,0.02)] space-y-3">
+                                                            <div className="bg-white border border-slate-200 p-4 rounded-none shadow-[2px_2px_0px_rgba(0,0,0,0.01)] space-y-3">
                                                                <div className="flex items-center justify-between border-b border-slate-50 pb-2">
                                                                   <div className="flex items-center gap-2">
                                                                      {row.id === 'time' || row.id === 'actor' ? (
