@@ -33,6 +33,7 @@ import {
   Image as ImageIcon, 
   Mic as AudioIcon, 
   Video as VideoIcon, 
+  Folder,
   Folders,
   FileCode,
   Search,
@@ -2794,7 +2795,7 @@ function ExtractionTab({
           
           <div className="flex gap-2">
             {[
-              { id: "All Files", label: "ALL", icon: Grid },
+              { id: "All Files", label: "ALL", icon: Folder },
               { id: "Document", label: "DOCS", icon: DocIcon },
               { id: "Image", label: "IMAGES", icon: ImageIcon },
               { id: "Audio", label: "AUDIO", icon: AudioIcon },
@@ -2817,60 +2818,97 @@ function ExtractionTab({
         </div>
 
         <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-6">
-          {groupedFiles.map((batch) => (
-            <div key={batch.id} className="space-y-2">
-              <div className="flex items-center justify-between group/folder">
-                <button 
-                  onClick={() => toggleBatch(batch.id)}
-                  className="flex items-center gap-2 group flex-1"
-                >
-                  <ChevronDown className={`h-3.5 w-3.5 text-slate-400 transition-transform duration-300 ${expandedBatches.includes(batch.id) ? "" : "-rotate-90"}`} />
-                  <div className="flex items-center gap-2">
-                    <Folders className="h-3.5 w-3.5 text-primary" />
-                    <span className="text-[11px] font-black text-slate-900 uppercase tracking-tighter">{batch.name}</span>
-                  </div>
-                  <span className="text-[9px] font-bold text-slate-300 bg-slate-50 px-1.5 rounded-full ml-1">{batch.files.length}</span>
-                </button>
-                <button 
-                  onClick={() => openDeleteFolderModal(batch)}
-                  className="p-1 hover:bg-rose-50 rounded text-slate-300 hover:text-rose-500 transition-all opacity-0 group-hover/folder:opacity-100"
-                >
-                   <Trash2 className="h-3 w-3" />
-                </button>
-              </div>
-              
-              {expandedBatches.includes(batch.id) && (
-                <div className="space-y-1 ml-4 border-l-2 border-slate-50 pl-2">
-                  {batch.files.map((file: any) => (
-                    <div
-                      key={file.id}
-                      onClick={() => setSelectedFile(file)}
-                      className={`group flex items-center justify-between p-2.5 rounded-sm cursor-pointer transition-all ${
-                        selectedFile?.id === file.id 
-                        ? "bg-primary/5 border-primary/10 shadow-[0_4px_12px_rgba(37,99,235,0.08)]" 
-                        : "hover:bg-slate-50 border-transparent"
-                      } border`}
-                    >
-                      <div className="flex items-center gap-2.5 overflow-hidden">
-                        <div className={`p-1.5 rounded-sm transition-colors ${selectedFile?.id === file.id ? "bg-white text-primary " : "bg-slate-100 text-slate-400 group-hover:bg-white"}`}>
-                          {getFileIcon(file.type)}
-                        </div>
-                        <div className="overflow-hidden">
-                          <p className={`text-[11px] font-bold truncate leading-none mb-1 ${selectedFile?.id === file.id ? "text-primary" : "text-slate-700"}`}>
-                            {file.name}
-                          </p>
-                          <div className="flex items-center gap-2">
-                            <span className="text-[9px] text-slate-400 font-bold uppercase tracking-tight">{file.type}</span>
-                             {file.review_status === 'reviewed' && <CheckCircle2 className="h-2.5 w-2.5 text-emerald-500" />}
+          {activeFilter === "All Files" ? (
+            groupedFiles.map((batch) => (
+              <div key={batch.id} className="space-y-2">
+                <div className="flex items-center justify-between group/folder">
+                  <button 
+                    onClick={() => toggleBatch(batch.id)}
+                    className="flex items-center gap-2 group flex-1"
+                  >
+                    <ChevronDown className={`h-3.5 w-3.5 text-slate-400 transition-transform duration-300 ${expandedBatches.includes(batch.id) ? "" : "-rotate-90"}`} />
+                    <div className="flex items-center gap-2">
+                      <Folders className="h-3.5 w-3.5 text-primary" />
+                      <span className="text-[11px] font-black text-slate-900 uppercase tracking-tighter">{batch.name}</span>
+                    </div>
+                    <span className="text-[9px] font-bold text-slate-300 bg-slate-50 px-1.5 rounded-full ml-1">{batch.files.length}</span>
+                  </button>
+                  <button 
+                    onClick={() => openDeleteFolderModal(batch)}
+                    className="p-1 hover:bg-rose-50 rounded text-slate-300 hover:text-rose-500 transition-all opacity-0 group-hover/folder:opacity-100"
+                  >
+                     <Trash2 className="h-3 w-3" />
+                  </button>
+                </div>
+                
+                {expandedBatches.includes(batch.id) && (
+                  <div className="space-y-1 ml-4 border-l-2 border-slate-50 pl-2">
+                    {batch.files.map((file: any) => (
+                      <div
+                        key={file.id}
+                        onClick={() => setSelectedFile(file)}
+                        className={`group flex items-center justify-between p-2.5 rounded-sm cursor-pointer transition-all ${
+                          selectedFile?.id === file.id 
+                          ? "bg-primary/5 border-primary/10 " 
+                          : "hover:bg-slate-50 border-transparent"
+                        } border`}
+                      >
+                        <div className="flex items-center gap-2.5 overflow-hidden">
+                          <div className={`p-1.5 rounded-sm transition-colors ${selectedFile?.id === file.id ? "bg-white text-primary " : "bg-slate-100 text-slate-400 group-hover:bg-white"}`}>
+                            {getFileIcon(file.type)}
+                          </div>
+                          <div className="overflow-hidden">
+                            <p className={`text-[11px] font-bold truncate leading-none mb-1 ${selectedFile?.id === file.id ? "text-primary" : "text-slate-700"}`}>
+                              {file.name}
+                            </p>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[9px] text-slate-400 font-bold uppercase tracking-tight">{file.type}</span>
+                               {file.review_status === 'reviewed' && <CheckCircle2 className="h-2.5 w-2.5 text-emerald-500" />}
+                            </div>
                           </div>
                         </div>
                       </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))
+          ) : (
+            <div className="space-y-1">
+              {filteredFiles.map((file: any) => (
+                <div
+                  key={file.id}
+                  onClick={() => setSelectedFile(file)}
+                  className={`group flex items-center justify-between p-2.5 rounded-sm cursor-pointer transition-all ${
+                    selectedFile?.id === file.id 
+                    ? "bg-primary/5 border-primary/10 " 
+                    : "hover:bg-slate-50 border-transparent"
+                  } border`}
+                >
+                  <div className="flex items-center gap-2.5 overflow-hidden">
+                    <div className={`p-1.5 rounded-sm transition-colors ${selectedFile?.id === file.id ? "bg-white text-primary " : "bg-slate-100 text-slate-400 group-hover:bg-white"}`}>
+                      {getFileIcon(file.type)}
                     </div>
-                  ))}
+                    <div className="overflow-hidden">
+                      <p className={`text-[11px] font-bold truncate leading-none mb-1 ${selectedFile?.id === file.id ? "text-primary" : "text-slate-700"}`}>
+                        {file.name}
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[9px] text-slate-400 font-bold uppercase tracking-tight">{file.type}</span>
+                         {file.review_status === 'reviewed' && <CheckCircle2 className="h-2.5 w-2.5 text-emerald-500" />}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {filteredFiles.length === 0 && (
+                <div className="py-12 text-center">
+                  <span className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">No {activeFilter}s found</span>
                 </div>
               )}
             </div>
-          ))}
+          )}
+        </div>
           
 
         </div>
