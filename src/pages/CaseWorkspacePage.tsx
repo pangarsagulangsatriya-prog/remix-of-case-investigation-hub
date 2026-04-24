@@ -3802,14 +3802,13 @@ function AnalysisTab() {
             </div>
          </div>
 
-         <div className="flex-1 flex flex-col min-w-0 bg-[#f0f2f4]">
+         <div className="flex-1 flex flex-col min-w-0 bg-white">
 
 
-            <div ref={containerRef} className="flex-1 relative overflow-auto custom-scrollbar p-10 flex items-start justify-center">
+            <div ref={containerRef} className="flex-1 relative overflow-auto custom-scrollbar flex items-start justify-center">
                  {selectedAgentId ? (
-                         <div className={`bg-white shadow-[0_30px_90px_-20px_rgba(0,0,0,0.3)] flex flex-col relative transition-all duration-300 origin-center overflow-hidden rounded-[2px] ${factViewMode === 'default' ? 'w-full h-full' : ''}`} 
-                              style={factViewMode === 'default' ? {} : { width: '1024px', height: '576px', transform: `scale(${canvasZoom/100})` }}>
-                           <div className="flex-1 p-[60px] flex flex-col relative overflow-hidden h-full">
+                         <div className="bg-white flex-1 flex flex-col relative transition-all duration-300 origin-center overflow-hidden w-full h-full">
+                            <div className="flex-1 flex flex-col relative overflow-hidden h-full">
                               {selectedAgent?.status === 'running' ? (
                                  <div className="flex flex-col items-center justify-center h-full text-center space-y-8 animate-pulse text-slate-300">
                                     <Loader2 className="h-12 w-12 animate-spin" />
