@@ -271,7 +271,7 @@ export default function CaseListPage() {
                   {/* Panel Header */}
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="font-mono text-xs text-primary font-bold tracking-wider">{selectedCase.id}</span>
+                      <div className="flex-1" />
                       <div className="flex items-center gap-2">
                         <StatusChip status={selectedCase.status} />
                         <Button 
