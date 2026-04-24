@@ -208,115 +208,187 @@ const initialAgentsState: AgentState[] = [
            severity: "High"
         },
         chronology_items: [
-           { 
-             id: 'chrono-001', 
-             phase: 'pra_kontak', 
-             time: "14:10", 
-             timezone: "WITA",
-             description: "Vibration sensor alarm start on Section 14 drive motor", 
-             confidence: "high",
-             status: "draft",
-             breakdown: {
-                time: "14:10",
-                timezone: "WITA",
-                phase: "pra_kontak",
-                actor: "Sensor System",
-                actorRole: "Monitoring System",
-                action: "Vibration alarm triggered",
-                actionCategory: "system_alert",
-                objectOrUnit: "Section 14 drive motor",
-                location: "Section 14",
-                condition: "Vibration exceeded safe threshold",
-                outcome: "Early warning detected before belt rupture"
-             },
-             evidenceLinks: [
-                {
-                   id: 'ev-1',
-                   evidenceType: "audio",
-                   sourceLabel: "Diarization Session",
-                   sourceFileName: "radio_communication_section_14.mp3",
-                   speaker: "Operator A",
-                   startTime: "00:04",
-                   endTime: "00:12",
-                   quote: "Control, ini Operator A. Getaran di Section 14 melebihi batas aman. Mohon dicek.",
-                   relevance: "primary",
-                   confidence: "high"
-                },
-                {
-                   id: 'ev-2',
-                   evidenceType: "audio",
-                   sourceLabel: "Diarization Session",
-                   sourceFileName: "radio_communication_section_14.mp3",
-                   speaker: "Control Room",
-                   startTime: "00:15",
-                   endTime: "00:22",
-                   quote: "Diterima Operator A. Sensor kami juga menunjukkan anomali. Standby.",
-                   relevance: "supporting",
-                   confidence: "high"
-                },
-                {
-                   id: 'ev-3',
-                   evidenceType: "document",
-                   sourceLabel: "Maintenance Log",
-                   sourceFileName: "maintenance_log_section_14.pdf",
-                   page: 3,
-                   quote: "Drive motor Section 14 recorded abnormal vibration above safe threshold before belt rupture.",
-                   relevance: "supporting",
-                   confidence: "medium"
-                }
-             ],
-             annotations: [],
-             updatedAt: new Date().toISOString()
-           },
-           { 
-             id: 'chrono-002', 
-             phase: 'kontak', 
-             time: "14:23", 
-             timezone: "WITA",
-             description: "Belt rupture detected at Section 14 leading to massive spillage", 
-             confidence: "high",
-             status: "draft",
-             breakdown: {
-                time: "14:23",
-                timezone: "WITA",
-                phase: "kontak",
-                actor: "Operator A",
-                actorRole: "Field Operator",
-                action: "Reported belt rupture",
-                actionCategory: "communication",
-                objectOrUnit: "Belt Section 14",
-                location: "Section 14",
-                condition: "Belt rupture occurred during operation",
-                outcome: "Heavy material spillage detected"
-             },
-             evidenceLinks: [
-                {
-                   id: 'ev-4',
-                   evidenceType: "audio",
-                   sourceLabel: "Diarization Session",
-                   sourceFileName: "radio_communication_section_14.mp3",
-                   speaker: "Operator A",
-                   startTime: "02:14",
-                   endTime: "02:22",
-                   quote: "Kontrol! Belt Section 14 robek! Terjadi tumpahan material berat! E-Stop!",
-                   relevance: "primary",
-                   confidence: "high"
-                },
-                {
-                   id: 'ev-5',
-                   evidenceType: "document",
-                   sourceLabel: "Incident Initial Report",
-                   sourceFileName: "incident_initial_report.pdf",
-                   page: 1,
-                   quote: "At approximately 14:23, conveyor belt rupture occurred at Section 14 and caused material spillage.",
-                   relevance: "supporting",
-                   confidence: "high"
-                }
-             ],
-             annotations: [],
-             updatedAt: new Date().toISOString()
-           }
-        ]
+            { 
+              id: 'chrono-001', 
+              phase: 'pre_contact', 
+              time: "14:05", 
+              time_label: "14:05",
+              description: "Normal operation: Section 14 conveyor belt carrying material at 85% capacity", 
+              chronology_text: "Normal operation: Section 14 conveyor belt carrying material at 85% capacity",
+              confidence: "high",
+              status: "reviewed",
+              verification_status: "human_verified",
+              annotated_by_human: true,
+              breakdown: {
+                 time: "14:05",
+                 timezone: "WITA",
+                 phase: "pre_contact",
+                 actor: "System",
+                 actorRole: "Automated Control",
+                 action: "Normal Operation",
+                 actionCategory: "observation",
+                 objectOrUnit: "Conveyor Section 14",
+                 location: "Section 14",
+                 condition: "85% Load Capacity",
+                 outcome: "Steady state performance"
+              },
+              evidenceLinks: [
+                 { id: 'ev-0', evidenceType: "document", sourceLabel: "Operations Log", sourceFileName: "ops_log_april05.pdf", page: 12, quote: "Section 14 operating at normal parameters with 85% throughput load.", relevance: "primary", confidence: "high" }
+              ],
+              annotations: [],
+              updatedAt: new Date().toISOString()
+            },
+            { 
+              id: 'chrono-002', 
+              phase: 'pre_contact', 
+              time: "14:10", 
+              time_label: "14:10",
+              description: "Vibration sensor alert on Section 14 drive motor detected by SCADA", 
+              chronology_text: "Vibration sensor alert on Section 14 drive motor detected by SCADA",
+              confidence: "high",
+              status: "draft",
+              verification_status: "ai_generated",
+              annotated_by_human: false,
+              breakdown: {
+                 time: "14:10",
+                 timezone: "WITA",
+                 phase: "pre_contact",
+                 actor: "Sensor System",
+                 actorRole: "Monitoring System",
+                 action: "Vibration alarm triggered",
+                 actionCategory: "system_alert",
+                 objectOrUnit: "Section 14 drive motor",
+                 location: "Section 14",
+                 condition: "Vibration exceeded safe threshold",
+                 outcome: "Early warning detected"
+              },
+              evidenceLinks: [
+                 { id: 'ev-1', evidenceType: "audio", sourceLabel: "Radio Comm", sourceFileName: "radio_0504.mp3", speaker: "Operator A", startTime: "00:04", endTime: "00:12", quote: "Control, ini Operator A. Getaran di Section 14 melebihi batas aman.", relevance: "primary", confidence: "high" }
+              ],
+              annotations: [],
+              updatedAt: new Date().toISOString()
+            },
+            { 
+              id: 'chrono-003', 
+              phase: 'contact', 
+              time: "14:23", 
+              time_label: "14:23",
+              description: "Belt rupture occurred at Section 14, leading to massive material spillage", 
+              chronology_text: "Belt rupture occurred at Section 14, leading to massive material spillage",
+              confidence: "high",
+              status: "draft",
+              verification_status: "ai_generated",
+              annotated_by_human: false,
+              breakdown: {
+                 time: "14:23",
+                 timezone: "WITA",
+                 phase: "contact",
+                 actor: "Conveyor System",
+                 actorRole: "Equipment",
+                 action: "Structural Failure",
+                 actionCategory: "system_alert",
+                 objectOrUnit: "Belt Section 14",
+                 location: "Section 14",
+                 condition: "Mechanical rupture",
+                 outcome: "Heavy material spillage"
+              },
+              evidenceLinks: [
+                 { id: 'ev-2', evidenceType: "document", sourceLabel: "Incident Report", sourceFileName: "incident_initial.pdf", page: 1, quote: "At 14:23, conveyor belt rupture occurred at Section 14.", relevance: "primary", confidence: "high" }
+              ],
+              annotations: [],
+              updatedAt: new Date().toISOString()
+            },
+            { 
+              id: 'chrono-004', 
+              phase: 'contact', 
+              time: "14:24", 
+              time_label: "14:24",
+              description: "Operator A triggered Emergency Stop and reported rupture to Control Room", 
+              chronology_text: "Operator A triggered Emergency Stop and reported rupture to Control Room",
+              confidence: "high",
+              status: "reviewed",
+              verification_status: "human_verified",
+              annotated_by_human: true,
+              breakdown: {
+                 time: "14:24",
+                 timezone: "WITA",
+                 phase: "contact",
+                 actor: "Operator A",
+                 actorRole: "Field Operator",
+                 action: "Emergency Shutdown",
+                 actionCategory: "decision",
+                 objectOrUnit: "E-Stop Button",
+                 location: "Section 14 Console",
+                 condition: "Manual override triggered",
+                 outcome: "System power cut"
+              },
+              evidenceLinks: [
+                 { id: 'ev-3', evidenceType: "audio", sourceLabel: "Radio Comm", sourceFileName: "radio_0504.mp3", speaker: "Operator A", startTime: "02:14", endTime: "02:22", quote: "Kontrol! Belt Section 14 robek! E-Stop!", relevance: "primary", confidence: "high" }
+              ],
+              annotations: [],
+              updatedAt: new Date().toISOString()
+            },
+            { 
+              id: 'chrono-005', 
+              phase: 'post_contact', 
+              time: "14:30", 
+              time_label: "14:30",
+              description: "Maintenance team arrived at Section 14 to assess damage and contain spillage", 
+              chronology_text: "Maintenance team arrived at Section 14 to assess damage and contain spillage",
+              confidence: "medium",
+              status: "draft",
+              verification_status: "ai_generated",
+              annotated_by_human: false,
+              breakdown: {
+                 time: "14:30",
+                 timezone: "WITA",
+                 phase: "post_contact",
+                 actor: "Maintenance Team",
+                 actorRole: "Response Unit",
+                 action: "Damage Assessment",
+                 actionCategory: "response",
+                 objectOrUnit: "Section 14 Site",
+                 location: "Section 14",
+                 condition: "Spillage containment in progress",
+                 outcome: "Site secured"
+              },
+              evidenceLinks: [
+                 { id: 'ev-4', evidenceType: "document", sourceLabel: "Maintenance Log", sourceFileName: "maint_log_0504.pdf", page: 4, quote: "Team arrived at site at 14:30 to begin containment.", relevance: "supporting", confidence: "medium" }
+              ],
+              annotations: [],
+              updatedAt: new Date().toISOString()
+            },
+            { 
+              id: 'chrono-006', 
+              phase: 'post_contact', 
+              time: "14:45", 
+              time_label: "14:45",
+              description: "Section 14 isolated, cleanup operation commenced under HSE supervision", 
+              chronology_text: "Section 14 isolated, cleanup operation commenced under HSE supervision",
+              confidence: "high",
+              status: "draft",
+              verification_status: "ai_generated",
+              annotated_by_human: false,
+              breakdown: {
+                 time: "14:45",
+                 timezone: "WITA",
+                 phase: "post_contact",
+                 actor: "HSE Supervisor",
+                 actorRole: "Safety Lead",
+                 action: "Isolation & Cleanup",
+                 actionCategory: "response",
+                 objectOrUnit: "Section 14 Drive",
+                 location: "Section 14",
+                 condition: "LOTO procedures applied",
+                 outcome: "Cleanup commenced"
+              },
+              evidenceLinks: [
+                 { id: 'ev-5', evidenceType: "document", sourceLabel: "HSE Clearance", sourceFileName: "hse_clearance_0504.pdf", page: 1, quote: "Cleanup authorized after full isolation at 14:45.", relevance: "primary", confidence: "high" }
+              ],
+              annotations: [],
+              updatedAt: new Date().toISOString()
+            }
+         ]
      }
   },
   { 
