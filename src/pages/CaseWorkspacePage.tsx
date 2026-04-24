@@ -84,6 +84,7 @@ import {
   Download,
   Plus,
   Shield,
+  ShieldAlert,
   HelpCircle,
   Layout,
   Layers
