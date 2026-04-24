@@ -235,24 +235,11 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
               selectedItemId={selectedItemId}
               onSelectItem={setSelectedItemId}
             />
+            {/* FactDefaultView would be rendered here */}
         </div>
 
         {/* Sync Button Removed */}
       </div>
-
-      {/* RIGHT SIDE PANEL: Traceability Matrix */}
-      {selectedItem && (
-        <div className="w-[500px] border-l h-full shrink-0 z-40 bg-white animate-in slide-in-from-right duration-300">
-          <TraceabilityPanel 
-            item={selectedItem}
-            onClose={() => setSelectedItemId(null)}
-            onUpdateStatus={(newStatus) => {
-              setItems(prev => prev.map(it => it.id === selectedItem.id ? { ...it, verification_status: newStatus, annotated_by_human: true } : it));
-            }}
-            onEdit={() => handleEdit(selectedItem)}
-          />
-        </div>
-      )}
     </div>
   );
 };

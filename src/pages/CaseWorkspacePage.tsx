@@ -10,6 +10,7 @@ import { useAuditLogs, useInsertAuditLog } from "@/hooks/useAuditLogs";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Upload,
@@ -3457,6 +3458,7 @@ function AnalysisTab() {
   const [agents, setAgents] = useState<AgentState[]>(initialAgentsState);
   const [factViewMode, setFactViewMode] = useState<'slide' | 'default'>('default');
   const [selectedChronologyItemId, setSelectedChronologyItemId] = useState<string | null>(null);
+  const [activeConsoleTab, setActiveConsoleTab] = useState<'diarization' | 'analysis'>('diarization');
   const [execMode, setExecMode] = useState<"idle" | "full" | "manual">("idle");
   const [globalStatus, setGlobalStatus] = useState<"idle" | "running" | "blocked" | "completed" | "stopped" | "failed">("idle");
   const [chainQueue, setChainQueue] = useState<string[]>([]);
