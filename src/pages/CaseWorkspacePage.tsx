@@ -4124,29 +4124,17 @@ function AnalysisTab() {
                            return (
                               <div className="flex flex-col h-full bg-white overflow-hidden animate-in fade-in slide-in-from-right-4 duration-300">
                                  {/* A. Selected Fact Header */}
-                                 <div className="h-12 border-b border-slate-200 flex items-center justify-between px-5 bg-slate-50 shrink-0">
+                                 <div className="h-12 border-b border-slate-200 flex items-center justify-between px-5 bg-white shrink-0">
                                     <div className="flex items-center gap-2">
-                                       <Clock className="h-3.5 w-3.5 text-slate-400" />
-                                       <span className="text-[11px] font-mono font-black text-slate-900">{item.time || item.time_label}</span>
-                                       <div className="flex gap-1 ml-2">
-                                          <span className="px-1.5 py-0.5 rounded-sm bg-slate-200 text-slate-600 text-[8px] font-black uppercase tracking-wider">
-                                             {(item.phase || "").replace('_', ' ')}
-                                          </span>
-                                          <span className={cn(
-                                             "px-1.5 py-0.5 rounded-sm text-[8px] font-black uppercase tracking-wider",
-                                             (item.confidence || "high") === 'high' ? "bg-emerald-50 text-emerald-600" : 
-                                             (item.confidence || "high") === 'medium' ? "bg-amber-50 text-amber-600" : "bg-rose-50 text-rose-600"
-                                          )}>
-                                             {item.confidence || "HIGH"}
-                                          </span>
-                                       </div>
+                                       <div className="h-2 w-2 rounded-none bg-slate-400" />
+                                       <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Evidence Console</span>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                       <div className="flex bg-slate-200 p-0.5 rounded-sm">
-                                          <button onClick={() => setActiveEvidenceConsoleMode('trace')} className={cn("px-2 py-1 text-[8px] font-black uppercase rounded-sm transition-all", activeEvidenceConsoleMode === 'trace' ? "bg-white shadow-sm text-slate-900" : "text-slate-400")}>Trace</button>
-                                          <button onClick={() => setActiveEvidenceConsoleMode('diarization')} className={cn("px-2 py-1 text-[8px] font-black uppercase rounded-sm transition-all", activeEvidenceConsoleMode === 'diarization' ? "bg-white shadow-sm text-slate-900" : "text-slate-400")}>Diar</button>
+                                       <div className="flex bg-slate-100 p-0.5 rounded-none border border-slate-200">
+                                          <button onClick={() => setActiveEvidenceConsoleMode('trace')} className={cn("px-2 py-1 text-[8px] font-black uppercase rounded-none transition-all", activeEvidenceConsoleMode === 'trace' ? "bg-white shadow-sm text-slate-900" : "text-slate-400")}>Trace</button>
+                                          <button onClick={() => setActiveEvidenceConsoleMode('diarization')} className={cn("px-2 py-1 text-[8px] font-black uppercase rounded-none transition-all", activeEvidenceConsoleMode === 'diarization' ? "bg-white shadow-sm text-slate-900" : "text-slate-400")}>Diar</button>
                                        </div>
-                                       <Button variant="ghost" size="sm" onClick={() => setSelectedChronologyItemId(null)} className="h-8 w-8 p-0 text-slate-400 hover:text-slate-600 hover:bg-slate-100">
+                                       <Button variant="ghost" size="sm" onClick={() => setSelectedChronologyItemId(null)} className="h-8 w-8 p-0 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-none">
                                           <X className="h-4 w-4" />
                                        </Button>
                                     </div>
@@ -4164,63 +4152,81 @@ function AnalysisTab() {
                                              </div>
                                           </div>
                                           
-                                          <div className="flex flex-wrap gap-y-2 gap-x-2 p-4 bg-white border border-slate-200 rounded-none">
-                                             {item.decomposition ? (
-                                                <TooltipProvider delayDuration={100}>
-                                                   {item.decomposition.map((part: any, i: number) => (
-                                                      part.type === 'TEXT' ? (
-                                                         <span key={i} className="text-xs font-medium leading-relaxed text-slate-800 self-center">{part.text}</span>
-                                                      ) : (
-                                                         <Tooltip key={i}>
-                                                            <TooltipTrigger asChild>
-                                                               <span className={cn(
-                                                                  "px-2 py-1 rounded-none text-[9px] font-black uppercase border cursor-help transition-colors select-none",
-                                                                  part.type === 'AKTOR' ? "bg-slate-50 text-slate-900 border-purple-500" :
-                                                                  part.type === 'AKSI' ? "bg-slate-50 text-slate-900 border-amber-500" :
-                                                                  part.type === 'OBJEK' ? "bg-slate-50 text-slate-900 border-blue-500" :
-                                                                  part.type === 'LOKASI' ? "bg-slate-50 text-slate-900 border-indigo-500" :
-                                                                  part.type === 'KONTEKS' ? "bg-slate-50 text-slate-900 border-teal-500" :
-                                                                  part.type === 'HASIL' ? "bg-slate-50 text-slate-900 border-rose-500" :
-                                                                  part.type === 'WAKTU' ? "bg-slate-50 text-slate-900 border-slate-400" :
-                                                                  "bg-slate-50 text-slate-900 border-slate-200"
-                                                               )}>
-                                                                  {part.text}
-                                                               </span>
-                                                            </TooltipTrigger>
-                                                            <TooltipContent side="top" className="bg-slate-900 text-white rounded-none border-none text-[8px] font-black uppercase tracking-[0.2em] px-3 py-2">
-                                                               <div className="flex flex-col gap-1">
-                                                                  <span className="text-white/30 tracking-[0.3em]">CLASSIFICATION</span>
-                                                                  <div className="flex items-center gap-2">
-                                                                     <div className={cn(
-                                                                        "h-1.5 w-1.5",
-                                                                        part.type === 'AKTOR' ? "bg-purple-500" :
-                                                                        part.type === 'AKSI' ? "bg-amber-500" :
-                                                                        part.type === 'OBJEK' ? "bg-blue-500" :
-                                                                        part.type === 'LOKASI' ? "bg-indigo-500" :
-                                                                        part.type === 'KONTEKS' ? "bg-teal-500" :
-                                                                        part.type === 'HASIL' ? "bg-rose-500" :
-                                                                        "bg-slate-500"
-                                                                     )} />
-                                                                     <span className="text-white">
-                                                                        {part.type === 'AKTOR' ? 'Aktor / Pelaku' :
-                                                                         part.type === 'AKSI' ? 'Aksi / Kejadian' :
-                                                                         part.type === 'OBJEK' ? 'Objek / Target' :
-                                                                         part.type === 'LOKASI' ? 'Lokasi / Unit' :
-                                                                         part.type === 'KONTEKS' ? 'Konteks / Cara' :
-                                                                         part.type === 'HASIL' ? 'Hasil / Dampak' :
-                                                                         part.type === 'WAKTU' ? 'Waktu / Durasi' :
-                                                                         part.type}
-                                                                     </span>
+                                          <div className="space-y-4 p-4 bg-white border border-slate-200 rounded-none">
+                                             <div className="flex flex-wrap gap-2 pb-3 border-b border-slate-50">
+                                                <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-50 border border-slate-200">
+                                                   <Clock className="h-3 w-3 text-slate-400" />
+                                                   <span className="text-[9px] font-black text-slate-700 uppercase">{item.time_label || item.time}</span>
+                                                </div>
+                                                <div className="px-2 py-1 bg-slate-50 border border-slate-200">
+                                                   <span className="text-[9px] font-black text-slate-500 uppercase">{(item.phase || "").replace('_', ' ')}</span>
+                                                </div>
+                                                <div className={cn(
+                                                   "px-2 py-1 border",
+                                                   (item.confidence || "high") === 'high' ? "bg-emerald-50 border-emerald-200 text-emerald-700" : "bg-amber-50 border-amber-200 text-amber-700"
+                                                )}>
+                                                   <span className="text-[9px] font-black uppercase tracking-widest">{item.confidence || "HIGH"} CONFIDENCE</span>
+                                                </div>
+                                             </div>
+
+                                             <div className="flex flex-wrap gap-y-2 gap-x-2">
+                                                {item.decomposition ? (
+                                                   <TooltipProvider delayDuration={100}>
+                                                      {item.decomposition.map((part: any, i: number) => (
+                                                         part.type === 'TEXT' ? (
+                                                            <span key={i} className="text-xs font-medium leading-relaxed text-slate-800 self-center">{part.text}</span>
+                                                         ) : (
+                                                            <Tooltip key={i}>
+                                                               <TooltipTrigger asChild>
+                                                                  <span className={cn(
+                                                                     "px-2 py-1 rounded-none text-[9px] font-black uppercase border cursor-help transition-colors select-none",
+                                                                     part.type === 'AKTOR' ? "bg-slate-50 text-slate-900 border-purple-500" :
+                                                                     part.type === 'AKSI' ? "bg-slate-50 text-slate-900 border-amber-500" :
+                                                                     part.type === 'OBJEK' ? "bg-slate-50 text-slate-900 border-blue-500" :
+                                                                     part.type === 'LOKASI' ? "bg-slate-50 text-slate-900 border-indigo-500" :
+                                                                     part.type === 'KONTEKS' ? "bg-slate-50 text-slate-900 border-teal-500" :
+                                                                     part.type === 'HASIL' ? "bg-slate-50 text-slate-900 border-rose-500" :
+                                                                     part.type === 'WAKTU' ? "bg-slate-50 text-slate-900 border-slate-400" :
+                                                                     "bg-slate-50 text-slate-900 border-slate-200"
+                                                                  )}>
+                                                                     {part.text}
+                                                                  </span>
+                                                               </TooltipTrigger>
+                                                               <TooltipContent side="top" className="bg-slate-900 text-white rounded-none border-none text-[8px] font-black uppercase tracking-[0.2em] px-3 py-2">
+                                                                  <div className="flex flex-col gap-1">
+                                                                     <span className="text-white/30 tracking-[0.3em]">CLASSIFICATION</span>
+                                                                     <div className="flex items-center gap-2">
+                                                                        <div className={cn(
+                                                                           "h-1.5 w-1.5",
+                                                                           part.type === 'AKTOR' ? "bg-purple-500" :
+                                                                           part.type === 'AKSI' ? "bg-amber-500" :
+                                                                           part.type === 'OBJEK' ? "bg-blue-500" :
+                                                                           part.type === 'LOKASI' ? "bg-indigo-500" :
+                                                                           part.type === 'KONTEKS' ? "bg-teal-500" :
+                                                                           part.type === 'HASIL' ? "bg-rose-500" :
+                                                                           "bg-slate-500"
+                                                                        )} />
+                                                                        <span className="text-white">
+                                                                           {part.type === 'AKTOR' ? 'Aktor / Pelaku' :
+                                                                            part.type === 'AKSI' ? 'Aksi / Kejadian' :
+                                                                            part.type === 'OBJEK' ? 'Objek / Target' :
+                                                                            part.type === 'LOKASI' ? 'Lokasi / Unit' :
+                                                                            part.type === 'KONTEKS' ? 'Konteks / Cara' :
+                                                                            part.type === 'HASIL' ? 'Hasil / Dampak' :
+                                                                            part.type === 'WAKTU' ? 'Waktu / Durasi' :
+                                                                            part.type}
+                                                                        </span>
+                                                                     </div>
                                                                   </div>
-                                                               </div>
-                                                            </TooltipContent>
-                                                         </Tooltip>
-                                                      )
-                                                   ))}
-                                                </TooltipProvider>
-                                             ) : (
-                                                <p className="text-xs font-bold leading-relaxed text-slate-900">{item.description || item.chronology_text}</p>
-                                             )}
+                                                               </TooltipContent>
+                                                            </Tooltip>
+                                                         )
+                                                      ))}
+                                                   </TooltipProvider>
+                                                ) : (
+                                                   <p className="text-xs font-bold leading-relaxed text-slate-900">{item.description || item.chronology_text}</p>
+                                                )}
+                                             </div>
                                           </div>
                                        </div>
 
