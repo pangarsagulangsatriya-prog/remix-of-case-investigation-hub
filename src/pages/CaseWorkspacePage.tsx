@@ -4161,12 +4161,6 @@ function AnalysisTab() {
                                                 <div className="px-2 py-1 bg-slate-50 border border-slate-200">
                                                    <span className="text-[9px] font-black text-slate-500 uppercase">{(item.phase || "").replace('_', ' ')}</span>
                                                 </div>
-                                                <div className={cn(
-                                                   "px-2 py-1 border",
-                                                   (item.confidence || "high") === 'high' ? "bg-emerald-50 border-emerald-200 text-emerald-700" : "bg-amber-50 border-amber-200 text-amber-700"
-                                                )}>
-                                                   <span className="text-[9px] font-black uppercase tracking-widest">{item.confidence || "HIGH"} CONFIDENCE</span>
-                                                </div>
                                              </div>
 
                                              <div className="flex flex-wrap gap-y-2 gap-x-2">
