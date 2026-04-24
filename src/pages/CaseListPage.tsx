@@ -120,13 +120,7 @@ export default function CaseListPage() {
             <option>Site Beta</option>
             <option>Site Gamma</option>
           </select>
-          <select className="text-xs border rounded-md px-2 py-1 bg-white border-slate-200 text-slate-700 min-w-[120px] focus:outline-none focus:ring-1 focus:ring-primary/20">
-            <option>All Severities</option>
-            <option>Critical</option>
-            <option>High</option>
-            <option>Medium</option>
-            <option>Low</option>
-          </select>
+
           <select className="text-xs border rounded-md px-2 py-1 bg-white border-slate-200 text-slate-700 min-w-[120px] focus:outline-none focus:ring-1 focus:ring-primary/20">
             <option>All Statuses</option>
             <option>Draft</option>
@@ -183,7 +177,7 @@ export default function CaseListPage() {
                       <th>Title</th>
                       <th>Site</th>
                       <th>Incident Date</th>
-                      <th>Severity</th>
+
                       <th>Status</th>
                       <th>Owner</th>
 
@@ -202,7 +196,7 @@ export default function CaseListPage() {
                         <td className="text-xs font-medium text-slate-900 truncate max-w-[200px]">{c.title}</td>
                         <td className="text-xs text-slate-600 font-medium">Site Alpha</td>
                         <td className="text-xs text-slate-500 font-medium">{new Date(c.created_at).toLocaleDateString()}</td>
-                        <td className="py-2.5"><SeverityChip severity={(c.severity || "medium").toLowerCase() as any} /></td>
+
                         <td className="py-2.5"><StatusChip status={c.status as any} /></td>
                         <td className="text-xs text-slate-700 font-medium">Admin</td>
 
@@ -278,10 +272,18 @@ export default function CaseListPage() {
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="font-mono text-xs text-primary font-bold tracking-wider">{selectedCase.id}</span>
-                      <StatusChip status={selectedCase.status} />
+                      <div className="flex items-center gap-2">
+                        <StatusChip status={selectedCase.status} />
+                        <Button 
+                          size="sm"
+                          className="h-7 px-3 text-[10px] font-black uppercase tracking-widest bg-primary/10 text-primary hover:bg-primary/20 shadow-none border border-primary/20"
+                          onClick={() => navigate(`/cases/${selectedCase.id}`)}
+                        >
+                          Open
+                        </Button>
+                      </div>
                     </div>
                     <h3 className="text-[15px] font-bold text-slate-900 leading-snug">{selectedCase.title}</h3>
-                    <SeverityChip severity={selectedCase.severity} />
                   </div>
 
                   {/* Operational Data */}
@@ -327,25 +329,7 @@ export default function CaseListPage() {
                 </div>
               </div>
 
-              {/* Panel Footer Actions */}
-              <div className="p-4 bg-slate-50 border-t space-y-2">
-                <Button 
-                  className="w-full h-9 text-xs font-bold gap-2 bg-primary hover:bg-primary/90 shadow-md"
-                  onClick={() => navigate(`/cases/${selectedCase.id}`)}
-                >
-                  Open Workspace <ExternalLink className="h-3 w-3" />
-                </Button>
-                <div className="flex gap-2">
 
-                  <Button 
-                    variant="outline" 
-                    className="flex-1 h-8 text-xs font-bold bg-white border-slate-200 text-rose-600 hover:bg-rose-50 hover:border-rose-200 transition-all"
-                    onClick={() => setCaseToDelete(selectedCase)}
-                  >
-                    <Trash2 className="h-3 w-3 mr-2" /> Delete
-                  </Button>
-                </div>
-              </div>
             </div>
           )}
         </div>
@@ -410,7 +394,7 @@ function DeleteCaseDialog({
             <div className="flex-1 min-w-0">
               <p className="text-[10px] font-black text-rose-600 uppercase tracking-widest mb-0.5">{caseData.case_number || caseData.id.slice(0, 8)}</p>
               <h4 className="text-sm font-bold text-slate-900 truncate">{caseData.title}</h4>
-              <p className="text-2xs text-slate-400 font-bold uppercase mt-1">Severity: {caseData.severity} • Status: {caseData.status}</p>
+              <p className="text-2xs text-slate-400 font-bold uppercase mt-1">Status: {caseData.status}</p>
             </div>
           </div>
 
@@ -502,12 +486,9 @@ function CaseGridCard({
         </h3>
         
         {/* Severity & Date Row */}
-        <div className="flex items-center justify-between mb-4">
-          <SeverityChip severity={(caseData.severity || "medium").toLowerCase() as any} />
-          <div className="flex items-center gap-1.5 text-slate-400">
-            <Clock className="h-3 w-3" />
-            <span className="text-[11px] font-bold">{new Date(caseData.created_at).toLocaleDateString()}</span>
-          </div>
+        <div className="flex items-center justify-end text-slate-400">
+          <Clock className="h-3 w-3 mr-1" />
+          <span className="text-[11px] font-bold">{new Date(caseData.created_at).toLocaleDateString()}</span>
         </div>
 
         {/* Expanded Summary Area (Only for Manager view) */}
@@ -555,10 +536,7 @@ function CaseGridCard({
               <ExternalLink className="mr-2 h-3.5 w-3.5" />
               Open case
             </DropdownMenuItem>
-            <DropdownMenuItem>
-              <FileText className="mr-2 h-3.5 w-3.5" />
-              View reports
-            </DropdownMenuItem>
+
             <DropdownMenuItem 
               className="text-rose-600 focus:text-rose-600 focus:bg-rose-50"
               onClick={(e) => {
