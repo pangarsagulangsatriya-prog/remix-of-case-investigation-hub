@@ -3279,7 +3279,7 @@ function ImageExtractionConsole({ file }: { file: any }) {
 }
 
 function AudioExtractionConsole({ file, onJump, currentTime }: { file: any, onJump: (s: number) => void, currentTime: number }) {
-  const [activeTab, setActiveTab] = useState<"Extraction" | "Diarization">("Extraction");
+  const [activeTab, setActiveTab] = useState<"Analysis" | "Diarization">("Analysis");
   const [viewMode, setViewMode] = useState<"Structured" | "JSON">("Structured");
 
   const audioExtractionData = useMemo(() => ({
@@ -3384,7 +3384,7 @@ function AudioExtractionConsole({ file, onJump, currentTime }: { file: any, onJu
   return (
     <div className="flex flex-col h-full bg-white">
       <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b px-4 py-2 flex items-center gap-1 shrink-0">
-        {(["Extraction", "Diarization"] as const).map((tab) => (
+        {(["Diarization", "Analysis"] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -3400,7 +3400,7 @@ function AudioExtractionConsole({ file, onJump, currentTime }: { file: any, onJu
       </div>
 
       <div className="flex-1 overflow-auto custom-scrollbar">
-        {activeTab === "Extraction" ? (
+        {activeTab === "Analysis" ? (
           <div className="flex flex-col min-h-full">
             <div className="p-4 border-b bg-slate-50/50 flex items-center justify-between">
               <div className="flex flex-col">
