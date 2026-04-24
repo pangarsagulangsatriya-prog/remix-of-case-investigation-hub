@@ -237,18 +237,7 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
             />
         </div>
 
-        {viewMode === 'default' && (
-          <div className="p-4 border-t bg-slate-50/50 flex justify-end shrink-0">
-            {onSync && (
-              <Button 
-                onClick={() => onSync(items)}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black uppercase tracking-[0.2em] px-6 h-10 rounded-sm border"
-              >
-                Sync to Case Intelligence
-              </Button>
-            )}
-          </div>
-        )}
+        {/* Sync Button Removed */}
       </div>
 
       {/* RIGHT SIDE PANEL: Traceability Matrix */}

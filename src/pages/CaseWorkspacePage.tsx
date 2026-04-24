@@ -3905,11 +3905,7 @@ function AnalysisTab() {
                      <h4 className="text-[10px] font-black uppercase tracking-[0.2em]">Console Standby</h4>
                   </div>
 
-                  <div className="p-5 border-t bg-white shrink-0">
-                     <Button onClick={handleExport} disabled={isExporting} className="w-full h-11 bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-black uppercase tracking-[0.2em] rounded-sm">
-                        {isExporting ? "Exporting..." : "Publish Presentation"}
-                     </Button>
-                  </div>
+                   {/* Publish Action Removed */}
                 </>
              )}
      </div>
