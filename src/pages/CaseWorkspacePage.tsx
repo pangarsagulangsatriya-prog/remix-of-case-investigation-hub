@@ -2803,8 +2803,17 @@ function ExtractionTab({
                 <f.icon className={`h-4 w-4 mb-1.5 ${activeFilter === f.id ? "text-white" : "text-slate-400"}`} strokeWidth={activeFilter === f.id ? 2.5 : 2} />
                 <span className="text-[9px] font-black uppercase tracking-widest">{f.label}</span>
               </button>
-            ))}
           </div>
+          
+          <Button 
+            onClick={() => setIsUploadModalOpen(true)}
+            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-4 rounded-xl shadow-lg shadow-emerald-600/10 transition-all flex items-center justify-center gap-2 group"
+          >
+            <div className="h-6 w-6 rounded-full bg-white/20 flex items-center justify-center text-white group-hover:scale-110 transition-transform">
+              <Plus className="h-4 w-4" />
+            </div>
+            <span className="text-xs uppercase tracking-[0.2em]">Upload</span>
+          </Button>
         </div>
 
         <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-6">
@@ -2863,18 +2872,7 @@ function ExtractionTab({
             </div>
           ))}
           
-          <Button 
-            onClick={() => setIsUploadModalOpen(true)}
-            variant="outline" 
-            className="w-full border-dashed border-2 py-8 rounded-lg bg-slate-50/50 hover:bg-primary/5 hover:border-primary/30 group transition-all"
-          >
-            <div className="flex flex-col items-center gap-2">
-              <div className="h-8 w-8 rounded-full bg-white flex items-center justify-center text-slate-400 group-hover:text-primary transition-colors shadow-sm">
-                <Plus className="h-4 w-4" />
-              </div>
-              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest group-hover:text-primary transition-colors">Ingest New Objects</span>
-            </div>
-          </Button>
+
         </div>
       </div>
 
