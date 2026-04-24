@@ -4261,36 +4261,36 @@ function AnalysisTab() {
                                                    </button>
                                                    
                                                    {expandedEntityRows.includes(row.id) && (
-                                                      <div className="bg-slate-50/50 border-t border-slate-100 p-4 space-y-4 animate-in slide-in-from-top-1 duration-300">
+                                                      <div className="bg-slate-50 border-t border-slate-100 p-6 space-y-5 animate-in slide-in-from-top-1 duration-300">
                                                          <div className="flex items-center gap-2">
-                                                            <div className="h-0.5 w-3 bg-slate-400" />
-                                                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none">Evidence Citations</span>
+                                                            <div className="h-px w-8 bg-slate-300" />
+                                                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none">Evidence Citations</span>
                                                          </div>
 
-                                                         <div className="space-y-3">
-                                                            {/* Citation Block */}
-                                                            <div className="bg-white border border-slate-200 p-4 rounded-none shadow-[2px_2px_0px_rgba(0,0,0,0.01)] space-y-3">
-                                                               <div className="flex items-center justify-between border-b border-slate-50 pb-2">
-                                                                  <div className="flex items-center gap-2">
-                                                                     {row.id === 'time' || row.id === 'actor' ? (
-                                                                        <>
-                                                                           <span className="px-1.5 py-0.5 bg-slate-900 text-white text-[8px] font-black uppercase tracking-widest">OPERATOR A</span>
-                                                                           <span className="text-[9px] font-mono text-slate-400">02:14 — 02:22</span>
-                                                                        </>
-                                                                     ) : (
-                                                                        <span className="text-[9px] font-black text-slate-400 uppercase">PAGE {Math.floor(Math.random() * 20) + 1}</span>
-                                                                     )}
-                                                                  </div>
-                                                                  <Quote className="h-3 w-3 text-slate-100" />
+                                                         <div className="space-y-4">
+                                                            {/* Citation Block (Diarization Style) */}
+                                                            <div className="bg-white border-2 border-slate-900 p-5 rounded-lg shadow-[4px_4px_0px_rgba(0,0,0,0.06)] space-y-4">
+                                                               <div className="flex items-center gap-3">
+                                                                  {row.id === 'time' || row.id === 'actor' || row.id === 'action' ? (
+                                                                     <>
+                                                                        <span className="text-[10px] font-mono text-slate-400 tracking-tight">02:14 — 02:22</span>
+                                                                        <span className="px-2 py-0.5 bg-slate-900 text-white text-[9px] font-black uppercase tracking-widest rounded-sm">OPERATOR A</span>
+                                                                     </>
+                                                                  ) : (
+                                                                     <div className="flex items-center gap-2">
+                                                                        <div className="h-1.5 w-1.5 rounded-full bg-slate-900" />
+                                                                        <span className="text-[9px] font-black text-slate-900 uppercase tracking-widest">PAGE {Math.floor(Math.random() * 20) + 1}</span>
+                                                                     </div>
+                                                                  )}
                                                                </div>
                                                                
-                                                               <p className="text-[11px] font-bold text-slate-800 leading-relaxed italic">
+                                                               <p className="text-xs font-bold text-slate-800 leading-relaxed italic pr-4">
                                                                   "{row.context}"
                                                                </p>
 
-                                                               <div className="pt-2 flex items-center gap-2">
-                                                                  <Paperclip className="h-2.5 w-2.5 text-slate-300" />
-                                                                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{row.source}</span>
+                                                               <div className="pt-3 border-t border-slate-100 flex items-center gap-2 opacity-60">
+                                                                  <Paperclip className="h-3 w-3 text-slate-400" />
+                                                                  <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">{row.source}</span>
                                                                </div>
                                                             </div>
                                                          </div>
