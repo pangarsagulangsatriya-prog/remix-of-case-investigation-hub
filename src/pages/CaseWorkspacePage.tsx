@@ -5105,21 +5105,11 @@ export default function CaseWorkspacePage() {
     <AppLayout>
       <div className="flex flex-col h-full bg-slate-50/10 h-screen overflow-hidden">
         <div className="bg-white border-b px-6 py-4 flex items-center justify-between shrink-0 shadow-sm relative z-30">
-          <div className="flex items-center gap-4">
-            <div className="h-10 w-10 bg-slate-900 rounded-lg flex items-center justify-center shadow-lg border-2 border-slate-800">
-               <Brain className="h-6 w-6 text-primary animate-pulse" />
-            </div>
             <div>
-              <div className="flex items-center gap-2 mb-0.5">
-                <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">Safety Investigation Case</span>
-                <StatusChip status={caseData?.status || "in_progress"} />
-                <SeverityChip severity={caseData?.severity || "high"} />
-              </div>
               <h1 className="text-xl font-bold tracking-tight text-slate-900 border-none p-0 flex items-center gap-2 leading-none">
                 {caseData?.title || "Loading Case..."} <span className="text-slate-400 font-mono text-sm leading-none ml-1">#{caseData?.case_number || caseId}</span>
               </h1>
             </div>
-          </div>
           
           <div className="flex items-center gap-4">
             <Button className="h-9 font-bold px-4 bg-slate-900 text-white shadow-md">Submit Case</Button>
