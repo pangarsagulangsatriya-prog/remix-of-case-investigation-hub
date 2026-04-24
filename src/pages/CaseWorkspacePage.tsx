@@ -3429,75 +3429,79 @@ function ImagePreview({ file }: { file: any }) {
   const stopDragging = () => setIsDragging(false);
 
   return (
-    <div 
-      ref={containerRef}
-      className="relative w-full aspect-video bg-[#0c121e] rounded-sm overflow-hidden group border border-slate-800 shadow-2xl ring-1 ring-white/5"
-      onWheel={onWheel}
-      onMouseDown={startDragging}
-      onMouseMove={onDrag}
-      onMouseUp={stopDragging}
-      onMouseLeave={stopDragging}
-      style={{ cursor: isDragging ? 'grabbing' : (handToolActive ? 'grab' : 'default') }}
-    >
-      {/* IBM Carbon Toolbar (Persistent & Light) */}
-      <div className="absolute top-3 right-3 z-50 flex items-center gap-1 p-1 bg-white/95 backdrop-blur-md border border-slate-200 rounded-sm shadow-xl transition-all duration-300">
-        <div className="flex items-center gap-0.5 px-2 mr-1 border-r border-slate-100">
-          <button onClick={() => handleZoom(0.9)} className="p-1.5 hover:bg-slate-100 rounded text-slate-500 hover:text-slate-900 transition-colors"><Minus className="h-3.5 w-3.5" /></button>
-          <span className="text-[10px] font-mono font-bold text-slate-700 w-10 text-center">{Math.round(scale * 100)}%</span>
-          <button onClick={() => handleZoom(1.1)} className="p-1.5 hover:bg-slate-100 rounded text-slate-500 hover:text-slate-900 transition-colors"><Plus className="h-3.5 w-3.5" /></button>
-        </div>
-        
-        <div className="flex items-center gap-0.5 px-1 mr-1 border-r border-slate-100">
-          <button 
-            onClick={() => { setScale(1); setPosition({ x: 0, y: 0 }); setViewMode('fit'); }}
-            className={cn("px-2 py-1 text-[9px] font-black uppercase tracking-widest rounded-sm transition-all", viewMode === 'fit' ? "bg-slate-900 text-white" : "text-slate-500 hover:text-slate-900 hover:bg-slate-100")}
-          >Fit</button>
-          <button 
-            onClick={() => { setScale(1.5); setPosition({ x: 0, y: 0 }); setViewMode('fill'); }}
-            className={cn("px-2 py-1 text-[9px] font-black uppercase tracking-widest rounded-sm transition-all", viewMode === 'fill' ? "bg-slate-900 text-white" : "text-slate-500 hover:text-slate-900 hover:bg-slate-100")}
-          >Fill</button>
-          <button 
-            onClick={() => { setScale(1); setPosition({ x: 0, y: 0 }); setViewMode('100%'); }}
-            className={cn("px-2 py-1 text-[9px] font-black uppercase tracking-widest rounded-sm transition-all", viewMode === '100%' ? "bg-slate-900 text-white" : "text-slate-500 hover:text-slate-900 hover:bg-slate-100")}
-          >100%</button>
-        </div>
+    <div className="w-full h-full flex flex-col gap-3">
+      {/* IBM Carbon Toolbar (Outside Image) */}
+      <div className="flex items-center justify-center shrink-0">
+        <div className="flex items-center gap-1 p-1 bg-white border border-slate-200 rounded-sm shadow-sm transition-all duration-300">
+          <div className="flex items-center gap-0.5 px-2 mr-1 border-r border-slate-100">
+            <button onClick={() => handleZoom(0.9)} className="p-1.5 hover:bg-slate-100 rounded text-slate-500 hover:text-slate-900 transition-colors"><Minus className="h-3.5 w-3.5" /></button>
+            <span className="text-[10px] font-mono font-bold text-slate-700 w-10 text-center">{Math.round(scale * 100)}%</span>
+            <button onClick={() => handleZoom(1.1)} className="p-1.5 hover:bg-slate-100 rounded text-slate-500 hover:text-slate-900 transition-colors"><Plus className="h-3.5 w-3.5" /></button>
+          </div>
+          
+          <div className="flex items-center gap-0.5 px-1 mr-1 border-r border-slate-100">
+            <button 
+              onClick={() => { setScale(1); setPosition({ x: 0, y: 0 }); setViewMode('fit'); }}
+              className={cn("px-2 py-1 text-[9px] font-black uppercase tracking-widest rounded-sm transition-all", viewMode === 'fit' ? "bg-slate-900 text-white" : "text-slate-500 hover:text-slate-900 hover:bg-slate-100")}
+            >Fit</button>
+            <button 
+              onClick={() => { setScale(1.5); setPosition({ x: 0, y: 0 }); setViewMode('fill'); }}
+              className={cn("px-2 py-1 text-[9px] font-black uppercase tracking-widest rounded-sm transition-all", viewMode === 'fill' ? "bg-slate-900 text-white" : "text-slate-500 hover:text-slate-900 hover:bg-slate-100")}
+            >Fill</button>
+            <button 
+              onClick={() => { setScale(1); setPosition({ x: 0, y: 0 }); setViewMode('100%'); }}
+              className={cn("px-2 py-1 text-[9px] font-black uppercase tracking-widest rounded-sm transition-all", viewMode === '100%' ? "bg-slate-900 text-white" : "text-slate-500 hover:text-slate-900 hover:bg-slate-100")}
+            >100%</button>
+          </div>
 
-        <button 
-          onClick={() => setHandToolActive(!handToolActive)}
-          className={cn("p-1.5 rounded-sm transition-all", handToolActive ? "bg-emerald-500 text-white" : "text-slate-500 hover:text-slate-900 hover:bg-slate-100")}
-        >
-          <Hand className="h-3.5 w-3.5" />
-        </button>
-        
-        <button 
-          onClick={() => { setScale(1); setPosition({ x: 0, y: 0 }); setHandToolActive(false); setViewMode('fit'); }}
-          className="p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-sm transition-all"
-        >
-          <RefreshCcw className="h-3.5 w-3.5" />
-        </button>
+          <button 
+            onClick={() => setHandToolActive(!handToolActive)}
+            className={cn("p-1.5 rounded-sm transition-all", handToolActive ? "bg-emerald-500 text-white" : "text-slate-500 hover:text-slate-900 hover:bg-slate-100")}
+          >
+            <Hand className="h-3.5 w-3.5" />
+          </button>
+          
+          <button 
+            onClick={() => { setScale(1); setPosition({ x: 0, y: 0 }); setHandToolActive(false); setViewMode('fit'); }}
+            className="p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-sm transition-all"
+          >
+            <RefreshCcw className="h-3.5 w-3.5" />
+          </button>
+        </div>
       </div>
 
       <div 
-        className="w-full h-full flex items-center justify-center transition-transform duration-75 ease-out select-none"
-        style={{ 
-          transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
-          transformOrigin: 'center center'
-        }}
+        ref={containerRef}
+        className="relative flex-1 bg-[#0c121e] rounded-sm overflow-hidden group border border-slate-800 shadow-2xl ring-1 ring-white/5"
+        onWheel={onWheel}
+        onMouseDown={startDragging}
+        onMouseMove={onDrag}
+        onMouseUp={stopDragging}
+        onMouseLeave={stopDragging}
+        style={{ cursor: isDragging ? 'grabbing' : (handToolActive ? 'grab' : 'default') }}
       >
-        <img 
-          src={file.url} 
-          alt={file.name} 
-          draggable={false}
-          className={cn(
-            "max-w-full max-h-full transition-all duration-300",
-            viewMode === 'fit' ? "object-contain" : (viewMode === 'fill' ? "object-cover w-full h-full" : "object-none")
-          )} 
-        />
-      </div>
+        <div 
+          className="w-full h-full flex items-center justify-center transition-transform duration-75 ease-out select-none"
+          style={{ 
+            transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
+            transformOrigin: 'center center'
+          }}
+        >
+          <img 
+            src={file.url} 
+            alt={file.name} 
+            draggable={false}
+            className={cn(
+              "max-w-full max-h-full transition-all duration-300",
+              viewMode === 'fit' ? "object-contain" : (viewMode === 'fill' ? "object-cover w-full h-full" : "object-none")
+            )} 
+          />
+        </div>
 
-      <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none">
-         <span className="text-[10px] font-black text-white uppercase tracking-widest block">{file.name}</span>
-         <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">Forensic Visual Evidence · Interactive Analysis Mode</span>
+        <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none">
+           <span className="text-[10px] font-black text-white uppercase tracking-widest block">{file.name}</span>
+           <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">Forensic Visual Evidence · Interactive Analysis Mode</span>
+        </div>
       </div>
     </div>
   );
