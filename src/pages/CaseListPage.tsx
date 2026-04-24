@@ -269,22 +269,19 @@ export default function CaseListPage() {
               <div className="flex-1 overflow-auto">
                 <div className="p-5 space-y-6">
                   {/* Panel Header */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1" />
-                      <div className="flex items-center gap-2">
-                        <StatusChip status={selectedCase.status} />
-                        <Button 
-                          size="sm"
-                          className="h-7 px-3 text-[10px] font-black uppercase tracking-widest bg-primary/10 text-primary hover:bg-primary/20 shadow-none border border-primary/20"
-                          onClick={() => navigate(`/cases/${selectedCase.id}`)}
-                        >
-                          Open
-                        </Button>
+                    <div className="flex items-center justify-between items-start">
+                      <div className="flex-1 min-w-0 pr-4">
+                        <h3 className="text-[17px] font-bold text-slate-900 leading-tight truncate">{selectedCase.title}</h3>
+                        <p className="text-[10px] font-medium text-slate-400 mt-1 uppercase tracking-wider">{selectedCase.case_number || selectedCase.id.slice(0, 8)}</p>
                       </div>
+                      <Button 
+                        size="sm"
+                        className="h-8 px-4 text-xs font-bold bg-primary hover:bg-primary/90 shadow-sm transition-all"
+                        onClick={() => navigate(`/cases/${selectedCase.id}`)}
+                      >
+                        Open Workspace
+                      </Button>
                     </div>
-                    <h3 className="text-[15px] font-bold text-slate-900 leading-snug">{selectedCase.title}</h3>
-                  </div>
 
                   {/* Operational Data */}
                   <div className="grid grid-cols-1 gap-1 border-y border-slate-100 py-4">
