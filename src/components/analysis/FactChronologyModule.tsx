@@ -148,11 +148,9 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
   selectedItemId: controlledSelectedItemId
 }) => {
   const [items, setItems] = useState<ChronologyItem[]>(initialItems);
-  const [internalViewMode, setInternalViewMode] = useState<'slide' | 'default'>('default');
   const [internalSelectedItemId, setInternalSelectedItemId] = useState<string | null>(null);
   
-  const viewMode = controlledViewMode || internalViewMode;
-  const setViewMode = onViewModeChange || setInternalViewMode;
+  const viewMode = 'default';
   const selectedItemId = controlledSelectedItemId || internalSelectedItemId;
   const setSelectedItemId = (id: string | null) => {
     if (onSelectItem) onSelectItem(id);
@@ -216,37 +214,9 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
       viewMode === 'default' ? "overflow-hidden" : ""
     )}>
       <div className="flex-1 flex flex-col min-w-0 h-full relative">
-        <div className={cn(
-          "z-50 flex items-center gap-1 p-1 rounded-lg border shadow-sm bg-white",
-          viewMode === 'slide' ? "absolute top-4 right-4" : "sticky top-0 m-4 mb-0 self-end"
-        )}>
-          <Button 
-            variant={viewMode === 'default' ? 'default' : 'ghost'} 
-            size="sm" 
-            onClick={() => setViewMode('default')}
-            className={cn("h-8 text-[10px] font-black uppercase tracking-widest px-3", viewMode === 'default' ? "bg-slate-900" : "text-slate-500 hover:text-slate-900")}
-          >
-            <TableIcon className="h-3.5 w-3.5 mr-2" /> Default View
-          </Button>
-          <Button 
-            variant={viewMode === 'slide' ? 'default' : 'ghost'} 
-            size="sm" 
-            onClick={() => setViewMode('slide')}
-            className={cn("h-8 text-[10px] font-black uppercase tracking-widest px-3", viewMode === 'slide' ? "bg-slate-900" : "text-slate-500 hover:text-slate-900")}
-          >
-            <Presentation className="h-3.5 w-3.5 mr-2" /> Slide View
-          </Button>
-        </div>
+
 
         <div className="flex-1 overflow-hidden">
-          {viewMode === 'slide' ? (
-            <FactSlideView 
-              metadata={metadata} 
-              groupedItems={groupedItems} 
-              selectedItemId={selectedItemId}
-              onSelectItem={setSelectedItemId}
-            />
-          ) : (
             <FactDefaultView 
               items={items} 
               groupedItems={groupedItems}
@@ -260,7 +230,6 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
               selectedItemId={selectedItemId}
               onSelectItem={setSelectedItemId}
             />
-          )}
         </div>
 
         {viewMode === 'default' && (
@@ -268,7 +237,7 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
             {onSync && (
               <Button 
                 onClick={() => onSync(items)}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black uppercase tracking-[0.2em] px-6 h-10 rounded-lg shadow-lg shadow-emerald-500/10"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black uppercase tracking-[0.2em] px-6 h-10 rounded-sm border"
               >
                 Sync to Case Intelligence
               </Button>
@@ -355,7 +324,7 @@ export const TraceabilityPanel: React.FC<{
                 <Brain className="h-3.5 w-3.5 text-blue-500" />
                 <h4 className="text-[10px] font-black text-slate-700 uppercase tracking-[0.15em]">AI Synthesis Strategy</h4>
               </div>
-              <div className="bg-blue-50/40 border border-blue-100/50 rounded-xl p-4 relative overflow-hidden">
+              <div className="bg-blue-50/40 border border-blue-100/50 rounded-sm p-4 relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-3 opacity-5">
                    <Quote className="h-12 w-12 rotate-180" />
                 </div>
@@ -388,7 +357,7 @@ export const TraceabilityPanel: React.FC<{
             </div>
 
             {(!item.traceability || item.traceability.length === 0) ? (
-              <div className="bg-white border-2 border-dashed border-slate-200 rounded-xl p-10 text-center">
+              <div className="bg-white border border-dashed border-slate-200 rounded-sm p-10 text-center">
                  <Search className="h-8 w-8 text-slate-200 mx-auto mb-4" />
                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">No traceability data available for this node</p>
               </div>
@@ -404,7 +373,7 @@ export const TraceabilityPanel: React.FC<{
                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{type} Evidence</span>
                       </div>
                       {traces.map((t, idx) => (
-                        <div key={t.trace_id} className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all group">
+                        <div key={t.trace_id} className="bg-white border border-slate-200 rounded-sm overflow-hidden transition-all group">
                           <div className="p-3 bg-slate-50/50 border-b flex items-center justify-between">
                              <div className="flex items-center gap-2">
                                 <div className="h-6 w-6 rounded bg-white border flex items-center justify-center text-slate-400 group-hover:text-primary transition-colors">
@@ -483,33 +452,33 @@ export const TraceabilityPanel: React.FC<{
         <div className="grid grid-cols-2 gap-2">
            <Button 
              onClick={() => onUpdateStatus('human_verified')}
-             className="bg-emerald-600 hover:bg-emerald-700 text-white h-10 text-[9px] font-black uppercase tracking-widest gap-2 rounded-xl"
+             className="bg-emerald-600 hover:bg-emerald-700 text-white h-10 text-[9px] font-black uppercase tracking-widest gap-2 rounded-sm"
            >
               <Check className="h-3.5 w-3.5" /> Approve Full 
            </Button>
            <Button 
              onClick={() => onUpdateStatus('partially_supported')}
              variant="outline"
-             className="border-slate-200 text-slate-700 h-10 text-[9px] font-black uppercase tracking-widest gap-2 rounded-xl"
+             className="border-slate-200 text-slate-700 h-10 text-[9px] font-black uppercase tracking-widest gap-2 rounded-sm"
            >
               <Target className="h-3.5 w-3.5 text-blue-500" /> Part Support
            </Button>
            <Button 
              onClick={() => onUpdateStatus('needs_review')}
              variant="outline"
-             className="border-slate-200 text-slate-700 h-10 text-[9px] font-black uppercase tracking-widest gap-2 rounded-xl"
+             className="border-slate-200 text-slate-700 h-10 text-[9px] font-black uppercase tracking-widest gap-2 rounded-sm"
            >
               <Clock className="h-3.5 w-3.5 text-amber-500" /> Mark Review
            </Button>
            <Button 
              onClick={() => onUpdateStatus('unsupported')}
              variant="outline"
-             className="border-slate-200 text-slate-700 h-10 text-[9px] font-black uppercase tracking-widest gap-2 rounded-xl"
+             className="border-slate-200 text-slate-700 h-10 text-[9px] font-black uppercase tracking-widest gap-2 rounded-sm"
            >
               <XCircle className="h-3.5 w-3.5 text-rose-500" /> Unsupported
            </Button>
         </div>
-        <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+        <div className="bg-slate-50 rounded-sm p-3 border border-slate-100">
            <p className="text-[9px] font-bold text-slate-400 leading-relaxed">
              Approving or marking this row will flag it as **Human Evaluated** in the final audit trail and PDF report.
            </p>
@@ -713,7 +682,7 @@ const FactDefaultView: React.FC<{
                   <div className="h-px flex-1 bg-slate-200" />
                 </div>
 
-                <div className="bg-white border rounded-xl shadow-sm overflow-hidden">
+                <div className="bg-white border rounded-sm overflow-hidden">
                   <table className="w-full text-left">
                     <thead>
                       <tr className="bg-slate-50/50 border-b">
@@ -734,7 +703,7 @@ const FactDefaultView: React.FC<{
                             onClick={() => !isEditing && onSelectItem(item.id)}
                             className={cn(
                               "group transition-all cursor-pointer relative", 
-                              isEditing ? "bg-primary/5 cursor-default" : isSelected ? "bg-slate-100/80 shadow-inner" : "hover:bg-slate-50/50"
+                              isEditing ? "bg-primary/5 cursor-default" : isSelected ? "bg-slate-100/80 " : "hover:bg-slate-50/50"
                             )}
                           >
                             <td className="px-5 py-4 align-top">
@@ -812,7 +781,7 @@ const FactDefaultView: React.FC<{
                             </td>
                             <td className="px-5 py-4 align-top text-right">
                               <div className="flex flex-col items-end gap-1.5">
-                                <div className={cn("flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border", status.color)}>
+                                <div className={cn("flex items-center gap-1.5 px-2 py-0.5 rounded-sm text-[8px] font-black uppercase tracking-widest border", status.color)}>
                                    <status.icon className="h-2.5 w-2.5" /> {status.label}
                                 </div>
                                 {item.annotated_by_human && (
