@@ -2897,7 +2897,7 @@ function FileRow({
         </div>
         <div className="overflow-hidden">
           <p className={cn(
-            "text-[11px] font-bold truncate leading-tight",
+            "text-[11px] font-medium truncate leading-tight",
             isSelected ? "text-slate-900" : "text-slate-600 group-hover:text-slate-900"
           )}>
             {file.name}
@@ -3248,12 +3248,7 @@ function ExtractionTab({
                       <div className="h-7 w-7 bg-slate-100 rounded flex items-center justify-center border shadow-inner">
                          {getFileIcon(selectedFile.type)}
                       </div>
-                      <h2 className="text-sm font-black text-slate-900 tracking-tight">{selectedFile.name}</h2>
-                   </div>
-                   <div className="h-4 w-px bg-slate-200" />
-                   <div className="flex items-center gap-3">
-                      <StatusIndicator status={selectedFile.extraction_status || 'pending'} type="extraction" />
-                      <ConfidenceChip level="high" />
+                      <h2 className="text-sm font-medium text-slate-900 tracking-tight">{selectedFile.name}</h2>
                    </div>
                 </div>
                <div className="flex items-center gap-2">
