@@ -10,6 +10,7 @@ import { useAuditLogs, useInsertAuditLog } from "@/hooks/useAuditLogs";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -3470,8 +3471,29 @@ function AnalysisTab() {
   const [isSaving, setIsSaving] = useState(false);
   const [preRunAgentId, setPreRunAgentId] = useState<string | null>(null);
   const [historyAgentId, setHistoryAgentId] = useState<string | null>(null);
+  const [isEditingSummary, setIsEditingSummary] = useState(false);
+  const [summaryEditBuffer, setSummaryEditBuffer] = useState({ time: '', description: '' });
 
   const containerRef = useRef<HTMLDivElement>(null);
+  
+  const startEditingSummary = (item: any) => {
+    setSummaryEditBuffer({ time: item.time_label, description: item.chronology_text });
+    setIsEditingSummary(true);
+  };
+
+  const saveSummaryEdit = (itemId: string, newTime: string, newDesc: string) => {
+    setAgents(prev => prev.map(a => a.id === 'fact' ? {
+      ...a,
+      results: {
+        ...a.results,
+        chronology_items: a.results.chronology_items.map((it: any) => 
+          it.id === itemId ? { ...it, time_label: newTime, chronology_text: newDesc } : it
+        )
+      }
+    } : a));
+    setIsEditingSummary(false);
+    toast.success("Chronology updated.");
+  };
 
   const fitToWorkspace = () => {
     if (!containerRef.current) return;
@@ -3903,6 +3925,63 @@ function AnalysisTab() {
                              <X className="h-4 w-4" />
                           </Button>
                        </div>
+
+                       {/* NEW: Editable Item Summary */}
+                       <div className="p-6 border-b border-slate-100 bg-slate-50/30">
+                          {isEditingSummary ? (
+                             <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                                <div className="space-y-1">
+                                   <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Incident Time</label>
+                                   <Input 
+                                      type="time" 
+                                      value={summaryEditBuffer.time}
+                                      onChange={(e) => setSummaryEditBuffer({...summaryEditBuffer, time: e.target.value})}
+                                      className="h-10 text-xs font-mono font-bold bg-white border-slate-200"
+                                   />
+                                </div>
+                                <div className="space-y-1">
+                                   <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Chronology Description</label>
+                                   <Textarea 
+                                      value={summaryEditBuffer.description}
+                                      onChange={(e) => setSummaryEditBuffer({...summaryEditBuffer, description: e.target.value})}
+                                      className="min-h-[100px] text-xs font-medium leading-relaxed bg-white border-slate-200"
+                                   />
+                                </div>
+                                <div className="flex gap-2 pt-2">
+                                   <Button 
+                                      onClick={() => saveSummaryEdit(item.id, summaryEditBuffer.time, summaryEditBuffer.description)}
+                                      className="h-8 flex-1 text-[10px] font-black uppercase bg-slate-900"
+                                   >
+                                      Save Changes
+                                   </Button>
+                                   <Button 
+                                      variant="outline"
+                                      onClick={() => setIsEditingSummary(false)}
+                                      className="h-8 px-4 text-[10px] font-black uppercase border-slate-200"
+                                   >
+                                      Cancel
+                                   </Button>
+                                </div>
+                             </div>
+                          ) : (
+                             <div 
+                                onClick={() => startEditingSummary(item)}
+                                className="group cursor-pointer hover:bg-white p-4 -m-4 rounded-sm transition-all border border-transparent hover:border-slate-200 hover:shadow-sm"
+                             >
+                                <div className="flex items-center justify-between mb-2">
+                                   <div className="flex items-center gap-2">
+                                      <Clock className="h-3 w-3 text-slate-400" />
+                                      <span className="text-[11px] font-mono font-black text-slate-900 group-hover:text-primary transition-colors">{item.time_label}</span>
+                                   </div>
+                                   <Pencil className="h-3 w-3 text-slate-300 opacity-0 group-hover:opacity-100 transition-all" />
+                                </div>
+                                <p className="text-xs font-medium leading-relaxed text-slate-600 group-hover:text-slate-900 transition-colors">
+                                   {item.chronology_text}
+                                </p>
+                             </div>
+                          )}
+                       </div>
+
                        <div className="flex border-b border-slate-200 shrink-0">
                           <button onClick={() => setActiveConsoleTab('diarization')} className={cn("flex-1 h-12 text-[10px] font-black uppercase tracking-widest transition-all border-r border-slate-200", activeConsoleTab === 'diarization' ? "bg-slate-900 text-white" : "text-slate-400 hover:bg-slate-50")}>Diarization</button>
                           <button onClick={() => setActiveConsoleTab('analysis')} className={cn("flex-1 h-12 text-[10px] font-black uppercase tracking-widest transition-all", activeConsoleTab === 'analysis' ? "bg-slate-900 text-white" : "text-slate-400 hover:bg-slate-50")}>Analysis</button>
