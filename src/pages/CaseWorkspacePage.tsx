@@ -3821,7 +3821,7 @@ function AnalysisTab() {
     return [{
        id: 'slide-1',
        type: 'raw',
-       title: 'Extraction Result',
+       title: agent.name,
        content: agent.results || {}
     }];
   }, [selectedAgentId, agents]);
@@ -4137,8 +4137,7 @@ function AnalysisTab() {
                                        }}
                                     />
                                  ) : (
-                                    <div className="flex flex-col h-full p-8">
-                                        <h2 className="text-[32px] font-black text-slate-800 mb-8 tracking-tighter uppercase">{slides[activeSlide]?.title}</h2>
+                                     <div className="flex flex-col h-full">
                                         {selectedAgentId === 'peepo' ? (
                                             <div className="flex flex-col h-full bg-slate-50/10 animate-in fade-in duration-500 overflow-hidden">
                                                <div className="h-12 flex items-center justify-between px-5 border-b border-slate-200 bg-white shrink-0">
