@@ -2912,7 +2912,6 @@ function ExtractionTab({
           
 
         </div>
-      </div>
 
       <div className="flex-1 flex flex-col relative z-10 bg-white">
         <div className="h-12 border-b flex items-center justify-between px-6 shrink-0 bg-white">
