@@ -3322,23 +3322,7 @@ function ExtractionTab({
                 {selectedFile.type === "Image" && <ImageExtractionConsole file={selectedFile} />}
                 {selectedFile.type === "Audio" && <AudioExtractionConsole file={selectedFile} onJump={jumpToAudioTime} currentTime={audioCurrentTime} />}
                 {selectedFile.type === "Video" && <VideoAnalysisPanel file={selectedFile} currentTime={videoCurrentTime || 0} onJump={jumpToVideoTime} />}
-                {selectedFile.type === "Document" && (
-                    <div className="p-8 space-y-6">
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="h-10 w-10 bg-indigo-50 rounded-sm flex items-center justify-center text-indigo-600 border border-indigo-100 ">
-                                <FileText className="h-5 w-5" />
-                            </div>
-                            <div>
-                                <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">{selectedFile.name}</h3>
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.15em] mt-0.5">Forensic Document Extraction</p>
-                            </div>
-                        </div>
-                         <div className="p-10 border-2 border-dashed rounded-3xl flex flex-col items-center justify-center text-center opacity-30 grayscale saturate-0">
-                            <FileText className="h-8 w-8 text-slate-300 mb-4" />
-                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Deep Extraction Pending</span>
-                         </div>
-                    </div>
-                )}
+                {selectedFile.type === "Document" && <DocumentExtractionConsole file={selectedFile} />}
             </div>
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center text-center p-12 opacity-30 grayscale saturate-0">
@@ -4225,8 +4209,9 @@ function DocumentPreview({ file }: { file: any }) {
 
 function ImageExtractionConsole({ file }: { file: any }) {
   const [viewMode, setViewMode] = useState<"Structured" | "JSON">("Structured");
+  const [expandedSections, setExpandedSections] = useState<string[]>(["General Detection", "Environment & PPE"]);
   
-  const properties = {
+  const properties = useMemo(() => ({
      "General Detection": {
         "Incident Context": "Conveyor Belt zone at Section 14",
         "Environmental Condition": "Low light, heavy coal dust, visible vibration",
@@ -4245,41 +4230,67 @@ function ImageExtractionConsole({ file }: { file: any }) {
         "Tokens": 1420,
         "Run ID": "img-node-1423"
      }
-  };
+  }), []);
+
+  const toggle = (s: string) => setExpandedSections(p => p.includes(s) ? p.filter(x => x !== s) : [...p, s]);
+
+  const SectionHeader = ({ title, icon: Icon, count }: any) => (
+    <button 
+      onClick={() => toggle(title)}
+      className={`w-full flex items-center justify-between px-5 py-3 transition-all ${expandedSections.includes(title) ? 'bg-slate-50/50 border-b' : 'hover:bg-slate-50/30'}`}
+    >
+      <div className="flex items-center gap-3">
+        <div className={`p-1.5 rounded-sm border  ${expandedSections.includes(title) ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-400'}`}>
+          <Icon className="h-3.5 w-3.5" />
+        </div>
+        <div className="flex flex-col items-start">
+           <span className={`text-[11px] font-black uppercase tracking-tight ${expandedSections.includes(title) ? 'text-slate-900' : 'text-slate-600'}`}>
+             {title}
+           </span>
+           {count !== undefined && <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter leading-none mt-0.5">{count} detected</span>}
+        </div>
+      </div>
+      <ChevronDown className={`h-3.5 w-3.5 text-slate-300 transition-transform duration-300 ${expandedSections.includes(title) ? 'rotate-180 text-slate-900' : ''}`} />
+    </button>
+  );
+
+  const KVP = ({ label, value }: { label: string, value: any }) => (
+    <div className="flex flex-col gap-0.5 py-1.5 last:pb-0">
+      <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">{label}</span>
+      <div className="text-[11px] font-bold text-slate-800 leading-snug">{value || "No data detected"}</div>
+    </div>
+  );
 
   return (
     <div className="flex flex-col h-full bg-white">
-      <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b px-5 py-3 flex items-center justify-between shrink-0">
+      <div className="sticky top-0 z-40 bg-white border-b px-5 py-4 flex items-center justify-between shrink-0 shadow-sm">
          <div className="flex flex-col">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Visual Extraction Matrix</span>
-            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter mt-1 opacity-60">Evidence ID: {file.id.slice(0,8)}</span>
+            <span className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em] leading-none">Protocol Matrix v2.1</span>
+            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter mt-1 opacity-60">Visual Extraction Matrix</span>
          </div>
-         <div className="flex items-center gap-1 p-0.5 bg-slate-200/50 rounded-md border shadow-inner">
-            <button onClick={() => setViewMode("Structured")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "Structured" ? "bg-white text-slate-900 " : "text-slate-400 hover:text-slate-600"}`}>Structured</button>
-            <button onClick={() => setViewMode("JSON")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "JSON" ? "bg-white text-slate-900 " : "text-slate-400 hover:text-slate-600"}`}>JSON</button>
+         <div className="flex items-center gap-1 p-0.5 bg-slate-100 rounded-md border shadow-inner">
+            <button onClick={() => setViewMode("Structured")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "Structured" ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>Structured</button>
+            <button onClick={() => setViewMode("JSON")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "JSON" ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>JSON</button>
          </div>
       </div>
 
-      <div className="flex-1 overflow-auto custom-scrollbar p-6 space-y-8">
+      <div className="flex-1 overflow-auto custom-scrollbar">
          {viewMode === "Structured" ? (
-            <>
+            <div className="flex flex-col divide-y divide-slate-100 border-b">
                {Object.entries(properties).map(([section, items]) => (
-                  <div key={section} className="space-y-4 animate-in fade-in slide-in-from-top-1">
-                     <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
-                        <Database className="h-3.5 w-3.5 text-slate-400" />
-                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{section}</span>
-                     </div>
-                     <div className="grid grid-cols-1 gap-4 pl-4 border-l-2 border-slate-50">
-                        {Object.entries(items).map(([label, value]) => (
-                           <div key={label} className="flex flex-col gap-1">
-                              <span className="text-[9px] font-black text-slate-400 uppercase tracking-tight">{label}</span>
-                              <span className="text-[11px] font-bold text-slate-700 leading-snug">{value}</span>
-                           </div>
-                        ))}
-                     </div>
+                  <div key={section} className="flex flex-col">
+                     <SectionHeader title={section} icon={Database} />
+                     {expandedSections.includes(section) && (
+                        <div className="p-5 space-y-1 bg-white animate-in fade-in slide-in-from-top-1">
+                           {Object.entries(items).map(([label, value]) => (
+                              <KVP key={label} label={label} value={value} />
+                           ))}
+                        </div>
+                     )}
                   </div>
                ))}
-               <div className="bg-slate-900 rounded-sm p-6 text-white  relative overflow-hidden group">
+               
+               <div className="p-5 bg-slate-900 text-white relative overflow-hidden group border-t-0">
                   <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 blur-[60px] rounded-full pointer-events-none" />
                   <span className="text-[10px] font-black text-primary uppercase tracking-[0.4em] block mb-4 relative z-10">Forensic Integrity Score</span>
                   <div className="flex items-baseline gap-2 relative z-10">
@@ -4294,11 +4305,10 @@ function ImageExtractionConsole({ file }: { file: any }) {
                      <span className="text-[8px] font-bold text-slate-600 uppercase">SHA-256 Validated</span>
                   </div>
                </div>
-            </>
+            </div>
          ) : (
-            <div className="bg-[#0f1419] rounded-sm border border-slate-800 p-6 overflow-hidden  relative">
-               <div className="absolute top-0 right-0 p-2 opacity-20"><FileSearch className="h-10 w-10 text-white" /></div>
-               <pre className="text-[10.5px] font-mono text-primary leading-relaxed custom-scrollbar max-h-none overflow-visible">
+            <div className="p-4 bg-[#0d1117] min-h-full">
+               <pre className="text-[10.5px] font-mono text-[#79c0ff] bg-[#0d1117] p-6 leading-relaxed overflow-auto custom-scrollbar">
                   {JSON.stringify(properties, null, 2)}
                </pre>
             </div>
@@ -4308,6 +4318,119 @@ function ImageExtractionConsole({ file }: { file: any }) {
   );
 }
 
+
+
+
+function DocumentExtractionConsole({ file }: { file: any }) {
+  const [viewMode, setViewMode] = useState<"Structured" | "JSON">("Structured");
+  const [expandedSections, setExpandedSections] = useState<string[]>(["Entity Extraction", "Semantic Summary"]);
+  
+  const properties = useMemo(() => ({
+     "Entity Extraction": {
+        "Document Class": "Incident Report Form B-12",
+        "Author": "Sarah J. (Safety Officer)",
+        "Signature Status": "Verified (Digital Hash)",
+        "Entity Mentions": "Ahmed, Sarah, Section 14, Conveyor A-1"
+     },
+     "Semantic Summary": {
+        "Key Findings": "Structural integrity compromised at joint 14A. Immediate cessation recommended.",
+        "Timeline Reference": "Event occurred at 14:22:15 local time.",
+        "Risk Level": "Level 4 (Life Critical)",
+        "Policy Violations": "None detected based on report content"
+     },
+     "Forensic Metadata": {
+        "OCR Engine": "Tesseract Matrix v5.0",
+        "Confidence Score": "98.2%",
+        "Source Integrity": "SHA-256 Validated",
+        "Processing Time": "1.2s"
+     }
+  }), []);
+
+  const toggle = (s: string) => setExpandedSections(p => p.includes(s) ? p.filter(x => x !== s) : [...p, s]);
+
+  const SectionHeader = ({ title, icon: Icon, count }: any) => (
+    <button 
+      onClick={() => toggle(title)}
+      className={`w-full flex items-center justify-between px-5 py-3 transition-all ${expandedSections.includes(title) ? 'bg-slate-50/50 border-b' : 'hover:bg-slate-50/30'}`}
+    >
+      <div className="flex items-center gap-3">
+        <div className={`p-1.5 rounded-sm border  ${expandedSections.includes(title) ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-400'}`}>
+          <Icon className="h-3.5 w-3.5" />
+        </div>
+        <div className="flex flex-col items-start">
+           <span className={`text-[11px] font-black uppercase tracking-tight ${expandedSections.includes(title) ? 'text-slate-900' : 'text-slate-600'}`}>
+             {title}
+           </span>
+           {count !== undefined && <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter leading-none mt-0.5">{count} detected</span>}
+        </div>
+      </div>
+      <ChevronDown className={`h-3.5 w-3.5 text-slate-300 transition-transform duration-300 ${expandedSections.includes(title) ? 'rotate-180 text-slate-900' : ''}`} />
+    </button>
+  );
+
+  const KVP = ({ label, value }: { label: string, value: any }) => (
+    <div className="flex flex-col gap-0.5 py-1.5 last:pb-0">
+      <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">{label}</span>
+      <div className="text-[11px] font-bold text-slate-800 leading-snug">{value || "No data detected"}</div>
+    </div>
+  );
+
+  return (
+    <div className="flex flex-col h-full bg-white">
+      <div className="sticky top-0 z-40 bg-white border-b px-5 py-4 flex items-center justify-between shrink-0 shadow-sm">
+         <div className="flex flex-col">
+            <span className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em] leading-none">Protocol Matrix v2.1</span>
+            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter mt-1 opacity-60">Forensic Document Extraction</span>
+         </div>
+         <div className="flex items-center gap-1 p-0.5 bg-slate-100 rounded-md border shadow-inner">
+            <button onClick={() => setViewMode("Structured")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "Structured" ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>Structured</button>
+            <button onClick={() => setViewMode("JSON")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "JSON" ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>JSON</button>
+         </div>
+      </div>
+
+      <div className="flex-1 overflow-auto custom-scrollbar">
+         {viewMode === "Structured" ? (
+            <div className="flex flex-col divide-y divide-slate-100 border-b">
+               {Object.entries(properties).map(([section, items]) => (
+                  <div key={section} className="flex flex-col">
+                     <SectionHeader title={section} icon={FileText} />
+                     {expandedSections.includes(section) && (
+                        <div className="p-5 space-y-1 bg-white animate-in fade-in slide-in-from-top-1">
+                           {Object.entries(items).map(([label, value]) => (
+                              <KVP key={label} label={label} value={value} />
+                           ))}
+                        </div>
+                     )}
+                  </div>
+               ))}
+               
+               <div className="p-5 bg-slate-900 text-white relative overflow-hidden group border-t-0">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 blur-[60px] rounded-full pointer-events-none" />
+                  <span className="text-[10px] font-black text-primary uppercase tracking-[0.4em] block mb-4 relative z-10">Document Authority Score</span>
+                  <div className="flex items-baseline gap-2 relative z-10">
+                     <span className="text-4xl font-black text-white group-hover:scale-110 transition-transform duration-500">99</span>
+                     <span className="text-[11px] font-black text-slate-500 uppercase">Integrity Confidence</span>
+                  </div>
+                  <div className="mt-4 pt-4 border-t border-slate-800 relative z-10 flex items-center justify-between">
+                     <div className="flex items-center gap-2">
+                        <Shield className="h-3.5 w-3.5 text-emerald-500" />
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Digital Signature Valid</span>
+                     </div>
+                     <span className="text-[8px] font-bold text-slate-600 uppercase">PKI Encrypted</span>
+                  </div>
+               </div>
+            </div>
+         ) : (
+            <div className="p-4 bg-[#0d1117] min-h-full">
+               <pre className="text-[10.5px] font-mono text-[#79c0ff] bg-[#0d1117] p-6 leading-relaxed overflow-auto custom-scrollbar">
+                  {JSON.stringify(properties, null, 2)}
+               </pre>
+            </div>
+         )}
+      </div>
+    </div>
+  );
+}
 
 
 function AudioExtractionConsole({ file, onJump, currentTime }: { file: any, onJump: (s: number) => void, currentTime: number }) {
@@ -4401,44 +4524,52 @@ function AudioExtractionConsole({ file, onJump, currentTime }: { file: any, onJu
 
   return (
     <div className="flex flex-col h-full bg-white">
-      <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b px-5 py-3 flex items-center justify-between shrink-0">
+      <div className="sticky top-0 z-40 bg-white border-b px-5 py-4 flex items-center justify-between shrink-0 shadow-sm">
          <div className="flex flex-col">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Forensic Intelligence</span>
-            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter mt-1 opacity-60">ID: {file?.id?.slice(0,8) || "N/A"}</span>
+            <span className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em] leading-none">Protocol Matrix v2.1</span>
+            <div className="flex items-center gap-2 mt-1">
+               <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter opacity-60">Audio Signal Analysis</span>
+               <div className="h-1 w-1 rounded-full bg-slate-200" />
+               <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter opacity-60">ID: {file?.id?.slice(0,8) || "N/A"}</span>
+            </div>
          </div>
-         <div className="flex items-center gap-1 p-0.5 bg-slate-100 rounded-md border shadow-inner">
-            {(["Analysis", "Diarization"] as const).map(tab => (
-              <button 
-                key={tab}
-                onClick={() => setActiveTab(tab)} 
-                className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${activeTab === tab ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600"}`}
-              >
-                {tab}
-              </button>
-            ))}
+         <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1 p-0.5 bg-slate-100 rounded-md border shadow-inner">
+               {(["Analysis", "Diarization"] as const).map(tab => (
+                 <button 
+                   key={tab}
+                   onClick={() => setActiveTab(tab)} 
+                   className={`px-3 py-1 text-[8px] font-black uppercase rounded transition-all ${activeTab === tab ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600"}`}
+                 >
+                   {tab}
+                 </button>
+               ))}
+            </div>
+            
+            {activeTab === "Analysis" && (
+               <div className="flex items-center gap-1 p-0.5 bg-slate-100 rounded-md border shadow-inner">
+                  <button onClick={() => setViewMode("Structured")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "Structured" ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>Structured</button>
+                  <button onClick={() => setViewMode("JSON")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "JSON" ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>JSON</button>
+               </div>
+            )}
          </div>
       </div>
 
       <div className="flex-1 overflow-auto custom-scrollbar">
          {activeTab === "Analysis" && (
-           <div className="flex flex-col min-h-full">
-              <div className="p-4 border-b bg-slate-50/50 flex items-center justify-between">
-                <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Protocol Matrix v2.1</span>
-                <div className="flex items-center gap-1 p-0.5 bg-slate-200/50 rounded-md border shadow-inner">
-                   <button onClick={() => setViewMode("Structured")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "Structured" ? "bg-white text-slate-900 " : "text-slate-400 hover:text-slate-600"}`}>Structured</button>
-                   <button onClick={() => setViewMode("JSON")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "JSON" ? "bg-white text-slate-900 " : "text-slate-400 hover:text-slate-600"}`}>JSON</button>
-                </div>
-              </div>
-              {viewMode === "Structured" ? (
-                 <AudioExtractionStructured data={normalizedExtraction} onJump={onJump} />
-              ) : (
-                <div className="p-4 bg-[#0d1117] min-h-full">
-                   <pre className="text-[10.5px] font-mono text-[#79c0ff] bg-[#0d1117] p-6 leading-relaxed overflow-auto max-h-[1200px] custom-scrollbar">
-                      {JSON.stringify(normalizedExtraction, null, 2)}
-                   </pre>
-                </div>
-              )}
-           </div>
+            <div className="flex flex-col min-h-full">
+               <div className="flex-1">
+                  {viewMode === "Structured" ? (
+                     <AudioExtractionStructured data={normalizedExtraction} onJump={onJump} />
+                  ) : (
+                     <div className="p-4 bg-[#0d1117] min-h-full">
+                        <pre className="text-[10.5px] font-mono text-[#79c0ff] bg-[#0d1117] p-6 leading-relaxed overflow-auto custom-scrollbar">
+                           {JSON.stringify(normalizedExtraction, null, 2)}
+                        </pre>
+                     </div>
+                  )}
+               </div>
+            </div>
          )}
 
          {activeTab === "Diarization" && (
@@ -6422,42 +6553,51 @@ function VideoAnalysisPanel({ file, currentTime, onJump }: { file: any, currentT
 
   return (
     <div className="flex flex-col h-full bg-white">
-      {/* Sticky Tab Switcher */}
-      <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-sm border-b px-4 py-2 flex items-center gap-1 shrink-0">
-        {(["Extraction", "Diarization"] as const).map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`flex-1 py-1.5 px-3 text-[10px] font-black uppercase tracking-widest rounded-md transition-all ${
-              activeTab === tab
-              ? "bg-primary text-white "
-              : "text-slate-400 hover:text-slate-600 hover:bg-slate-50"
-            }`}
-          >
-            {tab}
-          </button>
-        ))}
+      <div className="sticky top-0 z-40 bg-white border-b px-5 py-4 flex items-center justify-between shrink-0 shadow-sm">
+         <div className="flex flex-col">
+            <span className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em] leading-none">Protocol Matrix v2.1</span>
+            <div className="flex items-center gap-2 mt-1">
+               <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter opacity-60">Video Layer Analysis</span>
+               <div className="h-1 w-1 rounded-full bg-slate-200" />
+               <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter opacity-60">ID: {file?.id?.slice(0,8) || "N/A"}</span>
+            </div>
+         </div>
+         <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1 p-0.5 bg-slate-100 rounded-md border shadow-inner">
+               {(["Extraction", "Diarization"] as const).map(tab => (
+                 <button 
+                   key={tab}
+                   onClick={() => setActiveTab(tab)} 
+                   className={`px-3 py-1 text-[8px] font-black uppercase rounded transition-all ${activeTab === tab ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600"}`}
+                 >
+                   {tab}
+                 </button>
+               ))}
+            </div>
+            
+            {activeTab === "Extraction" && (
+               <div className="flex items-center gap-1 p-0.5 bg-slate-100 rounded-md border shadow-inner">
+                  <button onClick={() => setViewMode("Structured")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "Structured" ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>Structured</button>
+                  <button onClick={() => setViewMode("JSON")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "JSON" ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>JSON</button>
+               </div>
+            )}
+         </div>
       </div>
 
       <div className="flex-1 overflow-auto custom-scrollbar">
         {activeTab === "Extraction" ? (
-          <div className="p-4 space-y-4">
-             <div className="flex items-center justify-between mb-4">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Intelligence Layer</span>
-                <div className="flex items-center gap-1 p-0.5 bg-slate-100 rounded-md border shadow-inner">
-                   <button onClick={() => setViewMode("Structured")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "Structured" ? "bg-white text-primary " : "text-slate-400 hover:text-slate-600"}`}>Structured</button>
-                   <button onClick={() => setViewMode("JSON")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "JSON" ? "bg-white text-primary " : "text-slate-400 hover:text-slate-600"}`}>JSON</button>
-                </div>
+          <div className="flex flex-col min-h-full">
+             <div className="flex-1">
+                {viewMode === "Structured" ? (
+                  <VideoExtractionStructured data={videoExtractionRefined} onJump={onJump} />
+                ) : (
+                  <div className="p-4 bg-[#0d1117] min-h-full">
+                     <pre className="text-[10.5px] font-mono text-[#79c0ff] bg-[#0d1117] p-6 leading-relaxed overflow-auto custom-scrollbar">
+                        {JSON.stringify(videoExtractionRefined, null, 2)}
+                     </pre>
+                  </div>
+                )}
              </div>
-             {viewMode === "Structured" ? (
-               <VideoExtractionStructured data={videoExtractionRefined} onJump={onJump} />
-             ) : (
-               <div className="bg-slate-900 rounded-sm p-4 overflow-hidden border border-slate-800  mt-4">
-                  <pre className="text-[10px] font-mono text-emerald-400 leading-relaxed overflow-auto max-h-[1000px] custom-scrollbar">
-                     {JSON.stringify(videoExtractionRefined, null, 2)}
-                  </pre>
-               </div>
-             )}
           </div>
         ) : (
           <VideoSceneSession currentTime={currentTime} onJump={onJump} />
@@ -6473,24 +6613,26 @@ function VideoExtractionStructured({ data, onJump }: { data: typeof videoExtract
   const toggle = (s: string) => setExpandedSections(p => p.includes(s) ? p.filter(x => x !== s) : [...p, s]);
 
   const ExtractionSection = ({ title, icon: Icon, count, children }: any) => (
-    <div className={`border border-slate-100 rounded-sm overflow-hidden mb-2 transition-all duration-300 ${expandedSections.includes(title) ? ' border-primary/10' : 'hover:border-slate-200'}`}>
+    <div className="flex flex-col">
       <button 
         onClick={() => toggle(title)}
-        className={`w-full flex items-center justify-between px-3 py-2.5 transition-colors ${expandedSections.includes(title) ? 'bg-slate-50/50 border-b border-slate-50' : 'bg-white'}`}
+        className={`w-full flex items-center justify-between px-5 py-3 transition-all ${expandedSections.includes(title) ? 'bg-slate-50/50 border-b' : 'hover:bg-slate-50/30'}`}
       >
-        <div className="flex items-center gap-2.5">
-          <div className={`p-1.5 rounded-sm border  ${expandedSections.includes(title) ? 'bg-primary text-white border-primary' : 'bg-white text-slate-400'}`}>
+        <div className="flex items-center gap-3">
+          <div className={`p-1.5 rounded-sm border  ${expandedSections.includes(title) ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-400'}`}>
             <Icon className="h-3.5 w-3.5" />
           </div>
-          <span className={`text-[11px] font-black uppercase tracking-tight transition-colors ${expandedSections.includes(title) ? 'text-slate-900' : 'text-slate-600'}`}>
-            {title}
-            {count !== undefined && <span className="ml-2 opacity-40">({count})</span>}
-          </span>
+          <div className="flex flex-col items-start">
+             <span className={`text-[11px] font-black uppercase tracking-tight ${expandedSections.includes(title) ? 'text-slate-900' : 'text-slate-600'}`}>
+               {title}
+             </span>
+             {count !== undefined && <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter leading-none mt-0.5">{count} events detected</span>}
+          </div>
         </div>
-        <ChevronDown className={`h-3 w-3 text-slate-300 transition-transform ${expandedSections.includes(title) ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`h-3.5 w-3.5 text-slate-300 transition-transform duration-300 ${expandedSections.includes(title) ? 'rotate-180 text-slate-900' : ''}`} />
       </button>
       {expandedSections.includes(title) && (
-        <div className="p-3 bg-white space-y-3 animate-in fade-in slide-in-from-top-1 duration-200">
+        <div className="p-5 bg-white space-y-4 animate-in fade-in slide-in-from-top-1 duration-200">
           {children}
         </div>
       )}
@@ -6505,7 +6647,7 @@ function VideoExtractionStructured({ data, onJump }: { data: typeof videoExtract
   );
 
   return (
-    <div className="space-y-1">
+    <div className="flex flex-col divide-y divide-slate-100 border-b">
       <ExtractionSection title="Video Session Meta" icon={VideoIcon}>
         <div className="grid grid-cols-2 gap-y-3 gap-x-4">
           <MetadataField label="Session" value={data.video_session_meta.session_name} />
