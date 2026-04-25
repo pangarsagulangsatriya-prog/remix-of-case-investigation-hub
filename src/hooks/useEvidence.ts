@@ -74,28 +74,14 @@ export function useEvidence(caseId: string) {
 
       if (batchesError) throw batchesError;
 
-      // Fetch files: either linked to these batches OR directly to the case if batch_id is null
-      // We try to fetch by batch_id OR case_id if it exists
-      const batchIds = batches.map(b => b.id);
-      
-      let query = supabase.from("evidence_files").select("*");
-      
-      if (batchIds.length > 0) {
-        // This handles files in batches + potentially loose files if they have case_id
-        // For now, we'll try to fetch anything that matches the batch IDs or is null batch_id
-        // Note: Realistically, evidence_files needs case_id to fetch null batch_id files.
-        // We will attempt to fetch by batch_id if they exist.
-        query = query.or(`batch_id.in.(${batchIds.join(',')}),batch_id.is.null`);
-      } else {
-        query = query.is("batch_id", null);
-      }
-
-      const { data: files, error: filesError } = await query;
+      // Fetch files strictly for this case
+      const { data: files, error: filesError } = await supabase
+        .from("evidence_files")
+        .select("*")
+        .eq("case_id", caseId);
 
       if (filesError) {
-         // Fallback if the complex query fails due to schema mismatch
-         const { data: fallbackFiles } = await supabase.from("evidence_files").select("*").in("batch_id", batchIds);
-         return { batches, files: (fallbackFiles || []) as EvidenceFile[] };
+         return { batches, files: [] as EvidenceFile[] };
       }
 
       return { batches, files: files as EvidenceFile[] };
@@ -159,27 +145,33 @@ export function useUploadEvidence() {
   return useMutation({
     mutationFn: async ({ caseId, groups }: { caseId: string, groups: any[] }) => {
       for (const group of groups) {
-        // 1. Create batch (folder)
-        const { data: batchData, error: batchError } = await supabase
-          .from("evidence_batches")
-          .insert({
-            case_id: caseId,
-            name: group.name,
-            file_count: group.files.length,
-            type: group.isFolder ? "Folder" : "Loose Files",
-            uploaded_by: "Admin"
-          })
-          .select()
-          .single();
+        let batchId: string | null = null;
 
-        if (batchError) throw batchError;
+        if (group.isFolder) {
+          // 1. Create batch (folder)
+          const { data: batchData, error: batchError } = await supabase
+            .from("evidence_batches")
+            .insert({
+              case_id: caseId,
+              name: group.name,
+              file_count: group.files.length,
+              type: "Folder",
+              uploaded_by: "Admin"
+            })
+            .select()
+            .single();
+
+          if (batchError) throw batchError;
+          batchId = batchData.id;
+        }
 
         // 2. Upload files and create records
         for (const fileItem of group.files) {
           const file = fileItem.file; // The actual File object
           const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
           const fileName = `${Date.now()}-${sanitizedFileName}`;
-          const filePath = `${caseId}/${batchData.id}/${fileName}`;
+          // Use folder/batchId if available, otherwise just caseId/loose
+          const filePath = batchId ? `${caseId}/${batchId}/${fileName}` : `${caseId}/loose/${fileName}`;
           
           let publicUrl = "";
 
@@ -200,13 +192,14 @@ export function useUploadEvidence() {
             publicUrl = publicUrlData.publicUrl;
           } catch (e) {
             console.error("Storage error:", e);
-            throw e; // Rethrow to let the UI handle the error
+            throw e; 
           }
 
           const { error: fileError } = await supabase
             .from("evidence_files")
             .insert({
-              batch_id: batchData.id,
+              batch_id: batchId,
+              case_id: caseId, // Ensure case_id is set for easy fetching of loose files
               name: file.name,
               type: fileItem.type || "Document",
               size: fileItem.size || "0 KB",

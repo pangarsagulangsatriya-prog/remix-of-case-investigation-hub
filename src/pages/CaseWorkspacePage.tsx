@@ -3072,8 +3072,9 @@ function ExtractionTab({
   }, [evidenceFiles, searchQuery]);
 
   const looseFiles = useMemo(() => {
-    return filteredFiles.filter(f => !f.batch_id);
-  }, [filteredFiles]);
+    const looseBatchIds = batches.filter(b => b.type === "Loose Files").map(b => b.id);
+    return filteredFiles.filter(f => !f.batch_id || looseBatchIds.includes(f.batch_id));
+  }, [filteredFiles, batches]);
 
   const folderGroups = useMemo(() => {
     return batches
