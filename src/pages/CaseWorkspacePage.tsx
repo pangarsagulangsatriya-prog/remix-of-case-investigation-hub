@@ -4137,7 +4137,12 @@ function DocumentPreview({ file }: { file: any }) {
   const getPreviewUrl = () => {
     if (!file.url) return null;
     const url = file.url;
-    if (url.toLowerCase().endsWith('.pdf')) return url;
+    const isPdf = url.split('?')[0].toLowerCase().endsWith('.pdf');
+    
+    // For PDFs, we can try direct link, but Google Viewer is often more consistent across browsers
+    // especially for embedded views. However, direct link is better if Google fails.
+    // Let's use Google Viewer for everything non-PDF, and try to be smart about PDFs.
+    if (isPdf) return url; 
     return `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
   };
 
