@@ -4149,63 +4149,79 @@ function DocumentPreview({ file }: { file: any }) {
   const previewUrl = getPreviewUrl();
 
   return (
-    <div className="flex flex-col h-full bg-white rounded-sm border border-slate-200 overflow-hidden select-none">
-       {/* Carbon Toolbar - Minimalist */}
-       <div className="h-10 bg-white border-b border-slate-200 flex items-center justify-between px-4 shrink-0">
-          <div className="flex items-center gap-2">
-             <div className="flex items-center gap-2 px-2 py-1 bg-slate-100 rounded-sm">
-                <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Live Forensic Stream</span>
-             </div>
-             <div className="h-4 w-[1px] bg-slate-200 mx-2" />
-             <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">SECURE CHANNEL ACTIVE</span>
-          </div>
+    <div className="flex flex-col h-full bg-[#f8f9fa] rounded-sm border border-slate-200 overflow-hidden select-none">
+       {/* ChatDOC Styled Toolbar - Enterprise Grade */}
+       <div className="h-12 bg-white border-b border-slate-200 flex items-center justify-between px-4 shrink-0 shadow-sm z-10">
+         <div className="flex items-center gap-4">
+           <div className="flex items-center gap-0.5">
+             <button className="p-1.5 hover:bg-slate-100 rounded-md transition-colors text-slate-500"><Layout className="h-4 w-4" /></button>
+             <button className="p-1.5 hover:bg-slate-100 rounded-md transition-colors text-slate-500"><BookText className="h-4 w-4" /></button>
+             <button className="p-1.5 hover:bg-slate-100 rounded-md transition-colors text-slate-500"><Search className="h-4 w-4" /></button>
+           </div>
+           <div className="h-4 w-[1px] bg-slate-200" />
+           <div className="flex items-center gap-1">
+              <button className="p-1.5 hover:bg-slate-100 rounded-md transition-colors text-slate-500"><Minus className="h-4 w-4" /></button>
+              <div className="px-3 py-1 text-[11px] font-black text-slate-600 bg-slate-50 border rounded-sm min-w-[90px] text-center uppercase tracking-tighter">Auto Fit</div>
+              <button className="p-1.5 hover:bg-slate-100 rounded-md transition-colors text-slate-500"><Plus className="h-4 w-4" /></button>
+           </div>
+         </div>
 
-          <div className="flex items-center gap-2">
-             <button 
-               onClick={() => window.open(file.url, '_blank')}
-               className="flex items-center gap-2 px-3 h-7 bg-slate-900 text-white rounded-sm hover:bg-slate-800 transition-all active:scale-95 shadow-sm"
-               title="Open Original"
-             >
-                <Maximize2 className="h-3 w-3" />
-                <span className="text-[9px] font-black uppercase tracking-widest">Full View</span>
-             </button>
-          </div>
+         <div className="flex items-center gap-3">
+           <div className="flex items-center gap-1">
+             <button className="p-1.5 hover:bg-slate-100 rounded-md transition-colors text-slate-300"><ChevronLeft className="h-4 w-4" /></button>
+             <div className="flex items-center gap-1 px-3 py-1 border rounded-sm bg-white text-[11px] font-black text-slate-700">
+                <span>1</span>
+                <span className="text-slate-300 mx-1">/</span>
+                <span className="text-slate-400">24</span>
+             </div>
+             <button className="p-1.5 hover:bg-slate-100 rounded-md transition-colors text-slate-300"><ChevronRight className="h-4 w-4" /></button>
+           </div>
+           <div className="h-4 w-[1px] bg-slate-200" />
+           <div className="flex items-center gap-1">
+              <button onClick={() => window.open(file.url, '_blank')} className="p-1.5 hover:bg-slate-100 rounded-md transition-colors text-slate-500" title="Full View"><ExternalLink className="h-4 w-4" /></button>
+              <button className="p-1.5 hover:bg-slate-100 rounded-md transition-colors text-slate-500"><Download className="h-4 w-4" /></button>
+           </div>
+         </div>
        </div>
 
-       {/* Document Viewer Area - FULL SCREEN */}
+       {/* Main Content Area - Centered Paper Effect */}
        <div 
          ref={containerRef}
-         className="flex-1 bg-slate-50 relative overflow-hidden"
+         className="flex-1 overflow-auto bg-[#e9ecef] p-4 lg:p-10 flex justify-center custom-scrollbar"
        >
-          {previewUrl ? (
-            <iframe 
-              src={previewUrl} 
-              className="w-full h-full border-none absolute inset-0"
-              title="Document Preview"
-            />
-          ) : (
-            <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-3">
-               <FileText className="h-12 w-12 opacity-20" />
-               <span className="text-[10px] font-black uppercase tracking-widest">No URL available for preview</span>
-            </div>
-          )}
+         <div className="w-full max-w-5xl bg-white shadow-[0_20px_50px_rgba(0,0,0,0.15)] relative min-h-full rounded-sm overflow-hidden ring-1 ring-black/5">
+            {previewUrl ? (
+              <iframe 
+                src={previewUrl} 
+                className="w-full h-full border-none absolute inset-0"
+                title="Document Preview"
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-slate-300 gap-4">
+                 <FileText className="h-16 w-16 opacity-10" />
+                 <span className="text-xs font-black uppercase tracking-[0.3em] opacity-30">Forensic Link Inactive</span>
+              </div>
+            )}
 
-          {/* Watermark Overlay (Extreme Subtle) */}
-          <div className="absolute inset-0 pointer-events-none opacity-[0.01] flex items-center justify-center rotate-[-45deg]">
-             <span className="text-[120px] font-black uppercase tracking-[1em]">Forensic Viewer</span>
-          </div>
+            {/* Subtle Forensic Overlay */}
+            <div className="absolute top-4 right-4 pointer-events-none opacity-20">
+               <div className="flex items-center gap-2 px-2 py-1 bg-white border rounded-sm shadow-sm">
+                  <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-[7px] font-black uppercase tracking-widest text-slate-500">Live Secure Stream</span>
+               </div>
+            </div>
+         </div>
        </div>
 
-       {/* Bottom Status Bar */}
-       <div className="h-7 bg-white border-t border-slate-200 px-4 flex items-center justify-between shrink-0">
+       {/* Bottom Status Bar - Integrated */}
+       <div className="h-6 bg-white border-t border-slate-200 px-4 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-4">
-             <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Format: {file.name?.split('.').pop()?.toUpperCase()}</span>
-             <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Source: {file.url?.slice(0, 30)}...</span>
+             <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest">{file.name}</span>
+             <span className="text-[7px] font-black text-slate-300 uppercase tracking-widest">Modified: 2024-04-25</span>
           </div>
           <div className="flex items-center gap-2">
-             <Shield className="h-3 w-3 text-emerald-500" />
-             <span className="text-[8px] font-bold text-slate-500 uppercase tracking-tighter">Enterprise Encryption Active</span>
+             <Shield className="h-2.5 w-2.5 text-emerald-500" />
+             <span className="text-[7px] font-bold text-slate-400 uppercase tracking-tighter">Verified Integrity</span>
           </div>
        </div>
     </div>
