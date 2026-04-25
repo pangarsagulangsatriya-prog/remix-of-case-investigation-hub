@@ -103,7 +103,9 @@ import {
   Wand2,
   Focus,
   Target,
-  X
+  X,
+  Grid3X3,
+  MousePointer2
 } from "lucide-react";
 
 type AgentStatus = 'idle' | 'queued' | 'running' | 'paused' | 'stopped' | 'completed' | 'failed' | 'cancelled';
@@ -3414,14 +3416,26 @@ function ImagePreview({ file }: { file: any }) {
   const [spotlightRect, setSpotlightRect] = useState<{ x: number, y: number, w: number, h: number } | null>(null);
   const [drawingStart, setDrawingStart] = useState<{ x: number, y: number } | null>(null);
 
+  // Measurement State
+  const [isMeasureMode, setIsMeasureMode] = useState(false);
+  const [measureMode, setMeasureMode] = useState<'distance' | 'angle' | 'none'>('none');
+  const [measurements, setMeasurements] = useState<any[]>([]);
+  const [showGrid, setShowGrid] = useState(false);
+  const [gridSize, setGridSize] = useState(50);
+  const [tempPoints, setTempPoints] = useState<any[]>([]);
+
   useEffect(() => {
     // Reset on file change
     setScale(1);
     setPosition({ x: 0, y: 0 });
-    setViewMode("fit");
+    setViewMode('fit');
     setHandToolActive(false);
     setIsSpotlightMode(false);
     setSpotlightRect(null);
+    setIsMeasureMode(false);
+    setMeasurements([]);
+    setTempPoints([]);
+    setShowGrid(false);
     setEnhancements({
       exposure: 100,
       contrast: 100,
@@ -3482,6 +3496,34 @@ function ImagePreview({ file }: { file: any }) {
     if (isSpotlightMode) {
       setDrawingStart({ x, y });
       setSpotlightRect({ x, y, w: 0, h: 0 });
+      return;
+    }
+
+    if (isMeasureMode && measureMode !== 'none') {
+      const newPoints = [...tempPoints, { x, y }];
+      
+      if (measureMode === 'distance') {
+        if (newPoints.length === 2) {
+          const dx = newPoints[1].x - newPoints[0].x;
+          const dy = newPoints[1].y - newPoints[0].y;
+          const dist = Math.sqrt(dx*dx + dy*dy);
+          setMeasurements([...measurements, { type: 'distance', points: newPoints, label: `${Math.round(dist)} px` }]);
+          setTempPoints([]);
+        } else {
+          setTempPoints(newPoints);
+        }
+      } else if (measureMode === 'angle') {
+        if (newPoints.length === 3) {
+          const angle = Math.atan2(newPoints[2].y - newPoints[0].y, newPoints[2].x - newPoints[0].x) - 
+                        Math.atan2(newPoints[1].y - newPoints[0].y, newPoints[1].x - newPoints[0].x);
+          let deg = Math.abs(angle * 180 / Math.PI);
+          if (deg > 180) deg = 360 - deg;
+          setMeasurements([...measurements, { type: 'angle', points: newPoints, label: `${Math.round(deg)}°` }]);
+          setTempPoints([]);
+        } else {
+          setTempPoints(newPoints);
+        }
+      }
       return;
     }
 
@@ -3560,8 +3602,14 @@ function ImagePreview({ file }: { file: any }) {
           >
             <Focus className="h-3.5 w-3.5" />
           </button>
+        <button 
+          onClick={() => { setIsMeasureMode(!isMeasureMode); if(!isMeasureMode) setHandToolActive(false); setIsSpotlightMode(false); }}
+          className={cn("p-1.5 rounded-sm transition-all", isMeasureMode ? "bg-blue-600 text-white shadow-inner" : "text-slate-500 hover:text-slate-900 hover:bg-slate-100")}
+        >
+          <Ruler className="h-3.5 w-3.5" />
+        </button>
           <button 
-            onClick={() => { setScale(1); setPosition({ x: 0, y: 0 }); setHandToolActive(false); setViewMode('fit'); setSpotlightRect(null); setIsSpotlightMode(false); }}
+            onClick={() => { setScale(1); setPosition({ x: 0, y: 0 }); setHandToolActive(false); setViewMode('fit'); setSpotlightRect(null); setIsSpotlightMode(false); setIsMeasureMode(false); setMeasurements([]); setShowGrid(false); }}
             className="p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-sm transition-all"
           >
             <RefreshCcw className="h-3.5 w-3.5" />
@@ -3627,6 +3675,33 @@ function ImagePreview({ file }: { file: any }) {
            </div>
         </div>
       )}
+
+      {isMeasureMode && (
+        <div className="flex items-center justify-center shrink-0 -mt-1 scale-95 animate-in slide-in-from-top-2 duration-200">
+           <div className="flex items-center gap-2 p-1.5 bg-white border border-slate-200 rounded-sm shadow-sm">
+              <div className="flex items-center gap-1 border-r pr-2 border-slate-100 mr-1">
+                <button 
+                  onClick={() => { setMeasureMode("distance"); setTempPoints([]); }}
+                  className={cn("px-2 py-1 text-[9px] font-bold rounded-sm transition-all uppercase tracking-tight", measureMode === "distance" ? "bg-blue-600 text-white" : "text-slate-500 hover:bg-slate-50")}
+                >Distance</button>
+                <button 
+                  onClick={() => { setMeasureMode("angle"); setTempPoints([]); }}
+                  className={cn("px-2 py-1 text-[9px] font-bold rounded-sm transition-all uppercase tracking-tight", measureMode === "angle" ? "bg-blue-600 text-white" : "text-slate-500 hover:bg-slate-50")}
+                >Angle</button>
+              </div>
+              <div className="flex items-center gap-1">
+                <button 
+                  onClick={() => setShowGrid(!showGrid)}
+                  className={cn("p-1.5 rounded-sm transition-all", showGrid ? "bg-slate-900 text-white" : "text-slate-500 hover:bg-slate-50")}
+                ><Grid3X3 className="h-3.5 w-3.5" /></button>
+                <button 
+                  onClick={() => { setMeasurements([]); setTempPoints([]); }}
+                  className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-sm transition-all"
+                ><X className="h-3.5 w-3.5" /></button>
+              </div>
+           </div>
+        </div>
+      )}
       </div>
 
       <div 
@@ -3647,6 +3722,44 @@ function ImagePreview({ file }: { file: any }) {
             filter: `brightness(${enhancements.exposure}%) contrast(${enhancements.contrast}%) saturate(${enhancements.saturate}%) invert(${enhancements.invert}%) grayscale(${enhancements.grayscale}%) sepia(${enhancements.sepia}%) hue-rotate(${enhancements.hue}deg)`
           }}
         >
+
+          {/* Forensic Grid */}
+          {showGrid && (
+            <div 
+              className="absolute inset-0 pointer-events-none opacity-20"
+              style={{
+                backgroundImage: `linear-gradient(to right, #64748b 1px, transparent 1px), linear-gradient(to bottom, #64748b 1px, transparent 1px)`,
+                backgroundSize: `${gridSize}px ${gridSize}px`
+              }}
+            />
+          )}
+
+          {/* Measurement Layer */}
+          <svg className="absolute inset-0 pointer-events-none overflow-visible" style={{ width: "100%", height: "100%" }}>
+            {measurements.map((m, i) => (
+              <g key={i}>
+                {m.type === "distance" && (
+                  <>
+                    <line x1={m.points[0].x} y1={m.points[0].y} x2={m.points[1].x} y2={m.points[1].y} stroke="#2563eb" strokeWidth="1.5" />
+                    <circle cx={m.points[0].x} cy={m.points[0].y} r="3" fill="#2563eb" />
+                    <circle cx={m.points[1].x} cy={m.points[1].y} r="3" fill="#2563eb" />
+                    <text x={(m.points[0].x + m.points[1].x)/2} y={(m.points[0].y + m.points[1].y)/2 - 10} fill="#2563eb" fontSize="10" fontWeight="bold" textAnchor="middle" className="drop-shadow-sm">{m.label}</text>
+                  </>
+                )}
+                {m.type === "angle" && (
+                  <>
+                    <line x1={m.points[0].x} y1={m.points[0].y} x2={m.points[1].x} y2={m.points[1].y} stroke="#ea580c" strokeWidth="1.5" />
+                    <line x1={m.points[0].x} y1={m.points[0].y} x2={m.points[2].x} y2={m.points[2].y} stroke="#ea580c" strokeWidth="1.5" />
+                    <circle cx={m.points[0].x} cy={m.points[0].y} r="3" fill="#ea580c" />
+                    <text x={m.points[0].x} y={m.points[0].y - 15} fill="#ea580c" fontSize="10" fontWeight="bold" textAnchor="middle" className="drop-shadow-sm">{m.label}</text>
+                  </>
+                )}
+              </g>
+            ))}
+            {tempPoints.map((p, i) => (
+              <circle key={i} cx={p.x} cy={p.y} r="3" fill={measureMode === "distance" ? "#2563eb" : "#ea580c"} />
+            ))}
+          </svg>
           <img 
             src={file.url} 
             alt={file.name} 
