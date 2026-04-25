@@ -799,6 +799,7 @@ export function UploadModal({
                           </div>
                         ))}
                     </div>
+                  );
                 })}
               </div>
 
