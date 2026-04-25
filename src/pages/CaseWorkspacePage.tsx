@@ -6065,54 +6065,6 @@ function AuditTrailTab() {
 }
 
 
-            {viewMode === "Structured" ? (
-              <AudioExtractionStructured 
-                data={normalizedExtraction} 
-                onJump={onJump} 
-              />
-            ) : (
-              <div className="p-4 bg-[#0d1117] min-h-full">
-                <div className="rounded-sm overflow-hidden border border-[#30363d] ">
-                  <div className="bg-[#161b22] px-4 py-2.5 border-b border-[#30363d] flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                       <div className="flex gap-1.5">
-                          <div className="h-2.5 w-2.5 rounded-full bg-[#ff5f56]" />
-                          <div className="h-2.5 w-2.5 rounded-full bg-[#ffbd2e]" />
-                          <div className="h-2.5 w-2.5 rounded-full bg-[#27c93f]" />
-                       </div>
-                       <span className="text-[10px] font-mono text-[#8b949e] uppercase tracking-wider">audio_extraction_output.json</span>
-                    </div>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="h-7 px-2 text-[9px] font-black text-[#c9d1d9] hover:bg-[#30363d] hover:text-white border border-[#30363d]"
-                      onClick={() => {
-                        navigator.clipboard.writeText(JSON.stringify(normalizedExtraction, null, 2));
-                        toast.success("JSON copied to clipboard");
-                      }}
-                    >
-                       <Copy className="h-3 w-3 mr-1.5" /> COPY
-                    </Button>
-                  </div>
-                  <pre className="text-[10.5px] font-mono text-[#79c0ff] bg-[#0d1117] p-6 leading-relaxed overflow-auto max-h-[1200px] custom-scrollbar selection:bg-primary/30">
-                     {JSON.stringify(normalizedExtraction, null, 2)}
-                  </pre>
-                </div>
-              </div>
-            )}
-          </div>
-        ) : (
-          <AudioSceneSession 
-            data={normalizedScene} 
-            currentTime={currentTime} 
-            onJump={onJump} 
-          />
-        )}
-      </div>
-    </div>
-  );
-}
-
 function AudioExtractionStructured({ data, onJump }: { data: any, onJump: (s: number) => void }) {
   const [expandedSections, setExpandedSections] = useState<string[]>(["Timeline & Facts", "Speaker Profiles", "Risks, Gaps, Review"]);
   const toggle = (s: string) => setExpandedSections(p => p.includes(s) ? p.filter(x => x !== s) : [...p, s]);
