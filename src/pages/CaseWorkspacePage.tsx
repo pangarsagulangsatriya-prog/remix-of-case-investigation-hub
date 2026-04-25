@@ -3816,82 +3816,308 @@ function ImagePreview({ file }: { file: any }) {
 }
 
 function AudioPreview({ file, currentTime, setCurrentTime, isPlaying, setIsPlaying, playbackSpeed, setPlaybackSpeed, audioRef }: any) {
-  const [duration, setDuration] = useState(0);
-
-  const togglePlay = () => {
-    if (audioRef.current) {
-      if (isPlaying) {
-        audioRef.current.pause();
-      } else {
-        audioRef.current.play();
-      }
-      setIsPlaying(!isPlaying);
-    }
-  };
-
-  const onTimeUpdate = () => {
-    if (audioRef.current) {
-      setCurrentTime(audioRef.current.currentTime);
-    }
-  };
-
-  const onLoadedMetadata = () => {
-    if (audioRef.current) {
-      setDuration(audioRef.current.duration);
-    }
-  };
-
-  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const time = parseFloat(e.target.value);
-    if (audioRef.current) {
-      audioRef.current.currentTime = time;
-    }
-    setCurrentTime(time);
-  };
-
   return (
-    <div className="w-full max-w-2xl bg-white border border-slate-200 rounded-3xl p-8  relative overflow-hidden group">
+    <div className="w-full h-full min-h-[500px] bg-[#0c121e] rounded-sm border border-slate-800 shadow-2xl overflow-hidden flex flex-col">
        <audio 
          ref={audioRef} 
          src={file.url} 
-         onTimeUpdate={onTimeUpdate} 
-         onLoadedMetadata={onLoadedMetadata}
+         onTimeUpdate={() => audioRef.current && setCurrentTime(audioRef.current.currentTime)} 
+         onLoadedMetadata={() => {}}
        />
-       <div className="absolute top-0 right-0 w-48 h-48 bg-primary/5 blur-[80px] rounded-full pointer-events-none" />
-       <div className="flex flex-col items-center gap-6 relative z-10">
-          <div className="h-20 w-20 rounded-[2.5rem] bg-slate-900 flex items-center justify-center text-white  shadow-slate-900/10 group-hover:scale-110 transition-transform duration-700">
-             <AudioIcon className="h-8 w-8" />
-          </div>
-          <div className="text-center space-y-1">
-             <h3 className="text-sm font-black text-slate-900 uppercase tracking-[0.2em]">{file.name}</h3>
-             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest italic opacity-60">Forensic Audio Console · Site Alpha</p>
-          </div>
+       <AudioForensicWorkspace 
+         file={file}
+         currentTime={currentTime}
+         setCurrentTime={setCurrentTime}
+         isPlaying={isPlaying}
+         setIsPlaying={setIsPlaying}
+         playbackSpeed={playbackSpeed}
+         setPlaybackSpeed={setPlaybackSpeed}
+         audioRef={audioRef}
+       />
+    </div>
+  );
+}
+
+function AudioForensicWorkspace({ 
+  file, currentTime, setCurrentTime, isPlaying, setIsPlaying, 
+  playbackSpeed, setPlaybackSpeed, audioRef 
+}: any) {
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState(0);
+  const [selection, setSelection] = useState<{ start: number, end: number } | null>(null);
+  const [isSelecting, setIsSelecting] = useState(false);
+  const [duration, setDuration] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const waveformCanvasRef = useRef<HTMLCanvasElement>(null);
+  const spectrogramCanvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    if (audioRef.current) {
+      const updateDuration = () => setDuration(audioRef.current.duration);
+      audioRef.current.addEventListener('loadedmetadata', updateDuration);
+      if (audioRef.current.duration) setDuration(audioRef.current.duration);
+      return () => audioRef.current?.removeEventListener('loadedmetadata', updateDuration);
+    }
+  }, [audioRef.current]);
+
+  // Waveform Rendering (Simulated high-fidelity for performance)
+  useEffect(() => {
+    const canvas = waveformCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const render = () => {
+      const w = canvas.width;
+      const h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+      
+      const bars = 200;
+      const barW = (w / bars) * zoom;
+      const offset = pan * w;
+
+      ctx.fillStyle = '#1e293b';
+      for (let i = 0; i < bars; i++) {
+        const x = i * (w / bars) * zoom - offset;
+        if (x < -barW || x > w) continue;
+        
+        // Pseudo-random but deterministic amplitude
+        const seed = Math.sin(i * 0.5) * 10000;
+        const val = (seed - Math.floor(seed)) * (h * 0.7);
+        const barH = Math.max(2, val);
+        
+        const isPast = (i / bars) * duration < currentTime;
+        ctx.fillStyle = isPast ? '#3b82f6' : '#334155';
+        
+        // Draw symmetric waveform
+        ctx.fillRect(x, h/2 - barH/2, barW - 1, barH);
+      }
+
+      // Playhead
+      const px = (currentTime / (duration || 1)) * w * zoom - offset;
+      if (px >= 0 && px <= w) {
+        ctx.fillStyle = '#ef4444';
+        ctx.fillRect(px, 0, 2, h);
+        
+        // Glow effect
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = 'rgba(239, 68, 68, 0.5)';
+        ctx.fillRect(px, 0, 2, h);
+        ctx.shadowBlur = 0;
+      }
+
+      // Selection overlay
+      if (selection) {
+        const sx = (selection.start / duration) * w * zoom - offset;
+        const ex = (selection.end / duration) * w * zoom - offset;
+        ctx.fillStyle = 'rgba(59, 130, 246, 0.15)';
+        ctx.fillRect(Math.min(sx, ex), 0, Math.abs(ex - sx), h);
+        ctx.strokeStyle = '#3b82f6';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(Math.min(sx, ex), 0, Math.abs(ex - sx), h);
+      }
+    };
+
+    render();
+  }, [currentTime, duration, zoom, pan, selection]);
+
+  // Spectrogram Rendering (Simulated)
+  useEffect(() => {
+    const canvas = spectrogramCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const render = () => {
+      const w = canvas.width;
+      const h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+
+      const density = 150;
+      const step = (w / density) * zoom;
+      const offset = pan * w;
+
+      for (let i = 0; i < density; i++) {
+        const x = i * step - offset;
+        if (x < -step || x > w) continue;
+
+        for (let j = 0; j < 10; j++) {
+          const y = (j / 10) * h;
+          const seed = Math.sin(i * 0.3 + j * 0.7) * 10000;
+          const intensity = (seed - Math.floor(seed));
           
-          <div className="w-full space-y-3">
-             <div className="flex items-center justify-between text-[10px] font-black text-slate-400 tabular-nums uppercase tracking-widest text-primary/80">
-                <span>{formatTime(currentTime)}</span>
-                <span>{formatTime(duration || 262)}</span>
+          // Heatmap colors
+          if (intensity > 0.8) ctx.fillStyle = '#fde047'; // yellow
+          else if (intensity > 0.5) ctx.fillStyle = '#f97316'; // orange
+          else if (intensity > 0.2) ctx.fillStyle = '#6366f1'; // purple
+          else ctx.fillStyle = '#1e1b4b'; // dark blue
+
+          ctx.globalAlpha = intensity * 0.6;
+          ctx.fillRect(x, y, step - 0.5, h/10 - 0.5);
+        }
+      }
+      ctx.globalAlpha = 1;
+    };
+
+    render();
+  }, [zoom, pan, currentTime]);
+
+  const handleInteraction = (e: React.MouseEvent) => {
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const x = e.clientX - rect.left;
+    const normalizedX = (x + pan * rect.width) / (rect.width * zoom);
+    const targetTime = normalizedX * duration;
+
+    if (e.type === 'mousedown') {
+      setIsSelecting(true);
+      setSelection({ start: targetTime, end: targetTime });
+      if (audioRef.current) {
+        audioRef.current.currentTime = targetTime;
+        setCurrentTime(targetTime);
+      }
+    } else if (e.type === 'mousemove' && isSelecting) {
+      setSelection(prev => prev ? { ...prev, end: targetTime } : null);
+    } else if (e.type === 'mouseup') {
+      setIsSelecting(false);
+    }
+  };
+
+  return (
+    <div className="flex-1 flex flex-col bg-[#0c121e] text-white">
+       {/* 1. Top Toolbar */}
+       <div className="h-10 border-b border-white/5 bg-[#161e2e] flex items-center justify-between px-4 shrink-0">
+          <div className="flex items-center gap-4">
+             <div className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 rounded text-[9px] font-black text-emerald-400 uppercase tracking-widest">
+                <Shield className="h-3 w-3" /> Integrity Verified
              </div>
-             <input 
-                type="range"
-                min="0"
-                max={duration || 262}
-                step="0.1"
-                value={currentTime}
-                onChange={handleSeek}
-                className="w-full h-1.5 bg-slate-100 rounded-full appearance-none cursor-pointer accent-primary"
-             />
+             <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">
+                SHA-256: 4f8a...2e1c
+             </span>
+          </div>
+          <div className="flex items-center gap-2">
+             <div className="flex bg-black/40 rounded border border-white/5 p-0.5">
+                <button onClick={() => setZoom(z => Math.max(1, z / 1.2))} className="p-1 hover:bg-white/10 rounded transition-colors text-slate-400 hover:text-white"><ZoomOut className="h-3.5 w-3.5" /></button>
+                <div className="px-2 flex items-center text-[9px] font-mono font-bold text-slate-500 border-x border-white/5">{Math.round(zoom * 100)}%</div>
+                <button onClick={() => setZoom(z => Math.min(10, z * 1.2))} className="p-1 hover:bg-white/10 rounded transition-colors text-slate-400 hover:text-white"><ZoomIn className="h-3.5 w-3.5" /></button>
+             </div>
+             <Button variant="ghost" size="sm" className="h-7 text-[9px] font-black uppercase text-slate-400 hover:text-white hover:bg-white/5 border border-white/5" onClick={() => { setZoom(1); setPan(0); setSelection(null); }}>
+                <RefreshCcw className="h-3 w-3 mr-1.5" /> Reset View
+             </Button>
+          </div>
+       </div>
+
+       {/* 2. Visualizers Area */}
+       <div 
+         ref={containerRef}
+         className="flex-1 flex flex-col relative cursor-crosshair overflow-hidden group/workspace"
+         onMouseDown={handleInteraction}
+         onMouseMove={handleInteraction}
+         onMouseUp={handleInteraction}
+         onMouseLeave={() => setIsSelecting(false)}
+       >
+          {/* Spectrogram Layer */}
+          <div className="flex-1 relative border-b border-white/5 bg-black/20">
+             <canvas ref={spectrogramCanvasRef} width={800} height={200} className="w-full h-full opacity-60 mix-blend-screen" />
+             <div className="absolute top-3 left-3 text-[9px] font-black text-slate-500 uppercase tracking-widest bg-black/40 px-2 py-1 rounded backdrop-blur-sm">Spectral Frequency (FFT)</div>
+             
+             {/* Y-Axis Frequency Markers */}
+             <div className="absolute left-0 inset-y-0 w-10 flex flex-col justify-between py-4 pointer-events-none opacity-30">
+                {['20k', '15k', '10k', '5k', '0'].map(f => (
+                  <span key={f} className="text-[8px] font-mono text-white text-right pr-2">{f}Hz</span>
+                ))}
+             </div>
           </div>
 
-          <div className="flex items-center gap-6 text-slate-400">
-             <button className="p-2 hover:text-slate-900 transition-colors" onClick={() => { if(audioRef.current) audioRef.current.currentTime = 0; }}><RefreshCcw className="h-4 w-4" /></button>
+          {/* Waveform Layer */}
+          <div className="h-48 relative bg-black/40">
+             <canvas ref={waveformCanvasRef} width={800} height={192} className="w-full h-full" />
+             <div className="absolute top-3 left-3 text-[9px] font-black text-slate-500 uppercase tracking-widest bg-black/40 px-2 py-1 rounded backdrop-blur-sm">Temporal Amplitude (Time-Domain)</div>
+             
+             {/* Selection Tools Popover */}
+             {selection && !isSelecting && (
+               <div 
+                 className="absolute top-1/2 -translate-y-1/2 bg-slate-900 border border-white/10 p-1.5 rounded shadow-2xl flex items-center gap-1.5 animate-in fade-in zoom-in duration-200"
+                 style={{ left: `${((selection.start + selection.end) / 2 / duration) * 100}%`, transform: 'translate(-50%, -50%)' }}
+                 onClick={(e) => e.stopPropagation()}
+               >
+                  <Button size="sm" className="h-7 px-3 bg-primary text-white text-[9px] font-black uppercase rounded-sm hover:bg-primary/90" onClick={() => { if(audioRef.current) { audioRef.current.currentTime = selection.start; audioRef.current.play(); setIsPlaying(true); } }}>
+                     Loop
+                  </Button>
+                  <Button size="sm" variant="outline" className="h-7 px-3 border-white/10 text-white text-[9px] font-black uppercase rounded-sm hover:bg-white/5">
+                     Annotate
+                  </Button>
+                  <Button size="sm" variant="ghost" className="h-7 px-1 text-slate-500 hover:text-white" onClick={() => setSelection(null)}>
+                     <X className="h-3.5 w-3.5" />
+                  </Button>
+               </div>
+             )}
+          </div>
+
+          {/* Time Rulers */}
+          <div className="h-6 bg-[#0c121e] border-t border-white/5 flex items-center px-2 pointer-events-none opacity-40">
+             {Array.from({ length: 10 }).map((_, i) => (
+               <div key={i} className="flex-1 flex flex-col items-start border-l border-white/10 h-3 pl-1">
+                  <span className="text-[8px] font-mono text-white">{formatTime((i / 10) * duration)}</span>
+               </div>
+             ))}
+          </div>
+       </div>
+
+       {/* 3. Playback Console */}
+       <div className="h-20 bg-[#161e2e] border-t border-white/5 flex items-center px-8 gap-8 shrink-0">
+          {/* Controls Group */}
+          <div className="flex items-center gap-4">
+             <button className="text-slate-400 hover:text-white transition-colors" onClick={() => { if(audioRef.current) audioRef.current.currentTime -= 1; }}><ChevronLeft className="h-5 w-5" /></button>
              <button 
-                onClick={togglePlay}
-                className="h-14 w-14 bg-slate-900 text-white rounded-full flex items-center justify-center  hover:bg-slate-800 transition-all hover:scale-105 active:scale-95"
+                onClick={() => {
+                  if (isPlaying) audioRef.current?.pause();
+                  else audioRef.current?.play();
+                  setIsPlaying(!isPlaying);
+                }}
+                className="h-12 w-12 bg-white text-slate-900 rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-xl shadow-white/5"
              >
-                {isPlaying ? <Pause className="h-6 w-6 fill-current" /> : <Play className="h-6 w-6 fill-current ml-1" />}
+                {isPlaying ? <Pause className="h-5 w-5 fill-current" /> : <Play className="h-5 w-5 fill-current ml-0.5" />}
              </button>
-             <button className="p-2 hover:text-slate-900 transition-colors"><Maximize2 className="h-4 w-4" /></button>
+             <button className="text-slate-400 hover:text-white transition-colors" onClick={() => { if(audioRef.current) audioRef.current.currentTime += 1; }}><ChevronRight className="h-5 w-5" /></button>
+          </div>
+
+          {/* Stats Group */}
+          <div className="flex flex-col gap-1.5 min-w-[120px]">
+             <div className="flex items-baseline gap-2">
+                <span className="text-xl font-mono font-black tabular-nums text-white leading-none">{formatTime(currentTime)}</span>
+                <span className="text-[10px] font-mono text-slate-500">/ {formatTime(duration)}</span>
+             </div>
+             <div className="flex items-center gap-2">
+                <span className="text-[8px] font-black text-primary uppercase tracking-[0.2em]">Live Playhead</span>
+                <div className="flex gap-1">
+                   {Array.from({ length: 3 }).map((_, i) => (
+                     <div key={i} className={`h-1 w-1 rounded-full ${isPlaying ? 'bg-primary animate-pulse' : 'bg-slate-700'}`} style={{ animationDelay: `${i * 0.2}s` }} />
+                   ))}
+                </div>
+             </div>
+          </div>
+
+          {/* Speed & Mode Group */}
+          <div className="flex items-center gap-6 ml-auto">
+             <div className="flex flex-col items-end gap-1">
+                <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Playback Speed</span>
+                <div className="flex bg-black/40 rounded border border-white/5 p-0.5">
+                   {[0.5, 1, 1.5].map(s => (
+                     <button 
+                       key={s} 
+                       onClick={() => { setPlaybackSpeed(s); if(audioRef.current) audioRef.current.playbackRate = s; }}
+                       className={`px-3 py-1 text-[9px] font-black uppercase rounded transition-all ${playbackSpeed === s ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-white'}`}
+                     >
+                       {s}x
+                     </button>
+                   ))}
+                </div>
+             </div>
+             <div className="h-10 w-px bg-white/5" />
+             <Button variant="ghost" className="h-10 w-10 p-0 rounded-sm hover:bg-white/5 text-slate-400 hover:text-white">
+                <Maximize2 className="h-4 w-4" />
+             </Button>
           </div>
        </div>
     </div>
@@ -4002,19 +4228,23 @@ function ImageExtractionConsole({ file }: { file: any }) {
             </div>
          )}
       </div>
-
-      <div className="p-6 border-t bg-white shrink-0">
-         <Button className="w-full h-11 bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-black uppercase tracking-[0.2em] rounded-sm  hover:shadow-slate-200 transition-all">
-            <RefreshCcw className="h-4 w-4 mr-2" /> RE-ANALYZE EVIDENCE
-         </Button>
-      </div>
     </div>
   );
 }
 
+
+
 function AudioExtractionConsole({ file, onJump, currentTime }: { file: any, onJump: (s: number) => void, currentTime: number }) {
-  const [activeTab, setActiveTab] = useState<"Analysis" | "Diarization">("Analysis");
+  const [activeTab, setActiveTab] = useState<"Analysis" | "Diarization" | "Enhancement">("Analysis");
   const [viewMode, setViewMode] = useState<"Structured" | "JSON">("Structured");
+  
+  const [enhancements, setEnhancements] = useState({
+    noiseReduction: 40,
+    voiceBoost: 60,
+    clarity: 50,
+    highPass: 20,
+    lowPass: 80
+  });
 
   const audioExtractionData = useMemo(() => ({
     recording_meta: {
@@ -4049,146 +4279,111 @@ function AudioExtractionConsole({ file, onJump, currentTime }: { file: any, onJu
     review_meta: { low_confidence_segments: [12, 145], needs_human_review: ["Check transcription for 'tensioner' vs 'tension'"], confidence: "92%" }
   }), [file]);
 
-  const audioDiarizationData = useMemo(() => [
-    { segment_id: "seg_1", speaker_id: "SPK_01", speaker_label: "Operator A", start_time: "00:04", end_time: "00:12", duration: "0:08", text: "Control, ini Operator A. Getaran di Section 14 melebihi batas aman. Mohon dicek.", confidence: "High", flags: [] },
-    { segment_id: "seg_2", speaker_id: "SPK_02", speaker_label: "Control Room", start_time: "00:15", end_time: "00:22", duration: "0:07", text: "Diterima Operator A. Sensor kami juga menunjukkan anomali. Standby.", confidence: "High", flags: [] },
-    { segment_id: "seg_3", speaker_id: "SPK_01", speaker_label: "Operator A", start_time: "02:14", end_time: "02:22", duration: "0:08", text: "Kontrol! Belt Section 14 robek! Terjadi tumpahan material berat! E-Stop!", confidence: "High", flags: ["URGENT", "STRESS"] }
-  ], []);
-
-  const normalizedExtraction = useMemo(() => {
-    const raw = audioExtractionData;
-    return {
-      audio_id: "AUD_" + (file?.id?.slice(0, 4) || "001"),
-      case_id: "CS-2026-" + Math.floor(1000 + Math.random() * 9000),
-      modality: "audio",
-      audio_properties: {
-        file_name: raw.recording_meta.file_name,
-        source_type: raw.recording_meta.source_type,
-        capture_time: "2026-04-12 14:30:22",
-        source_device: raw.recording_meta.recording_type,
-        location_hint: "Site Alpha - Zone B",
-        duration: raw.recording_meta.duration,
-        language: raw.recording_meta.language,
-        channel_type: raw.recording_meta.channel_type,
-        recording_type: raw.recording_meta.recording_type,
-        audio_quality: raw.recording_meta.audio_quality,
-        noise_level: raw.recording_meta.noise_level,
-        overlap_level: raw.recording_meta.overlap_level
-      },
-      extraction_summary: {
-        transcript_summary: "Emergency report regarding Section 14 conveyor belt failure. Operator A identifies vibration then escalates to critical tear report.",
-        speaker_profiles: raw.speaker_profiles.map(s => ({
-          ...s,
-          label: s.speaker_label,
-          role: s.probable_role,
-          stress: s.stress_level
-        })),
-        communication_events: raw.communication_events,
-        factual_statements: raw.factual_statements || [],
-        timeline_events: raw.timeline_events || [],
-        human_performance_signals: raw.human_performance_signals,
-        risk_and_procedure_clues: raw.risk_and_procedure_clues,
-        contradictions_and_gaps: [],
-        review_meta: {
-          low_confidence_segments: raw.review_meta.low_confidence_segments,
-          needs_human_review: raw.review_meta.needs_human_review,
-          confidence: raw.review_meta.confidence
-        }
-      }
-    };
-  }, [file]);
-
-  const normalizedScene = useMemo(() => {
-    return {
-      audio_id: "AUD_" + (file?.id?.slice(0, 4) || "001"),
-      case_id: "CS-2026-" + Math.floor(1000 + Math.random() * 9000),
-      modality: "audio",
-      scene_session: {
-        speaker_count: audioExtractionData.speaker_profiles.length,
-        full_diarization: audioDiarizationData,
-        sync_settings: {
-          timestamp_linked_to_player: true,
-          auto_scroll_active_segment: true,
-          click_segment_seeks_audio: true
-        }
-      }
-    };
-  }, [file]);
-
   return (
     <div className="flex flex-col h-full bg-white">
-      <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b px-4 py-2 flex items-center gap-1 shrink-0">
-        {(["Diarization", "Analysis"] as const).map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`flex-1 py-1.5 px-3 text-[10px] font-black uppercase tracking-[0.15em] rounded-md transition-all ${
-              activeTab === tab
-              ? "bg-slate-900 text-white  ring-1 ring-slate-900"
-              : "text-slate-400 hover:text-slate-600 hover:bg-slate-50"
-            }`}
-          >
-            {tab}
-          </button>
-        ))}
+      <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b px-5 py-3 flex items-center justify-between shrink-0">
+         <div className="flex flex-col">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Forensic Intelligence</span>
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter mt-1 opacity-60">ID: {file.id.slice(0,8)}</span>
+         </div>
+         <div className="flex items-center gap-1 p-0.5 bg-slate-100 rounded-md border shadow-inner">
+            {(["Analysis", "Diarization", "Enhancement"] as const).map(tab => (
+              <button 
+                key={tab}
+                onClick={() => setActiveTab(tab)} 
+                className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${activeTab === tab ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600"}`}
+              >
+                {tab}
+              </button>
+            ))}
+         </div>
       </div>
 
       <div className="flex-1 overflow-auto custom-scrollbar">
-        {activeTab === "Analysis" ? (
-          <div className="flex flex-col min-h-full">
-            <div className="p-4 border-b bg-slate-50/50 flex items-center justify-between">
-              <div className="flex flex-col">
-                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Intelligence Hub</span>
-                 <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter mt-1 opacity-60">Audio Protocol Matrix v2.1</span>
-              </div>
-              <div className="flex items-center gap-1 p-0.5 bg-slate-200/50 rounded-md border shadow-inner">
-                 <button onClick={() => setViewMode("Structured")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "Structured" ? "bg-white text-slate-900 " : "text-slate-400 hover:text-slate-600"}`}>Structured</button>
-                 <button onClick={() => setViewMode("JSON")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "JSON" ? "bg-white text-slate-900 " : "text-slate-400 hover:text-slate-600"}`}>JSON</button>
-              </div>
-            </div>
-
-            {viewMode === "Structured" ? (
-              <AudioExtractionStructured 
-                data={normalizedExtraction} 
-                onJump={onJump} 
-              />
-            ) : (
-              <div className="p-4 bg-[#0d1117] min-h-full">
-                <div className="rounded-sm overflow-hidden border border-[#30363d] ">
-                  <div className="bg-[#161b22] px-4 py-2.5 border-b border-[#30363d] flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                       <div className="flex gap-1.5">
-                          <div className="h-2.5 w-2.5 rounded-full bg-[#ff5f56]" />
-                          <div className="h-2.5 w-2.5 rounded-full bg-[#ffbd2e]" />
-                          <div className="h-2.5 w-2.5 rounded-full bg-[#27c93f]" />
-                       </div>
-                       <span className="text-[10px] font-mono text-[#8b949e] uppercase tracking-wider">audio_extraction_output.json</span>
-                    </div>
-                    <Button variant="ghost" size="sm" className="h-7 px-2 text-[9px] font-black text-[#c9d1d9] hover:bg-[#30363d] hover:text-white border border-[#30363d]">
-                       <Copy className="h-3 w-3 mr-1.5" /> COPY
-                    </Button>
-                  </div>
-                  <pre className="text-[10.5px] font-mono text-[#79c0ff] bg-[#0d1117] p-6 leading-relaxed overflow-auto max-h-[1200px] custom-scrollbar selection:bg-primary/30">
-                     {JSON.stringify(normalizedExtraction, null, 2)}
-                  </pre>
+         {activeTab === "Analysis" && (
+           <div className="flex flex-col min-h-full">
+              <div className="p-4 border-b bg-slate-50/50 flex items-center justify-between">
+                <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Protocol Matrix v2.1</span>
+                <div className="flex items-center gap-1 p-0.5 bg-slate-200/50 rounded-md border shadow-inner">
+                   <button onClick={() => setViewMode("Structured")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "Structured" ? "bg-white text-slate-900 " : "text-slate-400 hover:text-slate-600"}`}>Structured</button>
+                   <button onClick={() => setViewMode("JSON")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "JSON" ? "bg-white text-slate-900 " : "text-slate-400 hover:text-slate-600"}`}>JSON</button>
                 </div>
               </div>
-            )}
-          </div>
-        ) : (
-          <AudioSceneSession 
-            data={normalizedScene} 
-            currentTime={currentTime} 
-            onJump={onJump} 
-          />
-        )}
+              {viewMode === "Structured" ? (
+                 <AudioExtractionStructured data={audioExtractionData} onJump={onJump} />
+              ) : (
+                <div className="p-4 bg-[#0d1117] min-h-full">
+                   <pre className="text-[10.5px] font-mono text-[#79c0ff] bg-[#0d1117] p-6 leading-relaxed overflow-auto max-h-[1200px] custom-scrollbar">
+                      {JSON.stringify(audioExtractionData, null, 2)}
+                   </pre>
+                </div>
+              )}
+           </div>
+         )}
+
+         {activeTab === "Diarization" && (
+           <AudioSceneSession data={{ scene_session: { full_diarization: audioDiarizationData } }} currentTime={currentTime} onJump={onJump} />
+         )}
+
+         {activeTab === "Enhancement" && (
+           <div className="p-6 space-y-8 animate-in fade-in slide-in-from-right-4">
+              <div className="space-y-1">
+                 <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest">Forensic Enhancement</h3>
+                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Non-destructive signal processing</p>
+              </div>
+
+              <div className="space-y-6">
+                {[
+                  { id: 'noiseReduction', label: 'Noise Reduction', icon: Wind },
+                  { id: 'voiceBoost', label: 'Voice Boost', icon: Mic },
+                  { id: 'clarity', label: 'Spectral Clarity', icon: Zap },
+                  { id: 'highPass', label: 'High-Pass Filter', icon: Activity },
+                  { id: 'lowPass', label: 'Low-Pass Filter', icon: Activity },
+                ].map(({ id, label, icon: Icon }) => (
+                  <div key={id} className="space-y-3">
+                    <div className="flex items-center justify-between">
+                       <div className="flex items-center gap-2">
+                          <Icon className="h-3 w-3 text-slate-400" />
+                          <span className="text-[10px] font-black text-slate-600 uppercase tracking-tight">{label}</span>
+                       </div>
+                       <span className="text-[10px] font-mono font-bold text-primary">{(enhancements as any)[id]}%</span>
+                    </div>
+                    <input 
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={(enhancements as any)[id]}
+                      onChange={(e) => setEnhancements(prev => ({ ...prev, [id]: parseInt(e.target.value) }))}
+                      className="w-full h-1 bg-slate-100 rounded-full appearance-none cursor-pointer accent-slate-900"
+                    />
+                  </div>
+                ))}
+              </div>
+
+              <div className="pt-6 border-t border-slate-100 flex gap-2">
+                 <Button variant="outline" className="flex-1 h-9 text-[10px] font-bold uppercase tracking-widest rounded-sm" onClick={() => setEnhancements({ noiseReduction: 40, voiceBoost: 60, clarity: 50, highPass: 20, lowPass: 80 })}>
+                    Reset
+                 </Button>
+                 <Button className="flex-1 h-9 bg-slate-900 text-white text-[10px] font-black uppercase tracking-[0.15em] rounded-sm shadow-lg shadow-slate-200">
+                    Apply Profile
+                 </Button>
+              </div>
+
+              <div className="p-4 bg-blue-50 border border-blue-100 rounded-sm">
+                 <div className="flex gap-3">
+                    <AlertCircle className="h-4 w-4 text-blue-600 shrink-0" />
+                    <p className="text-[10px] font-medium text-blue-800 leading-relaxed italic">
+                       Enhancements are temporary and applied during playback for analysis purposes only. Source integrity hash remains unchanged.
+                    </p>
+                 </div>
+              </div>
+           </div>
+         )}
       </div>
     </div>
   );
 }
 
-
-function AnalysisTab() {
   const { caseId } = useParams<{ caseId: string }>();
   const { data: evidence } = useEvidence(caseId!);
   const evidenceFiles = evidence?.files || [];
