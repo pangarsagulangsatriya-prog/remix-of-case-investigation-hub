@@ -4307,7 +4307,7 @@ function AudioExtractionConsole({ file, onJump, currentTime }: { file: any, onJu
       },
       extraction_summary: {
         transcript_summary: "Emergency report regarding Section 14 conveyor belt failure.",
-        speaker_profiles: raw.speaker_profiles.map(s => ({
+        speaker_profiles: (raw?.speaker_profiles || []).map(s => ({
           ...s,
           label: s.speaker_label,
           role: s.probable_role,
@@ -4325,9 +4325,10 @@ function AudioExtractionConsole({ file, onJump, currentTime }: { file: any, onJu
 
   const normalizedScene = useMemo(() => ({
     scene_session: {
+      speaker_count: audioExtractionData.speaker_profiles.length,
       full_diarization: audioDiarizationData
     }
-  }), [audioDiarizationData]);
+  }), [audioDiarizationData, audioExtractionData.speaker_profiles.length]);
 
   return (
     <div className="flex flex-col h-full bg-white">
@@ -4385,7 +4386,7 @@ function AudioExtractionConsole({ file, onJump, currentTime }: { file: any, onJu
               <div className="space-y-6">
                 {[
                   { id: 'noiseReduction', label: 'Noise Reduction', icon: Wind },
-                  { id: 'voiceBoost', label: 'Voice Boost', icon: Mic },
+                  { id: 'voiceBoost', label: 'Voice Boost', icon: AudioIcon },
                   { id: 'clarity', label: 'Spectral Clarity', icon: Zap },
                   { id: 'highPass', label: 'High-Pass Filter', icon: Activity },
                   { id: 'lowPass', label: 'Low-Pass Filter', icon: Activity },
@@ -6067,106 +6068,6 @@ function AuditTrailTab() {
   );
 }
 
-// --- Audio Analysis Components ---
-
-function AudioAnalysisPanel({ file, currentTime, onJump }: { file: any, currentTime: number, onJump: (s: number) => void }) {
-  const [activeTab, setActiveTab] = useState<"Extraction" | "Diarization">("Extraction");
-  const [viewMode, setViewMode] = useState<"Structured" | "JSON">("Structured");
-
-  // Normalized Extraction Schema
-  const normalizedExtraction = useMemo(() => {
-    const raw = audioExtractionData;
-    return {
-      audio_id: "AUD_" + (file?.id?.slice(0, 4) || "001"),
-      case_id: "CS-2026-" + Math.floor(1000 + Math.random() * 9000),
-      modality: "audio",
-      audio_properties: {
-        file_name: raw.recording_meta.file_name,
-        source_type: raw.recording_meta.source_type,
-        capture_time: "2026-04-12 14:30:22",
-        source_device: raw.recording_meta.recording_type,
-        location_hint: "Site Alpha - Zone B",
-        duration: raw.recording_meta.duration,
-        language: raw.recording_meta.language,
-        channel_type: raw.recording_meta.channel_type,
-        recording_type: raw.recording_meta.recording_type,
-        audio_quality: raw.recording_meta.audio_quality,
-        noise_level: raw.recording_meta.noise_level,
-        overlap_level: raw.recording_meta.overlap_level
-      },
-      extraction_summary: {
-        transcript_summary: "Emergency report regarding Section 14 conveyor belt failure. Operator A identifies vibration then escalates to critical tear report.",
-        speaker_profiles: raw.speaker_profiles.map(s => ({
-          ...s,
-          label: s.speaker_label,
-          role: s.probable_role,
-          stress: s.stress_level
-        })),
-        communication_events: raw.communication_events,
-        factual_statements: raw.factual_statements || [],
-        timeline_events: raw.timeline_events || [],
-        human_performance_signals: raw.human_performance_signals,
-        risk_and_procedure_clues: raw.risk_and_procedure_clues,
-        contradictions_and_gaps: raw.contradictions_and_gaps || [],
-        review_meta: {
-          low_confidence_segments: raw.review_meta.low_confidence_segments,
-          needs_human_review: raw.review_meta.needs_human_review,
-          confidence: raw.review_meta.confidence
-        }
-      }
-    };
-  }, [file]);
-
-  // Normalized Diarization Schema
-  const normalizedScene = useMemo(() => {
-    return {
-      audio_id: "AUD_" + (file?.id?.slice(0, 4) || "001"),
-      case_id: "CS-2026-" + Math.floor(1000 + Math.random() * 9000),
-      modality: "audio",
-      scene_session: {
-        speaker_count: audioExtractionData.speaker_profiles.length,
-        full_diarization: audioDiarizationData,
-        sync_settings: {
-          timestamp_linked_to_player: true,
-          auto_scroll_active_segment: true,
-          click_segment_seeks_audio: true
-        }
-      }
-    };
-  }, [file]);
-
-  return (
-    <div className="flex flex-col h-full bg-white">
-      {/* Tab Switcher */}
-      <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b px-4 py-2 flex items-center gap-1 shrink-0">
-        {(["Extraction", "Diarization"] as const).map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`flex-1 py-1.5 px-3 text-[10px] font-black uppercase tracking-[0.15em] rounded-md transition-all ${
-              activeTab === tab
-              ? "bg-slate-900 text-white  ring-1 ring-slate-900"
-              : "text-slate-400 hover:text-slate-600 hover:bg-slate-50"
-            }`}
-          >
-            {tab}
-          </button>
-        ))}
-      </div>
-
-      <div className="flex-1 overflow-auto custom-scrollbar">
-        {activeTab === "Extraction" ? (
-          <div className="flex flex-col min-h-full">
-            <div className="p-4 border-b bg-slate-50/50 flex items-center justify-between">
-              <div className="flex flex-col">
-                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Intelligence Hub</span>
-                 <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter mt-1 opacity-60">Audio Protocol Matrix v2.1</span>
-              </div>
-              <div className="flex items-center gap-1 p-0.5 bg-slate-200/50 rounded-md border shadow-inner">
-                 <button onClick={() => setViewMode("Structured")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "Structured" ? "bg-white text-slate-900 " : "text-slate-400 hover:text-slate-600"}`}>Structured</button>
-                 <button onClick={() => setViewMode("JSON")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "JSON" ? "bg-white text-slate-900 " : "text-slate-400 hover:text-slate-600"}`}>JSON</button>
-              </div>
-            </div>
 
             {viewMode === "Structured" ? (
               <AudioExtractionStructured 
