@@ -105,6 +105,26 @@ import {
   Info
 } from "lucide-react";
 
+
+const SECTION_DESCRIPTIONS: Record<string, string> = {
+    "Case Summary": "Primary information regarding the current investigation.",
+    "Evidence Overview": "Aggregated view of all digital assets and forensic status.",
+    "Forensic Actors": "Key individuals and entities identified during scanning.",
+    "General Detection": "AI identification of primary subjects and objects.",
+    "Environment & PPE": "Contextual analysis of safety equipment and hazards.",
+    "AI Extraction Metadata": "Technical logs regarding model performance.",
+    "Entity Extraction": "Specific nouns and organizations discovered.",
+    "Semantic Summary": "Deep contextual understanding of the document.",
+    "Forensic Metadata": "Technical integrity data and OCR confidence.",
+    "Audio Properties": "Metadata regarding the capture quality and source.",
+    "Speaker Profiles": "Detailed analysis of unique voices found.",
+    "Communication Events": "Key conversational milestones and interactions.",
+    "Timeline & Facts": "Chronological event extraction for case build-up.",
+    "Risks, Gaps, Review": "Procedural anomalies and potential blockers.",
+    "Video Session Meta": "Integrity and session data for the video stream.",
+    "Scene Timeline": "Temporal segmentation of visual events detected."
+};
+
 const DocIcon = FileText;
 const PendingIcon = Clock;
 
@@ -1404,7 +1424,7 @@ function AIAnalysisPanel({ file }: { file: any }) {
                     </div>
                   </TooltipTrigger>
                   <TooltipContent className="max-w-[200px] text-[10px] font-bold uppercase tracking-widest bg-slate-900 text-white border-slate-800">
-                    {descriptions.get(title, "Primary case information section.")}
+                    {SECTION_DESCRIPTIONS[title] || "Primary case information section."}
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -4294,7 +4314,7 @@ function ImageExtractionConsole({ file }: { file: any }) {
                     </div>
                   </TooltipTrigger>
                   <TooltipContent className="max-w-[200px] text-[10px] font-bold uppercase tracking-widest bg-slate-900 text-white border-slate-800">
-                    {descriptions.get(title, "Forensic modality analysis section.")}
+                    {SECTION_DESCRIPTIONS[title] || "Forensic modality analysis section."}
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -4429,7 +4449,7 @@ function DocumentExtractionConsole({ file }: { file: any }) {
                     </div>
                   </TooltipTrigger>
                   <TooltipContent className="max-w-[200px] text-[10px] font-bold uppercase tracking-widest bg-slate-900 text-white border-slate-800">
-                    {descriptions.get(title, "Forensic modality analysis section.")}
+                    {SECTION_DESCRIPTIONS[title] || "Forensic modality analysis section."}
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -6369,7 +6389,7 @@ function AudioExtractionStructured({ data, onJump }: { data: any, onJump: (s: nu
                     </div>
                   </TooltipTrigger>
                   <TooltipContent className="max-w-[200px] text-[10px] font-bold uppercase tracking-widest bg-slate-900 text-white border-slate-800">
-                    {descriptions.get(title, "Forensic modality analysis section.")}
+                    {SECTION_DESCRIPTIONS[title] || "Forensic modality analysis section."}
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -6778,7 +6798,7 @@ function VideoExtractionStructured({ data, onJump }: { data: typeof videoExtract
                       </div>
                     </TooltipTrigger>
                     <TooltipContent className="max-w-[200px] text-[10px] font-bold uppercase tracking-widest bg-slate-900 text-white border-slate-800">
-                      {descriptions.get(title, "Forensic modality analysis section.")}
+                      {SECTION_DESCRIPTIONS[title] || "Forensic modality analysis section."}
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
