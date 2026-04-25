@@ -4150,12 +4150,22 @@ function VideoPreview({ file, currentTime, setCurrentTime, isPlaying, setIsPlayi
 function DocumentPreview({ file }: { file: any }) {
   const [scale, setScale] = useState(1);
   const [page, setPage] = useState(1);
-  const totalPages = 12; // Simulated
+  const totalPages = 1; // Real documents handle their own paging usually
   const containerRef = useRef<HTMLDivElement>(null);
 
   const zoomIn = () => setScale(s => Math.min(s + 0.1, 2));
   const zoomOut = () => setScale(s => Math.max(s - 0.1, 0.5));
   const resetZoom = () => setScale(1);
+
+  const getPreviewUrl = () => {
+    if (!file.url) return null;
+    const url = file.url;
+    // For PDFs, we can use direct URL. For DOCX/Office, we use Google Docs Viewer
+    if (url.toLowerCase().endsWith('.pdf')) return url;
+    return `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
+  };
+
+  const previewUrl = getPreviewUrl();
 
   return (
     <div className="flex flex-col h-full bg-[#f4f4f4] rounded-sm border border-slate-200 overflow-hidden select-none">
@@ -4164,9 +4174,8 @@ function DocumentPreview({ file }: { file: any }) {
           <div className="flex items-center gap-1">
              <div className="flex items-center bg-slate-100 rounded-sm p-0.5 border border-slate-200 mr-2">
                 <button 
-                  onClick={() => setPage(p => Math.max(1, p - 1))}
                   className="p-1 hover:bg-white rounded-sm text-slate-600 transition-colors disabled:opacity-30"
-                  disabled={page === 1}
+                  disabled={true}
                 >
                    <ChevronLeft className="h-3 w-3" />
                 </button>
@@ -4176,9 +4185,8 @@ function DocumentPreview({ file }: { file: any }) {
                    <span className="text-[9px] font-bold text-slate-400">{totalPages}</span>
                 </div>
                 <button 
-                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                   className="p-1 hover:bg-white rounded-sm text-slate-600 transition-colors disabled:opacity-30"
-                  disabled={page === totalPages}
+                  disabled={true}
                 >
                    <ChevronRight className="h-3 w-3" />
                 </button>
@@ -4200,9 +4208,12 @@ function DocumentPreview({ file }: { file: any }) {
           </div>
 
           <div className="flex items-center gap-2">
-             <button className="flex items-center gap-1.5 px-2 h-7 bg-slate-900 text-white rounded-sm hover:bg-slate-800 transition-colors">
+             <button 
+               onClick={() => window.open(file.url, '_blank')}
+               className="flex items-center gap-1.5 px-2 h-7 bg-slate-900 text-white rounded-sm hover:bg-slate-800 transition-colors"
+             >
                 <Download className="h-3 w-3" />
-                <span className="text-[9px] font-black uppercase tracking-widest">Export</span>
+                <span className="text-[9px] font-black uppercase tracking-widest">Download</span>
              </button>
              <button className="p-1.5 hover:bg-slate-100 rounded-sm text-slate-500 transition-colors">
                 <Maximize2 className="h-3.5 w-3.5" />
@@ -4213,60 +4224,35 @@ function DocumentPreview({ file }: { file: any }) {
        {/* Document Canvas Area */}
        <div 
          ref={containerRef}
-         className="flex-1 overflow-auto bg-[#e0e0e0] p-8 flex justify-center custom-scrollbar shadow-inner"
+         className="flex-1 overflow-auto bg-[#e0e0e0] p-4 flex justify-center custom-scrollbar shadow-inner"
        >
           <div 
-            style={{ transform: `scale(${scale})`, transformOrigin: 'top center' }}
-            className="bg-white shadow-2xl border border-slate-300 w-[595px] min-h-[842px] p-12 transition-transform duration-200 ease-out flex flex-col gap-6 relative"
+            style={{ 
+              transform: `scale(${scale})`, 
+              transformOrigin: 'top center',
+              width: '100%',
+              maxWidth: '900px',
+              height: '100%',
+              minHeight: '800px'
+            }}
+            className="bg-white shadow-2xl border border-slate-300 transition-transform duration-200 ease-out relative overflow-hidden rounded-sm"
           >
-             {/* Document Content Simulation */}
-             <div className="flex justify-between items-start border-b-2 border-slate-900 pb-6">
-                <div className="flex flex-col gap-1">
-                   <span className="text-[14px] font-black text-slate-900 uppercase tracking-tight leading-none">BERAU COAL INTERNAL REPORT</span>
-                   <span className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.2em]">DOCUMENT ID: FORENSIC-75AB948D</span>
-                </div>
-                <div className="px-2 py-1 bg-slate-900 text-white text-[8px] font-black uppercase tracking-widest">SECRET</div>
-             </div>
+             {previewUrl ? (
+               <iframe 
+                 src={previewUrl} 
+                 className="w-full h-full border-none"
+                 title="Document Preview"
+               />
+             ) : (
+               <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-3">
+                  <FileText className="h-12 w-12 opacity-20" />
+                  <span className="text-[10px] font-black uppercase tracking-widest">No URL available for preview</span>
+               </div>
+             )}
 
-             <div className="flex flex-col gap-4">
-                <div className="h-4 w-1/3 bg-slate-100 rounded-sm" />
-                <div className="space-y-2">
-                   <div className="h-2 w-full bg-slate-50 rounded-sm" />
-                   <div className="h-2 w-full bg-slate-50 rounded-sm" />
-                   <div className="h-2 w-3/4 bg-slate-50 rounded-sm" />
-                </div>
-                
-                <div className="mt-4 p-4 border border-slate-200 bg-slate-50/50 rounded-sm">
-                   <div className="h-3 w-24 bg-slate-200 mb-3 rounded-sm" />
-                   <div className="grid grid-cols-3 gap-2">
-                      <div className="h-1.5 bg-slate-200 rounded-sm" />
-                      <div className="h-1.5 bg-slate-200 rounded-sm" />
-                      <div className="h-1.5 bg-slate-200 rounded-sm" />
-                      <div className="h-1.5 bg-slate-200 rounded-sm" />
-                      <div className="h-1.5 bg-slate-200 rounded-sm" />
-                      <div className="h-1.5 bg-slate-200 rounded-sm" />
-                   </div>
-                </div>
-
-                <div className="mt-8 space-y-4">
-                   <div className="h-5 w-1/4 bg-slate-200 rounded-sm" />
-                   <div className="space-y-2">
-                      {[...Array(12)].map((_, i) => (
-                        <div key={i} className="h-1.5 w-full bg-slate-50 rounded-sm" />
-                      ))}
-                   </div>
-                </div>
-             </div>
-
-             {/* Footer */}
-             <div className="mt-auto pt-8 border-t border-slate-100 flex justify-between items-center text-[8px] font-bold text-slate-400 uppercase tracking-widest">
-                <span>Page {page} of {totalPages}</span>
-                <span>Generated by AI Forensic Matrix v4.2</span>
-             </div>
-
-             {/* Watermark */}
-             <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.03] rotate-[-45deg]">
-                <span className="text-[120px] font-black">BERAU COAL</span>
+             {/* Watermark Overlay (Subtle) */}
+             <div className="absolute inset-0 pointer-events-none opacity-[0.02] flex items-center justify-center rotate-[-45deg]">
+                <span className="text-[80px] font-black uppercase tracking-[1em]">Forensic</span>
              </div>
           </div>
        </div>
@@ -4274,10 +4260,10 @@ function DocumentPreview({ file }: { file: any }) {
        {/* Bottom Status Bar */}
        <div className="h-6 bg-white border-t border-slate-200 px-3 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
-             <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Status: Ready</span>
-             <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">File: {file.name}</span>
+             <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Status: {previewUrl ? 'Live Preview' : 'Source Only'}</span>
+             <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Type: {file.name?.split('.').pop()?.toUpperCase() || 'UNKNOWN'}</span>
           </div>
-          <span className="text-[8px] font-bold text-slate-300 uppercase">OCR Intelligence Active</span>
+          <span className="text-[8px] font-bold text-slate-300 uppercase">Secure Forensic Viewer</span>
        </div>
     </div>
   );
