@@ -101,7 +101,8 @@ import {
   Focus,
   Target,
   Grid3X3,
-  MousePointer2
+  MousePointer2,
+  Info
 } from "lucide-react";
 
 const DocIcon = FileText;
@@ -1379,7 +1380,7 @@ function AIAnalysisPanel({ file }: { file: any }) {
     );
   };
 
-  const SectionHeader = ({ title, icon: Icon }: { title: string, icon: any }) => (
+  const SectionHeader = ({ title, icon: Icon, description }: { title: string, icon: any, description?: string }) => (
     <button 
       onClick={() => toggleSection(title)}
       className={`w-full flex items-center justify-between p-4 transition-all border-b ${
@@ -1392,7 +1393,23 @@ function AIAnalysisPanel({ file }: { file: any }) {
         }`}>
           <Icon className="h-4 w-4" />
         </div>
-        <span className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-800">{title}</span>
+        <div className="flex flex-col items-start">
+           <div className="flex items-center gap-2">
+              <span className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-800">{title}</span>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="p-0.5 hover:bg-slate-100 rounded-full transition-colors cursor-help group/info" onClick={(e) => e.stopPropagation()}>
+                      <Info className="h-3 w-3 text-slate-300 group-hover/info:text-primary" />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-[200px] text-[10px] font-bold uppercase tracking-widest bg-slate-900 text-white border-slate-800">
+                    {descriptions.get(title, "Primary case information section.")}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+           </div>
+        </div>
       </div>
       <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform duration-300 ${expandedSections.includes(title) ? 'rotate-180 text-slate-900' : ''}`} />
     </button>
@@ -4255,7 +4272,7 @@ function ImageExtractionConsole({ file }: { file: any }) {
 
   const toggle = (s: string) => setExpandedSections(p => p.includes(s) ? p.filter(x => x !== s) : [...p, s]);
 
-  const SectionHeader = ({ title, icon: Icon, count }: any) => (
+  const SectionHeader = ({ title, icon: Icon, count, description }: any) => (
     <button 
       onClick={() => toggle(title)}
       className={`w-full flex items-center justify-between px-5 py-3 transition-all ${expandedSections.includes(title) ? 'bg-slate-50/50 border-b' : 'hover:bg-slate-50/30'}`}
@@ -4265,9 +4282,23 @@ function ImageExtractionConsole({ file }: { file: any }) {
           <Icon className="h-3.5 w-3.5" />
         </div>
         <div className="flex flex-col items-start">
-           <span className={`text-[11px] font-black uppercase tracking-tight ${expandedSections.includes(title) ? 'text-slate-900' : 'text-slate-600'}`}>
-             {title}
-           </span>
+           <div className="flex items-center gap-2">
+              <span className={`text-[11px] font-black uppercase tracking-tight ${expandedSections.includes(title) ? 'text-slate-900' : 'text-slate-600'}`}>
+                {title}
+              </span>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="p-0.5 hover:bg-slate-100 rounded-full transition-colors cursor-help group/info" onClick={(e) => e.stopPropagation()}>
+                      <Info className="h-2.5 w-2.5 text-slate-300 group-hover/info:text-primary" />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-[200px] text-[10px] font-bold uppercase tracking-widest bg-slate-900 text-white border-slate-800">
+                    {descriptions.get(title, "Forensic modality analysis section.")}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+           </div>
            {count !== undefined && <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter leading-none mt-0.5">{count} detected</span>}
         </div>
       </div>
@@ -4376,7 +4407,7 @@ function DocumentExtractionConsole({ file }: { file: any }) {
 
   const toggle = (s: string) => setExpandedSections(p => p.includes(s) ? p.filter(x => x !== s) : [...p, s]);
 
-  const SectionHeader = ({ title, icon: Icon, count }: any) => (
+  const SectionHeader = ({ title, icon: Icon, count, description }: any) => (
     <button 
       onClick={() => toggle(title)}
       className={`w-full flex items-center justify-between px-5 py-3 transition-all ${expandedSections.includes(title) ? 'bg-slate-50/50 border-b' : 'hover:bg-slate-50/30'}`}
@@ -4386,9 +4417,23 @@ function DocumentExtractionConsole({ file }: { file: any }) {
           <Icon className="h-3.5 w-3.5" />
         </div>
         <div className="flex flex-col items-start">
-           <span className={`text-[11px] font-black uppercase tracking-tight ${expandedSections.includes(title) ? 'text-slate-900' : 'text-slate-600'}`}>
-             {title}
-           </span>
+           <div className="flex items-center gap-2">
+              <span className={`text-[11px] font-black uppercase tracking-tight ${expandedSections.includes(title) ? 'text-slate-900' : 'text-slate-600'}`}>
+                {title}
+              </span>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="p-0.5 hover:bg-slate-100 rounded-full transition-colors cursor-help group/info" onClick={(e) => e.stopPropagation()}>
+                      <Info className="h-2.5 w-2.5 text-slate-300 group-hover/info:text-primary" />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-[200px] text-[10px] font-bold uppercase tracking-widest bg-slate-900 text-white border-slate-800">
+                    {descriptions.get(title, "Forensic modality analysis section.")}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+           </div>
            {count !== undefined && <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter leading-none mt-0.5">{count} detected</span>}
         </div>
       </div>
@@ -6302,7 +6347,7 @@ function AudioExtractionStructured({ data, onJump }: { data: any, onJump: (s: nu
   const [expandedSections, setExpandedSections] = useState<string[]>(["Timeline & Facts", "Speaker Profiles", "Risks, Gaps, Review"]);
   const toggle = (s: string) => setExpandedSections(p => p.includes(s) ? p.filter(x => x !== s) : [...p, s]);
 
-  const SectionHeader = ({ title, icon: Icon, count }: any) => (
+  const SectionHeader = ({ title, icon: Icon, count, description }: any) => (
     <button 
       onClick={() => toggle(title)}
       className={`w-full flex items-center justify-between px-5 py-3 transition-all ${expandedSections.includes(title) ? 'bg-slate-50/50 border-b' : 'hover:bg-slate-50/30'}`}
@@ -6312,9 +6357,23 @@ function AudioExtractionStructured({ data, onJump }: { data: any, onJump: (s: nu
           <Icon className="h-3.5 w-3.5" />
         </div>
         <div className="flex flex-col items-start">
-           <span className={`text-[11px] font-black uppercase tracking-tight ${expandedSections.includes(title) ? 'text-slate-900' : 'text-slate-600'}`}>
-             {title}
-           </span>
+           <div className="flex items-center gap-2">
+              <span className={`text-[11px] font-black uppercase tracking-tight ${expandedSections.includes(title) ? 'text-slate-900' : 'text-slate-600'}`}>
+                {title}
+              </span>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="p-0.5 hover:bg-slate-100 rounded-full transition-colors cursor-help group/info" onClick={(e) => e.stopPropagation()}>
+                      <Info className="h-2.5 w-2.5 text-slate-300 group-hover/info:text-primary" />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-[200px] text-[10px] font-bold uppercase tracking-widest bg-slate-900 text-white border-slate-800">
+                    {descriptions.get(title, "Forensic modality analysis section.")}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+           </div>
            {count !== undefined && <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter leading-none mt-0.5">{count} detected</span>}
         </div>
       </div>
@@ -6696,7 +6755,7 @@ function VideoExtractionStructured({ data, onJump }: { data: typeof videoExtract
 
   const toggle = (s: string) => setExpandedSections(p => p.includes(s) ? p.filter(x => x !== s) : [...p, s]);
 
-  const ExtractionSection = ({ title, icon: Icon, count, children }: any) => (
+  const ExtractionSection = ({ title, icon: Icon, count, children, description }: any) => (
     <div className="flex flex-col">
       <button 
         onClick={() => toggle(title)}
@@ -6707,9 +6766,23 @@ function VideoExtractionStructured({ data, onJump }: { data: typeof videoExtract
             <Icon className="h-3.5 w-3.5" />
           </div>
           <div className="flex flex-col items-start">
-             <span className={`text-[11px] font-black uppercase tracking-tight ${expandedSections.includes(title) ? 'text-slate-900' : 'text-slate-600'}`}>
-               {title}
-             </span>
+             <div className="flex items-center gap-2">
+                <span className={`text-[11px] font-black uppercase tracking-tight ${expandedSections.includes(title) ? 'text-slate-900' : 'text-slate-600'}`}>
+                  {title}
+                </span>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="p-0.5 hover:bg-slate-100 rounded-full transition-colors cursor-help group/info" onClick={(e) => e.stopPropagation()}>
+                        <Info className="h-2.5 w-2.5 text-slate-300 group-hover/info:text-primary" />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-[200px] text-[10px] font-bold uppercase tracking-widest bg-slate-900 text-white border-slate-800">
+                      {descriptions.get(title, "Forensic modality analysis section.")}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+             </div>
              {count !== undefined && <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter leading-none mt-0.5">{count} events detected</span>}
           </div>
         </div>
