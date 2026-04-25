@@ -4367,7 +4367,6 @@ function AudioExtractionConsole({ file, onJump, currentTime }: { file: any, onJu
          {activeTab === "Diarization" && (
            <AudioSceneSession data={normalizedScene} currentTime={currentTime} onJump={onJump} />
          )}
-         )}
       </div>
     </div>
   );
