@@ -4384,6 +4384,8 @@ function AudioExtractionConsole({ file, onJump, currentTime }: { file: any, onJu
   );
 }
 
+
+function AnalysisTab() {
   const { caseId } = useParams<{ caseId: string }>();
   const { data: evidence } = useEvidence(caseId!);
   const evidenceFiles = evidence?.files || [];
