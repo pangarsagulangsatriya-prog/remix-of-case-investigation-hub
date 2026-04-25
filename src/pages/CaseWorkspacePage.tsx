@@ -4148,12 +4148,7 @@ function VideoPreview({ file, currentTime, setCurrentTime, isPlaying, setIsPlayi
 }
 
 function DocumentPreview({ file }: { file: any }) {
-  const [scale, setScale] = useState(1);
   const containerRef = useRef<HTMLDivElement>(null);
-
-  const zoomIn = () => setScale(s => Math.min(s + 0.2, 3));
-  const zoomOut = () => setScale(s => Math.max(s - 0.2, 0.5));
-  const resetZoom = () => setScale(1);
 
   const getPreviewUrl = () => {
     if (!file.url) return null;
@@ -4166,61 +4161,40 @@ function DocumentPreview({ file }: { file: any }) {
 
   return (
     <div className="flex flex-col h-full bg-white rounded-sm border border-slate-200 overflow-hidden select-none">
-       {/* Carbon Toolbar */}
+       {/* Carbon Toolbar - Minimalist */}
        <div className="h-10 bg-white border-b border-slate-200 flex items-center justify-between px-4 shrink-0">
-          <div className="flex items-center gap-4">
-             <div className="flex items-center gap-1.5">
-                <FileText className="h-4 w-4 text-slate-400" />
-                <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest">{file.name}</span>
+          <div className="flex items-center gap-2">
+             <div className="flex items-center gap-2 px-2 py-1 bg-slate-100 rounded-sm">
+                <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Live Forensic Stream</span>
              </div>
-             
-             <div className="h-4 w-[1px] bg-slate-200" />
-
-             <div className="flex items-center gap-1">
-                <button onClick={zoomOut} className="p-1.5 hover:bg-slate-100 rounded-sm text-slate-500 transition-colors">
-                   <ZoomOut className="h-3.5 w-3.5" />
-                </button>
-                <button onClick={resetZoom} className="px-2 h-6 flex items-center justify-center hover:bg-slate-100 rounded-sm text-[9px] font-black text-slate-600 uppercase tracking-tighter">
-                   {Math.round(scale * 100)}%
-                </button>
-                <button onClick={zoomIn} className="p-1.5 hover:bg-slate-100 rounded-sm text-slate-500 transition-colors">
-                   <ZoomIn className="h-3.5 w-3.5" />
-                </button>
-             </div>
+             <div className="h-4 w-[1px] bg-slate-200 mx-2" />
+             <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">SECURE CHANNEL ACTIVE</span>
           </div>
 
           <div className="flex items-center gap-2">
              <button 
                onClick={() => window.open(file.url, '_blank')}
-               className="p-1.5 hover:bg-slate-100 rounded-sm text-slate-500 transition-colors"
+               className="flex items-center gap-2 px-3 h-7 bg-slate-900 text-white rounded-sm hover:bg-slate-800 transition-all active:scale-95 shadow-sm"
                title="Open Original"
              >
-                <Maximize2 className="h-3.5 w-3.5" />
+                <Maximize2 className="h-3 w-3" />
+                <span className="text-[9px] font-black uppercase tracking-widest">Full View</span>
              </button>
           </div>
        </div>
 
-       {/* Document Viewer Area */}
+       {/* Document Viewer Area - FULL SCREEN */}
        <div 
          ref={containerRef}
-         className="flex-1 bg-slate-100 overflow-hidden relative"
+         className="flex-1 bg-slate-50 relative overflow-hidden"
        >
           {previewUrl ? (
-            <div 
-              style={{ 
-                transform: `scale(${scale})`, 
-                transformOrigin: 'center center',
-                width: '100%',
-                height: '100%'
-              }}
-              className="transition-transform duration-200 ease-out"
-            >
-               <iframe 
-                 src={previewUrl} 
-                 className="w-full h-full border-none"
-                 title="Document Preview"
-               />
-            </div>
+            <iframe 
+              src={previewUrl} 
+              className="w-full h-full border-none absolute inset-0"
+              title="Document Preview"
+            />
           ) : (
             <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-3">
                <FileText className="h-12 w-12 opacity-20" />
@@ -4235,15 +4209,15 @@ function DocumentPreview({ file }: { file: any }) {
        </div>
 
        {/* Bottom Status Bar */}
-       <div className="h-6 bg-slate-50 border-t border-slate-200 px-4 flex items-center justify-between shrink-0">
+       <div className="h-7 bg-white border-t border-slate-200 px-4 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-4">
-             <div className="flex items-center gap-1.5">
-                <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">System Link: Active</span>
-             </div>
              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Format: {file.name?.split('.').pop()?.toUpperCase()}</span>
+             <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Source: {file.url?.slice(0, 30)}...</span>
           </div>
-          <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">Enterprise Forensic Matrix v4.2</span>
+          <div className="flex items-center gap-2">
+             <Shield className="h-3 w-3 text-emerald-500" />
+             <span className="text-[8px] font-bold text-slate-500 uppercase tracking-tighter">Enterprise Encryption Active</span>
+          </div>
        </div>
     </div>
   );
