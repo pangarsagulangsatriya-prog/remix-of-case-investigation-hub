@@ -4327,6 +4327,7 @@ function ImageExtractionConsole({ file }: { file: any }) {
 
 
 function DocumentExtractionConsole({ file }: { file: any }) {
+  const [activeTab, setActiveTab] = useState<"Analysis" | "Fact Extraction">("Analysis");
   const [viewMode, setViewMode] = useState<"Structured" | "JSON">("Structured");
   const [expandedSections, setExpandedSections] = useState<string[]>(["Entity Extraction", "Semantic Summary"]);
   
@@ -4350,6 +4351,12 @@ function DocumentExtractionConsole({ file }: { file: any }) {
         "Processing Time": "1.2s"
      }
   }), []);
+
+  const factExtractionData = useMemo(() => [
+    { fact: "The document is titled 'How to Overcome the Predictable Crises of Growth'.", context: "The title of the document." },
+    { fact: "The authors are bestselling authors of 'Profit from the Core'.", context: "The previous work of the authors." },
+    { fact: "The document is written by Chris Zook and James Allen.", context: "The authors of the document." }
+  ], []);
 
   const toggle = (s: string) => setExpandedSections(p => p.includes(s) ? p.filter(x => x !== s) : [...p, s]);
 
@@ -4387,49 +4394,105 @@ function DocumentExtractionConsole({ file }: { file: any }) {
             <span className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em] leading-none">Protocol Matrix v2.1</span>
             <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter mt-1 opacity-60">Forensic Document Extraction</span>
          </div>
-         <div className="flex items-center gap-1 p-0.5 bg-slate-100 rounded-md border shadow-inner">
-            <button onClick={() => setViewMode("Structured")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "Structured" ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>Structured</button>
-            <button onClick={() => setViewMode("JSON")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "JSON" ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>JSON</button>
+         <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1 p-0.5 bg-slate-100 rounded-md border shadow-inner">
+               {(["Analysis", "Fact Extraction"] as const).map(tab => (
+                 <button 
+                   key={tab}
+                   onClick={() => setActiveTab(tab)} 
+                   className={`px-3 py-1 text-[8px] font-black uppercase rounded transition-all ${activeTab === tab ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600"}`}
+                 >
+                   {tab}
+                 </button>
+               ))}
+            </div>
+
+            {activeTab === "Analysis" && (
+              <div className="flex items-center gap-1 p-0.5 bg-slate-100 rounded-md border shadow-inner">
+                 <button onClick={() => setViewMode("Structured")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "Structured" ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>Structured</button>
+                 <button onClick={() => setViewMode("JSON")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "JSON" ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>JSON</button>
+              </div>
+            )}
          </div>
       </div>
 
       <div className="flex-1 overflow-auto custom-scrollbar">
-         {viewMode === "Structured" ? (
-            <div className="flex flex-col divide-y divide-slate-100 border-b">
-               {Object.entries(properties).map(([section, items]) => (
-                  <div key={section} className="flex flex-col">
-                     <SectionHeader title={section} icon={FileText} />
-                     {expandedSections.includes(section) && (
-                        <div className="p-5 space-y-1 bg-white animate-in fade-in slide-in-from-top-1">
-                           {Object.entries(items).map(([label, value]) => (
-                              <KVP key={label} label={label} value={value} />
-                           ))}
+         {activeTab === "Analysis" && (
+            <div className="flex flex-col min-h-full">
+               {viewMode === "Structured" ? (
+                  <div className="flex flex-col divide-y divide-slate-100 border-b">
+                     {Object.entries(properties).map(([section, items]) => (
+                        <div key={section} className="flex flex-col">
+                           <SectionHeader title={section} icon={FileText} />
+                           {expandedSections.includes(section) && (
+                              <div className="p-5 space-y-1 bg-white animate-in fade-in slide-in-from-top-1">
+                                 {Object.entries(items).map(([label, value]) => (
+                                    <KVP key={label} label={label} value={value} />
+                                 ))}
+                              </div>
+                           )}
                         </div>
-                     )}
-                  </div>
-               ))}
-               
-               <div className="p-5 bg-slate-900 text-white relative overflow-hidden group border-t-0">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 blur-[60px] rounded-full pointer-events-none" />
-                  <span className="text-[10px] font-black text-primary uppercase tracking-[0.4em] block mb-4 relative z-10">Document Authority Score</span>
-                  <div className="flex items-baseline gap-2 relative z-10">
-                     <span className="text-4xl font-black text-white group-hover:scale-110 transition-transform duration-500">99</span>
-                     <span className="text-[11px] font-black text-slate-500 uppercase">Integrity Confidence</span>
-                  </div>
-                  <div className="mt-4 pt-4 border-t border-slate-800 relative z-10 flex items-center justify-between">
-                     <div className="flex items-center gap-2">
-                        <Shield className="h-3.5 w-3.5 text-emerald-500" />
-                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Digital Signature Valid</span>
+                     ))}
+                     
+                     <div className="p-5 bg-slate-900 text-white relative overflow-hidden group border-t-0">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 blur-[60px] rounded-full pointer-events-none" />
+                        <span className="text-[10px] font-black text-primary uppercase tracking-[0.4em] block mb-4 relative z-10">Document Authority Score</span>
+                        <div className="flex items-baseline gap-2 relative z-10">
+                           <span className="text-4xl font-black text-white group-hover:scale-110 transition-transform duration-500">99</span>
+                           <span className="text-[11px] font-black text-slate-500 uppercase">Integrity Confidence</span>
+                        </div>
+                        <div className="mt-4 pt-4 border-t border-slate-800 relative z-10 flex items-center justify-between">
+                           <div className="flex items-center gap-2">
+                              <Shield className="h-3.5 w-3.5 text-emerald-500" />
+                              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Digital Signature Valid</span>
+                           </div>
+                           <span className="text-[8px] font-bold text-slate-600 uppercase">PKI Encrypted</span>
+                        </div>
                      </div>
-                     <span className="text-[8px] font-bold text-slate-600 uppercase">PKI Encrypted</span>
                   </div>
-               </div>
+               ) : (
+                  <div className="p-4 bg-[#0d1117] min-h-full">
+                     <pre className="text-[10.5px] font-mono text-[#79c0ff] bg-[#0d1117] p-6 leading-relaxed overflow-auto custom-scrollbar">
+                        {JSON.stringify(properties, null, 2)}
+                     </pre>
+                  </div>
+               )}
             </div>
-         ) : (
-            <div className="p-4 bg-[#0d1117] min-h-full">
-               <pre className="text-[10.5px] font-mono text-[#79c0ff] bg-[#0d1117] p-6 leading-relaxed overflow-auto custom-scrollbar">
-                  {JSON.stringify(properties, null, 2)}
-               </pre>
+         )}
+
+         {activeTab === "Fact Extraction" && (
+            <div className="p-5 space-y-6 animate-in fade-in slide-in-from-top-1">
+               <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                     <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Page</span>
+                     <select className="h-8 px-2 bg-slate-100 border border-slate-200 rounded-sm text-[10px] font-bold outline-none cursor-pointer">
+                        <option>1</option>
+                        <option>2</option>
+                        <option>3</option>
+                     </select>
+                  </div>
+                  <button className="flex items-center gap-1.5 text-primary hover:text-primary/80 transition-colors">
+                     <Plus className="h-3 w-3" />
+                     <span className="text-[10px] font-black uppercase tracking-widest">Add fact manually</span>
+                  </button>
+               </div>
+
+               <div className="space-y-4">
+                  {factExtractionData.map((f, i) => (
+                    <div key={i} className="p-5 bg-slate-50/80 border border-slate-100 rounded-lg hover:border-slate-200 transition-all group">
+                       <div className="space-y-4">
+                          <div className="space-y-1.5">
+                             <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.1em]">Fact</span>
+                             <p className="text-[11px] font-medium text-slate-800 leading-relaxed">{f.fact}</p>
+                          </div>
+                          <div className="space-y-1.5">
+                             <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.1em]">Context</span>
+                             <p className="text-[11px] font-medium text-slate-600 leading-relaxed italic">{f.context}</p>
+                          </div>
+                       </div>
+                    </div>
+                  ))}
+               </div>
             </div>
          )}
       </div>
