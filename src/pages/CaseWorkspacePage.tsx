@@ -3383,6 +3383,7 @@ function AdaptiveSourcePreview({
   if (file.type === "Image") return <ImagePreview file={file} />;
   if (file.type === "Audio") return <AudioPreview file={file} currentTime={audioCurrentTime} setCurrentTime={setAudioCurrentTime} isPlaying={audioIsPlaying} setIsPlaying={setAudioIsPlaying} playbackSpeed={audioPlaybackSpeed} setPlaybackSpeed={setAudioPlaybackSpeed} audioRef={audioRef} />;
   if (file.type === "Video") return <VideoPreview file={file} currentTime={videoCurrentTime} setCurrentTime={setVideoCurrentTime} isPlaying={videoIsPlaying} setIsPlaying={setVideoIsPlaying} videoRef={videoRef} />;
+  if (file.type === "Document") return <DocumentPreview file={file} />;
   return (
     <div className="flex flex-col items-center justify-center p-20 text-slate-300 opacity-50 bg-white/50 rounded-sm border-2 border-dashed border-slate-200">
        <Folders className="h-12 w-12 mb-4" />
@@ -4142,6 +4143,142 @@ function VideoPreview({ file, currentTime, setCurrentTime, isPlaying, setIsPlayi
             <button className="p-1.5 text-white hover:bg-white/10 rounded transition-colors"><Maximize2 className="h-3.5 w-3.5" /></button>
          </div>
       </div>
+    </div>
+  );
+}
+
+function DocumentPreview({ file }: { file: any }) {
+  const [scale, setScale] = useState(1);
+  const [page, setPage] = useState(1);
+  const totalPages = 12; // Simulated
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const zoomIn = () => setScale(s => Math.min(s + 0.1, 2));
+  const zoomOut = () => setScale(s => Math.max(s - 0.1, 0.5));
+  const resetZoom = () => setScale(1);
+
+  return (
+    <div className="flex flex-col h-full bg-[#f4f4f4] rounded-sm border border-slate-200 overflow-hidden select-none">
+       {/* Carbon Toolbar */}
+       <div className="h-10 bg-white border-b border-slate-200 flex items-center justify-between px-3 shrink-0">
+          <div className="flex items-center gap-1">
+             <div className="flex items-center bg-slate-100 rounded-sm p-0.5 border border-slate-200 mr-2">
+                <button 
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  className="p-1 hover:bg-white rounded-sm text-slate-600 transition-colors disabled:opacity-30"
+                  disabled={page === 1}
+                >
+                   <ChevronLeft className="h-3 w-3" />
+                </button>
+                <div className="px-2 flex items-center gap-1.5 border-x border-slate-200 mx-0.5">
+                   <span className="text-[9px] font-black text-slate-900">{page}</span>
+                   <span className="text-[9px] font-bold text-slate-400">/</span>
+                   <span className="text-[9px] font-bold text-slate-400">{totalPages}</span>
+                </div>
+                <button 
+                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                  className="p-1 hover:bg-white rounded-sm text-slate-600 transition-colors disabled:opacity-30"
+                  disabled={page === totalPages}
+                >
+                   <ChevronRight className="h-3 w-3" />
+                </button>
+             </div>
+             
+             <div className="h-4 w-[1px] bg-slate-200 mx-1" />
+
+             <div className="flex items-center gap-1 ml-1">
+                <button onClick={zoomOut} className="p-1.5 hover:bg-slate-100 rounded-sm text-slate-500 transition-colors">
+                   <ZoomOut className="h-3.5 w-3.5" />
+                </button>
+                <button onClick={resetZoom} className="px-2 h-6 flex items-center justify-center hover:bg-slate-100 rounded-sm text-[9px] font-black text-slate-600 uppercase tracking-tighter">
+                   {Math.round(scale * 100)}%
+                </button>
+                <button onClick={zoomIn} className="p-1.5 hover:bg-slate-100 rounded-sm text-slate-500 transition-colors">
+                   <ZoomIn className="h-3.5 w-3.5" />
+                </button>
+             </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+             <button className="flex items-center gap-1.5 px-2 h-7 bg-slate-900 text-white rounded-sm hover:bg-slate-800 transition-colors">
+                <Download className="h-3 w-3" />
+                <span className="text-[9px] font-black uppercase tracking-widest">Export</span>
+             </button>
+             <button className="p-1.5 hover:bg-slate-100 rounded-sm text-slate-500 transition-colors">
+                <Maximize2 className="h-3.5 w-3.5" />
+             </button>
+          </div>
+       </div>
+
+       {/* Document Canvas Area */}
+       <div 
+         ref={containerRef}
+         className="flex-1 overflow-auto bg-[#e0e0e0] p-8 flex justify-center custom-scrollbar shadow-inner"
+       >
+          <div 
+            style={{ transform: `scale(${scale})`, transformOrigin: 'top center' }}
+            className="bg-white shadow-2xl border border-slate-300 w-[595px] min-h-[842px] p-12 transition-transform duration-200 ease-out flex flex-col gap-6 relative"
+          >
+             {/* Document Content Simulation */}
+             <div className="flex justify-between items-start border-b-2 border-slate-900 pb-6">
+                <div className="flex flex-col gap-1">
+                   <span className="text-[14px] font-black text-slate-900 uppercase tracking-tight leading-none">BERAU COAL INTERNAL REPORT</span>
+                   <span className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.2em]">DOCUMENT ID: FORENSIC-75AB948D</span>
+                </div>
+                <div className="px-2 py-1 bg-slate-900 text-white text-[8px] font-black uppercase tracking-widest">SECRET</div>
+             </div>
+
+             <div className="flex flex-col gap-4">
+                <div className="h-4 w-1/3 bg-slate-100 rounded-sm" />
+                <div className="space-y-2">
+                   <div className="h-2 w-full bg-slate-50 rounded-sm" />
+                   <div className="h-2 w-full bg-slate-50 rounded-sm" />
+                   <div className="h-2 w-3/4 bg-slate-50 rounded-sm" />
+                </div>
+                
+                <div className="mt-4 p-4 border border-slate-200 bg-slate-50/50 rounded-sm">
+                   <div className="h-3 w-24 bg-slate-200 mb-3 rounded-sm" />
+                   <div className="grid grid-cols-3 gap-2">
+                      <div className="h-1.5 bg-slate-200 rounded-sm" />
+                      <div className="h-1.5 bg-slate-200 rounded-sm" />
+                      <div className="h-1.5 bg-slate-200 rounded-sm" />
+                      <div className="h-1.5 bg-slate-200 rounded-sm" />
+                      <div className="h-1.5 bg-slate-200 rounded-sm" />
+                      <div className="h-1.5 bg-slate-200 rounded-sm" />
+                   </div>
+                </div>
+
+                <div className="mt-8 space-y-4">
+                   <div className="h-5 w-1/4 bg-slate-200 rounded-sm" />
+                   <div className="space-y-2">
+                      {[...Array(12)].map((_, i) => (
+                        <div key={i} className="h-1.5 w-full bg-slate-50 rounded-sm" />
+                      ))}
+                   </div>
+                </div>
+             </div>
+
+             {/* Footer */}
+             <div className="mt-auto pt-8 border-t border-slate-100 flex justify-between items-center text-[8px] font-bold text-slate-400 uppercase tracking-widest">
+                <span>Page {page} of {totalPages}</span>
+                <span>Generated by AI Forensic Matrix v4.2</span>
+             </div>
+
+             {/* Watermark */}
+             <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.03] rotate-[-45deg]">
+                <span className="text-[120px] font-black">BERAU COAL</span>
+             </div>
+          </div>
+       </div>
+
+       {/* Bottom Status Bar */}
+       <div className="h-6 bg-white border-t border-slate-200 px-3 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-3">
+             <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Status: Ready</span>
+             <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">File: {file.name}</span>
+          </div>
+          <span className="text-[8px] font-bold text-slate-300 uppercase">OCR Intelligence Active</span>
+       </div>
     </div>
   );
 }
