@@ -4279,6 +4279,56 @@ function AudioExtractionConsole({ file, onJump, currentTime }: { file: any, onJu
     review_meta: { low_confidence_segments: [12, 145], needs_human_review: ["Check transcription for 'tensioner' vs 'tension'"], confidence: "92%" }
   }), [file]);
 
+  const audioDiarizationData = useMemo(() => [
+    { segment_id: "seg_1", speaker_id: "SPK_01", speaker_label: "Operator A", start_time: "00:04", end_time: "00:12", duration: "0:08", text: "Control, ini Operator A. Getaran di Section 14 melebihi batas aman. Mohon dicek.", confidence: "High", flags: [] },
+    { segment_id: "seg_2", speaker_id: "SPK_02", speaker_label: "Control Room", start_time: "00:15", end_time: "00:22", duration: "0:07", text: "Diterima Operator A. Sensor kami juga menunjukkan anomali. Standby.", confidence: "High", flags: [] },
+    { segment_id: "seg_3", speaker_id: "SPK_01", speaker_label: "Operator A", start_time: "02:14", end_time: "02:22", duration: "0:08", text: "Kontrol! Belt Section 14 robek! Terjadi tumpahan material berat! E-Stop!", confidence: "High", flags: ["URGENT", "STRESS"] }
+  ], []);
+
+  const normalizedExtraction = useMemo(() => {
+    const raw = audioExtractionData;
+    return {
+      audio_id: "AUD_" + (file?.id?.slice(0, 4) || "001"),
+      case_id: "CS-2026-" + Math.floor(1000 + Math.random() * 9000),
+      modality: "audio",
+      audio_properties: {
+        file_name: raw.recording_meta.file_name,
+        source_type: raw.recording_meta.source_type,
+        capture_time: "2026-04-12 14:30:22",
+        source_device: raw.recording_meta.recording_type,
+        location_hint: "Site Alpha - Zone B",
+        duration: raw.recording_meta.duration,
+        language: raw.recording_meta.language,
+        channel_type: raw.recording_meta.channel_type,
+        recording_type: raw.recording_meta.recording_type,
+        audio_quality: raw.recording_meta.audio_quality,
+        noise_level: raw.recording_meta.noise_level,
+        overlap_level: raw.recording_meta.overlap_level
+      },
+      extraction_summary: {
+        transcript_summary: "Emergency report regarding Section 14 conveyor belt failure.",
+        speaker_profiles: raw.speaker_profiles.map(s => ({
+          ...s,
+          label: s.speaker_label,
+          role: s.probable_role,
+          stress: s.stress_level
+        })),
+        communication_events: raw.communication_events,
+        factual_statements: raw.factual_statements || [],
+        timeline_events: raw.timeline_events || [],
+        human_performance_signals: raw.human_performance_signals,
+        risk_and_procedure_clues: raw.risk_and_procedure_clues,
+        review_meta: raw.review_meta
+      }
+    };
+  }, [file, audioExtractionData]);
+
+  const normalizedScene = useMemo(() => ({
+    scene_session: {
+      full_diarization: audioDiarizationData
+    }
+  }), [audioDiarizationData]);
+
   return (
     <div className="flex flex-col h-full bg-white">
       <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b px-5 py-3 flex items-center justify-between shrink-0">
@@ -4310,11 +4360,11 @@ function AudioExtractionConsole({ file, onJump, currentTime }: { file: any, onJu
                 </div>
               </div>
               {viewMode === "Structured" ? (
-                 <AudioExtractionStructured data={audioExtractionData} onJump={onJump} />
+                 <AudioExtractionStructured data={normalizedExtraction} onJump={onJump} />
               ) : (
                 <div className="p-4 bg-[#0d1117] min-h-full">
                    <pre className="text-[10.5px] font-mono text-[#79c0ff] bg-[#0d1117] p-6 leading-relaxed overflow-auto max-h-[1200px] custom-scrollbar">
-                      {JSON.stringify(audioExtractionData, null, 2)}
+                      {JSON.stringify(normalizedExtraction, null, 2)}
                    </pre>
                 </div>
               )}
@@ -4322,7 +4372,7 @@ function AudioExtractionConsole({ file, onJump, currentTime }: { file: any, onJu
          )}
 
          {activeTab === "Diarization" && (
-           <AudioSceneSession data={{ scene_session: { full_diarization: audioDiarizationData } }} currentTime={currentTime} onJump={onJump} />
+           <AudioSceneSession data={normalizedScene} currentTime={currentTime} onJump={onJump} />
          )}
 
          {activeTab === "Enhancement" && (
