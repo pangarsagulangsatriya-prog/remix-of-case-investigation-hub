@@ -581,12 +581,9 @@ export function UploadModal({
               <Upload className="h-5 w-5 text-white" />
             </div>
             <div>
-              <h2 className="text-base font-black text-slate-900 uppercase tracking-wide">
-                Add New Evidence
+              <h2 className="text-base font-black text-slate-900 uppercase tracking-widest">
+                Evidence Ingestion
               </h2>
-              <p className="text-xs text-slate-500 font-medium mt-0.5">
-                Upload files or folders — grouped automatically like Google Drive
-              </p>
             </div>
           </div>
           <button
@@ -701,196 +698,126 @@ export function UploadModal({
           /* Split pane: file list + preview */
           <div className="flex-1 flex overflow-hidden">
             {/* ---- Left: grouped file list ---- */}
-            <div className="w-[340px] min-w-[260px] flex flex-col border-r bg-slate-50/30 overflow-hidden shrink-0">
-              <div className="flex-1 overflow-auto">
-                {groups.map((group) => {
-                  const gFiles = fileItems.filter(
-                    (f) => f.groupId === group.id
-                  );
+            <div className="w-[320px] min-w-[240px] flex flex-col border-r bg-white overflow-hidden shrink-0">
+              <div className="flex-1 overflow-auto custom-scrollbar">
+                {/* 1. Loose Files First (Flattened) */}
+                {fileItems.filter(f => f.groupId === LOOSE_GROUP_ID).map((fileObj) => (
+                  <div
+                    key={fileObj.id}
+                    onClick={() => !fileObj.error && setSelectedFileId(fileObj.id)}
+                    className={cn(
+                      "flex items-center gap-2.5 px-4 py-2 border-b border-slate-50 transition-all group/frow relative cursor-pointer",
+                      fileObj.error ? "opacity-50 cursor-not-allowed" : "hover:bg-slate-50",
+                      selectedFileId === fileObj.id ? "bg-slate-100 border-l-[3px] border-l-slate-900" : "border-l-[3px] border-l-transparent"
+                    )}
+                  >
+                    <div className="h-7 w-7 rounded-sm bg-slate-50 border flex items-center justify-center shrink-0 overflow-hidden">
+                      {fileObj.category === "Image" && fileObj.previewUrl ? (
+                        <img src={fileObj.previewUrl} className="h-full w-full object-cover" alt="" />
+                      ) : (
+                        <CategoryIcon category={fileObj.category} className="h-3.5 w-3.5" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[11px] font-bold text-slate-800 truncate leading-tight">{fileObj.file.name}</p>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{fileObj.category}</span>
+                        <span className="text-[9px] text-slate-300">·</span>
+                        <span className="text-[9px] text-slate-400 font-medium">{formatBytes(fileObj.file.size)}</span>
+                      </div>
+                    </div>
+                    {!isUploading && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); removeFile(fileObj.id); }}
+                        className="p-1 hover:bg-rose-50 rounded-sm opacity-0 group-hover/frow:opacity-100 transition-all text-slate-300 hover:text-rose-500"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+
+                {/* 2. Folders */}
+                {groups.filter(g => g.id !== LOOSE_GROUP_ID).map((group) => {
+                  const gFiles = fileItems.filter((f) => f.groupId === group.id);
                   const validFiles = gFiles.filter((f) => !f.error);
-                  const groupBytes = validFiles.reduce(
-                    (s, f) => s + f.file.size,
-                    0
-                  );
-                  const groupProgress =
-                    validFiles.length > 0
-                      ? validFiles.reduce((s, f) => s + f.progress, 0) /
-                        validFiles.length
-                      : 0;
+                  const groupBytes = validFiles.reduce((s, f) => s + f.file.size, 0);
+                  const groupProgress = validFiles.length > 0 ? validFiles.reduce((s, f) => s + f.progress, 0) / validFiles.length : 0;
 
                   return (
-                    <div
-                      key={group.id}
-                      className="border-b last:border-b-0 bg-white"
-                    >
+                    <div key={group.id} className="border-b last:border-b-0 bg-white">
                       {/* Group header */}
-                      <div className="flex items-center gap-2 px-3 py-2.5 bg-slate-50/80 border-b border-slate-100 group/ghdr">
+                      <div className="flex items-center gap-2 px-3 py-2 bg-slate-50/50 border-b border-slate-100 group/ghdr">
                         <button
                           onClick={() => toggleGroup(group.id)}
-                          className="p-0.5 hover:bg-slate-200 rounded transition-colors shrink-0"
+                          className="p-0.5 hover:bg-slate-200 rounded-sm transition-colors shrink-0"
                         >
-                          {group.expanded ? (
-                            <ChevronDown className="h-3 w-3 text-slate-400" />
-                          ) : (
-                            <ChevronRight className="h-3 w-3 text-slate-400" />
-                          )}
+                          {group.expanded ? <ChevronDown className="h-3 w-3 text-slate-400" /> : <ChevronRight className="h-3 w-3 text-slate-400" />}
                         </button>
-                        {group.isFolder ? (
-                          <Folders className="h-3.5 w-3.5 text-primary/60 shrink-0" />
-                        ) : (
-                          <FilePlus className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                        )}
-                        <span className="text-[10px] font-black text-slate-700 uppercase tracking-tighter flex-1 min-w-0 truncate">
-                          {group.name}
-                        </span>
-                        {/* file count badge */}
-                        <span className="text-[9px] font-bold text-slate-400 bg-white border px-1.5 py-0.5 rounded-full shrink-0">
-                          {validFiles.length}
-                        </span>
-                        <span className="text-[9px] font-medium text-slate-300 shrink-0">
-                          {formatBytes(groupBytes)}
-                        </span>
-                        {/* per-group upload progress */}
-                        {isUploading &&
-                          groupProgress > 0 &&
-                          groupProgress < 100 && (
-                            <div className="w-12 h-1 bg-slate-100 rounded-full overflow-hidden shrink-0">
-                              <div
-                                className="h-full bg-primary transition-all"
-                                style={{ width: `${groupProgress}%` }}
-                              />
-                            </div>
-                          )}
-                        {/* remove group button */}
+                        <Folders className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                        <span className="text-[10px] font-black text-slate-600 uppercase tracking-tight flex-1 truncate">{group.name}</span>
+                        <span className="text-[9px] font-bold text-slate-400 mr-2">{validFiles.length}</span>
                         {!isUploading && (
                           <button
                             onClick={() => removeGroup(group.id)}
-                            className="p-1 hover:bg-rose-50 rounded transition-colors opacity-0 group-hover/ghdr:opacity-100 text-slate-300 hover:text-rose-400 shrink-0"
+                            className="p-1 hover:bg-rose-50 rounded-sm opacity-0 group-hover/ghdr:opacity-100 text-slate-300 hover:text-rose-500 transition-all"
                           >
                             <Trash2 className="h-3 w-3" />
                           </button>
                         )}
                       </div>
 
-                      {/* File rows */}
                       {group.expanded &&
                         gFiles.map((fileObj) => (
                           <div
                             key={fileObj.id}
-                            onClick={() =>
-                              !fileObj.error &&
-                              setSelectedFileId(fileObj.id)
-                            }
-                            className={[
-                              "flex items-center gap-2.5 px-3 py-2 pl-9 border-b border-slate-50",
-                              "transition-all group/frow relative",
-                              fileObj.error
-                                ? "opacity-50 cursor-not-allowed"
-                                : "cursor-pointer hover:bg-slate-50/80",
-                              selectedFileId === fileObj.id
-                                ? "bg-primary/5 border-l-[3px] border-l-primary"
-                                : "border-l-[3px] border-l-transparent",
-                            ].join(" ")}
-                          >
-                            {/* thumbnail */}
-                            <div className="h-8 w-8 rounded bg-slate-50 border flex items-center justify-center shrink-0 overflow-hidden">
-                              {fileObj.category === "Image" &&
-                              fileObj.previewUrl ? (
-                                <img
-                                  src={fileObj.previewUrl}
-                                  className="h-full w-full object-cover"
-                                  alt=""
-                                />
-                              ) : (
-                                <CategoryIcon
-                                  category={fileObj.category}
-                                  className="h-4 w-4"
-                                />
-                              )}
-                            </div>
-
-                            <div className="flex-1 min-w-0">
-                              <p className="text-[11px] font-bold text-slate-800 truncate leading-tight">
-                                {fileObj.file.name}
-                              </p>
-                              {/* relative path (only shown for nested files) */}
-                              {fileObj.relativePath !== fileObj.file.name && (
-                                <p className="text-[9px] text-slate-400 font-mono truncate leading-tight">
-                                  {fileObj.relativePath}
-                                </p>
-                              )}
-                              <div className="flex items-center gap-1.5 mt-0.5">
-                                {fileObj.error ? (
-                                  <span className="flex items-center gap-1 text-rose-500">
-                                    <AlertCircle className="h-2.5 w-2.5" />
-                                    <span className="text-[9px] font-bold uppercase tracking-wide">
-                                      {fileObj.error}
-                                    </span>
-                                  </span>
-                                ) : fileObj.status === "uploading" ? (
-                                  <div className="flex-1 h-1 bg-slate-100 rounded-full overflow-hidden">
-                                    <div
-                                      className="h-full bg-primary transition-all"
-                                      style={{ width: `${fileObj.progress}%` }}
-                                    />
-                                  </div>
-                                ) : fileObj.status === "success" ? (
-                                  <span className="flex items-center gap-1 text-emerald-500">
-                                    <CheckCircle2 className="h-2.5 w-2.5" />
-                                    <span className="text-[9px] font-bold uppercase tracking-wide">
-                                      Done
-                                    </span>
-                                  </span>
-                                ) : (
-                                  <>
-                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wide">
-                                      {fileObj.category}
-                                    </span>
-                                    <span className="text-[9px] text-slate-200">
-                                      ·
-                                    </span>
-                                    <span className="text-[9px] text-slate-400">
-                                      {formatBytes(fileObj.file.size)}
-                                    </span>
-                                  </>
-                                )}
-                              </div>
-                            </div>
-
-                            {!isUploading && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  removeFile(fileObj.id);
-                                }}
-                                className="p-1 hover:bg-rose-50 rounded opacity-0 group-hover/frow:opacity-100 transition-all text-slate-300 hover:text-rose-400 shrink-0"
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </button>
+                            onClick={() => !fileObj.error && setSelectedFileId(fileObj.id)}
+                            className={cn(
+                              "flex items-center gap-2.5 px-3 py-1.5 pl-8 border-b border-slate-50 transition-all group/frow cursor-pointer",
+                              selectedFileId === fileObj.id ? "bg-slate-50 border-l-[3px] border-l-slate-400" : "border-l-[3px] border-l-transparent hover:bg-slate-50/50"
                             )}
+                          >
+                             <div className="h-6 w-6 rounded-sm bg-slate-50 border flex items-center justify-center shrink-0 overflow-hidden">
+                                {fileObj.category === "Image" && fileObj.previewUrl ? (
+                                  <img src={fileObj.previewUrl} className="h-full w-full object-cover" alt="" />
+                                ) : (
+                                  <CategoryIcon category={fileObj.category} className="h-3 w-3" />
+                                )}
+                             </div>
+                             <div className="flex-1 min-w-0">
+                               <p className="text-[10px] font-medium text-slate-700 truncate leading-tight">{fileObj.file.name}</p>
+                               <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">{formatBytes(fileObj.file.size)}</span>
+                             </div>
+                             {!isUploading && (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); removeFile(fileObj.id); }}
+                                  className="p-1 hover:bg-rose-50 rounded-sm opacity-0 group-hover/frow:opacity-100 text-slate-300 hover:text-rose-500 transition-all"
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </button>
+                             )}
                           </div>
                         ))}
                     </div>
-                  );
                 })}
               </div>
 
               {/* Add more buttons */}
               {!isUploading && (
-                <div className="p-3 border-t bg-white flex gap-2 shrink-0">
+                <div className="p-2 border-t bg-slate-50 flex gap-2 shrink-0">
                   <Button
-                    variant="ghost"
+                    variant="outline"
                     size="sm"
-                    className="flex-1 h-8 text-[10px] font-bold text-slate-400 border border-dashed border-slate-200 hover:border-primary/40 hover:text-primary hover:bg-primary/5 gap-1.5 transition-all"
+                    className="flex-1 h-8 text-[10px] font-bold bg-white border-slate-200 hover:bg-slate-50 gap-1.5 rounded-sm transition-all shadow-sm"
                     onClick={() => fileInputRef.current?.click()}
                   >
                     <FilePlus className="h-3.5 w-3.5" />
                     Add Files
                   </Button>
                   <Button
-                    variant="ghost"
+                    variant="outline"
                     size="sm"
-                    className="flex-1 h-8 text-[10px] font-bold text-slate-400 border border-dashed border-slate-200 hover:border-primary/40 hover:text-primary hover:bg-primary/5 gap-1.5 transition-all"
+                    className="flex-1 h-8 text-[10px] font-bold bg-white border-slate-200 hover:bg-slate-50 gap-1.5 rounded-sm transition-all shadow-sm"
                     onClick={() => folderInputRef.current?.click()}
                   >
                     <FolderPlus className="h-3.5 w-3.5" />
@@ -918,9 +845,14 @@ export function UploadModal({
                     </span>
                   </div>
 
-                  <div className="flex-1 overflow-auto p-6 flex flex-col gap-5">
+                  <div className="flex-1 overflow-auto p-6 flex flex-col gap-6 bg-slate-50/20 custom-scrollbar">
                     {/* Media preview area */}
-                    <div className="aspect-video bg-slate-900 rounded-xl overflow-hidden border shadow-inner flex items-center justify-center">
+                    <div className="aspect-video bg-[#0c121e] rounded-sm overflow-hidden border border-slate-800 shadow-xl flex items-center justify-center relative group/prev">
+                       <div className="absolute top-3 right-3 z-10 opacity-0 group-hover/prev:opacity-100 transition-opacity">
+                          <div className="px-2 py-1 bg-slate-900/80 backdrop-blur rounded text-[9px] font-bold text-white uppercase tracking-widest border border-white/10">
+                             Forensic Preview
+                          </div>
+                       </div>
                       {selectedFile.category === "Image" &&
                       selectedFile.previewUrl ? (
                         <img
@@ -959,40 +891,34 @@ export function UploadModal({
                     </div>
 
                     {/* Metadata grid */}
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 gap-4">
                       {[
-                        { label: "File Name", value: selectedFile.file.name },
-                        { label: "Type", value: selectedFile.category },
-                        { label: "Size", value: formatBytes(selectedFile.file.size) },
-                        { label: "Path", value: selectedFile.relativePath },
+                        { label: "Filename", value: selectedFile.file.name },
+                        { label: "Modality", value: selectedFile.category },
+                        { label: "File Size", value: formatBytes(selectedFile.file.size) },
+                        { label: "Intake Path", value: selectedFile.relativePath },
                       ].map(({ label, value }) => (
-                        <div
-                          key={label}
-                          className="p-2.5 bg-slate-50 rounded-lg border border-slate-100"
-                        >
-                          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                        <div key={label} className="border-b border-slate-100 pb-2">
+                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.15em] block mb-1">
                             {label}
                           </span>
-                          <span className="text-xs font-bold text-slate-700 truncate block">
+                          <span className="text-[11px] font-bold text-slate-700 truncate block tracking-tight">
                             {value}
                           </span>
                         </div>
                       ))}
                     </div>
 
-                    {/* Status pill */}
-                    <div className="p-3 bg-slate-900 rounded-xl text-white">
-                      <div className="flex items-center gap-2 mb-1.5">
-                        <div className="h-2 w-2 rounded-full bg-emerald-500" />
-                        <span className="text-[10px] font-bold uppercase tracking-widest">
-                          Ready for Ingest
-                        </span>
-                      </div>
-                      <p className="text-[10px] text-slate-400 font-medium leading-relaxed italic">
-                        "Validated for{" "}
-                        {selectedFile.category?.toLowerCase()} extraction
-                        pipeline. AI analysis will begin after upload."
-                      </p>
+                    {/* Status Badge */}
+                    <div className="mt-2 flex items-center gap-3">
+                       <div className="flex items-center gap-1.5 px-2 py-1 bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-sm">
+                          <CheckCircle2 className="h-3 w-3" />
+                          <span className="text-[9px] font-black uppercase tracking-widest">Validated for Ingestion</span>
+                       </div>
+                       <div className="flex items-center gap-1.5 px-2 py-1 bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-sm">
+                          <Cpu className="h-3 w-3" />
+                          <span className="text-[9px] font-black uppercase tracking-widest">AI Extraction Ready</span>
+                       </div>
                     </div>
                   </div>
                 </>
@@ -1023,26 +949,23 @@ export function UploadModal({
         )}
 
         {/* ---- Footer ---- */}
-        <div className="px-6 py-4 border-t bg-slate-50/80 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-3 flex-1 min-w-0">
+        <div className="px-6 py-4 border-t bg-white flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-4 flex-1 min-w-0">
             {!isEmpty && (
               <>
-                <span className="text-xs font-bold text-slate-600">
-                  {totalValid} file{totalValid !== 1 ? "s" : ""}
-                </span>
-                <span className="text-[10px] text-slate-300">·</span>
-                <span className="text-xs font-medium text-slate-400">
-                  {formatBytes(totalBytes)}
-                </span>
+                <div className="flex flex-col">
+                   <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest">{totalValid} Objects</span>
+                   <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter mt-0.5">{formatBytes(totalBytes)} Payload</span>
+                </div>
                 {isUploading && (
-                  <div className="flex items-center gap-2 ml-2 flex-1 max-w-xs">
-                    <div className="flex-1 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                  <div className="flex items-center gap-3 ml-4 flex-1 max-w-[200px]">
+                    <div className="flex-1 h-1 bg-slate-100 rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-primary transition-all duration-300"
+                        className="h-full bg-slate-900 transition-all duration-300"
                         style={{ width: `${overallProgress}%` }}
                       />
                     </div>
-                    <span className="text-[10px] font-bold text-primary tabular-nums shrink-0">
+                    <span className="text-[10px] font-bold text-slate-900 tabular-nums shrink-0">
                       {overallProgress.toFixed(0)}%
                     </span>
                   </div>
@@ -1053,8 +976,8 @@ export function UploadModal({
 
           <div className="flex items-center gap-3 shrink-0">
             <Button
-              variant="outline"
-              className="h-10 text-xs font-bold border-slate-200 text-slate-500 hover:text-slate-800"
+              variant="ghost"
+              className="h-9 px-6 text-[11px] font-bold text-slate-500 hover:bg-slate-100 hover:text-slate-900 rounded-sm"
               onClick={handleClose}
               disabled={isUploading}
             >
@@ -1062,19 +985,22 @@ export function UploadModal({
             </Button>
             {!isEmpty && (
               <Button
-                className="h-10 px-8 text-xs font-black bg-slate-900 hover:bg-slate-800 shadow-lg transition-all active:scale-95 gap-2 uppercase tracking-widest"
+                className={cn(
+                  "h-9 px-8 text-[11px] font-black bg-slate-900 hover:bg-slate-800 text-white rounded-sm transition-all active:scale-[0.98] gap-2 uppercase tracking-[0.15em] shadow-lg shadow-slate-200",
+                  isUploading ? "opacity-80" : ""
+                )}
                 onClick={handleUpload}
                 disabled={isUploading || totalValid === 0}
               >
                 {isUploading ? (
                   <>
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    Uploading…
+                    Ingesting…
                   </>
                 ) : (
                   <>
                     <Upload className="h-3.5 w-3.5" />
-                    Upload {totalValid} File{totalValid !== 1 ? "s" : ""}
+                    Upload & Process
                   </>
                 )}
               </Button>
