@@ -4149,18 +4149,15 @@ function VideoPreview({ file, currentTime, setCurrentTime, isPlaying, setIsPlayi
 
 function DocumentPreview({ file }: { file: any }) {
   const [scale, setScale] = useState(1);
-  const [page, setPage] = useState(1);
-  const totalPages = 1; // Real documents handle their own paging usually
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const zoomIn = () => setScale(s => Math.min(s + 0.1, 2));
-  const zoomOut = () => setScale(s => Math.max(s - 0.1, 0.5));
+  const zoomIn = () => setScale(s => Math.min(s + 0.2, 3));
+  const zoomOut = () => setScale(s => Math.max(s - 0.2, 0.5));
   const resetZoom = () => setScale(1);
 
   const getPreviewUrl = () => {
     if (!file.url) return null;
     const url = file.url;
-    // For PDFs, we can use direct URL. For DOCX/Office, we use Google Docs Viewer
     if (url.toLowerCase().endsWith('.pdf')) return url;
     return `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
   };
@@ -4168,33 +4165,18 @@ function DocumentPreview({ file }: { file: any }) {
   const previewUrl = getPreviewUrl();
 
   return (
-    <div className="flex flex-col h-full bg-[#f4f4f4] rounded-sm border border-slate-200 overflow-hidden select-none">
+    <div className="flex flex-col h-full bg-white rounded-sm border border-slate-200 overflow-hidden select-none">
        {/* Carbon Toolbar */}
-       <div className="h-10 bg-white border-b border-slate-200 flex items-center justify-between px-3 shrink-0">
-          <div className="flex items-center gap-1">
-             <div className="flex items-center bg-slate-100 rounded-sm p-0.5 border border-slate-200 mr-2">
-                <button 
-                  className="p-1 hover:bg-white rounded-sm text-slate-600 transition-colors disabled:opacity-30"
-                  disabled={true}
-                >
-                   <ChevronLeft className="h-3 w-3" />
-                </button>
-                <div className="px-2 flex items-center gap-1.5 border-x border-slate-200 mx-0.5">
-                   <span className="text-[9px] font-black text-slate-900">{page}</span>
-                   <span className="text-[9px] font-bold text-slate-400">/</span>
-                   <span className="text-[9px] font-bold text-slate-400">{totalPages}</span>
-                </div>
-                <button 
-                  className="p-1 hover:bg-white rounded-sm text-slate-600 transition-colors disabled:opacity-30"
-                  disabled={true}
-                >
-                   <ChevronRight className="h-3 w-3" />
-                </button>
+       <div className="h-10 bg-white border-b border-slate-200 flex items-center justify-between px-4 shrink-0">
+          <div className="flex items-center gap-4">
+             <div className="flex items-center gap-1.5">
+                <FileText className="h-4 w-4 text-slate-400" />
+                <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest">{file.name}</span>
              </div>
              
-             <div className="h-4 w-[1px] bg-slate-200 mx-1" />
+             <div className="h-4 w-[1px] bg-slate-200" />
 
-             <div className="flex items-center gap-1 ml-1">
+             <div className="flex items-center gap-1">
                 <button onClick={zoomOut} className="p-1.5 hover:bg-slate-100 rounded-sm text-slate-500 transition-colors">
                    <ZoomOut className="h-3.5 w-3.5" />
                 </button>
@@ -4210,60 +4192,58 @@ function DocumentPreview({ file }: { file: any }) {
           <div className="flex items-center gap-2">
              <button 
                onClick={() => window.open(file.url, '_blank')}
-               className="flex items-center gap-1.5 px-2 h-7 bg-slate-900 text-white rounded-sm hover:bg-slate-800 transition-colors"
+               className="p-1.5 hover:bg-slate-100 rounded-sm text-slate-500 transition-colors"
+               title="Open Original"
              >
-                <Download className="h-3 w-3" />
-                <span className="text-[9px] font-black uppercase tracking-widest">Download</span>
-             </button>
-             <button className="p-1.5 hover:bg-slate-100 rounded-sm text-slate-500 transition-colors">
                 <Maximize2 className="h-3.5 w-3.5" />
              </button>
           </div>
        </div>
 
-       {/* Document Canvas Area */}
+       {/* Document Viewer Area */}
        <div 
          ref={containerRef}
-         className="flex-1 overflow-auto bg-[#e0e0e0] p-4 flex justify-center custom-scrollbar shadow-inner"
+         className="flex-1 bg-slate-100 overflow-hidden relative"
        >
-          <div 
-            style={{ 
-              transform: `scale(${scale})`, 
-              transformOrigin: 'top center',
-              width: '100%',
-              maxWidth: '900px',
-              height: '100%',
-              minHeight: '800px'
-            }}
-            className="bg-white shadow-2xl border border-slate-300 transition-transform duration-200 ease-out relative overflow-hidden rounded-sm"
-          >
-             {previewUrl ? (
+          {previewUrl ? (
+            <div 
+              style={{ 
+                transform: `scale(${scale})`, 
+                transformOrigin: 'center center',
+                width: '100%',
+                height: '100%'
+              }}
+              className="transition-transform duration-200 ease-out"
+            >
                <iframe 
                  src={previewUrl} 
                  className="w-full h-full border-none"
                  title="Document Preview"
                />
-             ) : (
-               <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-3">
-                  <FileText className="h-12 w-12 opacity-20" />
-                  <span className="text-[10px] font-black uppercase tracking-widest">No URL available for preview</span>
-               </div>
-             )}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-3">
+               <FileText className="h-12 w-12 opacity-20" />
+               <span className="text-[10px] font-black uppercase tracking-widest">No URL available for preview</span>
+            </div>
+          )}
 
-             {/* Watermark Overlay (Subtle) */}
-             <div className="absolute inset-0 pointer-events-none opacity-[0.02] flex items-center justify-center rotate-[-45deg]">
-                <span className="text-[80px] font-black uppercase tracking-[1em]">Forensic</span>
-             </div>
+          {/* Watermark Overlay (Extreme Subtle) */}
+          <div className="absolute inset-0 pointer-events-none opacity-[0.01] flex items-center justify-center rotate-[-45deg]">
+             <span className="text-[120px] font-black uppercase tracking-[1em]">Forensic Viewer</span>
           </div>
        </div>
 
        {/* Bottom Status Bar */}
-       <div className="h-6 bg-white border-t border-slate-200 px-3 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-3">
-             <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Status: {previewUrl ? 'Live Preview' : 'Source Only'}</span>
-             <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Type: {file.name?.split('.').pop()?.toUpperCase() || 'UNKNOWN'}</span>
+       <div className="h-6 bg-slate-50 border-t border-slate-200 px-4 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-4">
+             <div className="flex items-center gap-1.5">
+                <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">System Link: Active</span>
+             </div>
+             <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Format: {file.name?.split('.').pop()?.toUpperCase()}</span>
           </div>
-          <span className="text-[8px] font-bold text-slate-300 uppercase">Secure Forensic Viewer</span>
+          <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">Enterprise Forensic Matrix v4.2</span>
        </div>
     </div>
   );
