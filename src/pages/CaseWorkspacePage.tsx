@@ -104,6 +104,9 @@ import {
   MousePointer2
 } from "lucide-react";
 
+const DocIcon = FileText;
+const PendingIcon = Clock;
+
 type AgentStatus = 'idle' | 'queued' | 'running' | 'paused' | 'stopped' | 'completed' | 'failed' | 'cancelled';
 
 interface AgentRunHistory {
