@@ -3418,7 +3418,7 @@ function ImagePreview({ file }: { file: any }) {
     // Reset on file change
     setScale(1);
     setPosition({ x: 0, y: 0 });
-    setViewMode('fit');
+    setViewMode("fit");
     setHandToolActive(false);
     setIsSpotlightMode(false);
     setSpotlightRect(null);
@@ -3436,23 +3436,31 @@ function ImagePreview({ file }: { file: any }) {
   const applyPreset = (preset: string) => {
     const base = { exposure: 100, contrast: 100, saturate: 100, invert: 0, grayscale: 0, sepia: 0, hue: 0 };
     switch(preset) {
-      case 'high-contrast': setEnhancements({...base, contrast: 180, saturate: 120 }); break;
-      case 'low-light': setEnhancements({...base, exposure: 160, contrast: 130 }); break;
-      case 'dust-cut': setEnhancements({...base, contrast: 150, saturate: 80 }); break;
-      case 'sepia': setEnhancements({...base, sepia: 100 }); break;
-      case 'grayscale': setEnhancements({...base, grayscale: 100 }); break;
-      case 'invert': setEnhancements({...base, invert: 100 }); break;
-      case 'infra': setEnhancements({...base, hue: 180, contrast: 140 }); break;
+      case "high-contrast": setEnhancements({...base, contrast: 180, saturate: 120 }); break;
+      case "low-light": setEnhancements({...base, exposure: 160, contrast: 130 }); break;
+      case "dust-cut": setEnhancements({...base, contrast: 150, saturate: 80 }); break;
+      case "sepia": setEnhancements({...base, sepia: 100 }); break;
+      case "grayscale": setEnhancements({...base, grayscale: 100 }); break;
+      case "invert": setEnhancements({...base, invert: 100 }); break;
+      case "infra": setEnhancements({...base, hue: 180, contrast: 140 }); break;
       default: setEnhancements(base);
     }
   };
 
-  const handleZoom = (factor: number, centerX?: number, centerY?: number) => {
-    setScale(prev => {
-      const newScale = Math.min(Math.max(0.1, prev * factor), 8);
-      return newScale;
-    });
-    if (viewMode !== 'fit') setViewMode('fit'); // Transition to custom
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsSpotlightMode(false);
+        setSpotlightRect(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  const handleZoom = (factor: number) => {
+    setScale(prev => Math.min(Math.max(0.1, prev * factor), 10));
+    if (viewMode !== 'fit') setViewMode('fit');
   };
 
   const onWheel = (e: React.WheelEvent) => {
@@ -3465,8 +3473,11 @@ function ImagePreview({ file }: { file: any }) {
     const rect = containerRef.current?.getBoundingClientRect();
     if (!rect) return;
     
-    const x = (e.clientX - rect.left - rect.width/2 - position.x) / scale;
-    const y = (e.clientY - rect.top - rect.height/2 - position.y) / scale;
+    // Improved coordinate math: relative to container center, then un-transform
+    const mx = e.clientX - rect.left - rect.width/2;
+    const my = e.clientY - rect.top - rect.height/2;
+    const x = (mx - position.x) / scale + rect.width/2;
+    const y = (my - position.y) / scale + rect.height/2;
 
     if (isSpotlightMode) {
       setDrawingStart({ x, y });
@@ -3481,11 +3492,14 @@ function ImagePreview({ file }: { file: any }) {
   };
 
   const onDrag = (e: React.MouseEvent) => {
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
     if (isSpotlightMode && drawingStart) {
-      const rect = containerRef.current?.getBoundingClientRect();
-      if (!rect) return;
-      const x = (e.clientX - rect.left - rect.width/2 - position.x) / scale;
-      const y = (e.clientY - rect.top - rect.height/2 - position.y) / scale;
+      const mx = e.clientX - rect.left - rect.width/2;
+      const my = e.clientY - rect.top - rect.height/2;
+      const x = (mx - position.x) / scale + rect.width/2;
+      const y = (my - position.y) / scale + rect.height/2;
       
       setSpotlightRect({
         x: Math.min(x, drawingStart.x),
@@ -3535,14 +3549,14 @@ function ImagePreview({ file }: { file: any }) {
           </div>
 
           <button 
-            onClick={() => setHandToolActive(!handToolActive)}
-            className={cn("p-1.5 rounded-sm transition-all", handToolActive ? "bg-emerald-500 text-white" : "text-slate-500 hover:text-slate-900 hover:bg-slate-100")}
+            onClick={() => { setHandToolActive(!handToolActive); setIsSpotlightMode(false); }}
+            className={cn("p-1.5 rounded-sm transition-all", handToolActive ? "bg-indigo-500 text-white shadow-inner" : "text-slate-500 hover:text-slate-900 hover:bg-slate-100")}
           >
             <Hand className="h-3.5 w-3.5" />
           </button>
           <button 
-            onClick={() => { setIsSpotlightMode(!isSpotlightMode); if(!isSpotlightMode) setHandToolActive(false); }}
-            className={cn("p-1.5 rounded-sm transition-all", isSpotlightMode ? "bg-amber-500 text-white" : "text-slate-500 hover:text-slate-900 hover:bg-slate-100")}
+            onClick={() => { setIsSpotlightMode(!isSpotlightMode); setHandToolActive(false); }}
+            className={cn("p-1.5 rounded-sm transition-all", isSpotlightMode ? "bg-indigo-500 text-white shadow-inner" : "text-slate-500 hover:text-slate-900 hover:bg-slate-100")}
           >
             <Focus className="h-3.5 w-3.5" />
           </button>
@@ -3623,7 +3637,7 @@ function ImagePreview({ file }: { file: any }) {
         onMouseMove={onDrag}
         onMouseUp={stopDragging}
         onMouseLeave={stopDragging}
-        style={{ cursor: isDragging ? 'grabbing' : (handToolActive ? 'grab' : 'default') }}
+        style={{ cursor: isSpotlightMode ? 'crosshair' : (isDragging ? 'grabbing' : (handToolActive ? 'grab' : 'default')) }}
       >
         <div 
           className="w-full h-full flex items-center justify-center transition-transform duration-75 ease-out select-none relative"
