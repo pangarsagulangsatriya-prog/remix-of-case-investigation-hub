@@ -4234,16 +4234,9 @@ function ImageExtractionConsole({ file }: { file: any }) {
 
 
 function AudioExtractionConsole({ file, onJump, currentTime }: { file: any, onJump: (s: number) => void, currentTime: number }) {
-  const [activeTab, setActiveTab] = useState<"Analysis" | "Diarization" | "Enhancement">("Analysis");
+  const [activeTab, setActiveTab] = useState<"Analysis" | "Diarization">("Analysis");
   const [viewMode, setViewMode] = useState<"Structured" | "JSON">("Structured");
-  
-  const [enhancements, setEnhancements] = useState({
-    noiseReduction: 40,
-    voiceBoost: 60,
-    clarity: 50,
-    highPass: 20,
-    lowPass: 80
-  });
+
 
   const audioExtractionData = useMemo(() => ({
     recording_meta: {
@@ -4337,7 +4330,7 @@ function AudioExtractionConsole({ file, onJump, currentTime }: { file: any, onJu
             <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter mt-1 opacity-60">ID: {file?.id?.slice(0,8) || "N/A"}</span>
          </div>
          <div className="flex items-center gap-1 p-0.5 bg-slate-100 rounded-md border shadow-inner">
-            {(["Analysis", "Diarization", "Enhancement"] as const).map(tab => (
+            {(["Analysis", "Diarization"] as const).map(tab => (
               <button 
                 key={tab}
                 onClick={() => setActiveTab(tab)} 
@@ -4374,60 +4367,6 @@ function AudioExtractionConsole({ file, onJump, currentTime }: { file: any, onJu
          {activeTab === "Diarization" && (
            <AudioSceneSession data={normalizedScene} currentTime={currentTime} onJump={onJump} />
          )}
-
-         {activeTab === "Enhancement" && (
-           <div className="p-6 space-y-8 animate-in fade-in slide-in-from-right-4">
-              <div className="space-y-1">
-                 <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest">Forensic Enhancement</h3>
-                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Non-destructive signal processing</p>
-              </div>
-
-              <div className="space-y-6">
-                {[
-                  { id: 'noiseReduction', label: 'Noise Reduction', icon: Wind },
-                  { id: 'voiceBoost', label: 'Voice Boost', icon: AudioIcon },
-                  { id: 'clarity', label: 'Spectral Clarity', icon: Zap },
-                  { id: 'highPass', label: 'High-Pass Filter', icon: Activity },
-                  { id: 'lowPass', label: 'Low-Pass Filter', icon: Activity },
-                ].map(({ id, label, icon: Icon }) => (
-                  <div key={id} className="space-y-3">
-                    <div className="flex items-center justify-between">
-                       <div className="flex items-center gap-2">
-                          <Icon className="h-3 w-3 text-slate-400" />
-                          <span className="text-[10px] font-black text-slate-600 uppercase tracking-tight">{label}</span>
-                       </div>
-                       <span className="text-[10px] font-mono font-bold text-primary">{(enhancements as any)[id]}%</span>
-                    </div>
-                    <input 
-                      type="range"
-                      min="0"
-                      max="100"
-                      value={(enhancements as any)[id]}
-                      onChange={(e) => setEnhancements(prev => ({ ...prev, [id]: parseInt(e.target.value) }))}
-                      className="w-full h-1 bg-slate-100 rounded-full appearance-none cursor-pointer accent-slate-900"
-                    />
-                  </div>
-                ))}
-              </div>
-
-              <div className="pt-6 border-t border-slate-100 flex gap-2">
-                 <Button variant="outline" className="flex-1 h-9 text-[10px] font-bold uppercase tracking-widest rounded-sm" onClick={() => setEnhancements({ noiseReduction: 40, voiceBoost: 60, clarity: 50, highPass: 20, lowPass: 80 })}>
-                    Reset
-                 </Button>
-                 <Button className="flex-1 h-9 bg-slate-900 text-white text-[10px] font-black uppercase tracking-[0.15em] rounded-sm shadow-lg shadow-slate-200">
-                    Apply Profile
-                 </Button>
-              </div>
-
-              <div className="p-4 bg-blue-50 border border-blue-100 rounded-sm">
-                 <div className="flex gap-3">
-                    <AlertCircle className="h-4 w-4 text-blue-600 shrink-0" />
-                    <p className="text-[10px] font-medium text-blue-800 leading-relaxed italic">
-                       Enhancements are temporary and applied during playback for analysis purposes only. Source integrity hash remains unchanged.
-                    </p>
-                 </div>
-              </div>
-           </div>
          )}
       </div>
     </div>
