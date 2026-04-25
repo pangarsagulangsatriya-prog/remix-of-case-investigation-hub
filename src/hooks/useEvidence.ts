@@ -66,7 +66,7 @@ export function useEvidence(caseId: string) {
   return useQuery({
     queryKey: ["evidence", caseId],
     queryFn: async () => {
-      // Fetch batches
+      // 1. Fetch batches for this case
       const { data: batches, error: batchesError } = await supabase
         .from("evidence_batches")
         .select("*")
@@ -74,11 +74,16 @@ export function useEvidence(caseId: string) {
 
       if (batchesError) throw batchesError;
 
-      // Fetch files strictly for this case
+      // 2. Fetch files belonging to these batches
+      const batchIds = (batches || []).map(b => b.id);
+      if (batchIds.length === 0) {
+        return { batches, files: [] as EvidenceFile[] };
+      }
+
       const { data: files, error: filesError } = await supabase
         .from("evidence_files")
         .select("*")
-        .eq("case_id", caseId);
+        .in("batch_id", batchIds);
 
       if (filesError) {
          return { batches, files: [] as EvidenceFile[] };
@@ -127,9 +132,9 @@ export function useDeleteFile() {
          // URL pattern usually is: .../public/evidence/path/to/file
          const parts = url.split("/storage/v1/object/public/")[1]?.split("/");
          if (parts && parts.length >= 2) {
-           const bucket = parts[0];
-           const path = parts.slice(1).join("/");
-           await supabase.storage.from(bucket).remove([path]);
+            const bucket = parts[0];
+            const path = parts.slice(1).join("/");
+            await supabase.storage.from(bucket).remove([path]);
          }
       }
     },
@@ -145,33 +150,29 @@ export function useUploadEvidence() {
   return useMutation({
     mutationFn: async ({ caseId, groups }: { caseId: string, groups: any[] }) => {
       for (const group of groups) {
-        let batchId: string | null = null;
+        // 1. Create batch for EVERY group (Folder or Loose Files) 
+        // to maintain the case_id relationship
+        const { data: batchData, error: batchError } = await supabase
+          .from("evidence_batches")
+          .insert({
+            case_id: caseId,
+            name: group.name,
+            file_count: group.files.length,
+            type: group.isFolder ? "Folder" : "Loose Files",
+            uploaded_by: "Admin"
+          })
+          .select()
+          .single();
 
-        if (group.isFolder) {
-          // 1. Create batch (folder)
-          const { data: batchData, error: batchError } = await supabase
-            .from("evidence_batches")
-            .insert({
-              case_id: caseId,
-              name: group.name,
-              file_count: group.files.length,
-              type: "Folder",
-              uploaded_by: "Admin"
-            })
-            .select()
-            .single();
-
-          if (batchError) throw batchError;
-          batchId = batchData.id;
-        }
+        if (batchError) throw batchError;
+        const batchId = batchData.id;
 
         // 2. Upload files and create records
         for (const fileItem of group.files) {
           const file = fileItem.file; // The actual File object
           const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
           const fileName = `${Date.now()}-${sanitizedFileName}`;
-          // Use folder/batchId if available, otherwise just caseId/loose
-          const filePath = batchId ? `${caseId}/${batchId}/${fileName}` : `${caseId}/loose/${fileName}`;
+          const filePath = `${caseId}/${batchId}/${fileName}`;
           
           let publicUrl = "";
 
@@ -199,7 +200,6 @@ export function useUploadEvidence() {
             .from("evidence_files")
             .insert({
               batch_id: batchId,
-              case_id: caseId, // Ensure case_id is set for easy fetching of loose files
               name: file.name,
               type: fileItem.type || "Document",
               size: fileItem.size || "0 KB",
