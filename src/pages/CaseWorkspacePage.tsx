@@ -100,7 +100,10 @@ import {
   Zap,
   Eye,
   EyeOff,
-  Wand2
+  Wand2,
+  Focus,
+  Target,
+  X
 } from "lucide-react";
 
 type AgentStatus = 'idle' | 'queued' | 'running' | 'paused' | 'stopped' | 'completed' | 'failed' | 'cancelled';
@@ -3406,12 +3409,19 @@ function ImagePreview({ file }: { file: any }) {
   });
   const [isForensicOpen, setIsForensicOpen] = useState(false);
 
+  // Spotlight State
+  const [isSpotlightMode, setIsSpotlightMode] = useState(false);
+  const [spotlightRect, setSpotlightRect] = useState<{ x: number, y: number, w: number, h: number } | null>(null);
+  const [drawingStart, setDrawingStart] = useState<{ x: number, y: number } | null>(null);
+
   useEffect(() => {
     // Reset on file change
     setScale(1);
     setPosition({ x: 0, y: 0 });
     setViewMode('fit');
     setHandToolActive(false);
+    setIsSpotlightMode(false);
+    setSpotlightRect(null);
     setEnhancements({
       exposure: 100,
       contrast: 100,
@@ -3452,6 +3462,18 @@ function ImagePreview({ file }: { file: any }) {
   };
 
   const startDragging = (e: React.MouseEvent) => {
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    
+    const x = (e.clientX - rect.left - rect.width/2 - position.x) / scale;
+    const y = (e.clientY - rect.top - rect.height/2 - position.y) / scale;
+
+    if (isSpotlightMode) {
+      setDrawingStart({ x, y });
+      setSpotlightRect({ x, y, w: 0, h: 0 });
+      return;
+    }
+
     if (handToolActive || scale > 1) {
       setIsDragging(true);
       setLastMousePos({ x: e.clientX, y: e.clientY });
@@ -3459,6 +3481,21 @@ function ImagePreview({ file }: { file: any }) {
   };
 
   const onDrag = (e: React.MouseEvent) => {
+    if (isSpotlightMode && drawingStart) {
+      const rect = containerRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const x = (e.clientX - rect.left - rect.width/2 - position.x) / scale;
+      const y = (e.clientY - rect.top - rect.height/2 - position.y) / scale;
+      
+      setSpotlightRect({
+        x: Math.min(x, drawingStart.x),
+        y: Math.min(y, drawingStart.y),
+        w: Math.abs(x - drawingStart.x),
+        h: Math.abs(y - drawingStart.y)
+      });
+      return;
+    }
+
     if (!isDragging) return;
     const dx = e.clientX - lastMousePos.x;
     const dy = e.clientY - lastMousePos.y;
@@ -3466,7 +3503,10 @@ function ImagePreview({ file }: { file: any }) {
     setLastMousePos({ x: e.clientX, y: e.clientY });
   };
 
-  const stopDragging = () => setIsDragging(false);
+  const stopDragging = () => {
+    setIsDragging(false);
+    setDrawingStart(null);
+  };
 
   return (
     <div className="w-full h-full flex flex-col gap-3">
@@ -3500,9 +3540,14 @@ function ImagePreview({ file }: { file: any }) {
           >
             <Hand className="h-3.5 w-3.5" />
           </button>
-          
           <button 
-            onClick={() => { setScale(1); setPosition({ x: 0, y: 0 }); setHandToolActive(false); setViewMode('fit'); }}
+            onClick={() => { setIsSpotlightMode(!isSpotlightMode); if(!isSpotlightMode) setHandToolActive(false); }}
+            className={cn("p-1.5 rounded-sm transition-all", isSpotlightMode ? "bg-amber-500 text-white" : "text-slate-500 hover:text-slate-900 hover:bg-slate-100")}
+          >
+            <Focus className="h-3.5 w-3.5" />
+          </button>
+          <button 
+            onClick={() => { setScale(1); setPosition({ x: 0, y: 0 }); setHandToolActive(false); setViewMode('fit'); setSpotlightRect(null); setIsSpotlightMode(false); }}
             className="p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-sm transition-all"
           >
             <RefreshCcw className="h-3.5 w-3.5" />
@@ -3581,7 +3626,7 @@ function ImagePreview({ file }: { file: any }) {
         style={{ cursor: isDragging ? 'grabbing' : (handToolActive ? 'grab' : 'default') }}
       >
         <div 
-          className="w-full h-full flex items-center justify-center transition-transform duration-75 ease-out select-none"
+          className="w-full h-full flex items-center justify-center transition-transform duration-75 ease-out select-none relative"
           style={{ 
             transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
             transformOrigin: 'center center',
@@ -3597,6 +3642,40 @@ function ImagePreview({ file }: { file: any }) {
               viewMode === 'fit' ? "object-contain" : (viewMode === 'fill' ? "object-cover w-full h-full" : "object-none")
             )} 
           />
+
+          {/* Spotlight Overlay */}
+          {spotlightRect && (
+            <div 
+              className="absolute inset-0 bg-black/60 pointer-events-none"
+              style={{
+                clipPath: `polygon(
+                  0% 0%, 
+                  0% 100%, 
+                  ${spotlightRect.x}px 100%, 
+                  ${spotlightRect.x}px ${spotlightRect.y}px, 
+                  ${spotlightRect.x + spotlightRect.w}px ${spotlightRect.y}px, 
+                  ${spotlightRect.x + spotlightRect.w}px ${spotlightRect.y + spotlightRect.h}px, 
+                  ${spotlightRect.x}px ${spotlightRect.y + spotlightRect.h}px, 
+                  ${spotlightRect.x}px 100%, 
+                  100% 100%, 
+                  100% 0%
+                )`
+              }}
+            />
+          )}
+          {spotlightRect && (
+            <div 
+              className="absolute border border-amber-400 shadow-[0_0_0_1px_rgba(255,255,255,0.2)] pointer-events-none"
+              style={{
+                left: spotlightRect.x,
+                top: spotlightRect.y,
+                width: spotlightRect.w,
+                height: spotlightRect.h,
+              }}
+            >
+               <div className="absolute top-0 right-0 p-1 bg-amber-400 text-black text-[8px] font-black uppercase leading-none rounded-bl">Focus</div>
+            </div>
+          )}
         </div>
 
         <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none">
