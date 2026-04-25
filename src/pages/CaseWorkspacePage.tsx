@@ -39,7 +39,6 @@ import {
   Check,
   X,
   Pencil,
-  FileText as DocIcon, 
   Image as ImageIcon, 
   Mic as AudioIcon, 
   Video as VideoIcon, 
@@ -50,7 +49,6 @@ import {
   Grid,
   MoreVertical,
   CheckCircle,
-  Clock as PendingIcon,
   AlertCircle,
   ExternalLink,
   ChevronDown,
@@ -98,12 +96,10 @@ import {
   Sun,
   Contrast,
   Zap,
-  Eye,
   EyeOff,
   Wand2,
   Focus,
   Target,
-  X,
   Grid3X3,
   MousePointer2
 } from "lucide-react";
@@ -4335,7 +4331,7 @@ function AudioExtractionConsole({ file, onJump, currentTime }: { file: any, onJu
       <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b px-5 py-3 flex items-center justify-between shrink-0">
          <div className="flex flex-col">
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Forensic Intelligence</span>
-            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter mt-1 opacity-60">ID: {file.id.slice(0,8)}</span>
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter mt-1 opacity-60">ID: {file?.id?.slice(0,8) || "N/A"}</span>
          </div>
          <div className="flex items-center gap-1 p-0.5 bg-slate-100 rounded-md border shadow-inner">
             {(["Analysis", "Diarization", "Enhancement"] as const).map(tab => (
