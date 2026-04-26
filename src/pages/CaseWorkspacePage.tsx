@@ -4201,15 +4201,9 @@ function AudioForensicWorkspace({
          onMouseUp={handleInteraction}
          onMouseLeave={() => setIsSelecting(false)}
        >
-          {/* Spectrogram Layer */}
-          <div className="flex-1 relative border-b border-white/5 bg-black/20">
-             <canvas ref={spectrogramCanvasRef} width={800} height={200} className="w-full h-full opacity-60 mix-blend-screen" />
-          </div>
-
-          {/* Waveform Layer */}
-          <div className="h-48 relative bg-black/40">
+          <div className="flex-1 relative bg-black/40">
              <canvas ref={waveformCanvasRef} width={800} height={192} className="w-full h-full" />
-             <div className="absolute top-3 left-3 text-[9px] font-black text-slate-500 uppercase tracking-widest bg-black/40 px-2 py-1 rounded backdrop-blur-sm">Temporal Amplitude (Time-Domain)</div>
+             
              
              {/* Selection Tools Popover */}
              {selection && !isSelecting && (
