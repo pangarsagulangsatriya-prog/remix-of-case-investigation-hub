@@ -225,3 +225,28 @@ export function useUploadEvidence() {
     },
   });
 }
+export function useCreateFolder() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ caseId, name }: { caseId: string, name: string }) => {
+      const { data, error } = await supabase
+        .from("evidence_batches")
+        .insert({
+          case_id: caseId,
+          name: name,
+          file_count: 0,
+          type: "Folder",
+          uploaded_by: "Admin"
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["evidence", variables.caseId] });
+    },
+  });
+}

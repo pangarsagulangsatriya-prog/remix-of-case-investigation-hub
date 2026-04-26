@@ -5,7 +5,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/AppLayout";
 import { StatusChip, SeverityChip, ConfidenceChip } from "@/components/StatusChip";
 import { useCase, useUpdateCase, useCases } from "@/hooks/useCases";
-import { useEvidence, useDeleteFile, useUploadEvidence, useUpdateBatch, useMoveFile } from "@/hooks/useEvidence";
+import { useEvidence, useDeleteFile, useUploadEvidence, useUpdateBatch, useMoveFile, useCreateFolder } from "@/hooks/useEvidence";
 import { useAuditLogs, useInsertAuditLog } from "@/hooks/useAuditLogs";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
@@ -102,7 +102,10 @@ import {
   Target,
   Grid3X3,
   MousePointer2,
-  Info
+  Info,
+  FolderPlus,
+  FileUp,
+  FolderUp
 } from "lucide-react";
 
 
@@ -2649,6 +2652,38 @@ function OverviewTab() {
   );
 }
 
+function Modal({ 
+  isOpen, 
+  onClose, 
+  title, 
+  children,
+  showCloseButton = false
+}: { 
+  isOpen: boolean, 
+  onClose: () => void, 
+  title: string, 
+  children: React.ReactNode,
+  showCloseButton?: boolean
+}) {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300" onClick={onClose} />
+      <div className="bg-white rounded-sm w-full max-w-md relative z-10 overflow-hidden animate-in zoom-in-95 duration-300 border border-slate-200 shadow-2xl">
+        <div className="p-4 border-b flex items-center justify-between bg-slate-50/50">
+          <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">{title}</h3>
+          {showCloseButton && (
+            <button onClick={onClose} className="p-1 hover:bg-slate-100 rounded transition-all">
+              <X className="h-4 w-4 text-slate-400" />
+            </button>
+          )}
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
 function DeleteConfirmationModal({ 
   isOpen, 
   onClose, 
@@ -3063,8 +3098,11 @@ function ExtractionTab({
   }, [batches]);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [isCreateFolderModalOpen, setIsCreateFolderModalOpen] = useState(false);
+  const [newFolderName, setNewFolderName] = useState("");
   
   const moveFileMutation = useMoveFile();
+  const createFolderMutation = useCreateFolder();
 
   // Lifted audio state — shared between center player and right panel
   const [audioCurrentTime, setAudioCurrentTime] = useState(0);
@@ -3127,6 +3165,18 @@ function ExtractionTab({
       setDeleteFolderTarget(null);
     } catch (error) {
       toast.error("Failed to delete folder.");
+    }
+  };
+
+  const handleCreateFolder = async () => {
+    if (!newFolderName.trim()) return;
+    try {
+      await createFolderMutation.mutateAsync({ caseId, name: newFolderName.trim() });
+      toast.success(`Folder "${newFolderName}" created.`);
+      setNewFolderName("");
+      setIsCreateFolderModalOpen(false);
+    } catch (error) {
+      toast.error("Failed to create folder.");
     }
   };
 
@@ -3227,22 +3277,46 @@ function ExtractionTab({
                 <span className="text-[10px] font-bold text-primary bg-primary/5 px-2 py-0.5 rounded-full">{evidenceFiles.length} Objects</span>
              </div>
              <div className="flex gap-2">
-               <div className="relative group flex-1">
-                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 group-focus-within:text-primary transition-colors" />
-                 <input 
-                   type="text" 
-                   placeholder="Search..."
-                   value={searchQuery}
-                   onChange={(e) => setSearchQuery(e.target.value)}
-                   className="w-full h-9 bg-white border border-slate-200 rounded-sm pl-9 pr-4 text-[11px] font-bold focus:ring-1 focus:ring-primary/20 focus:border-primary transition-all outline-none "
-                 />
-               </div>
-               <Button 
-                 onClick={() => setIsUploadModalOpen(true)}
-                 className="h-9 bg-emerald-600 hover:bg-emerald-700 text-white font-black px-3 rounded-sm text-[10px] uppercase tracking-widest gap-1.5 shrink-0"
-               >
-                 <Plus className="h-3.5 w-3.5" /> ADD
-               </Button>
+                <div className="relative group flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 group-focus-within:text-primary transition-colors" />
+                  <input 
+                    type="text" 
+                    placeholder="Search..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full h-9 bg-white border border-slate-200 rounded-sm pl-9 pr-4 text-[11px] font-bold focus:ring-1 focus:ring-primary/20 focus:border-primary transition-all outline-none "
+                  />
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button 
+                      className="h-9 bg-emerald-600 hover:bg-emerald-700 text-white font-black px-3 rounded-sm text-[10px] uppercase tracking-widest gap-1.5 shrink-0"
+                    >
+                      <Plus className="h-3.5 w-3.5" /> ADD
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem 
+                      onClick={() => setIsCreateFolderModalOpen(true)}
+                      className="text-[11px] font-bold py-2.5"
+                    >
+                      <FolderPlus className="h-4 w-4 mr-2.5 text-emerald-600" /> Create Folder
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem 
+                      onClick={() => setIsUploadModalOpen(true)}
+                      className="text-[11px] font-bold py-2.5"
+                    >
+                      <FileUp className="h-4 w-4 mr-2.5 text-slate-500" /> File upload
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => setIsUploadModalOpen(true)}
+                      className="text-[11px] font-bold py-2.5"
+                    >
+                      <FolderUp className="h-4 w-4 mr-2.5 text-slate-500" /> Folder upload
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
              </div>
           </div>
         </div>
@@ -3448,6 +3522,44 @@ function ExtractionTab({
         onClose={() => setIsUploadModalOpen(false)}
         onUploadComplete={onUploadComplete}
       />
+
+      <Modal
+        isOpen={isCreateFolderModalOpen}
+        onClose={() => { setIsCreateFolderModalOpen(false); setNewFolderName(""); }}
+        title="Create New Folder"
+        showCloseButton
+      >
+        <div className="p-6 space-y-6">
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Folder Name</label>
+            <input 
+              type="text"
+              placeholder="Enter folder name..."
+              value={newFolderName}
+              onChange={(e) => setNewFolderName(e.target.value)}
+              className="w-full h-11 bg-slate-50 border border-slate-200 rounded-sm px-4 text-sm font-bold focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none"
+              autoFocus
+            />
+          </div>
+          
+          <div className="flex gap-3 pt-2">
+             <Button 
+               variant="outline" 
+               className="flex-1 h-11 text-[11px] font-black uppercase tracking-widest"
+               onClick={() => { setIsCreateFolderModalOpen(false); setNewFolderName(""); }}
+             >
+               Cancel
+             </Button>
+             <Button 
+               className="flex-1 h-11 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[11px] uppercase tracking-widest shadow-lg shadow-emerald-600/10"
+               disabled={!newFolderName.trim() || createFolderMutation.isPending}
+               onClick={handleCreateFolder}
+             >
+               {createFolderMutation.isPending ? "Creating..." : "Create Folder"}
+             </Button>
+          </div>
+        </div>
+      </Modal>
 
       <DeleteFolderModal 
         key={deleteFolderTarget?.id ?? "none"}
