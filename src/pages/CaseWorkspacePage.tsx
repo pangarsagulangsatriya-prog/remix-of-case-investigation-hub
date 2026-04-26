@@ -106,7 +106,8 @@ import {
   Info,
   FolderPlus,
   FileUp,
-  FolderUp
+  FolderUp,
+  ArrowRight
 } from "lucide-react";
 
 
@@ -6938,34 +6939,96 @@ function AudioExtractionStructured({ data, onJump }: { data: any, onJump: (s: nu
     </div>
   );
 }
-
 function AudioSceneSession({ data, currentTime, onJump }: { data: any, currentTime: number, onJump: (s: number) => void }) {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
+
+  const getS = (s: string) => {
+    if (!s) return 0;
+    const parts = s.split(':').map(Number);
+    if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+    if (parts.length === 2) return parts[0] * 60 + parts[1];
+    return Number(s) || 0;
+  };
+
   const isSegmentActive = (start: string, end: string) => {
-    const getS = (s: string) => {
-      const parts = s.split(':').map(Number);
-      return parts.length === 3 ? parts[0] * 3600 + parts[1] * 60 + parts[2] : parts[0] * 60 + parts[1];
-    };
     return currentTime >= getS(start) && currentTime <= getS(end);
   };
 
+  const filteredData = useMemo(() => {
+    return data.scene_session.full_diarization.filter((seg: any) => {
+      const matchesSearch = seg.text.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                            seg.speaker_label.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const segStart = getS(seg.start_time);
+      const filterStart = startTime ? getS(startTime) : 0;
+      const filterEnd = endTime ? getS(endTime) : Infinity;
+      
+      const matchesTime = segStart >= filterStart && segStart <= filterEnd;
+      
+      return matchesSearch && matchesTime;
+    });
+  }, [data, searchQuery, startTime, endTime]);
+
   return (
     <div className="flex flex-col h-full bg-slate-50/10">
-      <div className="px-6 py-4 border-b border-slate-100 bg-white flex items-center justify-between sticky top-0 z-30">
-         <div className="flex flex-col">
+      <div className="px-6 py-4 border-b border-slate-100 bg-white sticky top-0 z-30 flex flex-col gap-4 shadow-sm">
+         <div className="flex items-center justify-between">
+            <div className="flex flex-col">
+               <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-bold text-slate-900 uppercase tracking-tight">Conversation Flow</span>
+                  <div className="h-1 w-1 bg-slate-300 rounded-full" />
+                  <div className="flex items-center gap-3 text-[10px] font-mono text-slate-400 uppercase tabular-nums tracking-tighter">
+                     <span>{filteredData.length} Results</span>
+                  </div>
+               </div>
+            </div>
+         </div>
+
+         {/* Search & Filter Controls (IBM Carbon Style) */}
+         <div className="flex flex-col gap-2">
+            {/* Search Input */}
+            <div className="relative group">
+               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400 group-focus-within:text-slate-900 transition-colors" />
+               <input 
+                  type="text" 
+                  placeholder="Search transcript or speakers..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-100 px-9 py-2 text-[10px] font-medium focus:bg-white focus:border-slate-900 focus:ring-0 outline-none transition-all rounded-sm placeholder:text-slate-400"
+               />
+            </div>
+            
+            {/* Time Range Inputs */}
             <div className="flex items-center gap-2">
-               <span className="text-[11px] font-bold text-slate-900 uppercase tracking-tight">Conversation Flow</span>
-               <div className="h-1 w-1 bg-slate-300 rounded-full" />
-               <div className="flex items-center gap-3 text-[10px] font-mono text-slate-400 uppercase tabular-nums tracking-tighter">
-                  <span>{data.scene_session.full_diarization.length} Segments</span>
-                  <div className="h-2 w-px bg-slate-100" />
-                  <span>{data.scene_session.speaker_count} Speakers</span>
+               <div className="flex-1 relative">
+                  <div className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[8px] font-black text-slate-300 uppercase">Start</div>
+                  <input 
+                     type="text" 
+                     placeholder="00:00"
+                     value={startTime}
+                     onChange={(e) => setStartTime(e.target.value)}
+                     className="w-full bg-slate-50 border border-slate-100 pl-10 pr-2 py-1.5 text-[10px] font-mono focus:bg-white focus:border-slate-900 outline-none transition-all rounded-sm"
+                  />
+               </div>
+               <ArrowRight className="h-3 w-3 text-slate-200" />
+               <div className="flex-1 relative">
+                  <div className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[8px] font-black text-slate-300 uppercase">End</div>
+                  <input 
+                     type="text" 
+                     placeholder="MM:SS"
+                     value={endTime}
+                     onChange={(e) => setEndTime(e.target.value)}
+                     className="w-full bg-slate-50 border border-slate-100 pl-8 pr-2 py-1.5 text-[10px] font-mono focus:bg-white focus:border-slate-900 outline-none transition-all rounded-sm"
+                  />
                </div>
             </div>
          </div>
       </div>
 
       <div className="flex-1 overflow-auto custom-scrollbar p-4 space-y-3">
-        {data.scene_session.full_diarization.map((seg: any) => {
+        {filteredData.map((seg: any) => {
           const active = isSegmentActive(seg.start_time, seg.end_time);
           return (
             <div
