@@ -250,3 +250,21 @@ export function useCreateFolder() {
     },
   });
 }
+export function useDeleteBatch() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id }: { id: string }) => {
+      const { error } = await supabase
+        .from("evidence_batches")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+      return true;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["evidence"] });
+    },
+  });
+}

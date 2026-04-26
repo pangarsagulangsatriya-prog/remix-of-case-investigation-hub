@@ -5,7 +5,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/AppLayout";
 import { StatusChip, SeverityChip, ConfidenceChip } from "@/components/StatusChip";
 import { useCase, useUpdateCase, useCases } from "@/hooks/useCases";
-import { useEvidence, useDeleteFile, useUploadEvidence, useUpdateBatch, useMoveFile, useCreateFolder } from "@/hooks/useEvidence";
+import { useEvidence, useDeleteFile, useUploadEvidence, useUpdateBatch, useMoveFile, useCreateFolder, useDeleteBatch } from "@/hooks/useEvidence";
 import { useAuditLogs, useInsertAuditLog } from "@/hooks/useAuditLogs";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
@@ -3135,6 +3135,7 @@ function ExtractionTab({
   
   const moveFileMutation = useMoveFile();
   const createFolderMutation = useCreateFolder();
+  const deleteBatchMutation = useDeleteBatch();
 
   // Lifted audio state — shared between center player and right panel
   const [audioCurrentTime, setAudioCurrentTime] = useState(0);
@@ -3180,6 +3181,22 @@ function ExtractionTab({
     });
   };
 
+  const handleCleanupEmptyFolders = async () => {
+    const emptyBatches = batches.filter(b => b.type !== "Loose Files" && !evidenceFiles.some(f => f.batch_id === b.id));
+    if (emptyBatches.length === 0) {
+      toast.info("No empty folders to clean up.");
+      return;
+    }
+
+    try {
+      toast.loading(`Cleaning up ${emptyBatches.length} empty folders...`, { id: "cleanup" });
+      await Promise.all(emptyBatches.map(b => deleteBatchMutation.mutateAsync({ id: b.id })));
+      toast.success("Cleanup complete. Empty folders removed.", { id: "cleanup" });
+    } catch (error) {
+      toast.error("Failed to cleanup some folders.", { id: "cleanup" });
+    }
+  };
+
   const handleDeleteFolder = async () => {
     if (!deleteFolderTarget) return;
     try {
@@ -3187,6 +3204,8 @@ function ExtractionTab({
       for (const file of filesInBatch) {
         await deleteFileMutation.mutateAsync({ id: file.id, url: file.url });
       }
+      await deleteBatchMutation.mutateAsync({ id: deleteFolderTarget.id });
+      
       await insertAuditLog.mutateAsync({
         case_id: caseId!,
         action: `Deleted folder "${deleteFolderTarget.name}"`,
@@ -3303,10 +3322,18 @@ function ExtractionTab({
       <div className="w-80 border-r bg-white flex flex-col shrink-0 relative z-10 shadow-[2px_0_8px_rgba(0,0,0,0.02)] overflow-hidden">
         <div className="p-5 border-b space-y-4 bg-slate-50/30">
           <div className="space-y-1.5">
-             <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between">
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Evidence Repository</span>
-                <span className="text-[10px] font-bold text-primary bg-primary/5 px-2 py-0.5 rounded-full">{evidenceFiles.length} Objects</span>
-             </div>
+                <div className="flex items-center gap-2">
+                   <button 
+                     onClick={handleCleanupEmptyFolders}
+                     className="text-[9px] font-black text-rose-500 hover:text-rose-700 uppercase tracking-tighter transition-colors"
+                   >
+                     Cleanup
+                   </button>
+                   <span className="text-[10px] font-bold text-primary bg-primary/5 px-2 py-0.5 rounded-full">{evidenceFiles.length} Objects</span>
+                </div>
+              </div>
              <div className="flex gap-2">
                 <div className="relative group flex-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 group-focus-within:text-primary transition-colors" />
