@@ -4841,27 +4841,27 @@ function AudioExtractionConsole({ file, onJump, currentTime }: { file: any, onJu
             </div>
          </div>
 
-         {/* Minimalist Underline Tabs Container */}
-         <div className="flex items-center border-b border-slate-200 mt-6 -mb-[1px] relative z-10">
-            {(["Diarization", "Analysis", "Metadata"] as const).map((tab, idx) => (
-              <button 
-                key={tab}
-                onClick={() => setActiveTab(tab)} 
-                className={`py-3 text-[10.5px] font-bold uppercase tracking-widest transition-all relative ${
-                  idx === 0 ? "pr-4" : "px-4"
-                } ${
-                  activeTab === tab 
-                    ? "text-slate-900" 
-                    : "text-slate-400 hover:text-slate-600"
-                }`}
-              >
-                {tab}
-                {activeTab === tab && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600" />
-                )}
-              </button>
-            ))}
-         </div>
+          {/* Minimalist Underline Tabs Container */}
+          <div className="flex items-center border-b border-slate-200 mt-6 relative">
+             {(["Diarization", "Analysis", "Metadata"] as const).map((tab, idx) => (
+               <button 
+                 key={tab}
+                 onClick={() => setActiveTab(tab)} 
+                 className={`py-3 text-[10.5px] font-bold uppercase tracking-widest transition-all relative ${
+                   idx === 0 ? "pr-4" : "px-4"
+                 } ${
+                   activeTab === tab 
+                     ? "text-slate-900" 
+                     : "text-slate-400 hover:text-slate-600"
+                 }`}
+               >
+                 {tab}
+                 {activeTab === tab && (
+                   <div className="absolute -bottom-[1px] left-0 right-0 h-0.5 bg-emerald-600 z-20" />
+                 )}
+               </button>
+             ))}
+          </div>
 
          {activeTab === "Analysis" && (
            <div className="flex items-center justify-end">
@@ -6857,14 +6857,35 @@ function AudioSceneSession({ data, currentTime, onJump }: { data: any, currentTi
 
   return (
     <div className="flex flex-col h-full bg-slate-50/10">
-      <div className="px-6 pt-4 pb-2 bg-white flex items-center justify-between sticky top-0 z-30">
+      <div className="px-6 pt-5 pb-3 bg-white flex items-center justify-between sticky top-0 z-30 border-b border-slate-100">
          <div className="flex flex-col">
             <h3 className="text-lg font-semibold text-slate-800 leading-tight">Conversation Flow</h3>
             <span className="text-sm text-slate-500 font-medium mt-0.5">{data.scene_session.full_diarization.length} Segments • {data.scene_session.speaker_count} Speakers</span>
          </div>
       </div>
 
-      <div className="flex-1 overflow-auto custom-scrollbar p-5 space-y-4">
+      <div className="flex-1 overflow-auto custom-scrollbar p-6">
+        {/* Search & Filter Toolbar */}
+        <div className="flex items-center gap-2 mb-4">
+           <div className="relative flex-1 group">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors" />
+              <input 
+                type="text" 
+                placeholder="Search transcript..."
+                className="w-full h-9 bg-slate-50 border border-slate-200 rounded-sm pl-9 pr-4 text-sm font-medium focus:ring-1 focus:ring-primary/20 focus:border-primary transition-all outline-none"
+              />
+           </div>
+           <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" className="h-9 border-slate-200 text-slate-600 text-sm font-medium gap-1.5 rounded-sm hover:bg-slate-50">
+                Speaker <ChevronDown className="h-3.5 w-3.5 opacity-50" />
+              </Button>
+              <Button variant="outline" size="sm" className="h-9 border-slate-200 text-slate-600 text-sm font-medium gap-1.5 rounded-sm hover:bg-slate-50">
+                Time <ChevronDown className="h-3.5 w-3.5 opacity-50" />
+              </Button>
+           </div>
+        </div>
+
+        <div className="space-y-4">
         {data.scene_session.full_diarization.map((seg: any) => {
           const active = isSegmentActive(seg.start_time, seg.end_time);
           return (
@@ -6900,6 +6921,7 @@ function AudioSceneSession({ data, currentTime, onJump }: { data: any, currentTi
             </div>
           );
         })}
+        </div>
       </div>
     </div>
   );
