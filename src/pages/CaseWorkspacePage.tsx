@@ -4829,26 +4829,15 @@ function AudioExtractionConsole({ file, onJump, currentTime }: { file: any, onJu
 
   return (
     <div className="flex flex-col h-full bg-white">
-      <div className="sticky top-0 z-40 bg-white border-b px-6 pt-6 pb-0 flex flex-col shrink-0">
-         <div className="flex items-center justify-between">
-            <div className="flex flex-col">
-               <span className="text-[11px] font-black text-slate-900 uppercase tracking-[0.2em] leading-none">Extraction Result</span>
-               <div className="flex items-center gap-2 mt-4">
-                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter opacity-60">Audio Evidence Object</span>
-                  <div className="h-1 w-1 rounded-full bg-slate-200" />
-                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter opacity-60">ID: {file?.id?.slice(0,8) || "N/A"}</span>
-               </div>
-            </div>
-         </div>
-
+      <div className="sticky top-0 z-40 bg-white border-b px-6 pt-2 pb-0 flex flex-col shrink-0">
           {/* Minimalist Underline Tabs Container */}
-          <div className="flex items-center border-b border-slate-200 mt-6 relative">
+          <div className="flex items-center border-b border-slate-200 relative">
              {(["Diarization", "Analysis", "Metadata"] as const).map((tab, idx) => (
                <button 
                  key={tab}
                  onClick={() => setActiveTab(tab)} 
-                 className={`py-3 text-[10.5px] font-bold uppercase tracking-widest transition-all relative ${
-                   idx === 0 ? "pr-4" : "px-4"
+                 className={`py-3.5 text-[10.5px] font-bold uppercase tracking-widest transition-all relative ${
+                   idx === 0 ? "pr-5" : "px-5"
                  } ${
                    activeTab === tab 
                      ? "text-slate-900" 
@@ -6857,35 +6846,20 @@ function AudioSceneSession({ data, currentTime, onJump }: { data: any, currentTi
 
   return (
     <div className="flex flex-col h-full bg-slate-50/10">
-      <div className="px-6 pt-5 pb-3 bg-white flex items-center justify-between sticky top-0 z-30 border-b border-slate-100">
+      <div className="px-5 py-3 border-b bg-white flex items-center justify-between sticky top-0 z-30 shadow-sm">
          <div className="flex flex-col">
-            <h3 className="text-lg font-semibold text-slate-800 leading-tight">Conversation Flow</h3>
-            <span className="text-sm text-slate-500 font-medium mt-0.5">{data.scene_session.full_diarization.length} Segments • {data.scene_session.speaker_count} Speakers</span>
+            <div className="flex items-center gap-2">
+               <MessageSquare className="h-3.5 w-3.5 text-slate-900" />
+               <span className="text-[10px] font-black text-slate-900 uppercase tracking-[0.1em]">Diarization Session</span>
+            </div>
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter mt-0.5">{data.scene_session.full_diarization.length} Segments • {data.scene_session.speaker_count} Speakers</span>
          </div>
+         <Button variant="outline" size="sm" className="h-7 text-[9px] font-black uppercase tracking-widest gap-2 border-slate-200">
+           <FileText className="h-3 w-3" /> Export RAW
+         </Button>
       </div>
 
-      <div className="flex-1 overflow-auto custom-scrollbar p-6">
-        {/* Search & Filter Toolbar */}
-        <div className="flex items-center gap-2 mb-4">
-           <div className="relative flex-1 group">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors" />
-              <input 
-                type="text" 
-                placeholder="Search transcript..."
-                className="w-full h-9 bg-slate-50 border border-slate-200 rounded-sm pl-9 pr-4 text-sm font-medium focus:ring-1 focus:ring-primary/20 focus:border-primary transition-all outline-none"
-              />
-           </div>
-           <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" className="h-9 border-slate-200 text-slate-600 text-sm font-medium gap-1.5 rounded-sm hover:bg-slate-50">
-                Speaker <ChevronDown className="h-3.5 w-3.5 opacity-50" />
-              </Button>
-              <Button variant="outline" size="sm" className="h-9 border-slate-200 text-slate-600 text-sm font-medium gap-1.5 rounded-sm hover:bg-slate-50">
-                Time <ChevronDown className="h-3.5 w-3.5 opacity-50" />
-              </Button>
-           </div>
-        </div>
-
-        <div className="space-y-4">
+      <div className="flex-1 overflow-auto custom-scrollbar p-4 space-y-3">
         {data.scene_session.full_diarization.map((seg: any) => {
           const active = isSegmentActive(seg.start_time, seg.end_time);
           return (
@@ -6895,33 +6869,41 @@ function AudioSceneSession({ data, currentTime, onJump }: { data: any, currentTi
                 const parts = seg.start_time.split(':').map(Number);
                 onJump(parts.length === 3 ? parts[0] * 3600 + parts[1] * 60 + parts[2] : parts[0] * 60 + parts[1]);
               }}
-              className={`group flex flex-col gap-2.5 p-5 rounded-lg border transition-all duration-300 cursor-pointer relative ${
+              className={`group flex flex-col gap-3 p-4 rounded-sm border transition-all duration-300 cursor-pointer relative overflow-hidden ${
                 active 
-                ? "bg-white border-primary/40 shadow-md ring-1 ring-primary/5" 
-                : "bg-white border-slate-100 hover:border-slate-200 hover:shadow-sm"
+                ? "bg-white border-slate-900 shadow-md ring-1 ring-slate-900/5 z-10" 
+                : "bg-white/60 border-slate-100 hover:border-slate-300 hover:bg-white"
               }`}
             >
+              {active && <div className="absolute top-0 left-0 w-1.5 h-full bg-slate-900" />}
+              
               <div className="flex items-center justify-between">
-                 <div className="flex items-center gap-2.5">
-                    <span className="text-sm font-semibold text-slate-900">{seg.speaker_label}</span>
-                    <button className="text-sm text-blue-600 hover:underline font-medium tabular-nums">
+                 <div className="flex items-center gap-3">
+                    <span className={`text-[11px] font-black tabular-nums transition-colors ${active ? "text-slate-900" : "text-slate-400"}`}>
                       {seg.start_time} — {seg.end_time}
-                    </button>
+                    </span>
+                    <span className={`px-2 py-0.5 rounded-[4px] text-[9px] font-black uppercase border transition-all ${
+                      active 
+                      ? "bg-slate-900 text-white border-slate-900" 
+                      : (seg.speaker_id === "SPK_01" ? "bg-amber-50 text-amber-600 border-amber-100" : "bg-indigo-50 text-indigo-600 border-indigo-100")
+                    }`}>
+                      {seg.speaker_label}
+                    </span>
                  </div>
+                 <div className={`text-[9px] font-black uppercase tracking-widest ${active ? "text-emerald-600" : "text-slate-300"}`}>High</div>
               </div>
 
               <div className="relative">
-                <p className="text-[13px] leading-relaxed text-slate-700 font-normal">
-                  {seg.text}
+                <p className={`text-[12px] leading-relaxed transition-all duration-500 ${active ? "text-slate-900 font-bold" : "text-slate-500 font-medium"} italic`}>
+                  "{seg.text}"
                 </p>
                 {seg.inaudible_flag && (
-                   <span className="inline-flex mt-2 px-2 py-0.5 bg-rose-50 text-rose-600 text-[9px] font-black rounded border border-rose-100 uppercase tracking-widest">Inaudible</span>
+                   <span className="absolute -right-1 -bottom-1 px-1.5 bg-rose-50 text-rose-600 text-[8px] font-black rounded border border-rose-100 uppercase">Inaudible</span>
                 )}
               </div>
             </div>
           );
         })}
-        </div>
       </div>
     </div>
   );
