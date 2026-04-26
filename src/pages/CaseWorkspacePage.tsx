@@ -106,9 +106,7 @@ import {
   Info,
   FolderPlus,
   FileUp,
-  FolderUp,
-  FolderUp,
-  ChevronDown
+  FolderUp
 } from "lucide-react";
 
 
@@ -6959,6 +6957,7 @@ function AudioSceneSession({ data, currentTime, onJump }: { data: any, currentTi
   };
 
   const filteredData = useMemo(() => {
+    if (!data?.scene_session?.full_diarization) return [];
     return data.scene_session.full_diarization.filter((seg: any) => {
       // Transcript only search as requested
       const matchesSearch = seg.text.toLowerCase().includes(searchQuery.toLowerCase());
