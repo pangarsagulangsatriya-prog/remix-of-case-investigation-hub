@@ -3266,7 +3266,7 @@ function ExtractionTab({
   return (
     <div className="flex h-full overflow-hidden bg-white border-t relative">
       {/* Evidence Side Sidebar */}
-      <div className="w-80 border-r bg-white flex flex-col shrink-0 relative z-20 shadow-[2px_0_8px_rgba(0,0,0,0.02)]">
+      <div className="w-80 border-r bg-white flex flex-col shrink-0 relative z-10 shadow-[2px_0_8px_rgba(0,0,0,0.02)] overflow-hidden">
         <div className="p-5 border-b space-y-4 bg-slate-50/30">
           <div className="space-y-1.5">
              <div className="flex items-center justify-between">
@@ -3318,7 +3318,7 @@ function ExtractionTab({
           </div>
         </div>
           
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-0">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar p-0">
           <div className="space-y-0.5">
             {/* Folders */}
             {folderGroups.map((batch) => (
@@ -3335,8 +3335,8 @@ function ExtractionTab({
                     expandedBatches.includes(batch.id) ? "rotate-90" : ""
                   )} />
                   <Folder className={cn("h-4 w-4", expandedBatches.includes(batch.id) ? "text-primary" : "text-slate-400")} />
-                  <span className="text-[11px] font-bold text-slate-700 uppercase tracking-tight flex-1">{batch.name}</span>
-                  <span className="text-[9px] font-black text-slate-300 mr-2">{batch.files.length}</span>
+                  <span className="text-[11px] font-bold text-slate-700 uppercase tracking-tight flex-1 truncate">{batch.name}</span>
+                  <span className="text-[9px] font-black text-slate-300 mr-2 shrink-0">{batch.files.length}</span>
                   
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
@@ -3411,11 +3411,9 @@ function ExtractionTab({
             )}
           </div>
         </div>
-          
+      </div>
 
-        </div>
-
-      <div className="flex-1 flex flex-col relative z-10 bg-white">
+      <div className="flex-1 flex flex-col relative z-0 bg-white">
         <div className="h-12 border-b flex items-center justify-between px-6 shrink-0 bg-white">
            {selectedFile ? (
              <>
