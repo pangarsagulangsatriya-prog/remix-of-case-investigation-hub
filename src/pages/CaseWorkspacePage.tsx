@@ -4845,43 +4845,44 @@ function AudioExtractionConsole({ file, onJump, currentTime }: { file: any, onJu
 
   return (
     <div className="flex flex-col h-full bg-white">
-      <div className="sticky top-0 z-40 bg-white border-b px-5 py-4 flex flex-col shrink-0 shadow-sm">
-         <div className="flex items-center justify-between mb-4">
+      <div className="sticky top-0 z-40 bg-white border-b px-6 py-5 flex flex-col shrink-0">
+         <div className="flex items-center justify-between mb-6">
            <div className="flex flex-col">
-              <span className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em] leading-none">Extraction Result</span>
-              <div className="flex items-center gap-2 mt-1">
-                 <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter opacity-60">Audio Evidence Object</span>
+              <span className="text-[11px] font-black text-slate-900 uppercase tracking-[0.2em] leading-none">Extraction Result</span>
+              <div className="flex items-center gap-2 mt-1.5">
+                 <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter opacity-60">Audio Evidence Object</span>
                  <div className="h-1 w-1 rounded-full bg-slate-200" />
-                 <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter opacity-60">ID: {file?.id?.slice(0,8) || "N/A"}</span>
+                 <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter opacity-60">ID: {file?.id?.slice(0,8) || "N/A"}</span>
               </div>
-           </div>
-           
-           <div className="flex items-center gap-2">
-             <div className="flex items-center gap-1 p-0.5 bg-slate-100 rounded-md border shadow-inner">
-                {(["Diarization", "Analysis", "Metadata"] as const).map(tab => (
-                  <button 
-                    key={tab}
-                    onClick={() => setActiveTab(tab)} 
-                    className={`px-3 py-1 text-[8px] font-black uppercase rounded transition-all ${activeTab === tab ? "bg-white text-primary shadow-sm" : "text-slate-400 hover:text-slate-600"}`}
-                  >
-                    {tab}
-                  </button>
-                ))}
-             </div>
            </div>
          </div>
 
-         <div className="flex items-center justify-between">
-            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest max-w-[320px] leading-relaxed">
+         {/* Full Width Tabs Container */}
+         <div className="bg-slate-100/80 p-1 rounded-lg border border-slate-200/60 flex items-center mb-6">
+            {(["Diarization", "Analysis", "Metadata"] as const).map(tab => (
+              <button 
+                key={tab}
+                onClick={() => setActiveTab(tab)} 
+                className={`flex-1 py-2 text-[10px] font-black uppercase tracking-widest transition-all rounded-md ${activeTab === tab ? "bg-white text-primary shadow-sm" : "text-slate-400 hover:text-slate-600"}`}
+              >
+                {tab}
+              </button>
+            ))}
+         </div>
+
+         <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-black text-slate-800 uppercase tracking-tight">{activeTab}</h3>
+              {activeTab === "Analysis" && (
+                <div className="flex items-center gap-1 p-0.5 bg-slate-100 rounded-md border shadow-inner">
+                   <button onClick={() => setViewMode("Structured")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "Structured" ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>Structured</button>
+                   <button onClick={() => setViewMode("JSON")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "JSON" ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>JSON</button>
+                </div>
+              )}
+            </div>
+            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">
               {TAB_DESCRIPTIONS[activeTab]}
             </p>
-
-            {activeTab === "Analysis" && (
-               <div className="flex items-center gap-1 p-0.5 bg-slate-100 rounded-md border shadow-inner">
-                  <button onClick={() => setViewMode("Structured")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "Structured" ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>Structured</button>
-                  <button onClick={() => setViewMode("JSON")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "JSON" ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>JSON</button>
-               </div>
-            )}
          </div>
       </div>
 
