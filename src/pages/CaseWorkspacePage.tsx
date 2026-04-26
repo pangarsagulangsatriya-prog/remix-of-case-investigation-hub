@@ -2922,25 +2922,37 @@ function FileRow({
   isSelected, 
   onSelect, 
   onMove,
-  batches 
+  onDelete,
+  batches,
+  isIndented = false
 }: { 
   file: any, 
   isSelected: boolean, 
   onSelect: () => void, 
   onMove: (fileId: string, batchId: string | null) => void,
-  batches: any[]
+  onDelete: () => void,
+  batches: any[],
+  isIndented?: boolean
 }) {
   return (
     <div
       onClick={onSelect}
       className={cn(
-        "group flex items-center justify-between p-2 rounded-sm cursor-pointer transition-all border-l-2",
+        "group flex items-center justify-between py-1.5 px-3 rounded-sm cursor-pointer transition-all border-l-2",
         isSelected 
-          ? "bg-slate-100 border-primary" 
+          ? "bg-slate-100 border-primary shadow-sm" 
           : "hover:bg-slate-50 border-transparent"
       )}
     >
-      <div className="flex items-center gap-3 overflow-hidden">
+      <div className="flex items-center gap-3 overflow-hidden flex-1">
+        {isIndented ? (
+          <div className="relative w-7 shrink-0 h-full flex items-center justify-center">
+             <div className="absolute top-[-14px] bottom-1/2 left-[5px] w-px bg-slate-200" />
+             <div className="absolute top-1/2 bottom-1/2 left-[5px] right-0 h-px bg-slate-200" />
+          </div>
+        ) : (
+          <div className="w-1 shrink-0" />
+        )}
         <div className={cn(
           "h-7 w-7 rounded flex items-center justify-center shrink-0 border shadow-sm transition-colors",
           isSelected ? "bg-white text-primary border-primary/20" : "bg-white text-slate-400 group-hover:text-slate-600"
@@ -2949,27 +2961,43 @@ function FileRow({
         </div>
         <div className="overflow-hidden">
           <p className={cn(
-            "text-[11px] font-medium truncate leading-tight",
+            "text-[11px] font-bold truncate leading-tight",
             isSelected ? "text-slate-900" : "text-slate-600 group-hover:text-slate-900"
           )}>
             {file.name}
           </p>
-          <div className="flex items-center gap-2">
-            <span className="text-[9px] text-slate-400 font-bold uppercase tracking-tight">{file.type}</span>
-            {file.review_status === 'reviewed' && <CheckCircle2 className="h-2.5 w-2.5 text-emerald-500" />}
+          <div className="flex items-center gap-2 mt-0.5">
+            <span className="text-[9px] text-slate-400 font-medium uppercase tracking-tight">
+              {(() => {
+                if (!file.size) return '0 KB';
+                if (typeof file.size === 'string') return file.size;
+                const sizeNum = Number(file.size);
+                if (isNaN(sizeNum)) return file.size;
+                return sizeNum > 1024 * 1024 
+                  ? `${(sizeNum / (1024 * 1024)).toFixed(2)} MB` 
+                  : `${(sizeNum / 1024).toFixed(1)} KB`;
+              })()}
+            </span>
+            <span className="text-[9px] text-slate-300">•</span>
+            <span className="text-[9px] text-slate-400 font-medium uppercase tracking-tight">
+              {file.created_at ? new Date(file.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Unknown date'}
+            </span>
+            {file.review_status === 'reviewed' && <CheckCircle2 className="h-2.5 w-2.5 text-emerald-500 ml-1" />}
           </div>
         </div>
       </div>
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-          <button className="p-1 hover:bg-white rounded text-slate-300 hover:text-slate-900 transition-all opacity-0 group-hover:opacity-100">
+          <button className="p-1 hover:bg-slate-200 rounded text-slate-400 transition-all shrink-0">
             <MoreVertical className="h-3.5 w-3.5" />
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuLabel className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2 py-1.5">File Actions</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <div className="px-2 py-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest">Move to</div>
+          
+          <div className="px-2 py-1 text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">Move to</div>
           <DropdownMenuItem 
             onClick={() => onMove(file.id, null)}
             disabled={!file.batch_id}
@@ -2977,7 +3005,13 @@ function FileRow({
           >
             <Folder className="h-3.5 w-3.5 mr-2 text-slate-400" /> Root Directory
           </DropdownMenuItem>
-          {batches.filter(b => b.type === "Folder" && b.id !== file.batch_id).map(batch => (
+          {Array.from(new Map(
+            batches
+              .filter(b => b.type !== "Loose Files" && b.id !== file.batch_id)
+              .map(b => [b.name, b])
+          ).values())
+          .sort((a, b) => a.name.localeCompare(b.name))
+          .map((batch: any) => (
             <DropdownMenuItem 
               key={batch.id} 
               onClick={() => onMove(file.id, batch.id)}
@@ -2986,6 +3020,14 @@ function FileRow({
               <Folder className="h-3.5 w-3.5 mr-2 text-primary/60" /> {batch.name}
             </DropdownMenuItem>
           ))}
+          
+          <DropdownMenuSeparator />
+          <DropdownMenuItem 
+            onClick={onDelete}
+            className="text-rose-600 focus:text-rose-600 text-[11px] font-bold py-2"
+          >
+            <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete File
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
@@ -3009,6 +3051,16 @@ function ExtractionTab({
 }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedBatches, setExpandedBatches] = useState<string[]>([]);
+  
+  // Auto-expand folders by default on initial load
+  const hasExpandedDefault = useRef(false);
+  useEffect(() => {
+    if (batches && batches.length > 0 && !hasExpandedDefault.current) {
+      const folderIds = batches.filter(b => b.type !== "Loose Files").map(b => b.id);
+      setExpandedBatches(folderIds);
+      hasExpandedDefault.current = true;
+    }
+  }, [batches]);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   
@@ -3215,12 +3267,23 @@ function ExtractionTab({
                   <span className="text-[11px] font-bold text-slate-700 uppercase tracking-tight flex-1">{batch.name}</span>
                   <span className="text-[9px] font-black text-slate-300 mr-2">{batch.files.length}</span>
                   
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); openDeleteFolderModal(batch); }}
-                    className="p-1 hover:bg-rose-50 rounded text-slate-300 hover:text-rose-500 transition-all opacity-0 group-hover/folder:opacity-100"
-                  >
-                     <Trash2 className="h-3 w-3" />
-                  </button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                      <button className="p-1 hover:bg-slate-200 rounded text-slate-400 transition-all shrink-0">
+                        <MoreVertical className="h-3.5 w-3.5" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-48">
+                      <DropdownMenuLabel className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2 py-1.5">Folder Actions</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem 
+                        onClick={() => openDeleteFolderModal(batch)}
+                        className="text-rose-600 focus:text-rose-600 text-[11px] font-bold py-2"
+                      >
+                        <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete Folder
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
 
                 {expandedBatches.includes(batch.id) && (
@@ -3235,6 +3298,7 @@ function ExtractionTab({
                           isSelected={selectedFile?.id === file.id}
                           onSelect={() => setSelectedFile(file)}
                           onMove={handleMoveFile}
+                          onDelete={() => { setSelectedFile(file); setIsDeleteModalOpen(true); }}
                           batches={batches}
                           isIndented
                         />
@@ -3253,6 +3317,7 @@ function ExtractionTab({
                 isSelected={selectedFile?.id === file.id}
                 onSelect={() => setSelectedFile(file)}
                 onMove={handleMoveFile}
+                onDelete={() => { setSelectedFile(file); setIsDeleteModalOpen(true); }}
                 batches={batches}
               />
             ))}
