@@ -62,6 +62,7 @@ import {
   MessageSquare,
   ChevronLeft,
   Users,
+  User,
   FileJson,
   Copy,
   ZoomIn,
@@ -3098,6 +3099,40 @@ function ExtractionTab({
   const [isCreateFolderModalOpen, setIsCreateFolderModalOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   
+  const [optimisticUploads, setOptimisticUploads] = useState<any[]>([]);
+
+  const handleLocalUploadComplete = (groups: CompletedGroup[]) => {
+    // 2. Sidebar Optimistic Loading State
+    const newOptimistic = groups.flatMap(g => g.files.map(f => ({
+      id: "optimistic_" + Math.random().toString(36).substr(2, 9),
+      name: f.file.name,
+      status: "processing"
+    })));
+    setOptimisticUploads(prev => [...newOptimistic, ...prev]);
+
+    // 3. Background Mock API Call simulating 5 seconds
+    const processBackground = async () => {
+      await new Promise(resolve => setTimeout(resolve, 5000));
+      
+      try {
+        await onUploadComplete(groups); // Calls real save
+        
+        // 4. State Transition & Success Animation
+        setOptimisticUploads(prev => prev.map(f => newOptimistic.some(n => n.id === f.id) ? { ...f, status: "completed" } : f));
+        
+        toast.success(`Extraction complete: ${newOptimistic[0]?.name} is ready for review.`);
+        
+        setTimeout(() => {
+          setOptimisticUploads(prev => prev.filter(f => !newOptimistic.some(n => n.id === f.id)));
+        }, 1500); // 1.5s delay to show the green highlight
+      } catch (err) {
+        setOptimisticUploads(prev => prev.filter(f => !newOptimistic.some(n => n.id === f.id)));
+      }
+    };
+    
+    processBackground();
+  };
+  
   const moveFileMutation = useMoveFile();
   const createFolderMutation = useCreateFolder();
 
@@ -3287,7 +3322,7 @@ function ExtractionTab({
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button 
-                      className="h-9 bg-emerald-600 hover:bg-emerald-700 text-white font-black px-3 rounded-sm text-[10px] uppercase tracking-widest gap-1.5 shrink-0"
+                      className="h-9 bg-slate-900 hover:bg-emerald-700 text-white font-black px-3 rounded-sm text-[10px] uppercase tracking-widest gap-1.5 shrink-0"
                     >
                       <Plus className="h-3.5 w-3.5" /> ADD
                     </Button>
@@ -3380,6 +3415,32 @@ function ExtractionTab({
               </div>
             ))}
 
+            {/* Optimistic Background Uploads */}
+            {optimisticUploads.map((file) => (
+              file.status === "processing" ? (
+                 <div key={file.id} className="flex items-center gap-2.5 px-3 py-2.5 border-b border-slate-50 bg-slate-50/50">
+                    <div className="h-7 w-7 rounded bg-slate-100 flex items-center justify-center shrink-0">
+                       <Loader2 className="h-3.5 w-3.5 text-slate-400 animate-spin" />
+                    </div>
+                    <div className="flex-1 min-w-0 space-y-1.5">
+                       <div className="h-2.5 w-3/4 bg-slate-200 rounded animate-pulse" />
+                       <div className="h-2 w-1/3 bg-slate-100 rounded animate-pulse" />
+                    </div>
+                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest animate-pulse pr-1">Extracting...</span>
+                 </div>
+              ) : (
+                 <div key={file.id} className="flex items-center gap-2.5 px-3 py-2.5 border-b border-emerald-100 bg-emerald-50/30 shadow-[inset_3px_0_0_#10b981] transition-all duration-700 animate-in fade-in">
+                    <div className="h-7 w-7 rounded bg-emerald-100 flex items-center justify-center shrink-0">
+                       <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                       <p className="text-[11px] font-bold text-slate-800 truncate leading-tight">{file.name}</p>
+                       <span className="text-[9px] font-bold text-emerald-600 uppercase tracking-widest mt-0.5 inline-block">Processed</span>
+                    </div>
+                 </div>
+              )
+            ))}
+
             {/* Loose Files (Root) */}
             {looseFiles.map((file) => (
               <FileRow 
@@ -3393,7 +3454,7 @@ function ExtractionTab({
               />
             ))}
 
-            {filteredFiles.length === 0 && (
+            {filteredFiles.length === 0 && optimisticUploads.length === 0 && (
               <div className="py-20 flex flex-col items-center justify-center text-center px-6">
                 <div className="h-12 w-12 bg-slate-50 rounded-full flex items-center justify-center mb-4 border border-dashed border-slate-200">
                   <Box className="h-6 w-6 text-slate-300" />
@@ -3439,7 +3500,6 @@ function ExtractionTab({
                       <h2 className="text-sm font-medium text-slate-900 tracking-tight">{selectedFile.name}</h2>
                    </div>
                 </div>
-
              </>
            ) : (
              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Evidence Workspace Ready</div>
@@ -3506,7 +3566,7 @@ function ExtractionTab({
       <UploadModal
         isOpen={isUploadModalOpen}
         onClose={() => setIsUploadModalOpen(false)}
-        onUploadComplete={onUploadComplete}
+        onUploadComplete={handleLocalUploadComplete}
       />
 
       <Modal
@@ -3537,7 +3597,7 @@ function ExtractionTab({
                Cancel
              </Button>
              <Button 
-               className="flex-1 h-11 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[11px] uppercase tracking-widest shadow-lg shadow-emerald-600/10"
+               className="flex-1 h-11 bg-slate-900 hover:bg-emerald-700 text-white font-black text-[11px] uppercase tracking-widest shadow-lg shadow-emerald-600/10"
                disabled={!newFolderName.trim() || createFolderMutation.isPending}
                onClick={handleCreateFolder}
              >
@@ -4001,24 +4061,83 @@ function ImagePreview({ file }: { file: any }) {
 }
 
 function AudioPreview({ file, currentTime, setCurrentTime, isPlaying, setIsPlaying, playbackSpeed, setPlaybackSpeed, audioRef }: any) {
+  const parseTimeToSeconds = (timeStr: string) => {
+    const [mins, secs] = timeStr.split(':').map(Number);
+    return mins * 60 + secs;
+  };
+
+  const activeSegmentIndex = audioDiarizationData.findIndex(seg => {
+    const start = parseTimeToSeconds(seg.start_time);
+    const end = parseTimeToSeconds(seg.end_time);
+    return currentTime >= start && currentTime <= end;
+  });
+
+  const activeSegment = activeSegmentIndex !== -1 ? audioDiarizationData[activeSegmentIndex] : null;
+  const nextSegment = activeSegmentIndex !== -1 && activeSegmentIndex < audioDiarizationData.length - 1 
+    ? audioDiarizationData[activeSegmentIndex + 1] 
+    : null;
+
   return (
-    <div className="w-full h-full min-h-[500px] bg-[#0c121e] rounded-sm border border-slate-800 shadow-2xl overflow-hidden flex flex-col">
-       <audio 
-         ref={audioRef} 
-         src={file.url} 
-         onTimeUpdate={() => audioRef.current && setCurrentTime(audioRef.current.currentTime)} 
-         onLoadedMetadata={() => {}}
-       />
-       <AudioForensicWorkspace 
-         file={file}
-         currentTime={currentTime}
-         setCurrentTime={setCurrentTime}
-         isPlaying={isPlaying}
-         setIsPlaying={setIsPlaying}
-         playbackSpeed={playbackSpeed}
-         setPlaybackSpeed={setPlaybackSpeed}
-         audioRef={audioRef}
-       />
+    <div className="w-full h-full flex flex-col">
+       {/* 1. Shrink Audio Player */}
+       <div className="w-full h-[220px] bg-[#0c121e] rounded-t-sm border border-slate-800 shadow-xl overflow-hidden flex flex-col shrink-0 relative z-10">
+         <audio 
+           ref={audioRef} 
+           src={file.url} 
+           onTimeUpdate={() => audioRef.current && setCurrentTime(audioRef.current.currentTime)} 
+           onLoadedMetadata={() => {}}
+         />
+         <AudioForensicWorkspace 
+           file={file}
+           currentTime={currentTime}
+           setCurrentTime={setCurrentTime}
+           isPlaying={isPlaying}
+           setIsPlaying={setIsPlaying}
+           playbackSpeed={playbackSpeed}
+           setPlaybackSpeed={setPlaybackSpeed}
+           audioRef={audioRef}
+         />
+       </div>
+
+       {/* 2. Live Captions Canvas (Merged Single Container) */}
+       <div className="flex-1 bg-white border border-slate-200 border-t-0 p-10 overflow-hidden relative z-0 flex flex-col items-center justify-center">
+          <div className="w-full max-w-2xl relative">
+             {/* 3. Teleprompter Typography */}
+             {activeSegment ? (
+               <div key={activeSegment.segment_id} className="animate-in fade-in slide-in-from-bottom-2 duration-700 flex flex-col items-start text-left">
+                 <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-6">
+                    <div className="h-7 w-7 bg-slate-50 flex items-center justify-center text-slate-400 rounded-sm border border-slate-100">
+                       <User className="h-3.5 w-3.5" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="leading-none text-slate-500">{activeSegment.speaker_label}</span>
+                      <span className="text-[8px] font-mono tracking-tight text-slate-300 mt-1 uppercase">Active Voice · {activeSegment.start_time}</span>
+                    </div>
+                 </div>
+                 
+                 <h2 className="text-xl font-bold text-slate-800 leading-relaxed mb-8 tracking-tight">
+                    {activeSegment.text}
+                 </h2>
+                 
+                 {nextSegment && (
+                    <div className="pt-6 border-t border-slate-50 w-full">
+                       <div className="flex items-center gap-2 mb-2">
+                          <span className="text-[9px] font-bold text-slate-200 uppercase tracking-widest block">Upcoming</span>
+                       </div>
+                       <p className="text-sm font-medium text-slate-300 line-clamp-1 italic">{nextSegment.text}</p>
+                    </div>
+                 )}
+               </div>
+             ) : (
+                <div className="flex flex-col items-center justify-center py-6 opacity-20">
+                  <div className="h-10 w-10 border border-slate-200 flex items-center justify-center mb-4 rounded-sm">
+                     <AudioIcon className="h-4 w-4 text-slate-300" />
+                  </div>
+                  <div className="text-[9px] font-black uppercase tracking-[0.4em] text-slate-400">Stream Synchronizing...</div>
+                </div>
+             )}
+          </div>
+       </div>
     </div>
   );
 }
@@ -4172,14 +4291,7 @@ function AudioForensicWorkspace({
     <div className="flex-1 flex flex-col bg-[#0c121e] text-white">
        {/* 1. Top Toolbar */}
        <div className="h-10 border-b border-white/5 bg-[#161e2e] flex items-center justify-between px-4 shrink-0">
-          <div className="flex items-center gap-4">
-             <div className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 rounded text-[9px] font-black text-emerald-400 uppercase tracking-widest">
-                <Shield className="h-3 w-3" /> Integrity Verified
-             </div>
-             <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">
-                SHA-256: 4f8a...2e1c
-             </span>
-          </div>
+          <div></div>
           <div className="flex items-center gap-2">
              <div className="flex bg-black/40 rounded border border-white/5 p-0.5">
                 <button onClick={() => setZoom(z => Math.max(1, z / 1.2))} className="p-1 hover:bg-white/10 rounded transition-colors text-slate-400 hover:text-white"><ZoomOut className="h-3.5 w-3.5" /></button>
@@ -4195,14 +4307,14 @@ function AudioForensicWorkspace({
        {/* 2. Visualizers Area */}
        <div 
          ref={containerRef}
-         className="flex-1 flex flex-col relative cursor-crosshair overflow-hidden group/workspace"
+         className="flex-1 min-h-0 flex flex-col relative cursor-crosshair overflow-hidden group/workspace"
          onMouseDown={handleInteraction}
          onMouseMove={handleInteraction}
          onMouseUp={handleInteraction}
          onMouseLeave={() => setIsSelecting(false)}
        >
-          <div className="flex-1 relative bg-black/40">
-             <canvas ref={waveformCanvasRef} width={800} height={192} className="w-full h-full" />
+          <div className="flex-1 min-h-0 relative bg-black/40">
+             <canvas ref={waveformCanvasRef} width={800} height={192} className="absolute inset-0 w-full h-full block" />
              
              
              {/* Selection Tools Popover */}
@@ -4214,9 +4326,6 @@ function AudioForensicWorkspace({
                >
                   <Button size="sm" className="h-7 px-3 bg-primary text-white text-[9px] font-black uppercase rounded-sm hover:bg-primary/90" onClick={() => { if(audioRef.current) { audioRef.current.currentTime = selection.start; audioRef.current.play(); setIsPlaying(true); } }}>
                      Loop
-                  </Button>
-                  <Button size="sm" variant="outline" className="h-7 px-3 border-white/10 text-white text-[9px] font-black uppercase rounded-sm hover:bg-white/5">
-                     Annotate
                   </Button>
                   <Button size="sm" variant="ghost" className="h-7 px-1 text-slate-500 hover:text-white" onClick={() => setSelection(null)}>
                      <X className="h-3.5 w-3.5" />
@@ -4260,7 +4369,6 @@ function AudioForensicWorkspace({
                 <span className="text-[10px] font-mono text-slate-500">/ {formatTime(duration)}</span>
              </div>
              <div className="flex items-center gap-2">
-                <span className="text-[8px] font-black text-primary uppercase tracking-[0.2em]">Live Playhead</span>
                 <div className="flex gap-1">
                    {Array.from({ length: 3 }).map((_, i) => (
                      <div key={i} className={`h-1 w-1 rounded-full ${isPlaying ? 'bg-primary animate-pulse' : 'bg-slate-700'}`} style={{ animationDelay: `${i * 0.2}s` }} />
@@ -4272,7 +4380,6 @@ function AudioForensicWorkspace({
           {/* Speed & Mode Group */}
           <div className="flex items-center gap-6 ml-auto">
              <div className="flex flex-col items-end gap-1">
-                <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Playback Speed</span>
                 <div className="flex bg-black/40 rounded border border-white/5 p-0.5">
                    {[0.5, 1, 1.5].map(s => (
                      <button 
@@ -4285,10 +4392,7 @@ function AudioForensicWorkspace({
                    ))}
                 </div>
              </div>
-             <div className="h-10 w-px bg-white/5" />
-             <Button variant="ghost" className="h-10 w-10 p-0 rounded-sm hover:bg-white/5 text-slate-400 hover:text-white">
-                <Maximize2 className="h-4 w-4" />
-             </Button>
+
           </div>
        </div>
     </div>
@@ -4530,7 +4634,7 @@ function ImageExtractionConsole({ file }: { file: any }) {
             </div>
          ) : (
             <div className="p-4 bg-[#0d1117] min-h-full">
-               <pre className="text-[10.5px] font-mono text-[#79c0ff] bg-[#0d1117] p-6 leading-relaxed overflow-auto custom-scrollbar">
+               <pre className="text-[10px] font-mono text-[#79c0ff] bg-[#0d1117] p-6 leading-relaxed overflow-auto custom-scrollbar">
                   {JSON.stringify(properties, null, 2)}
                </pre>
             </div>
@@ -4683,7 +4787,7 @@ function DocumentExtractionConsole({ file }: { file: any }) {
                   </div>
                ) : (
                   <div className="p-4 bg-[#0d1117] min-h-full">
-                     <pre className="text-[10.5px] font-mono text-[#79c0ff] bg-[#0d1117] p-6 leading-relaxed overflow-auto custom-scrollbar">
+                     <pre className="text-[10px] font-mono text-[#79c0ff] bg-[#0d1117] p-6 leading-relaxed overflow-auto custom-scrollbar">
                         {JSON.stringify(properties, null, 2)}
                      </pre>
                   </div>
@@ -4829,14 +4933,14 @@ function AudioExtractionConsole({ file, onJump, currentTime }: { file: any, onJu
 
   return (
     <div className="flex flex-col h-full bg-white">
-      <div className="sticky top-0 z-40 bg-white border-b px-6 pt-2 pb-0 flex flex-col shrink-0">
+      <div className="sticky top-0 z-40 bg-[#f4f7f9] border-b border-slate-200 px-6 pt-3 flex flex-col shrink-0">
           {/* Minimalist Underline Tabs Container */}
           <div className="flex items-center border-b border-slate-200 relative">
              {(["Diarization", "Analysis", "Metadata"] as const).map((tab, idx) => (
                <button 
                  key={tab}
                  onClick={() => setActiveTab(tab)} 
-                 className={`py-3.5 text-[10.5px] font-bold uppercase tracking-widest transition-all relative ${
+                 className={`py-3.5 text-[10px] font-bold uppercase tracking-widest transition-all relative ${
                    idx === 0 ? "pr-5" : "px-5"
                  } ${
                    activeTab === tab 
@@ -4846,7 +4950,7 @@ function AudioExtractionConsole({ file, onJump, currentTime }: { file: any, onJu
                >
                  {tab}
                  {activeTab === tab && (
-                   <div className="absolute -bottom-[1px] left-0 right-0 h-0.5 bg-emerald-600 z-20" />
+                   <div className="absolute -bottom-[1px] left-0 right-0 h-0.5 bg-slate-900 z-20" />
                  )}
                </button>
              ))}
@@ -4870,7 +4974,7 @@ function AudioExtractionConsole({ file, onJump, currentTime }: { file: any, onJu
                      <AudioExtractionStructured data={normalizedExtraction} onJump={onJump} />
                   ) : (
                      <div className="p-4 bg-[#0d1117] min-h-full">
-                        <pre className="text-[10.5px] font-mono text-[#79c0ff] bg-[#0d1117] p-6 leading-relaxed overflow-auto custom-scrollbar">
+                        <pre className="text-[10px] font-mono text-[#79c0ff] bg-[#0d1117] p-6 leading-relaxed overflow-auto custom-scrollbar">
                            {JSON.stringify(normalizedExtraction, null, 2)}
                         </pre>
                      </div>
@@ -6478,7 +6582,7 @@ function ReviewTab() {
              </div>
              <div className="flex gap-2.5">
                <Button variant="outline" className="h-10 text-xs font-bold px-5">Request Corrections</Button>
-               <Button className="h-10 text-xs font-bold px-6 bg-emerald-600 text-white">Approve Case</Button>
+               <Button className="h-10 text-xs font-bold px-6 bg-slate-900 text-white">Approve Case</Button>
              </div>
           </div>
 
@@ -6768,7 +6872,7 @@ function AudioExtractionStructured({ data, onJump }: { data: any, onJump: (s: nu
                             <span className="text-[9px] font-black text-slate-400 uppercase block mb-1.5">{key.replace(/_/g, ' ')}</span>
                             <div className="space-y-1.5">
                                {mentions.map((m: string, i: number) => (
-                                  <div key={i} className="flex items-start gap-2 text-[10.5px] font-bold text-slate-700 leading-tight">
+                                  <div key={i} className="flex items-start gap-2 text-[10px] font-bold text-slate-700 leading-tight">
                                      <div className="h-1 w-1 bg-slate-400 rounded-full mt-1.5 shrink-0" />
                                      {m}
                                   </div>
@@ -6846,17 +6950,18 @@ function AudioSceneSession({ data, currentTime, onJump }: { data: any, currentTi
 
   return (
     <div className="flex flex-col h-full bg-slate-50/10">
-      <div className="px-5 py-3 border-b bg-white flex items-center justify-between sticky top-0 z-30 shadow-sm">
+      <div className="px-6 py-4 border-b border-slate-100 bg-white flex items-center justify-between sticky top-0 z-30">
          <div className="flex flex-col">
             <div className="flex items-center gap-2">
-               <MessageSquare className="h-3.5 w-3.5 text-slate-900" />
-               <span className="text-[10px] font-black text-slate-900 uppercase tracking-[0.1em]">Diarization Session</span>
+               <span className="text-[11px] font-bold text-slate-900 uppercase tracking-tight">Conversation Flow</span>
+               <div className="h-1 w-1 bg-slate-300 rounded-full" />
+               <div className="flex items-center gap-3 text-[10px] font-mono text-slate-400 uppercase tabular-nums tracking-tighter">
+                  <span>{data.scene_session.full_diarization.length} Segments</span>
+                  <div className="h-2 w-px bg-slate-100" />
+                  <span>{data.scene_session.speaker_count} Speakers</span>
+               </div>
             </div>
-            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter mt-0.5">{data.scene_session.full_diarization.length} Segments • {data.scene_session.speaker_count} Speakers</span>
          </div>
-         <Button variant="outline" size="sm" className="h-7 text-[9px] font-black uppercase tracking-widest gap-2 border-slate-200">
-           <FileText className="h-3 w-3" /> Export RAW
-         </Button>
       </div>
 
       <div className="flex-1 overflow-auto custom-scrollbar p-4 space-y-3">
@@ -6958,7 +7063,7 @@ function VideoAnalysisPanel({ file, currentTime, onJump }: { file: any, currentT
                   <VideoExtractionStructured data={videoExtractionRefined} onJump={onJump} />
                 ) : (
                   <div className="p-4 bg-[#0d1117] min-h-full">
-                     <pre className="text-[10.5px] font-mono text-[#79c0ff] bg-[#0d1117] p-6 leading-relaxed overflow-auto custom-scrollbar">
+                     <pre className="text-[10px] font-mono text-[#79c0ff] bg-[#0d1117] p-6 leading-relaxed overflow-auto custom-scrollbar">
                         {JSON.stringify(videoExtractionRefined, null, 2)}
                      </pre>
                   </div>
@@ -7343,7 +7448,6 @@ export default function CaseWorkspacePage() {
     try {
       await uploadEvidence.mutateAsync({ caseId: caseId!, groups });
       await refetchEvidence();
-      toast.success("Evidence library updated with new uploads.");
     } catch (error) {
       console.error("Upload error:", error);
       toast.error("Failed to save evidence to database.");
