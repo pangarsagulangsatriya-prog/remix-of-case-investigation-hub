@@ -3444,16 +3444,7 @@ function ExtractionTab({
                       <h2 className="text-sm font-medium text-slate-900 tracking-tight">{selectedFile.name}</h2>
                    </div>
                 </div>
-               <div className="flex items-center gap-2">
-                   <Button 
-                      onClick={() => setIsDeleteModalOpen(true)}
-                      variant="outline" 
-                      size="sm" 
-                      className="h-8 text-[11px] font-bold gap-2 text-rose-600 hover:bg-rose-50 border-rose-100 transition-all hover:border-rose-200"
-                   >
-                      <Trash2 className="h-3.5 w-3.5" /> Delete Evidence
-                   </Button>
-                </div>
+
              </>
            ) : (
              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Evidence Workspace Ready</div>
@@ -4445,7 +4436,7 @@ function DocumentPreview({ file }: { file: any }) {
 
 function ImageExtractionConsole({ file }: { file: any }) {
   const [viewMode, setViewMode] = useState<"Structured" | "JSON">("Structured");
-  const [expandedSections, setExpandedSections] = useState<string[]>(["General Detection", "Environment & PPE"]);
+  const [expandedSections, setExpandedSections] = useState<string[]>(["General Detection"]);
   
   const properties = useMemo(() => ({
      "General Detection": {
@@ -4574,7 +4565,7 @@ function ImageExtractionConsole({ file }: { file: any }) {
 function DocumentExtractionConsole({ file }: { file: any }) {
   const [activeTab, setActiveTab] = useState<"Analysis" | "Fact Extraction">("Analysis");
   const [viewMode, setViewMode] = useState<"Structured" | "JSON">("Structured");
-  const [expandedSections, setExpandedSections] = useState<string[]>(["Entity Extraction", "Semantic Summary"]);
+  const [expandedSections, setExpandedSections] = useState<string[]>(["Entity Extraction"]);
   
   const properties = useMemo(() => ({
      "Entity Extraction": {
@@ -6542,7 +6533,7 @@ function AuditTrailTab() {
 
 
 function AudioExtractionStructured({ data, onJump }: { data: any, onJump: (s: number) => void }) {
-  const [expandedSections, setExpandedSections] = useState<string[]>(["Timeline & Facts", "Speaker Profiles", "Risks, Gaps, Review"]);
+  const [expandedSections, setExpandedSections] = useState<string[]>(["Audio Properties"]);
   const toggle = (s: string) => setExpandedSections(p => p.includes(s) ? p.filter(x => x !== s) : [...p, s]);
 
   const SectionHeader = ({ title, icon: Icon, count, description }: any) => (
@@ -6949,7 +6940,7 @@ function VideoAnalysisPanel({ file, currentTime, onJump }: { file: any, currentT
 }
 
 function VideoExtractionStructured({ data, onJump }: { data: typeof videoExtractionRefined, onJump: (s: number) => void }) {
-  const [expandedSections, setExpandedSections] = useState<string[]>(["Video Session Meta", "Scene Timeline"]);
+  const [expandedSections, setExpandedSections] = useState<string[]>(["Video Session Meta"]);
 
   const toggle = (s: string) => setExpandedSections(p => p.includes(s) ? p.filter(x => x !== s) : [...p, s]);
 
