@@ -3197,18 +3197,6 @@ function ExtractionTab({
           
         <div className="flex-1 overflow-y-auto custom-scrollbar p-0">
           <div className="space-y-0.5">
-            {/* Loose Files (Root) */}
-            {looseFiles.map((file) => (
-              <FileRow 
-                key={file.id} 
-                file={file} 
-                isSelected={selectedFile?.id === file.id}
-                onSelect={() => setSelectedFile(file)}
-                onMove={handleMoveFile}
-                batches={batches}
-              />
-            ))}
-
             {/* Folders */}
             {folderGroups.map((batch) => (
               <div key={batch.id} className="group/folder">
@@ -3248,12 +3236,25 @@ function ExtractionTab({
                           onSelect={() => setSelectedFile(file)}
                           onMove={handleMoveFile}
                           batches={batches}
+                          isIndented
                         />
                       ))
                     )}
                   </div>
                 )}
               </div>
+            ))}
+
+            {/* Loose Files (Root) */}
+            {looseFiles.map((file) => (
+              <FileRow 
+                key={file.id} 
+                file={file} 
+                isSelected={selectedFile?.id === file.id}
+                onSelect={() => setSelectedFile(file)}
+                onMove={handleMoveFile}
+                batches={batches}
+              />
             ))}
 
             {filteredFiles.length === 0 && (
