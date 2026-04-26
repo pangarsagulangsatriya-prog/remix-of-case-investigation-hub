@@ -4829,25 +4829,27 @@ function AudioExtractionConsole({ file, onJump, currentTime }: { file: any, onJu
 
   return (
     <div className="flex flex-col h-full bg-white">
-      <div className="sticky top-0 z-40 bg-white border-b px-6 py-5 flex flex-col shrink-0">
-         <div className="flex items-center justify-between mb-6">
-           <div className="flex flex-col">
-              <span className="text-[11px] font-black text-slate-900 uppercase tracking-[0.2em] leading-none">Extraction Result</span>
-              <div className="flex items-center gap-2 mt-1.5">
-                 <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter opacity-60">Audio Evidence Object</span>
-                 <div className="h-1 w-1 rounded-full bg-slate-200" />
-                 <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter opacity-60">ID: {file?.id?.slice(0,8) || "N/A"}</span>
-              </div>
-           </div>
+      <div className="sticky top-0 z-40 bg-white border-b px-6 pt-6 pb-0 flex flex-col shrink-0">
+         <div className="flex items-center justify-between">
+            <div className="flex flex-col">
+               <span className="text-[11px] font-black text-slate-900 uppercase tracking-[0.2em] leading-none">Extraction Result</span>
+               <div className="flex items-center gap-2 mt-4">
+                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter opacity-60">Audio Evidence Object</span>
+                  <div className="h-1 w-1 rounded-full bg-slate-200" />
+                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter opacity-60">ID: {file?.id?.slice(0,8) || "N/A"}</span>
+               </div>
+            </div>
          </div>
 
          {/* Minimalist Underline Tabs Container */}
-         <div className="flex items-center border-b border-slate-200 mb-6 px-1">
-            {(["Diarization", "Analysis", "Metadata"] as const).map(tab => (
+         <div className="flex items-center border-b border-slate-200 mt-6 -mb-[1px] relative z-10">
+            {(["Diarization", "Analysis", "Metadata"] as const).map((tab, idx) => (
               <button 
                 key={tab}
                 onClick={() => setActiveTab(tab)} 
-                className={`px-4 py-2.5 text-[10.5px] font-bold uppercase tracking-widest transition-all relative ${
+                className={`py-3 text-[10.5px] font-bold uppercase tracking-widest transition-all relative ${
+                  idx === 0 ? "pr-4" : "px-4"
+                } ${
                   activeTab === tab 
                     ? "text-slate-900" 
                     : "text-slate-400 hover:text-slate-600"
@@ -6855,7 +6857,7 @@ function AudioSceneSession({ data, currentTime, onJump }: { data: any, currentTi
 
   return (
     <div className="flex flex-col h-full bg-slate-50/10">
-      <div className="px-6 py-4 border-b bg-white flex items-center justify-between sticky top-0 z-30 shadow-sm">
+      <div className="px-6 pt-4 pb-2 bg-white flex items-center justify-between sticky top-0 z-30">
          <div className="flex flex-col">
             <h3 className="text-lg font-semibold text-slate-800 leading-tight">Conversation Flow</h3>
             <span className="text-sm text-slate-500 font-medium mt-0.5">{data.scene_session.full_diarization.length} Segments • {data.scene_session.speaker_count} Speakers</span>
