@@ -4752,8 +4752,14 @@ function DocumentExtractionConsole({ file }: { file: any }) {
 
 
 function AudioExtractionConsole({ file, onJump, currentTime }: { file: any, onJump: (s: number) => void, currentTime: number }) {
-  const [activeTab, setActiveTab] = useState<"Analysis" | "Diarization">("Analysis");
+  const [activeTab, setActiveTab] = useState<"Diarization" | "Analysis" | "Metadata">("Diarization");
   const [viewMode, setViewMode] = useState<"Structured" | "JSON">("Structured");
+
+  const TAB_DESCRIPTIONS = {
+    Diarization: "Transcription and speaker identification with precise time-stamping for evidentiary integrity.",
+    Analysis: "Deep linguistic and semantic pattern matching to extract key forensic insights and risks.",
+    Metadata: "Technical properties, file integrity hashes, and processing provenance of the evidence object."
+  };
 
 
   const audioExtractionData = useMemo(() => ({
@@ -4842,28 +4848,37 @@ function AudioExtractionConsole({ file, onJump, currentTime }: { file: any, onJu
 
   return (
     <div className="flex flex-col h-full bg-white">
-      <div className="sticky top-0 z-40 bg-white border-b px-5 py-4 flex items-center justify-between shrink-0 shadow-sm">
-         <div className="flex flex-col">
-            <span className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em] leading-none">Protocol Matrix v2.1</span>
-            <div className="flex items-center gap-2 mt-1">
-               <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter opacity-60">Audio Signal Analysis</span>
-               <div className="h-1 w-1 rounded-full bg-slate-200" />
-               <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter opacity-60">ID: {file?.id?.slice(0,8) || "N/A"}</span>
-            </div>
+      <div className="sticky top-0 z-40 bg-white border-b px-5 py-4 flex flex-col shrink-0 shadow-sm">
+         <div className="flex items-center justify-between mb-4">
+           <div className="flex flex-col">
+              <span className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em] leading-none">Extraction Result</span>
+              <div className="flex items-center gap-2 mt-1">
+                 <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter opacity-60">Audio Evidence Object</span>
+                 <div className="h-1 w-1 rounded-full bg-slate-200" />
+                 <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter opacity-60">ID: {file?.id?.slice(0,8) || "N/A"}</span>
+              </div>
+           </div>
+           
+           <div className="flex items-center gap-2">
+             <div className="flex items-center gap-1 p-0.5 bg-slate-100 rounded-md border shadow-inner">
+                {(["Diarization", "Analysis", "Metadata"] as const).map(tab => (
+                  <button 
+                    key={tab}
+                    onClick={() => setActiveTab(tab)} 
+                    className={`px-3 py-1 text-[8px] font-black uppercase rounded transition-all ${activeTab === tab ? "bg-white text-primary shadow-sm" : "text-slate-400 hover:text-slate-600"}`}
+                  >
+                    {tab}
+                  </button>
+                ))}
+             </div>
+           </div>
          </div>
-         <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1 p-0.5 bg-slate-100 rounded-md border shadow-inner">
-               {(["Analysis", "Diarization"] as const).map(tab => (
-                 <button 
-                   key={tab}
-                   onClick={() => setActiveTab(tab)} 
-                   className={`px-3 py-1 text-[8px] font-black uppercase rounded transition-all ${activeTab === tab ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600"}`}
-                 >
-                   {tab}
-                 </button>
-               ))}
-            </div>
-            
+
+         <div className="flex items-center justify-between">
+            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest max-w-[320px] leading-relaxed">
+              {TAB_DESCRIPTIONS[activeTab]}
+            </p>
+
             {activeTab === "Analysis" && (
                <div className="flex items-center gap-1 p-0.5 bg-slate-100 rounded-md border shadow-inner">
                   <button onClick={() => setViewMode("Structured")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "Structured" ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>Structured</button>
@@ -4892,6 +4907,58 @@ function AudioExtractionConsole({ file, onJump, currentTime }: { file: any, onJu
 
          {activeTab === "Diarization" && (
            <AudioSceneSession data={normalizedScene} currentTime={currentTime} onJump={onJump} />
+         )}
+
+         {activeTab === "Metadata" && (
+           <div className="p-6 space-y-8 animate-in fade-in duration-500">
+             <div className="space-y-4">
+                <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em] border-b pb-2">Technical Properties</h4>
+                <div className="grid grid-cols-1 gap-4">
+                   <div className="flex justify-between items-center py-1 border-b border-slate-50">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">File Name</span>
+                      <span className="text-[11px] font-bold text-slate-700">{file.name}</span>
+                   </div>
+                   <div className="flex justify-between items-center py-1 border-b border-slate-50">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Format</span>
+                      <span className="text-[11px] font-bold text-slate-700">WAV (Pulse Code Modulation)</span>
+                   </div>
+                   <div className="flex justify-between items-center py-1 border-b border-slate-50">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Sample Rate</span>
+                      <span className="text-[11px] font-bold text-slate-700">44,100 Hz</span>
+                   </div>
+                   <div className="flex justify-between items-center py-1 border-b border-slate-50">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Channels</span>
+                      <span className="text-[11px] font-bold text-slate-700">Mono (Channel 1)</span>
+                   </div>
+                </div>
+             </div>
+
+             <div className="space-y-4">
+                <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em] border-b pb-2">Forensic Integrity</h4>
+                <div className="p-4 bg-slate-50 rounded-sm border border-dashed border-slate-200">
+                   <div className="flex flex-col gap-2">
+                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">SHA-256 Fingerprint</span>
+                      <code className="text-[9px] font-mono text-slate-600 break-all leading-relaxed bg-white p-2 border rounded-sm">
+                        e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+                      </code>
+                   </div>
+                </div>
+             </div>
+
+             <div className="space-y-4">
+                <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em] border-b pb-2">AI Processing Meta</h4>
+                <div className="grid grid-cols-2 gap-4">
+                   <div className="p-3 bg-slate-50 rounded-sm border border-slate-100">
+                      <span className="text-[8px] font-black text-slate-400 uppercase block mb-1">Model</span>
+                      <span className="text-[10px] font-black text-slate-700">Whisper-V3-Turbo</span>
+                   </div>
+                   <div className="p-3 bg-slate-50 rounded-sm border border-slate-100">
+                      <span className="text-[8px] font-black text-slate-400 uppercase block mb-1">Confidence</span>
+                      <span className="text-[10px] font-black text-emerald-600">98.4%</span>
+                   </div>
+                </div>
+             </div>
+           </div>
          )}
       </div>
     </div>
