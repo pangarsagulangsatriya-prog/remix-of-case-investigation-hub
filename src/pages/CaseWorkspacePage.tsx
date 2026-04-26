@@ -2321,10 +2321,7 @@ function AudioRightPanel({
                 <h3 className="text-[12px] font-black text-slate-900 uppercase tracking-wider">Diarization Session</h3>
                 <span className="text-[9px] font-bold text-slate-400">Audio Forensic Evidence Log · Site Alpha</span>
               </div>
-              <button className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-sm text-[10px] font-black text-slate-600 hover:bg-slate-50 transition-all ">
-                <Download className="h-3.5 w-3.5" />
-                EXPORT RAW
-              </button>
+
            </div>
            <div className="flex items-center gap-4 text-[10px] font-bold text-slate-500">
               <div className="flex items-center gap-1.5">
@@ -6880,9 +6877,7 @@ function AudioSceneSession({ data, currentTime, onJump }: { data: any, currentTi
             </div>
             <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter mt-0.5">{data.scene_session.full_diarization.length} Segments • {data.scene_session.speaker_count} Speakers</span>
          </div>
-         <Button variant="ghost" size="sm" className="h-8 px-3 text-[10px] font-black text-slate-600 hover:bg-slate-100 border rounded-sm transition-all ">
-           <Copy className="h-3.5 w-3.5 mr-2 opacity-60" /> Export RAW
-         </Button>
+
       </div>
 
       <div className="flex-1 overflow-auto custom-scrollbar p-4 space-y-3">
