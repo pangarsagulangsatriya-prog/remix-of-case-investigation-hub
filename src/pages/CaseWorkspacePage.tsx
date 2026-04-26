@@ -6855,18 +6855,14 @@ function AudioSceneSession({ data, currentTime, onJump }: { data: any, currentTi
 
   return (
     <div className="flex flex-col h-full bg-slate-50/10">
-      <div className="px-5 py-3 border-b bg-white flex items-center justify-between  sticky top-0 z-30">
+      <div className="px-6 py-4 border-b bg-white flex items-center justify-between sticky top-0 z-30 shadow-sm">
          <div className="flex flex-col">
-            <div className="flex items-center gap-2">
-               <MessageSquare className="h-3.5 w-3.5 text-slate-900" />
-               <span className="text-[10px] font-black text-slate-900 uppercase tracking-[0.1em]">Diarization Session</span>
-            </div>
-            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter mt-0.5">{data.scene_session.full_diarization.length} Segments • {data.scene_session.speaker_count} Speakers</span>
+            <h3 className="text-lg font-semibold text-slate-800 leading-tight">Conversation Flow</h3>
+            <span className="text-sm text-slate-500 font-medium mt-0.5">{data.scene_session.full_diarization.length} Segments • {data.scene_session.speaker_count} Speakers</span>
          </div>
-
       </div>
 
-      <div className="flex-1 overflow-auto custom-scrollbar p-4 space-y-3">
+      <div className="flex-1 overflow-auto custom-scrollbar p-5 space-y-4">
         {data.scene_session.full_diarization.map((seg: any) => {
           const active = isSegmentActive(seg.start_time, seg.end_time);
           return (
@@ -6876,45 +6872,32 @@ function AudioSceneSession({ data, currentTime, onJump }: { data: any, currentTi
                 const parts = seg.start_time.split(':').map(Number);
                 onJump(parts.length === 3 ? parts[0] * 3600 + parts[1] * 60 + parts[2] : parts[0] * 60 + parts[1]);
               }}
-              className={`group flex flex-col gap-3 p-4 rounded-sm border transition-all duration-500 cursor-pointer relative overflow-hidden ${
+              className={`group flex flex-col gap-2.5 p-5 rounded-lg border transition-all duration-300 cursor-pointer relative ${
                 active 
-                ? "bg-white border-slate-900  scale-[1.01] z-10" 
-                : "bg-white/60 border-slate-100 hover:border-slate-300 hover:bg-white hover:"
+                ? "bg-white border-primary/40 shadow-md ring-1 ring-primary/5" 
+                : "bg-white border-slate-100 hover:border-slate-200 hover:shadow-sm"
               }`}
             >
-              {active && <div className="absolute top-0 left-0 w-1.5 h-full bg-slate-900" />}
-              
               <div className="flex items-center justify-between">
-                 <div className="flex items-center gap-3">
-                    <span className={`text-[11px] font-black tabular-nums transition-colors ${active ? "text-slate-900" : "text-slate-400"}`}>
+                 <div className="flex items-center gap-2.5">
+                    <span className="text-sm font-semibold text-slate-900">{seg.speaker_label}</span>
+                    <button className="text-sm text-blue-600 hover:underline font-medium tabular-nums">
                       {seg.start_time} — {seg.end_time}
-                    </span>
-                    <span className={`px-2 py-0.5 rounded-[4px] text-[9px] font-black uppercase border transition-all ${
-                      active 
-                      ? "bg-slate-900 text-white border-slate-900" 
-                      : (seg.speaker_id === "SPK_01" ? "bg-amber-50 text-amber-600 border-amber-100" : "bg-indigo-50 text-indigo-600 border-indigo-100")
-                    }`}>
-                      {seg.speaker_label}
-                    </span>
+                    </button>
                  </div>
-                 <ConfidenceChip level={seg.confidence.toLowerCase() as any} />
+                 <div className="text-[11px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full border border-slate-100 uppercase tracking-tighter">
+                   {seg.confidence === 'high' ? '98%' : seg.confidence === 'medium' ? '82%' : '64%'} Confidence
+                 </div>
               </div>
 
               <div className="relative">
-                <p className={`text-[12px] leading-relaxed transition-all duration-500 ${active ? "text-slate-900 font-bold" : "text-slate-500 font-medium"} italic`}>
-                  "{seg.text}"
+                <p className="text-[13px] leading-relaxed text-slate-700 font-normal">
+                  {seg.text}
                 </p>
                 {seg.inaudible_flag && (
-                   <span className="absolute -right-1 -bottom-1 px-1.5 bg-rose-50 text-rose-600 text-[8px] font-black rounded border border-rose-100 uppercase">Inaudible</span>
+                   <span className="inline-flex mt-2 px-2 py-0.5 bg-rose-50 text-rose-600 text-[9px] font-black rounded border border-rose-100 uppercase tracking-widest">Inaudible</span>
                 )}
               </div>
-
-              {!active && (
-                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                   <div className="h-1 w-1 rounded-full bg-slate-300" />
-                   <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest">Click to seek player</span>
-                </div>
-              )}
             </div>
           );
         })}
