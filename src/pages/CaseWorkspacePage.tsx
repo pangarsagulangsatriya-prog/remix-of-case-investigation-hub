@@ -3248,12 +3248,11 @@ function ExtractionTab({
 
   const folderGroups = useMemo(() => {
     return batches
-      .filter(b => b.type !== "Loose Files")
+      .filter(batch => batch.type !== "Loose Files")
       .map(batch => ({
         ...batch,
         files: filteredFiles.filter(f => f.batch_id === batch.id)
       }))
-      .filter(b => b.files.length > 0)
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [batches, filteredFiles]);
 
