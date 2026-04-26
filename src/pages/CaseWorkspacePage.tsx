@@ -107,7 +107,8 @@ import {
   FolderPlus,
   FileUp,
   FolderUp,
-  ArrowRight
+  FolderUp,
+  ChevronDown
 } from "lucide-react";
 
 
@@ -6939,6 +6940,7 @@ function AudioExtractionStructured({ data, onJump }: { data: any, onJump: (s: nu
     </div>
   );
 }
+
 function AudioSceneSession({ data, currentTime, onJump }: { data: any, currentTime: number, onJump: (s: number) => void }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [startTime, setStartTime] = useState("");
@@ -6958,8 +6960,8 @@ function AudioSceneSession({ data, currentTime, onJump }: { data: any, currentTi
 
   const filteredData = useMemo(() => {
     return data.scene_session.full_diarization.filter((seg: any) => {
-      const matchesSearch = seg.text.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                            seg.speaker_label.toLowerCase().includes(searchQuery.toLowerCase());
+      // Transcript only search as requested
+      const matchesSearch = seg.text.toLowerCase().includes(searchQuery.toLowerCase());
       
       const segStart = getS(seg.start_time);
       const filterStart = startTime ? getS(startTime) : 0;
@@ -6972,62 +6974,62 @@ function AudioSceneSession({ data, currentTime, onJump }: { data: any, currentTi
   }, [data, searchQuery, startTime, endTime]);
 
   return (
-    <div className="flex flex-col h-full bg-slate-50/10">
-      <div className="px-6 py-4 border-b border-slate-100 bg-white sticky top-0 z-30 flex flex-col gap-4 shadow-sm">
+    <div className="flex flex-col h-full bg-white">
+      <div className="px-6 py-4 border-b border-slate-100 bg-white sticky top-0 z-30 flex flex-col gap-4">
          <div className="flex items-center justify-between">
-            <div className="flex flex-col">
-               <div className="flex items-center gap-2">
-                  <span className="text-[11px] font-bold text-slate-900 uppercase tracking-tight">Conversation Flow</span>
-                  <div className="h-1 w-1 bg-slate-300 rounded-full" />
-                  <div className="flex items-center gap-3 text-[10px] font-mono text-slate-400 uppercase tabular-nums tracking-tighter">
-                     <span>{filteredData.length} Results</span>
-                  </div>
+            <div className="flex items-center gap-2">
+               <span className="text-[11px] font-bold text-slate-900 uppercase tracking-tight">Conversation Flow</span>
+               <div className="h-1 w-1 bg-slate-300 rounded-full" />
+               <div className="flex items-center gap-3 text-[10px] font-mono text-slate-400 uppercase tabular-nums tracking-tighter">
+                  <span>{filteredData.length} Results</span>
                </div>
             </div>
          </div>
 
-         {/* Search & Filter Controls (IBM Carbon Style) */}
+         {/* Search & Filter Controls (Left Panel Design System) */}
          <div className="flex flex-col gap-2">
             {/* Search Input */}
             <div className="relative group">
                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400 group-focus-within:text-slate-900 transition-colors" />
                <input 
                   type="text" 
-                  placeholder="Search transcript or speakers..."
+                  placeholder="Search transcript content..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-100 px-9 py-2 text-[10px] font-medium focus:bg-white focus:border-slate-900 focus:ring-0 outline-none transition-all rounded-sm placeholder:text-slate-400"
+                  className="w-full bg-slate-50/50 border border-slate-100 px-9 py-2 text-[10px] font-medium focus:bg-white focus:border-slate-900 focus:ring-0 outline-none transition-all rounded-sm placeholder:text-slate-400"
                />
             </div>
             
-            {/* Time Range Inputs */}
-            <div className="flex items-center gap-2">
-               <div className="flex-1 relative">
-                  <div className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[8px] font-black text-slate-300 uppercase">Start</div>
-                  <input 
-                     type="text" 
-                     placeholder="00:00"
-                     value={startTime}
-                     onChange={(e) => setStartTime(e.target.value)}
-                     className="w-full bg-slate-50 border border-slate-100 pl-10 pr-2 py-1.5 text-[10px] font-mono focus:bg-white focus:border-slate-900 outline-none transition-all rounded-sm"
-                  />
-               </div>
-               <ArrowRight className="h-3 w-3 text-slate-200" />
-               <div className="flex-1 relative">
-                  <div className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[8px] font-black text-slate-300 uppercase">End</div>
-                  <input 
-                     type="text" 
-                     placeholder="MM:SS"
-                     value={endTime}
-                     onChange={(e) => setEndTime(e.target.value)}
-                     className="w-full bg-slate-50 border border-slate-100 pl-8 pr-2 py-1.5 text-[10px] font-mono focus:bg-white focus:border-slate-900 outline-none transition-all rounded-sm"
-                  />
-               </div>
+            {/* Time Range Dropdown (Automatic Package) */}
+            <div className="relative group">
+               <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400 group-focus-within:text-slate-900 transition-colors" />
+               <select 
+                  className="w-full bg-slate-50/50 border border-slate-100 pl-9 pr-8 py-2 text-[10px] font-bold uppercase tracking-tight focus:bg-white focus:border-slate-900 focus:ring-0 outline-none transition-all rounded-sm appearance-none cursor-pointer text-slate-600"
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (!val) {
+                      setStartTime("");
+                      setEndTime("");
+                    } else {
+                      const [s, eTime] = val.split('|');
+                      setStartTime(s);
+                      setEndTime(eTime);
+                    }
+                  }}
+               >
+                  <option value="">All Time Ranges</option>
+                  {data.scene_session.full_diarization.map((seg: any) => (
+                    <option key={seg.segment_id} value={`${seg.start_time}|${seg.end_time}`}>
+                      {seg.start_time} — {seg.end_time} ({seg.speaker_label})
+                    </option>
+                  ))}
+               </select>
+               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400 pointer-events-none" />
             </div>
          </div>
       </div>
 
-      <div className="flex-1 overflow-auto custom-scrollbar p-4 space-y-3">
+      <div className="flex-1 overflow-auto custom-scrollbar p-4 space-y-2">
         {filteredData.map((seg: any) => {
           const active = isSegmentActive(seg.start_time, seg.end_time);
           return (
@@ -7037,20 +7039,20 @@ function AudioSceneSession({ data, currentTime, onJump }: { data: any, currentTi
                 const parts = seg.start_time.split(':').map(Number);
                 onJump(parts.length === 3 ? parts[0] * 3600 + parts[1] * 60 + parts[2] : parts[0] * 60 + parts[1]);
               }}
-              className={`group flex flex-col gap-3 p-4 rounded-sm border transition-all duration-300 cursor-pointer relative overflow-hidden ${
+              className={`group flex flex-col gap-2.5 p-3 rounded-sm border transition-all duration-300 cursor-pointer relative overflow-hidden ${
                 active 
-                ? "bg-white border-slate-900 shadow-md ring-1 ring-slate-900/5 z-10" 
-                : "bg-white/60 border-slate-100 hover:border-slate-300 hover:bg-white"
+                ? "bg-white border-slate-900 shadow-sm z-10" 
+                : "bg-slate-50/30 border-slate-50 hover:border-slate-200 hover:bg-white"
               }`}
             >
-              {active && <div className="absolute top-0 left-0 w-1.5 h-full bg-slate-900" />}
+              {active && <div className="absolute top-0 left-0 w-1 h-full bg-slate-900" />}
               
               <div className="flex items-center justify-between">
                  <div className="flex items-center gap-3">
-                    <span className={`text-[11px] font-black tabular-nums transition-colors ${active ? "text-slate-900" : "text-slate-400"}`}>
+                    <span className={`text-[10px] font-black tabular-nums transition-colors ${active ? "text-slate-900" : "text-slate-400"}`}>
                       {seg.start_time} — {seg.end_time}
                     </span>
-                    <span className={`px-2 py-0.5 rounded-[4px] text-[9px] font-black uppercase border transition-all ${
+                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase border transition-all ${
                       active 
                       ? "bg-slate-900 text-white border-slate-900" 
                       : (seg.speaker_id === "SPK_01" ? "bg-amber-50 text-amber-600 border-amber-100" : "bg-indigo-50 text-indigo-600 border-indigo-100")
@@ -7058,11 +7060,11 @@ function AudioSceneSession({ data, currentTime, onJump }: { data: any, currentTi
                       {seg.speaker_label}
                     </span>
                  </div>
-                 <div className={`text-[9px] font-black uppercase tracking-widest ${active ? "text-emerald-600" : "text-slate-300"}`}>High</div>
+                 <div className={`text-[9px] font-black uppercase tracking-widest ${active ? "text-emerald-600" : "text-slate-300/50"}`}>High</div>
               </div>
 
               <div className="relative">
-                <p className={`text-[12px] leading-relaxed transition-all duration-500 ${active ? "text-slate-900 font-bold" : "text-slate-500 font-medium"} italic`}>
+                <p className={`text-[11px] leading-relaxed transition-all duration-500 ${active ? "text-slate-900 font-bold" : "text-slate-500 font-medium"} italic`}>
                   "{seg.text}"
                 </p>
                 {seg.inaudible_flag && (
