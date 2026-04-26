@@ -4206,14 +4206,6 @@ function AudioForensicWorkspace({
           {/* Spectrogram Layer */}
           <div className="flex-1 relative border-b border-white/5 bg-black/20">
              <canvas ref={spectrogramCanvasRef} width={800} height={200} className="w-full h-full opacity-60 mix-blend-screen" />
-             <div className="absolute top-3 left-3 text-[9px] font-black text-slate-500 uppercase tracking-widest bg-black/40 px-2 py-1 rounded backdrop-blur-sm">Spectral Frequency (FFT)</div>
-             
-             {/* Y-Axis Frequency Markers */}
-             <div className="absolute left-0 inset-y-0 w-10 flex flex-col justify-between py-4 pointer-events-none opacity-30">
-                {['20k', '15k', '10k', '5k', '0'].map(f => (
-                  <span key={f} className="text-[8px] font-mono text-white text-right pr-2">{f}Hz</span>
-                ))}
-             </div>
           </div>
 
           {/* Waveform Layer */}
