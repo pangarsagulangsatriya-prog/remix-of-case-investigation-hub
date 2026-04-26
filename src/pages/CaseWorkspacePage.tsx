@@ -6885,9 +6885,6 @@ function AudioSceneSession({ data, currentTime, onJump }: { data: any, currentTi
                       {seg.start_time} — {seg.end_time}
                     </button>
                  </div>
-                 <div className="text-[11px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full border border-slate-100 uppercase tracking-tighter">
-                   {seg.confidence === 'high' ? '98%' : seg.confidence === 'medium' ? '82%' : '64%'} Confidence
-                 </div>
               </div>
 
               <div className="relative">
