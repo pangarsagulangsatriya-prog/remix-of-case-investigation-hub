@@ -4870,20 +4870,14 @@ function AudioExtractionConsole({ file, onJump, currentTime }: { file: any, onJu
             ))}
          </div>
 
-         <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-black text-slate-800 uppercase tracking-tight">{activeTab}</h3>
-              {activeTab === "Analysis" && (
-                <div className="flex items-center gap-1 p-0.5 bg-slate-100 rounded-md border shadow-inner">
-                   <button onClick={() => setViewMode("Structured")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "Structured" ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>Structured</button>
-                   <button onClick={() => setViewMode("JSON")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "JSON" ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>JSON</button>
-                </div>
-              )}
-            </div>
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">
-              {TAB_DESCRIPTIONS[activeTab]}
-            </p>
-         </div>
+         {activeTab === "Analysis" && (
+           <div className="flex items-center justify-end">
+              <div className="flex items-center gap-1 p-0.5 bg-slate-100 rounded-md border shadow-inner">
+                 <button onClick={() => setViewMode("Structured")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "Structured" ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>Structured</button>
+                 <button onClick={() => setViewMode("JSON")} className={`px-2 py-1 text-[8px] font-black uppercase rounded transition-all ${viewMode === "JSON" ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600"}`}>JSON</button>
+              </div>
+           </div>
+         )}
       </div>
 
       <div className="flex-1 overflow-auto custom-scrollbar">
