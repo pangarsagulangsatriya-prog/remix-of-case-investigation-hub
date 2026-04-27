@@ -5,7 +5,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/AppLayout";
 import { StatusChip, SeverityChip, ConfidenceChip } from "@/components/StatusChip";
 import { useCase, useUpdateCase, useCases } from "@/hooks/useCases";
-import { useEvidence, useDeleteFile, useUploadEvidence, useUpdateBatch, useMoveFile, useCreateFolder, useDeleteBatch } from "@/hooks/useEvidence";
+import { useEvidence, useDeleteFile, useUploadEvidence, useRenameFolder, useRenameFile, useMoveFile, useCreateFolder, useDeleteBatch } from "@/hooks/useEvidence";
 import { useAuditLogs, useInsertAuditLog } from "@/hooks/useAuditLogs";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
@@ -2954,19 +2954,43 @@ function FileRow({
   file, 
   isSelected, 
   onSelect, 
-  onMove,
+  onMove, 
   onDelete,
-  batches,
-  isIndented = false
+  onRename,
+  onRunAnalysis, 
+  onViewAuditTrail,
+  isIndented = false,
+  isAnalyzing = false,
+  batches = []
 }: { 
   file: any, 
   isSelected: boolean, 
-  onSelect: () => void, 
+  onSelect: () => void,
   onMove: (fileId: string, batchId: string | null) => void,
   onDelete: () => void,
-  batches: any[],
-  isIndented?: boolean
+  onRename?: (file: any) => void,
+  onRunAnalysis: () => void,
+  onViewAuditTrail: () => void,
+  isIndented?: boolean,
+  isAnalyzing?: boolean,
+  batches: any[]
 }) {
+  if (!file) return null;
+
+  const getFormattedDate = (dateStr: string) => {
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return "Unknown date";
+      return d.toLocaleDateString('en-GB', { 
+        day: '2-digit', 
+        month: 'short', 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      } as any);
+    } catch (e) {
+      return "Unknown date";
+    }
+  };
   return (
     <div
       onClick={onSelect}
@@ -3033,10 +3057,10 @@ function FileRow({
           <div className="px-2 py-1 text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">Move to</div>
           <DropdownMenuItem 
             onClick={() => onMove(file.id, null)}
-            disabled={!file.batch_id}
+            disabled={!file.batch_id || (batches.find(b => b.id === file.batch_id)?.type === "Loose Files")}
             className="text-[10px] font-bold"
           >
-            <Folder className="h-3.5 w-3.5 mr-2 text-slate-400" /> Root Directory
+            <Box className="h-3.5 w-3.5 mr-2 text-slate-400" /> Move to Single Files
           </DropdownMenuItem>
           {Array.from(new Map(
             batches
@@ -3055,6 +3079,14 @@ function FileRow({
           ))}
           
           <DropdownMenuSeparator />
+          
+          <DropdownMenuItem 
+            onClick={(e) => { e.stopPropagation(); onRename?.(file); }}
+            className="text-[10px] font-bold"
+          >
+            <Pencil className="h-3.5 w-3.5 mr-2 text-slate-400" /> Rename File
+          </DropdownMenuItem>
+
           <DropdownMenuItem 
             onClick={onDelete}
             className="text-rose-600 focus:text-rose-600 text-[11px] font-bold py-2"
@@ -3089,7 +3121,7 @@ function ExtractionTab({
   const hasExpandedDefault = useRef(false);
   useEffect(() => {
     if (batches && batches.length > 0 && !hasExpandedDefault.current) {
-      const folderIds = batches.filter(b => b.type !== "Loose Files").map(b => b.id);
+      const folderIds = batches.filter(b => b && b.type !== "Loose Files").map(b => b.id);
       setExpandedBatches(folderIds);
       hasExpandedDefault.current = true;
     }
@@ -3097,7 +3129,13 @@ function ExtractionTab({
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [isCreateFolderModalOpen, setIsCreateFolderModalOpen] = useState(false);
+  const [isRenameFolderModalOpen, setIsRenameFolderModalOpen] = useState(false);
+  const [isRenameFileModalOpen, setIsRenameFileModalOpen] = useState(false);
+  const [folderToRename, setFolderToRename] = useState<any>(null);
+  const [fileToRename, setFileToRename] = useState<any>(null);
   const [newFolderName, setNewFolderName] = useState("");
+  const [renameValue, setRenameValue] = useState("");
+  const [fileRenameValue, setFileRenameValue] = useState("");
   
   const [optimisticUploads, setOptimisticUploads] = useState<any[]>([]);
 
@@ -3135,6 +3173,8 @@ function ExtractionTab({
   
   const moveFileMutation = useMoveFile();
   const createFolderMutation = useCreateFolder();
+  const renameFolderMutation = useRenameFolder();
+  const renameFileMutation = useRenameFile();
   const deleteBatchMutation = useDeleteBatch();
 
   // Lifted audio state — shared between center player and right panel
@@ -3172,7 +3212,8 @@ function ExtractionTab({
   };
 
   const openDeleteFolderModal = (batch: any) => {
-    const filesInBatch = evidenceFiles.filter(f => f.batch_id === batch.id);
+    if (!batch) return;
+    const filesInBatch = (evidenceFiles || []).filter(f => f && f.batch_id === batch.id);
     setDeleteFolderTarget({
       id: batch.id,
       name: batch.name,
@@ -3182,7 +3223,7 @@ function ExtractionTab({
   };
 
   const handleCleanupEmptyFolders = async () => {
-    const emptyBatches = batches.filter(b => b.type !== "Loose Files" && !evidenceFiles.some(f => f.batch_id === b.id));
+    const emptyBatches = (batches || []).filter(b => b && (b.type === "Loose Files" || (b.type !== "Loose Files" && !(evidenceFiles || []).some(f => f && f.batch_id === b.id))));
     if (emptyBatches.length === 0) {
       toast.info("No empty folders to clean up.");
       return;
@@ -3200,7 +3241,7 @@ function ExtractionTab({
   const handleDeleteFolder = async () => {
     if (!deleteFolderTarget) return;
     try {
-      const filesInBatch = evidenceFiles.filter(f => f.batch_id === deleteFolderTarget.id);
+      const filesInBatch = (evidenceFiles || []).filter(f => f && f.batch_id === deleteFolderTarget.id);
       for (const file of filesInBatch) {
         await deleteFileMutation.mutateAsync({ id: file.id, url: file.url });
       }
@@ -3231,6 +3272,32 @@ function ExtractionTab({
     }
   };
 
+  const handleRenameFolder = async () => {
+    if (!renameValue.trim() || !folderToRename) return;
+    try {
+      await renameFolderMutation.mutateAsync({ id: folderToRename.id, name: renameValue.trim() });
+      setRenameValue("");
+      setFolderToRename(null);
+      setIsRenameFolderModalOpen(false);
+      toast.success(`Folder renamed to "${renameValue}"`);
+    } catch (err) {
+      toast.error("Failed to rename folder");
+    }
+  };
+
+  const handleRenameFile = async () => {
+    if (!fileRenameValue.trim() || !fileToRename) return;
+    try {
+      await renameFileMutation.mutateAsync({ id: fileToRename.id, name: fileRenameValue.trim() });
+      setFileRenameValue("");
+      setFileToRename(null);
+      setIsRenameFileModalOpen(false);
+      toast.success(`File renamed to "${fileRenameValue}"`);
+    } catch (err) {
+      toast.error("Failed to rename file");
+    }
+  };
+
   const toggleBatch = (id: string) => {
     setExpandedBatches(prev => prev.includes(id) ? prev.filter(b => b !== id) : [...prev, id]);
   };
@@ -3255,31 +3322,57 @@ function ExtractionTab({
   };
 
   const filteredFiles = useMemo(() => {
-    return evidenceFiles.filter(f => 
-      f.name.toLowerCase().includes(searchQuery.toLowerCase())
-    ).sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+    return (evidenceFiles || []).filter(f => 
+      f && f.name && f.name.toLowerCase().includes(searchQuery.toLowerCase())
+    ).sort((a, b) => {
+      const timeB = b && b.created_at ? new Date(b.created_at).getTime() : 0;
+      const timeA = a && a.created_at ? new Date(a.created_at).getTime() : 0;
+      return timeB - timeA;
+    });
   }, [evidenceFiles, searchQuery]);
 
   const looseFiles = useMemo(() => {
-    const looseBatchIds = batches.filter(b => b.type === "Loose Files").map(b => b.id);
-    return filteredFiles.filter(f => !f.batch_id || looseBatchIds.includes(f.batch_id));
+    const looseBatchIds = (batches || []).filter(b => b && b.type === "Loose Files").map(b => b.id);
+    return filteredFiles.filter(f => f && (!f.batch_id || looseBatchIds.includes(f.batch_id)));
   }, [filteredFiles, batches]);
 
   const folderGroups = useMemo(() => {
-    return batches
-      .filter(batch => batch.type !== "Loose Files")
+    return (batches || [])
+      .filter(batch => batch && batch.type !== "Loose Files")
       .map(batch => ({
         ...batch,
-        files: filteredFiles.filter(f => f.batch_id === batch.id)
+        files: filteredFiles.filter(f => f && f.batch_id === batch.id)
       }))
-      .sort((a, b) => a.name.localeCompare(b.name));
+      .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
   }, [batches, filteredFiles]);
 
   const handleMoveFile = async (fileId: string, batchId: string | null) => {
     try {
-      await moveFileMutation.mutateAsync({ fileId, batchId });
-      toast.success(batchId ? "File moved to folder." : "File moved to root.");
+      let targetBatchId = batchId;
+      
+      // If moving to root (null), find or create the Loose Files batch
+      if (!targetBatchId) {
+        let looseBatch = (batches || []).find(b => b && b.type === "Loose Files");
+        
+        if (!looseBatch) {
+          // Auto-create Loose Files batch if missing
+          toast.loading("Preparing root directory...", { id: "move-file" });
+          looseBatch = await createFolderMutation.mutateAsync({ 
+            caseId: caseId!, 
+            name: "Individual Files" 
+          });
+          // Update type to 'Loose Files' so it's hidden from folder list
+          await supabase.from("evidence_batches").update({ type: "Loose Files" }).eq("id", looseBatch.id);
+          toast.success("Root directory ready", { id: "move-file" });
+        }
+        
+        targetBatchId = looseBatch.id;
+      }
+
+      await moveFileMutation.mutateAsync({ fileId, batchId: targetBatchId });
+      toast.success(batchId ? "File moved to folder." : "File moved to Single Files.");
     } catch (error) {
+      console.error("Move error:", error);
       toast.error("Failed to move file.");
     }
   };
@@ -3409,6 +3502,16 @@ function ExtractionTab({
                       <DropdownMenuLabel className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2 py-1.5">Folder Actions</DropdownMenuLabel>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem 
+                        onClick={() => {
+                          setFolderToRename(batch);
+                          setRenameValue(batch.name);
+                          setIsRenameFolderModalOpen(true);
+                        }}
+                        className="text-[11px] font-bold py-2"
+                      >
+                        <Pencil className="h-3.5 w-3.5 mr-2 text-slate-400" /> Rename Folder
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
                         onClick={() => openDeleteFolderModal(batch)}
                         className="text-rose-600 focus:text-rose-600 text-[11px] font-bold py-2"
                       >
@@ -3431,6 +3534,11 @@ function ExtractionTab({
                           onSelect={() => setSelectedFile(file)}
                           onMove={handleMoveFile}
                           onDelete={() => { setSelectedFile(file); setIsDeleteModalOpen(true); }}
+                          onRename={(f) => {
+                            setFileToRename(f);
+                            setFileRenameValue(f.name);
+                            setIsRenameFileModalOpen(true);
+                          }}
                           batches={batches}
                           isIndented
                         />
@@ -3476,6 +3584,11 @@ function ExtractionTab({
                 onSelect={() => setSelectedFile(file)}
                 onMove={handleMoveFile}
                 onDelete={() => { setSelectedFile(file); setIsDeleteModalOpen(true); }}
+                onRename={(f) => {
+                  setFileToRename(f);
+                  setFileRenameValue(f.name);
+                  setIsRenameFileModalOpen(true);
+                }}
                 batches={batches}
               />
             ))}
@@ -3629,6 +3742,52 @@ function ExtractionTab({
              >
                {createFolderMutation.isPending ? "Creating..." : "Create Folder"}
              </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Rename Folder Modal */}
+      <Modal 
+        isOpen={isRenameFolderModalOpen} 
+        onClose={() => setIsRenameFolderModalOpen(false)}
+        title="Rename Folder"
+      >
+        <div className="p-6">
+          <p className="text-[11px] font-medium text-slate-500 mb-4">Enter a new name for the folder.</p>
+          <Input 
+            value={renameValue}
+            onChange={(e) => setRenameValue(e.target.value)}
+            placeholder="New folder name..."
+            className="h-10 text-xs font-bold mb-6"
+            autoFocus
+            onKeyDown={(e) => e.key === 'Enter' && handleRenameFolder()}
+          />
+          <div className="flex justify-end gap-3">
+            <Button variant="ghost" onClick={() => setIsRenameFolderModalOpen(false)} className="text-[10px] font-black uppercase tracking-widest">Cancel</Button>
+            <Button onClick={handleRenameFolder} className="text-[10px] font-black uppercase tracking-widest px-6">Save Changes</Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Rename File Modal */}
+      <Modal 
+        isOpen={isRenameFileModalOpen} 
+        onClose={() => setIsRenameFileModalOpen(false)}
+        title="Rename File"
+      >
+        <div className="p-6">
+          <p className="text-[11px] font-medium text-slate-500 mb-4">Enter a new name for the evidence file.</p>
+          <Input 
+            value={fileRenameValue}
+            onChange={(e) => setFileRenameValue(e.target.value)}
+            placeholder="New file name..."
+            className="h-10 text-xs font-bold mb-6"
+            autoFocus
+            onKeyDown={(e) => e.key === 'Enter' && handleRenameFile()}
+          />
+          <div className="flex justify-end gap-3">
+            <Button variant="ghost" onClick={() => setIsRenameFileModalOpen(false)} className="text-[10px] font-black uppercase tracking-widest">Cancel</Button>
+            <Button onClick={handleRenameFile} className="text-[10px] font-black uppercase tracking-widest px-6">Save Changes</Button>
           </div>
         </div>
       </Modal>
@@ -7544,8 +7703,8 @@ export default function CaseWorkspacePage() {
     }
   };
 
-  const evidenceFiles = evidence?.files || [];
-  const batches = evidence?.batches || [];
+  const evidenceFiles = useMemo(() => evidence?.files || [], [evidence?.files]);
+  const batches = useMemo(() => evidence?.batches || [], [evidence?.batches]);
 
   // Auto-select first file when data loads
   useEffect(() => {

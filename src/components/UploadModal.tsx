@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useRef } from "react";
+import { toast } from "sonner";
 import {
   X,
   Upload,
@@ -282,7 +283,7 @@ export function UploadModal({
         if (needsLooseGroup && !updated.find((g) => g.id === LOOSE_GROUP_ID)) {
           updated.push({
             id: LOOSE_GROUP_ID,
-            name: "Loose Files",
+            name: "Individual Files",
             isFolder: false,
             expanded: true,
           });
@@ -537,15 +538,17 @@ export function UploadModal({
       .filter((g) => g.files.length > 0);
 
     try {
-      await onUploadComplete(completed);
+      // Trigger background processing non-blockingly
+      onUploadComplete(completed);
       
       setFileItems((prev) => prev.map((f) => !f.error ? { ...f, status: "success", progress: 100 } : f));
       
-      setTimeout(() => {
-        setIsUploading(false);
-        resetState();
-        onClose();
-      }, 500);
+      // Close instantly
+      setIsUploading(false);
+      resetState();
+      onClose();
+      
+      toast.success(`Ingestion started for ${valid.length} objects.`);
     } catch (err: any) {
       setIsUploading(false);
       setWarnings([err?.message || "Upload failed"]);

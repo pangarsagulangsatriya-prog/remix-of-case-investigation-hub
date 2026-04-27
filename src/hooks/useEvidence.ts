@@ -48,7 +48,6 @@ export type EvidenceBatch = {
 export type EvidenceFile = {
   id: string;
   batch_id: string | null;
-  case_id?: string; // Support loose files at case level
   name: string;
   type: string;
   source: string;
@@ -129,7 +128,6 @@ export function useDeleteFile() {
 
       // 2. Delete from storage if URL is a Supabase storage URL
       if (url && url.includes("storage/v1/object/public")) {
-         // URL pattern usually is: .../public/evidence/path/to/file
          const parts = url.split("/storage/v1/object/public/")[1]?.split("/");
          if (parts && parts.length >= 2) {
             const bucket = parts[0];
@@ -151,7 +149,6 @@ export function useUploadEvidence() {
     mutationFn: async ({ caseId, groups }: { caseId: string, groups: any[] }) => {
       for (const group of groups) {
         // 1. Create batch for EVERY group (Folder or Loose Files) 
-        // to maintain the case_id relationship
         const { data: batchData, error: batchError } = await supabase
           .from("evidence_batches")
           .insert({
@@ -169,7 +166,7 @@ export function useUploadEvidence() {
 
         // 2. Upload files and create records
         for (const fileItem of group.files) {
-          const file = fileItem.file; // The actual File object
+          const file = fileItem.file; 
           const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
           const fileName = `${Date.now()}-${sanitizedFileName}`;
           const filePath = `${caseId}/${batchId}/${fileName}`;
@@ -265,6 +262,59 @@ export function useDeleteBatch() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["evidence"] });
+    },
+  });
+}
+
+export function useRenameFolder() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, name }: { id: string, name: string }) => {
+      const { error } = await supabase
+        .from("evidence_batches")
+        .update({ name })
+        .eq("id", id);
+
+      if (error) throw error;
+      return true;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["evidence"] });
+    },
+  });
+}
+
+export function useRenameFile() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, name }: { id: string, name: string }) => {
+      const { error } = await supabase
+        .from("evidence_files")
+        .update({ name })
+        .eq("id", id);
+
+      if (error) throw error;
+      return true;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["evidence"] });
+    },
+  });
+}
+
+export function useInsertAuditLog() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (log: any) => {
+      const { error } = await supabase
+        .from("audit_logs")
+        .insert(log);
+
+      if (error) throw error;
+      return true;
     },
   });
 }
