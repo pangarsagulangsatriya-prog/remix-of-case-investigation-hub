@@ -5066,9 +5066,51 @@ function AudioExtractionConsole({ file, onJump, currentTime }: { file: any, onJu
   }), [file]);
 
   const audioDiarizationData = useMemo(() => [
-    { segment_id: "seg_1", speaker_id: "SPK_01", speaker_label: "Operator A", start_time: "00:04", end_time: "00:12", duration: "0:08", text: "Control, ini Operator A. Getaran di Section 14 melebihi batas aman. Mohon dicek.", confidence: "High", flags: [] },
-    { segment_id: "seg_2", speaker_id: "SPK_02", speaker_label: "Control Room", start_time: "00:15", end_time: "00:22", duration: "0:07", text: "Diterima Operator A. Sensor kami juga menunjukkan anomali. Standby.", confidence: "High", flags: [] },
-    { segment_id: "seg_3", speaker_id: "SPK_01", speaker_label: "Operator A", start_time: "02:14", end_time: "02:22", duration: "0:08", text: "Kontrol! Belt Section 14 robek! Terjadi tumpahan material berat! E-Stop!", confidence: "High", flags: ["URGENT", "STRESS"] }
+    { 
+      segment_id: "seg_1", 
+      speaker_id: "SPK_01", 
+      speaker_label: "Operator A", 
+      start_time: "00:04", 
+      end_time: "00:12", 
+      duration: "0:08", 
+      text: "Control, ini Operator A. Getaran di Section 14 melebihi batas aman. Mohon dicek.", 
+      confidence: "High", 
+      theme_tag: "Safety",
+      interaction_type: "Declaration",
+      paralinguistics: ["urgent tone", "stressed breathing"],
+      extracted_action_or_fact: "Operator reports excessive vibration on conveyor Section 14.",
+      flags: [] 
+    },
+    { 
+      segment_id: "seg_2", 
+      speaker_id: "SPK_02", 
+      speaker_label: "Control Room", 
+      start_time: "00:15", 
+      end_time: "00:22", 
+      duration: "0:07", 
+      text: "Diterima Operator A. Sensor kami juga menunjukkan anomali. Standby.", 
+      confidence: "High", 
+      theme_tag: "Coordination",
+      interaction_type: "Instruction",
+      paralinguistics: ["calm tone", "standard protocol voice"],
+      extracted_action_or_fact: "Control Room confirms anomaly and instructs operator to standby.",
+      flags: [] 
+    },
+    { 
+      segment_id: "seg_3", 
+      speaker_id: "SPK_01", 
+      speaker_label: "Operator A", 
+      start_time: "02:14", 
+      end_time: "02:22", 
+      duration: "0:08", 
+      text: "Kontrol! Belt Section 14 robek! Terjadi tumpahan material berat! E-Stop!", 
+      confidence: "High", 
+      theme_tag: "Emergency",
+      interaction_type: "Urgent Command",
+      paralinguistics: ["shouting", "high stress"],
+      extracted_action_or_fact: "Operator reports catastrophic belt failure and requests immediate E-Stop.",
+      flags: ["URGENT", "STRESS"] 
+    }
   ], []);
 
   const normalizedExtraction = useMemo(() => {
@@ -6144,17 +6186,6 @@ function AnalysisTab() {
                                      agent?.results?.non_conformity_actions?.find((i: any) => i.id === selectedRowId) ||
                                      agent?.results?.improvement_actions?.find((i: any) => i.id === selectedRowId);
                         
-                        // Fallback for ID-less items (Actor attributes or PEEPO findings)
-                        if (!item && selectedRowId) {
-                           item = { 
-                              id: selectedRowId, 
-                              label: selectedRowId,
-                              timestamp: "Forensic Synthesis",
-                              status: "Verified",
-                              description: `Automatic trace synthesis for finding: "${selectedRowId}". Linked to Case CS-2026-0147.`
-                           };
-                        }
-                        
                         if (!item) return (
                            <div className="flex-1 flex flex-col items-center justify-center p-12 text-slate-300">
                               <Search className="h-12 w-12 mb-4 opacity-20" />
@@ -6165,10 +6196,40 @@ function AnalysisTab() {
 
                         const audioEvidence = {
                            diarization: [
-                              { startTime: '00:04', endTime: '00:12', speaker: 'OPERATOR A', text: 'Control, ini Operator A. Getaran di Section 14 melebihi batas aman. Mohon dicek.', confidence: 'High' },
-                              { startTime: '00:15', endTime: '00:22', speaker: 'CONTROL ROOM', text: 'Diterima Operator A. Sensor kami juga menunjukkan anamali. Standby.', confidence: 'High' },
-                              { startTime: '02:14', endTime: '02:22', speaker: 'OPERATOR A', text: 'Kontrol! Belt Section 14 robek! Terjadi tumpahan material berat! E-Stop!', confidence: 'High' }
-                           ],
+                               { 
+                                 start_dialog: '00:00:00', 
+                                 end_dialog: '00:00:18', 
+                                 speaker_label: 'Investigator', 
+                                 verbatim_text: 'Suaranya agak... bisa dijelaskan aktivitas sehari-hari saja di control room, soal tanggung jawab Pak Aris sebagai DMS control room.', 
+                                 theme_tag: 'Reporting',
+                                 interaction_type: 'Question',
+                                 paralinguistics: ['neutral tone'],
+                                 extracted_action_or_fact: 'Investigator requests a description of the operator\'s daily responsibilities.',
+                                 confidence: 'High' 
+                               },
+                               { 
+                                 start_dialog: '00:00:20', 
+                                 end_dialog: '00:00:45', 
+                                 speaker_label: 'Operator A', 
+                                 verbatim_text: 'Tanggung jawab utama saya di control room adalah memantau seluruh sistem distribusi material secara real-time. Kami memastikan aliran material lancar dan menanggapi setiap anomali sensor dengan cepat.', 
+                                 theme_tag: 'Operations',
+                                 interaction_type: 'Statement',
+                                 paralinguistics: ['informative tone', 'clear voice'],
+                                 extracted_action_or_fact: 'Operator A explains his role in monitoring distribution systems.',
+                                 confidence: 'High' 
+                               },
+                               { 
+                                 start_dialog: '00:00:50', 
+                                 end_dialog: '00:01:05', 
+                                 speaker_label: 'Investigator', 
+                                 verbatim_text: 'Bagaimana dengan prosedur jika terjadi anomali? Apakah ada protokol khusus?', 
+                                 theme_tag: 'Protocol',
+                                 interaction_type: 'Question',
+                                 paralinguistics: ['analytical tone'],
+                                 extracted_action_or_fact: 'Investigator inquires about anomaly response protocols.',
+                                 confidence: 'High' 
+                               }
+                            ],
                            analysis: {
                               speakers: [
                                  { name: 'OPERATOR A', role: 'FIELD SUPERVISOR', talkTime: '02:15', style: 'Urgent, Command style', assertiveness: 'High', stressLevel: 'Elevated', confidence: 'High' },
@@ -6386,7 +6447,6 @@ function AnalysisTab() {
                                                                   <p className="text-xs font-bold text-slate-800 leading-relaxed italic pr-4">
                                                                      "{ev.context}"
                                                                   </p>
-
                                                                   <div className="pt-3 border-t border-slate-100 flex items-center gap-2 opacity-60">
                                                                      <Paperclip className="h-3 w-3 text-slate-400" />
                                                                      <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">{ev.source}</span>
@@ -6406,6 +6466,92 @@ function AnalysisTab() {
                            );
                         }
 
+
+                         if (activeEvidenceConsoleMode === "diarization") {
+                            return (
+                               <div className="flex flex-col h-full bg-white overflow-hidden animate-in fade-in slide-in-from-right-4 duration-300">
+                                  {/* Header */}
+                                  <div className="h-12 border-b border-slate-200 flex items-center justify-between px-5 bg-white shrink-0">
+                                     <div className="flex items-center gap-2">
+                                        <AudioIcon className="h-4 w-4 text-slate-400" />
+                                        <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Diarization Session</span>
+                                     </div>
+                                     <div className="flex items-center gap-2">
+                                        <div className="flex bg-slate-100 p-0.5 rounded-none border border-slate-200">
+                                           <button onClick={() => setActiveEvidenceConsoleMode('trace')} className={cn("px-2 py-1 text-[8px] font-black uppercase rounded-none transition-all", activeEvidenceConsoleMode === 'trace' ? "bg-white shadow-sm text-slate-900" : "text-slate-400")}>Trace</button>
+                                           <button onClick={() => setActiveEvidenceConsoleMode('diarization')} className={cn("px-2 py-1 text-[8px] font-black uppercase rounded-none transition-all", activeEvidenceConsoleMode === 'diarization' ? "bg-white shadow-sm text-slate-900" : "text-slate-400")}>Diar</button>
+                                        </div>
+                                        <Button variant="ghost" size="sm" onClick={() => setSelectedChronologyItemId(null)} className="h-8 w-8 p-0 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-none">
+                                           <X className="h-4 w-4" />
+                                        </Button>
+                                     </div>
+                                  </div>
+
+                                  <div className="flex-1 overflow-y-auto custom-scrollbar p-6 bg-slate-50/20">
+                                     <div className="space-y-6">
+                                        {audioEvidence.diarization.map((seg: any, idx: number) => (
+                                           <div key={idx} className="bg-white border border-slate-200 rounded-none flex flex-col group hover:border-slate-400 transition-colors shadow-sm">
+                                              {/* Header: Time & Speaker */}
+                                              <div className="flex items-center justify-between border-b border-slate-100 px-4 py-2 bg-slate-50/50">
+                                                 <div className="flex items-center gap-3">
+                                                    <span className="text-[10px] font-mono font-black text-slate-500">{seg.start_dialog} — {seg.end_dialog}</span>
+                                                    <div className="flex items-center gap-2">
+                                                       <span className={cn(
+                                                          "px-2 py-0.5 text-white text-[8px] font-black uppercase tracking-wider rounded-none",
+                                                          seg.speaker_label?.toUpperCase() === 'INVESTIGATOR' ? "bg-blue-600" : "bg-slate-900"
+                                                       )}>
+                                                          {seg.speaker_label}
+                                                       </span>
+                                                       <span className="text-[8px] font-black text-emerald-600 uppercase tracking-widest">{seg.confidence}</span>
+                                                    </div>
+                                                 </div>
+                                                 <div className="flex items-center gap-2">
+                                                    {seg.theme_tag && (
+                                                       <div className="flex items-center gap-1.5 px-2 py-0.5 bg-blue-50 border border-blue-100">
+                                                          <div className="h-1 w-1 bg-blue-600" />
+                                                          <span className="text-[8px] font-black text-blue-700 uppercase tracking-widest">{seg.theme_tag}</span>
+                                                       </div>
+                                                    )}
+                                                    {seg.interaction_type && (
+                                                       <div className="flex items-center gap-1.5 px-2 py-0.5 bg-slate-100 border border-slate-200">
+                                                          <span className="text-[8px] font-black text-slate-600 uppercase tracking-widest">{seg.interaction_type}</span>
+                                                       </div>
+                                                    )}
+                                                 </div>
+                                              </div>
+
+                                              <div className="p-4 space-y-4">
+                                                 <div className="flex gap-4">
+                                                    <Quote className="h-4 w-4 text-slate-200 shrink-0 mt-1" />
+                                                    <div className="space-y-2">
+                                                       <p className="text-xs font-bold text-slate-800 leading-relaxed">"{seg.verbatim_text}"</p>
+                                                       {seg.paralinguistics && seg.paralinguistics.length > 0 && (
+                                                          <div className="flex flex-wrap gap-2 pt-1">
+                                                             {seg.paralinguistics.map((p: string, pIdx: number) => (
+                                                                <span key={pIdx} className="text-[9px] font-medium text-slate-400 italic">[{p}]</span>
+                                                             ))}
+                                                          </div>
+                                                       )}
+                                                    </div>
+                                                 </div>
+
+                                                 {seg.extracted_action_or_fact && (
+                                                    <div className="bg-slate-50 border border-slate-100 p-3 flex gap-3">
+                                                       <Brain className="h-3.5 w-3.5 text-blue-500 shrink-0 mt-0.5" />
+                                                       <div>
+                                                          <span className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-1">AI Extracted Fact</span>
+                                                          <p className="text-[11px] font-medium text-slate-600 leading-tight">{seg.extracted_action_or_fact}</p>
+                                                       </div>
+                                                    </div>
+                                                 )}
+                                              </div>
+                                           </div>
+                                        ))}
+                                     </div>
+                                  </div>
+                               </div>
+                            );
+                         }
 
                         return (
                            <div className="flex flex-col h-full bg-white animate-in fade-in duration-300">
@@ -6601,15 +6747,64 @@ function AnalysisTab() {
                                  <div className="flex-1 overflow-y-auto custom-scrollbar p-6 pb-20 bg-slate-50/20">
                                     {activeEvidenceType === 'audio_diarization' && (
                                        <div className="space-y-4">
-                                          {audioEvidence.diarization.map((seg, idx) => (
-                                             <div key={idx} className="border-l-2 border-slate-900 pl-4 py-1 group bg-white p-3 rounded-sm border-r border-t border-b border-slate-100 shadow-sm mb-4">
-                                                <div className="flex items-center justify-between mb-2">
+                                          {audioEvidence.diarization.map((seg: any, idx: number) => (
+                                             <div key={idx} className="bg-white border border-slate-200 rounded-none mb-6 flex flex-col group hover:border-slate-400 transition-colors shadow-sm">
+                                                {/* Header: Time & Speaker */}
+                                                <div className="flex items-center justify-between border-b border-slate-100 px-4 py-2 bg-slate-50/50">
                                                    <div className="flex items-center gap-3">
-                                                      <span className="text-[10px] font-mono font-black text-slate-400">{seg.startTime} — {seg.endTime}</span>
-                                                      <span className="px-2 py-0.5 bg-slate-900 text-white text-[8px] font-black uppercase rounded-sm">{seg.speaker}</span>
+                                                      <span className="text-[10px] font-mono font-black text-slate-500">{seg.start_dialog} — {seg.end_dialog}</span>
+                                                      <div className="flex items-center gap-2">
+                                                         <span className={cn(
+                                                            "px-2 py-0.5 text-white text-[8px] font-black uppercase tracking-wider rounded-none",
+                                                            seg.speaker_label?.toUpperCase() === 'INVESTIGATOR' ? "bg-blue-600" : "bg-slate-900"
+                                                         )}>
+                                                            {seg.speaker_label}
+                                                         </span>
+                                                         <span className="text-[8px] font-black text-emerald-600 uppercase tracking-widest">{seg.confidence}</span>
+                                                      </div>
+                                                   </div>
+                                                   <div className="flex items-center gap-2">
+                                                      {seg.theme_tag && (
+                                                         <div className="flex items-center gap-1.5 px-2 py-0.5 bg-blue-50 border border-blue-100">
+                                                            <div className="h-1 w-1 bg-blue-600" />
+                                                            <span className="text-[8px] font-black text-blue-700 uppercase tracking-widest">{seg.theme_tag}</span>
+                                                         </div>
+                                                      )}
+                                                      {seg.interaction_type && (
+                                                         <div className="flex items-center gap-1.5 px-2 py-0.5 bg-slate-100 border border-slate-200">
+                                                            <span className="text-[8px] font-black text-slate-600 uppercase tracking-widest">{seg.interaction_type}</span>
+                                                         </div>
+                                                      )}
                                                    </div>
                                                 </div>
-                                                <p className="text-xs font-medium leading-relaxed text-slate-700 italic">"{seg.text}"</p>
+
+                                                {/* Body: Text & Paralinguistics */}
+                                                <div className="p-4 space-y-4">
+                                                   <div className="flex gap-4">
+                                                      <Quote className="h-4 w-4 text-slate-200 shrink-0 mt-1" />
+                                                      <div className="space-y-2">
+                                                         <p className="text-xs font-bold text-slate-800 leading-relaxed">"{seg.verbatim_text}"</p>
+                                                         {seg.paralinguistics && seg.paralinguistics.length > 0 && (
+                                                            <div className="flex flex-wrap gap-2 pt-1">
+                                                               {seg.paralinguistics.map((p: string, pIdx: number) => (
+                                                                  <span key={pIdx} className="text-[9px] font-medium text-slate-400 italic">[{p}]</span>
+                                                               ))}
+                                                            </div>
+                                                         )}
+                                                      </div>
+                                                   </div>
+
+                                                   {/* Fact/Action Section */}
+                                                   {seg.extracted_action_or_fact && (
+                                                      <div className="bg-slate-50 border border-slate-100 p-3 flex gap-3">
+                                                         <Brain className="h-3.5 w-3.5 text-blue-500 shrink-0 mt-0.5" />
+                                                         <div>
+                                                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-1">AI Extracted Fact</span>
+                                                            <p className="text-[11px] font-medium text-slate-600 leading-tight">{seg.extracted_action_or_fact}</p>
+                                                         </div>
+                                                      </div>
+                                                   )}
+                                                </div>
                                              </div>
                                           ))}
                                        </div>
@@ -7223,38 +7418,72 @@ function AudioSceneSession({ data, currentTime, onJump }: { data: any, currentTi
                 const parts = seg.start_time.split(':').map(Number);
                 onJump(parts.length === 3 ? parts[0] * 3600 + parts[1] * 60 + parts[2] : parts[0] * 60 + parts[1]);
               }}
-              className={`group flex flex-col gap-2.5 p-3 rounded-sm border transition-all duration-300 cursor-pointer relative overflow-hidden ${
+              className={`group flex flex-col bg-white border rounded-none transition-all duration-300 cursor-pointer relative overflow-hidden shadow-sm ${
                 active 
-                ? "bg-white border-slate-900 shadow-sm z-10" 
-                : "bg-slate-50/30 border-slate-50 hover:border-slate-200 hover:bg-white"
+                ? "border-slate-900 ring-1 ring-slate-900/5 z-10" 
+                : "border-slate-200 hover:border-slate-400"
               }`}
             >
-              {active && <div className="absolute top-0 left-0 w-1 h-full bg-slate-900" />}
-              
-              <div className="flex items-center justify-between">
-                 <div className="flex items-center gap-3">
-                    <span className={`text-[10px] font-black tabular-nums transition-colors ${active ? "text-slate-900" : "text-slate-400"}`}>
-                      {seg.start_time} — {seg.end_time}
-                    </span>
-                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase border transition-all ${
-                      active 
-                      ? "bg-slate-900 text-white border-slate-900" 
-                      : (seg.speaker_id === "SPK_01" ? "bg-amber-50 text-amber-600 border-amber-100" : "bg-indigo-50 text-indigo-600 border-indigo-100")
-                    }`}>
-                      {seg.speaker_label}
-                    </span>
-                 </div>
-                 <div className={`text-[9px] font-black uppercase tracking-widest ${active ? "text-emerald-600" : "text-slate-300/50"}`}>High</div>
-              </div>
+               {/* Header: Time & Speaker */}
+               <div className={`flex items-center justify-between border-b px-4 py-2 transition-colors ${active ? "bg-slate-900 border-slate-800" : "bg-slate-50 border-slate-100"}`}>
+                  <div className="flex items-center gap-3">
+                     <span className={`text-[10px] font-mono font-black transition-colors ${active ? "text-slate-400" : "text-slate-500"}`}>
+                        {seg.start_time} — {seg.end_time}
+                     </span>
+                     <div className="flex items-center gap-2">
+                        <span className={cn(
+                           "px-2 py-0.5 text-white text-[8px] font-black uppercase tracking-wider rounded-none",
+                           seg.speaker_label?.toUpperCase() === 'INVESTIGATOR' ? "bg-blue-600" : (active ? "bg-slate-700" : "bg-slate-900")
+                        )}>
+                           {seg.speaker_label}
+                        </span>
+                        <span className={`text-[8px] font-black uppercase tracking-widest ${active ? "text-emerald-400" : "text-emerald-600"}`}>
+                           {seg.confidence}
+                        </span>
+                     </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                     {seg.theme_tag && (
+                        <div className={`flex items-center gap-1.5 px-2 py-0.5 border ${active ? "bg-blue-900/30 border-blue-800" : "bg-blue-50 border-blue-100"}`}>
+                           <div className={`h-1 w-1 ${active ? "bg-blue-400" : "bg-blue-600"}`} />
+                           <span className={`text-[8px] font-black uppercase tracking-widest ${active ? "text-blue-300" : "text-blue-700"}`}>{seg.theme_tag}</span>
+                        </div>
+                     )}
+                     {seg.interaction_type && (
+                        <div className={`flex items-center gap-1.5 px-2 py-0.5 border ${active ? "bg-slate-800 border-slate-700" : "bg-slate-100 border-slate-200"}`}>
+                           <span className={`text-[8px] font-black uppercase tracking-widest ${active ? "text-slate-400" : "text-slate-600"}`}>{seg.interaction_type}</span>
+                        </div>
+                     )}
+                  </div>
+               </div>
 
-              <div className="relative">
-                <p className={`text-[11px] leading-relaxed transition-all duration-500 ${active ? "text-slate-900 font-bold" : "text-slate-500 font-medium"} italic`}>
-                  "{seg.text}"
-                </p>
-                {seg.inaudible_flag && (
-                   <span className="absolute -right-1 -bottom-1 px-1.5 bg-rose-50 text-rose-600 text-[8px] font-black rounded border border-rose-100 uppercase">Inaudible</span>
-                )}
-              </div>
+               <div className="p-4 space-y-4">
+                  <div className="flex gap-4">
+                     <Quote className={`h-4 w-4 shrink-0 mt-1 transition-colors ${active ? "text-slate-400" : "text-slate-200"}`} />
+                     <div className="space-y-2">
+                        <p className={`text-xs font-bold leading-relaxed transition-colors ${active ? "text-slate-900" : "text-slate-800"}`}>
+                           "{seg.text}"
+                        </p>
+                        {seg.paralinguistics && seg.paralinguistics.length > 0 && (
+                           <div className="flex flex-wrap gap-2 pt-1">
+                              {seg.paralinguistics.map((p, pIdx) => (
+                                 <span key={pIdx} className="text-[9px] font-medium text-slate-400 italic">[{p}]</span>
+                              ))}
+                           </div>
+                        )}
+                     </div>
+                  </div>
+
+                  {seg.extracted_action_or_fact && (
+                     <div className={`border p-3 flex gap-3 transition-colors ${active ? "bg-slate-50 border-slate-200" : "bg-slate-50/50 border-slate-100"}`}>
+                        <Brain className="h-3.5 w-3.5 text-blue-500 shrink-0 mt-0.5" />
+                        <div>
+                           <span className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-1">AI Extracted Fact</span>
+                           <p className="text-[11px] font-medium text-slate-600 leading-tight">{seg.extracted_action_or_fact}</p>
+                        </div>
+                     </div>
+                  )}
+               </div>
             </div>
           );
         })}
