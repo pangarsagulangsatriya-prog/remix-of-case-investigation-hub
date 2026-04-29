@@ -72,16 +72,19 @@ export function FileRow({ file, isSelected, onSelect, onMove, onDelete, onRename
             <TooltipProvider delayDuration={0}>
               <Tooltip>
                 <TooltipTrigger asChild onClick={(e) => e.stopPropagation()}>
-                  <div className="flex items-center gap-1.5 bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded-[2px] border border-amber-200/30 animate-pulse cursor-help">
-                    <Loader2 className="h-2.5 w-2.5 animate-spin" />
-                    <span className="text-[7px] font-black uppercase tracking-[0.1em]">In Progress</span>
+                  <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-blue-50/50 border border-blue-100 text-blue-600 cursor-help transition-all hover:bg-blue-50">
+                    <span className="relative flex h-1.5 w-1.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-blue-500"></span>
+                    </span>
+                    <span className="text-[8px] font-black uppercase tracking-[0.15em]">Processing</span>
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="right" sideOffset={10} className="bg-slate-900 text-white border-none p-3 shadow-xl z-[100] animate-in zoom-in-95 duration-200">
                   <div className="space-y-2">
                     <div className="flex items-center justify-between gap-4">
-                      <p className="text-[9px] font-black uppercase tracking-widest text-amber-400">Forensic Engine Active</p>
-                      <span className="text-[8px] font-black text-amber-500/50">#EXT-294</span>
+                      <p className="text-[9px] font-black uppercase tracking-widest text-blue-400">Forensic Engine Active</p>
+                      <span className="text-[8px] font-black text-blue-500/50">#EXT-294</span>
                     </div>
                     <p className="text-[9px] font-bold text-slate-300 leading-relaxed max-w-[200px]">
                       Currently performing automated feature extraction: OCR parsing, diarization, and metadata indexing.
@@ -89,10 +92,10 @@ export function FileRow({ file, isSelected, onSelect, onMove, onDelete, onRename
                     <div className="space-y-1 pt-1">
                       <div className="flex justify-between items-center text-[8px] font-black uppercase tracking-tighter">
                         <span className="text-slate-400">Sync Progress</span>
-                        <span className="text-amber-500">65%</span>
+                        <span className="text-blue-500">65%</span>
                       </div>
                       <div className="h-1 w-full bg-slate-800 rounded-full overflow-hidden">
-                        <div className="h-full bg-amber-500 w-[65%] animate-pulse" />
+                        <div className="h-full bg-blue-500 w-[65%] animate-pulse" />
                       </div>
                     </div>
                   </div>
@@ -101,10 +104,10 @@ export function FileRow({ file, isSelected, onSelect, onMove, onDelete, onRename
             </TooltipProvider>
           )}
         </div>
-        <div className="flex items-center gap-2 mt-0.5 opacity-60">
-           <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">{formatSize(file.size)}</span>
+        <div className="flex items-center gap-2 mt-0.5">
+           <span className="text-[10px] font-medium text-slate-500 tracking-tight">{formatSize(file.size)}</span>
            <span className="h-0.5 w-0.5 rounded-full bg-slate-300" />
-           <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">{formatDate(file.created_at)}</span>
+           <span className="text-[10px] font-medium text-slate-500 tracking-tight">{formatDate(file.created_at)}</span>
         </div>
       </div>
       

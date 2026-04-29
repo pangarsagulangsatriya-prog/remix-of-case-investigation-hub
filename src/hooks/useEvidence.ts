@@ -331,8 +331,8 @@ export function useRerunExtraction() {
 
       if (startError) throw startError;
 
-      // 2. Simulate delay for extraction process
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      // 2. Simulate delay for extraction process (10s)
+      await new Promise(resolve => setTimeout(resolve, 10000));
 
       // 3. Set to completed
       const { error: endError } = await supabase
