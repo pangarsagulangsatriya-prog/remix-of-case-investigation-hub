@@ -101,18 +101,18 @@ export default function ExtractionTab() {
 
   const folderGroups = useMemo(() => {
     if (!batches || !Array.isArray(batches)) return [];
-    return batches.map((b: any) => {
-      if (!b) return null;
-      return {
-        ...b,
-        files: filteredFiles.filter((f: any) => f && f.batch_id === b.id)
-      };
-    }).filter(Boolean);
+    return batches.filter(b => b.type === "Folder").map((batch: any) => ({
+      ...batch,
+      files: filteredFiles.filter((f: any) => f.batch_id === batch.id)
+    }));
   }, [batches, filteredFiles]);
 
   const looseFiles = useMemo(() => {
-    return filteredFiles.filter((f: any) => f && !f.batch_id);
-  }, [filteredFiles]);
+    return filteredFiles.filter((f: any) => {
+      const batch = batches.find(b => b.id === f.batch_id);
+      return !batch || batch.type === "Loose Files";
+    });
+  }, [batches, filteredFiles]);
 
   // Handlers
   const toggleBatch = (id: string) => {
@@ -176,7 +176,12 @@ export default function ExtractionTab() {
 
   const handleMoveFile = async (fileId: string, batchId: string | null) => {
     try {
-      await moveFileMutation.mutateAsync({ fileId, batchId });
+      let targetBatchId = batchId;
+      if (!targetBatchId) {
+        const looseBatch = batches.find(b => b.type === "Loose Files");
+        targetBatchId = looseBatch?.id || null;
+      }
+      await moveFileMutation.mutateAsync({ fileId, batchId: targetBatchId });
       toast.success("Evidence moved");
     } catch (error) {
       toast.error("Failed to move evidence");
@@ -197,9 +202,12 @@ export default function ExtractionTab() {
   const handleDissolveFolder = async () => {
     if (!deleteFolderTarget) return;
     try {
+      const looseBatch = batches.find(b => b.type === "Loose Files");
+      const targetBatchId = looseBatch?.id || null;
+      
       const folderFiles = files.filter((f: any) => f.batch_id === deleteFolderTarget.id);
       for (const f of folderFiles) {
-        await moveFileMutation.mutateAsync({ fileId: f.id, batchId: null });
+        await moveFileMutation.mutateAsync({ fileId: f.id, batchId: targetBatchId });
       }
       await deleteBatchMutation.mutateAsync({ id: deleteFolderTarget.id });
       setDeleteFolderTarget(null);

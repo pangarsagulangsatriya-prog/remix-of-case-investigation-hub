@@ -73,11 +73,16 @@ export function useEvidence(caseId: string) {
 
       if (batchesError) throw batchesError;
 
-      // 2. Fetch all files for this case (including loose ones)
+      // 2. Fetch files belonging to these batches
+      const batchIds = (batches || []).map(b => b.id);
+      if (batchIds.length === 0) {
+        return { batches, files: [] as EvidenceFile[] };
+      }
+
       const { data: files, error: filesError } = await supabase
         .from("evidence_files")
         .select("*")
-        .eq("case_id", caseId);
+        .in("batch_id", batchIds);
 
       if (filesError) {
          return { batches, files: [] as EvidenceFile[] };
