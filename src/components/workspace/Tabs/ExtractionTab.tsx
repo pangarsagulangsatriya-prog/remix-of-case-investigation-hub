@@ -1,0 +1,533 @@
+import React, { useState, useRef, useMemo } from "react";
+import { useParams } from "react-router-dom";
+import { 
+  Search, Plus, FolderPlus, FileUp, FolderUp, ChevronRight, 
+  Folder, Folders, MoreVertical, Pencil, Trash2, Loader2, CheckCircle2, 
+  Box, Upload, ChevronLeft, ChevronRight as ChevronRightIcon, 
+  Cpu 
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
+import { FileRow, getFileIcon } from "../ExtractionTab/FileRow";
+import { AdaptiveSourcePreview } from "../ExtractionTab/PreviewComponents";
+import { 
+  ImageExtractionConsole, 
+  DocumentExtractionConsole, 
+  AudioExtractionConsole, 
+  VideoAnalysisPanel 
+} from "../ExtractionTab/ConsoleComponents";
+import { 
+  Modal, 
+  DeleteConfirmationModal, 
+  DeleteFolderModal 
+} from "../ExtractionTab/Modals";
+import { 
+  useEvidence, 
+  useDeleteFile, 
+  useUploadEvidence, 
+  useRenameFolder, 
+  useRenameFile, 
+  useMoveFile, 
+  useCreateFolder, 
+  useDeleteBatch 
+} from "@/hooks/useEvidence";
+import { UploadModal, CompletedGroup } from "../../UploadModal";
+import { toast } from "sonner";
+
+export default function ExtractionTab() {
+  const { caseId } = useParams<{ caseId: string }>();
+  const { data: evidence, isLoading } = useEvidence(caseId!);
+  const files = evidence?.files || [];
+  const batches = evidence?.batches || [];
+
+  // State
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedFile, setSelectedFile] = useState<any>(null);
+  const [expandedBatches, setExpandedBatches] = useState<string[]>([]);
+  
+  // Modals State
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isCreateFolderModalOpen, setIsCreateFolderModalOpen] = useState(false);
+  const [isRenameFolderModalOpen, setIsRenameFolderModalOpen] = useState(false);
+  const [isRenameFileModalOpen, setIsRenameFileModalOpen] = useState(false);
+  const [deleteFolderTarget, setDeleteFolderTarget] = useState<any>(null);
+  
+  // Form State
+  const [newFolderName, setNewFolderName] = useState("");
+  const [renameValue, setRenameValue] = useState("");
+  const [fileRenameValue, setFileRenameValue] = useState("");
+  const [folderToRename, setFolderToRename] = useState<any>(null);
+  const [fileToRename, setFileToRename] = useState<any>(null);
+
+  // Media State
+  const [videoCurrentTime, setVideoCurrentTime] = useState(0);
+  const [videoIsPlaying, setVideoIsPlaying] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  
+  const [audioCurrentTime, setAudioCurrentTime] = useState(0);
+  const [audioIsPlaying, setAudioIsPlaying] = useState(false);
+  const [audioPlaybackSpeed, setAudioPlaybackSpeed] = useState(1);
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  // Mutations
+  const deleteFileMutation = useDeleteFile();
+  const deleteBatchMutation = useDeleteBatch();
+  const createFolderMutation = useCreateFolder();
+  const renameFolderMutation = useRenameFolder();
+  const renameFileMutation = useRenameFile();
+  const moveFileMutation = useMoveFile();
+  const uploadEvidenceMutation = useUploadEvidence();
+
+  // Derived
+  const filteredFiles = useMemo(() => {
+    if (!files || !Array.isArray(files)) return [];
+    return files.filter((f: any) => 
+      f && f.name && f.type && (
+        f.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        f.type.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    );
+  }, [files, searchQuery]);
+
+  const folderGroups = useMemo(() => {
+    if (!batches || !Array.isArray(batches)) return [];
+    return batches.map((b: any) => {
+      if (!b) return null;
+      return {
+        ...b,
+        files: filteredFiles.filter((f: any) => f && f.batch_id === b.id)
+      };
+    }).filter(Boolean);
+  }, [batches, filteredFiles]);
+
+  const looseFiles = useMemo(() => {
+    return filteredFiles.filter((f: any) => f && !f.batch_id);
+  }, [filteredFiles]);
+
+  // Handlers
+  const toggleBatch = (id: string) => {
+    setExpandedBatches(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+
+  const handleCreateFolder = async () => {
+    if (!newFolderName.trim()) return;
+    try {
+      await createFolderMutation.mutateAsync({ caseId: caseId!, name: newFolderName });
+      setIsCreateFolderModalOpen(false);
+      setNewFolderName("");
+      toast.success("Folder created successfully");
+    } catch (error) {
+      toast.error("Failed to create folder");
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!selectedFile) return;
+    try {
+      await deleteFileMutation.mutateAsync({ id: selectedFile.id, url: selectedFile.url });
+      setSelectedFile(null);
+      setIsDeleteModalOpen(false);
+      toast.success("Evidence object purged from repository.");
+    } catch (error) {
+      toast.error("Failed to delete evidence");
+    }
+  };
+
+  const handleRenameFolder = async () => {
+    if (!folderToRename || !renameValue.trim()) return;
+    try {
+      await renameFolderMutation.mutateAsync({ folderId: folderToRename.id, name: renameValue });
+      setIsRenameFolderModalOpen(false);
+      toast.success("Folder renamed");
+    } catch (error) {
+      toast.error("Failed to rename folder");
+    }
+  };
+
+  const handleRenameFile = async () => {
+    if (!fileToRename || !fileRenameValue.trim()) return;
+    try {
+      await renameFileMutation.mutateAsync({ fileId: fileToRename.id, name: fileRenameValue });
+      setIsRenameFileModalOpen(false);
+      toast.success("File renamed");
+    } catch (error) {
+      toast.error("Failed to rename file");
+    }
+  };
+
+  const handleUploadEvidence = async (groups: CompletedGroup[]) => {
+    try {
+      await uploadEvidenceMutation.mutateAsync({ caseId: caseId!, groups });
+    } catch (error) {
+      console.error(error);
+      toast.error("Persist Failure: One or more evidence objects failed to sync.");
+    }
+  };
+
+  const handleMoveFile = async (fileId: string, batchId: string | null) => {
+    try {
+      await moveFileMutation.mutateAsync({ fileId, batchId });
+      toast.success("Evidence moved");
+    } catch (error) {
+      toast.error("Failed to move evidence");
+    }
+  };
+
+  const handleDeleteFolder = async () => {
+    if (!deleteFolderTarget) return;
+    try {
+      await deleteBatchMutation.mutateAsync({ id: deleteFolderTarget.id });
+      setDeleteFolderTarget(null);
+      toast.success("Folder and contents deleted");
+    } catch (error) {
+      toast.error("Failed to delete folder");
+    }
+  };
+
+  const handleDissolveFolder = async () => {
+    if (!deleteFolderTarget) return;
+    try {
+      const folderFiles = files.filter((f: any) => f.batch_id === deleteFolderTarget.id);
+      for (const f of folderFiles) {
+        await moveFileMutation.mutateAsync({ fileId: f.id, batchId: null });
+      }
+      await deleteBatchMutation.mutateAsync({ id: deleteFolderTarget.id });
+      setDeleteFolderTarget(null);
+      toast.success("Folder dissolved. Files moved to Single Files.");
+    } catch (error) {
+      toast.error("Failed to dissolve folder");
+    }
+  };
+
+  const goToPrev = () => {
+    const idx = filteredFiles.findIndex((f: any) => f.id === selectedFile?.id);
+    if (idx > 0) setSelectedFile(filteredFiles[idx - 1]);
+  };
+
+  const goToNext = () => {
+    const idx = filteredFiles.findIndex((f: any) => f.id === selectedFile?.id);
+    if (idx < filteredFiles.length - 1) setSelectedFile(filteredFiles[idx + 1]);
+  };
+
+  const jumpToAudioTime = (time: number) => {
+    if (audioRef.current) {
+      audioRef.current.currentTime = time;
+      setAudioCurrentTime(time);
+    }
+  };
+
+  const jumpToVideoTime = (time: number) => {
+    if (videoRef.current) {
+      videoRef.current.currentTime = time;
+      setVideoCurrentTime(time);
+    }
+  };
+
+  if (isLoading) return <div className="p-8 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Loading Evidence...</div>;
+
+  return (
+    <div className="flex h-full bg-[#f0f2f4] overflow-hidden">
+      <div className="w-[320px] border-r border-slate-200 bg-white flex flex-col shrink-0 z-10 shadow-[1px_0_10px_rgba(0,0,0,0.02)]">
+        <div className="p-5 border-b border-slate-100 shrink-0">
+          <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Evidence Repository</span>
+                <div className="flex items-center gap-3">
+                  <button className="text-[9px] font-black text-rose-500 uppercase tracking-widest hover:opacity-70 transition-opacity">Cleanup</button>
+                  <span className="text-[9px] font-bold text-slate-300 bg-slate-50 px-2 py-0.5 rounded-full border">{filteredFiles.length} Objects</span>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-300" />
+                  <input 
+                    type="text" 
+                    placeholder="Search..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full h-9 bg-white border border-slate-200 rounded-sm pl-9 pr-4 text-[11px] font-bold focus:ring-1 focus:ring-primary/20 focus:border-primary transition-all outline-none "
+                  />
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button 
+                      className="h-9 bg-slate-900 hover:bg-emerald-700 text-white font-black px-3 rounded-sm text-[10px] uppercase tracking-widest gap-1.5 shrink-0"
+                    >
+                      <Plus className="h-3.5 w-3.5" /> ADD
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem onClick={() => setIsCreateFolderModalOpen(true)} className="text-[11px] font-bold py-2.5">
+                      <FolderPlus className="h-4 w-4 mr-2.5 text-emerald-600" /> Create Folder
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => setIsUploadModalOpen(true)} className="text-[11px] font-bold py-2.5">
+                      <FileUp className="h-4 w-4 mr-2.5 text-slate-500" /> File upload
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setIsUploadModalOpen(true)} className="text-[11px] font-bold py-2.5">
+                      <FolderUp className="h-4 w-4 mr-2.5 text-slate-500" /> Folder upload
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+          </div>
+        </div>
+          
+        <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar p-0">
+          <div className="space-y-0.5">
+            {folderGroups.map((batch) => (
+              <div key={batch.id} className="group/folder">
+                <div 
+                  onClick={() => toggleBatch(batch.id)}
+                  className={cn(
+                    "flex items-center gap-2 px-3 py-2 hover:bg-slate-50 cursor-pointer transition-all border-l-2 border-transparent",
+                    expandedBatches.includes(batch.id) ? "bg-slate-50/50 border-primary/20" : ""
+                  )}
+                >
+                  <ChevronRight className={cn(
+                    "h-3 w-3 text-slate-400 transition-transform duration-150",
+                    expandedBatches.includes(batch.id) ? "rotate-90" : ""
+                  )} />
+                  <Folder className={cn("h-4 w-4", expandedBatches.includes(batch.id) ? "text-primary" : "text-slate-400")} />
+                  <span className="text-[11px] font-bold text-slate-700 uppercase tracking-tight flex-1 truncate">{batch.name}</span>
+                  <span className="text-[9px] font-black text-slate-300 mr-2 shrink-0">{batch.files.length}</span>
+                  
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                      <button className="p-1 hover:bg-slate-200 rounded text-slate-400 transition-all shrink-0">
+                        <MoreVertical className="h-3.5 w-3.5" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-48">
+                      <DropdownMenuLabel className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2 py-1.5">Folder Actions</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem 
+                        onClick={() => {
+                          setFolderToRename(batch);
+                          setRenameValue(batch.name);
+                          setIsRenameFolderModalOpen(true);
+                        }}
+                        className="text-[11px] font-bold py-2"
+                      >
+                        <Pencil className="h-3.5 w-3.5 mr-2 text-slate-400" /> Rename Folder
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={() => setDeleteFolderTarget(batch)}
+                        className="text-rose-600 focus:text-rose-600 text-[11px] font-bold py-2"
+                      >
+                        <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete Folder
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+
+                {expandedBatches.includes(batch.id) && (
+                  <div className="ml-4 border-l border-slate-100">
+                    {batch.files.length === 0 ? (
+                      <div className="py-2 px-8 text-[9px] font-black text-slate-300 uppercase tracking-widest italic">EMPTY FOLDER</div>
+                    ) : (
+                      batch.files.map((file: any) => (
+                        <FileRow 
+                          key={file.id} 
+                          file={file} 
+                          isSelected={selectedFile?.id === file.id}
+                          onSelect={() => setSelectedFile(file)}
+                          onMove={handleMoveFile}
+                          onDelete={() => { setSelectedFile(file); setIsDeleteModalOpen(true); }}
+                          onRename={(f: any) => {
+                            setFileToRename(f);
+                            setFileRenameValue(f.name);
+                            setIsRenameFileModalOpen(true);
+                          }}
+                          batches={batches}
+                          isIndented
+                        />
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+
+            {looseFiles.map((file) => (
+              <FileRow 
+                key={file.id} 
+                file={file} 
+                isSelected={selectedFile?.id === file.id}
+                onSelect={() => setSelectedFile(file)}
+                onMove={handleMoveFile}
+                onDelete={() => { setSelectedFile(file); setIsDeleteModalOpen(true); }}
+                onRename={(f: any) => {
+                  setFileToRename(f);
+                  setFileRenameValue(f.name);
+                  setIsRenameFileModalOpen(true);
+                }}
+                batches={batches}
+              />
+            ))}
+
+            {filteredFiles.length === 0 && (
+              <div className="py-20 flex flex-col items-center justify-center text-center px-6">
+                <div className="h-12 w-12 bg-slate-50 rounded-full flex items-center justify-center mb-4 border border-dashed border-slate-200">
+                  <Box className="h-6 w-6 text-slate-300" />
+                </div>
+                <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">No files yet</h3>
+                <Button 
+                  onClick={() => setIsUploadModalOpen(true)}
+                  variant="outline"
+                  className="h-9 border-slate-200 text-slate-500 text-[10px] font-black uppercase tracking-widest rounded-sm hover:bg-slate-50"
+                >
+                  <Upload className="h-3.5 w-3.5 mr-2" /> Upload
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="flex-1 flex flex-col relative z-0 bg-white">
+        <div className="h-12 border-b flex items-center justify-between px-6 shrink-0 bg-white">
+           {selectedFile ? (
+             <div className="flex items-center gap-4">
+                 <div className="flex items-center gap-1 border-r pr-4 border-slate-100">
+                    <button onClick={goToPrev} className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-900 transition-all disabled:opacity-30"><ChevronLeft className="h-4 w-4" /></button>
+                    <button onClick={goToNext} className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-900 transition-all disabled:opacity-30"><ChevronRightIcon className="h-4 w-4" /></button>
+                 </div>
+                 <div className="flex items-center gap-2">
+                    <div className="h-7 w-7 bg-slate-100 rounded flex items-center justify-center border shadow-inner">
+                       {getFileIcon(selectedFile.type)}
+                    </div>
+                    <h2 className="text-sm font-medium text-slate-900 tracking-tight">{selectedFile.name}</h2>
+                 </div>
+              </div>
+           ) : (
+             <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Evidence Workspace Ready</div>
+           )}
+        </div>
+
+        <div className="flex-1 overflow-auto bg-[#f0f2f4] p-6 flex flex-col items-center custom-scrollbar" style={{ minWidth: 0 }}>
+             <div className={`w-full flex ${selectedFile?.type === "Image" ? "max-w-3xl h-full items-center justify-center" : "max-w-5xl items-start justify-center pt-4"}`}>
+               {selectedFile ? (
+                 <AdaptiveSourcePreview 
+                    file={selectedFile} 
+                    videoCurrentTime={videoCurrentTime}
+                    setVideoCurrentTime={setVideoCurrentTime}
+                    videoIsPlaying={videoIsPlaying}
+                    setVideoIsPlaying={setVideoIsPlaying}
+                    videoRef={videoRef}
+                    audioCurrentTime={audioCurrentTime}
+                    setAudioCurrentTime={setAudioCurrentTime}
+                    audioIsPlaying={audioIsPlaying}
+                    setAudioIsPlaying={setAudioIsPlaying}
+                    audioPlaybackSpeed={audioPlaybackSpeed}
+                    setAudioPlaybackSpeed={setAudioPlaybackSpeed}
+                    audioRef={audioRef}
+                  />
+              ) : (
+                <div className="flex flex-col items-center justify-center p-12 text-center">
+                   <div className="h-20 w-20 rounded-[2.5rem] bg-white  flex items-center justify-center mb-8 border border-white/50 animate-in fade-in zoom-in duration-700">
+                      <Folders className="h-10 w-10 text-slate-200" />
+                   </div>
+                   <h3 className="text-sm font-black text-slate-800 uppercase tracking-[0.2em] mb-3">No Evidence Selected</h3>
+                   <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest max-w-[280px] leading-relaxed opacity-80">
+                     Select an object from the library or use the Add Evidence button to begin the review workflow.
+                   </p>
+                </div>
+              )}
+            </div>
+         </div>
+      </div>
+
+      <div className="w-[460px] border-l border-slate-200 bg-white flex flex-col shrink-0 z-20 shadow-[-2px_0_10px_rgba(0,0,0,0.03)] overflow-hidden">
+        {selectedFile ? (
+            <div className="flex-1 overflow-y-auto custom-scrollbar">
+                {selectedFile.type === "Image" && <ImageExtractionConsole file={selectedFile} />}
+                {selectedFile.type === "Audio" && <AudioExtractionConsole file={selectedFile} onJump={jumpToAudioTime} currentTime={audioCurrentTime} />}
+                {selectedFile.type === "Video" && <VideoAnalysisPanel file={selectedFile} currentTime={videoCurrentTime || 0} onJump={jumpToVideoTime} />}
+                {selectedFile.type === "Document" && <DocumentExtractionConsole file={selectedFile} />}
+            </div>
+        ) : (
+          <div className="flex-1 flex flex-col items-center justify-center text-center p-12 opacity-30 grayscale saturate-0">
+             <Cpu className="h-12 w-12 text-slate-200 mb-6" />
+             <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900">Forensic Engine Standby</h3>
+             <p className="text-[10px] font-bold text-slate-400 uppercase mt-4 max-w-[220px] leading-relaxed">Select an evidence object to initiate automated feature extraction.</p>
+          </div>
+        )}
+      </div>
+
+      <DeleteConfirmationModal 
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleDelete}
+        fileName={selectedFile?.name || ""}
+      />
+
+      <UploadModal
+        isOpen={isUploadModalOpen}
+        onClose={() => setIsUploadModalOpen(false)}
+        onUploadComplete={handleUploadEvidence}
+      />
+
+      <Modal
+        isOpen={isCreateFolderModalOpen}
+        onClose={() => { setIsCreateFolderModalOpen(false); setNewFolderName(""); }}
+        title="Create New Folder"
+        showCloseButton
+      >
+        <div className="p-6 space-y-6">
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Folder Name</label>
+            <Input 
+              placeholder="Enter folder name..."
+              value={newFolderName}
+              onChange={(e) => setNewFolderName(e.target.value)}
+              className="h-11 font-bold"
+              autoFocus
+            />
+          </div>
+          <div className="flex gap-3 pt-2">
+             <Button variant="outline" className="flex-1 h-11" onClick={() => setIsCreateFolderModalOpen(false)}>Cancel</Button>
+             <Button className="flex-1 h-11 bg-slate-900" disabled={!newFolderName.trim()} onClick={handleCreateFolder}>Create Folder</Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal isOpen={isRenameFolderModalOpen} onClose={() => setIsRenameFolderModalOpen(false)} title="Rename Folder">
+        <div className="p-6">
+          <Input value={renameValue} onChange={(e) => setRenameValue(e.target.value)} placeholder="New folder name..." className="h-10 font-bold mb-6" autoFocus />
+          <div className="flex justify-end gap-3">
+            <Button variant="ghost" onClick={() => setIsRenameFolderModalOpen(false)}>Cancel</Button>
+            <Button onClick={handleRenameFolder}>Save Changes</Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal isOpen={isRenameFileModalOpen} onClose={() => setIsRenameFileModalOpen(false)} title="Rename File">
+        <div className="p-6">
+          <Input value={fileRenameValue} onChange={(e) => setFileRenameValue(e.target.value)} placeholder="New file name..." className="h-10 font-bold mb-6" autoFocus />
+          <div className="flex justify-end gap-3">
+            <Button variant="ghost" onClick={() => setIsRenameFileModalOpen(false)}>Cancel</Button>
+            <Button onClick={handleRenameFile}>Save Changes</Button>
+          </div>
+        </div>
+      </Modal>
+
+      <DeleteFolderModal 
+        target={deleteFolderTarget}
+        onClose={() => setDeleteFolderTarget(null)}
+        onConfirm={handleDeleteFolder}
+        onDissolve={handleDissolveFolder}
+      />
+    </div>
+  );
+}
