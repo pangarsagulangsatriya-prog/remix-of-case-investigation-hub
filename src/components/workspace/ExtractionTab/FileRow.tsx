@@ -11,6 +11,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 export const getFileIcon = (type: string) => {
@@ -63,10 +69,36 @@ export function FileRow({ file, isSelected, onSelect, onMove, onDelete, onRename
         <div className="flex items-center gap-2">
           <p className={cn("text-[11px] font-bold truncate leading-tight", isSelected ? "text-slate-900" : "text-slate-600")}>{file.name}</p>
           {file.extraction_status === "pending" && (
-            <div className="flex items-center gap-1.5 bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded-[2px] border border-amber-200/30 animate-pulse">
-              <Loader2 className="h-2.5 w-2.5 animate-spin" />
-              <span className="text-[7px] font-black uppercase tracking-[0.1em]">In Progress</span>
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild onClick={(e) => e.stopPropagation()}>
+                  <div className="flex items-center gap-1.5 bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded-[2px] border border-amber-200/30 animate-pulse cursor-help">
+                    <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                    <span className="text-[7px] font-black uppercase tracking-[0.1em]">In Progress</span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="right" sideOffset={10} className="bg-slate-900 text-white border-none p-3 shadow-xl z-[100] animate-in zoom-in-95 duration-200">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-4">
+                      <p className="text-[9px] font-black uppercase tracking-widest text-amber-400">Forensic Engine Active</p>
+                      <span className="text-[8px] font-black text-amber-500/50">#EXT-294</span>
+                    </div>
+                    <p className="text-[9px] font-bold text-slate-300 leading-relaxed max-w-[200px]">
+                      Currently performing automated feature extraction: OCR parsing, diarization, and metadata indexing.
+                    </p>
+                    <div className="space-y-1 pt-1">
+                      <div className="flex justify-between items-center text-[8px] font-black uppercase tracking-tighter">
+                        <span className="text-slate-400">Sync Progress</span>
+                        <span className="text-amber-500">65%</span>
+                      </div>
+                      <div className="h-1 w-full bg-slate-800 rounded-full overflow-hidden">
+                        <div className="h-full bg-amber-500 w-[65%] animate-pulse" />
+                      </div>
+                    </div>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           )}
         </div>
         <div className="flex items-center gap-2 mt-0.5 opacity-60">
