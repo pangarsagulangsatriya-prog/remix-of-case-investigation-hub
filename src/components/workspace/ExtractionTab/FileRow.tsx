@@ -1,7 +1,7 @@
 import { 
   Pencil, Trash2, MoreVertical, Folder, FileText, 
   Image as ImageIcon, Mic as AudioIcon, Video as VideoIcon, 
-  FileCode, Box, RefreshCw
+  FileCode, Box, RefreshCw, Loader2
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -60,7 +60,15 @@ export function FileRow({ file, isSelected, onSelect, onMove, onDelete, onRename
         {getFileIcon(file.type)}
       </div>
       <div className="flex-1 min-w-0">
-        <p className={cn("text-[11px] font-bold truncate leading-tight", isSelected ? "text-slate-900" : "text-slate-600")}>{file.name}</p>
+        <div className="flex items-center gap-2">
+          <p className={cn("text-[11px] font-bold truncate leading-tight", isSelected ? "text-slate-900" : "text-slate-600")}>{file.name}</p>
+          {file.extraction_status === "pending" && (
+            <div className="flex items-center gap-1.5 bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded-[2px] border border-amber-200/30 animate-pulse">
+              <Loader2 className="h-2.5 w-2.5 animate-spin" />
+              <span className="text-[7px] font-black uppercase tracking-[0.1em]">In Progress</span>
+            </div>
+          )}
+        </div>
         <div className="flex items-center gap-2 mt-0.5 opacity-60">
            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">{formatSize(file.size)}</span>
            <span className="h-0.5 w-0.5 rounded-full bg-slate-300" />
