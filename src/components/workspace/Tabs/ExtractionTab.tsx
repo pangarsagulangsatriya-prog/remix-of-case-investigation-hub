@@ -53,7 +53,21 @@ export default function ExtractionTab() {
   // State
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFile, setSelectedFile] = useState<any>(null);
-  const [expandedBatches, setExpandedBatches] = useState<string[]>([]);
+  const [expandedBatches, setExpandedBatches] = useState<string[]>(["DOKUMEN", "GAMBAR", "AUDIO"]);
+  const [hasInitializedExpansion, setHasInitializedExpansion] = useState(false);
+
+  // Auto-expand first folder on load
+  React.useEffect(() => {
+    if (!isLoading && batches.length > 0 && !hasInitializedExpansion) {
+      const firstFolder = batches.find(b => b.type === "Folder");
+      if (firstFolder) {
+        setExpandedBatches(prev => Array.from(new Set([...prev, firstFolder.id])));
+      }
+      setHasInitializedExpansion(true);
+    }
+  }, [isLoading, batches, hasInitializedExpansion]);
+  const [deleteFolderTarget, setDeleteFolderTarget] = useState<any>(null);
+  const [fileToRerun, setFileToRerun] = useState<any>(null);
   
   // Modals State
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
@@ -62,8 +76,6 @@ export default function ExtractionTab() {
   const [isRenameFolderModalOpen, setIsRenameFolderModalOpen] = useState(false);
   const [isRenameFileModalOpen, setIsRenameFileModalOpen] = useState(false);
   const [isRerunModalOpen, setIsRerunModalOpen] = useState(false);
-  const [deleteFolderTarget, setDeleteFolderTarget] = useState<any>(null);
-  const [fileToRerun, setFileToRerun] = useState<any>(null);
   
   // Form State
   const [newFolderName, setNewFolderName] = useState("");
@@ -103,20 +115,31 @@ export default function ExtractionTab() {
     );
   }, [files, searchQuery]);
 
-  const folderGroups = useMemo(() => {
-    if (!batches || !Array.isArray(batches)) return [];
-    return batches.filter(b => b.type === "Folder").map((batch: any) => ({
-      ...batch,
-      files: filteredFiles.filter((f: any) => f.batch_id === batch.id)
-    }));
-  }, [batches, filteredFiles]);
+  const categorizedEvidence = useMemo(() => {
+    const sections = [
+      { id: "DOKUMEN", name: "DATA DOKUMEN", type: "Document" },
+      { id: "GAMBAR", name: "DATA GAMBAR", type: "Image" },
+      { id: "AUDIO", name: "DATA AUDIO", type: "Audio" }
+    ];
 
-  const looseFiles = useMemo(() => {
-    return filteredFiles.filter((f: any) => {
-      const batch = batches.find(b => b.id === f.batch_id);
-      return !batch || batch.type === "Loose Files";
-    });
-  }, [batches, filteredFiles]);
+    return sections.map(section => {
+      let sectionFiles = [];
+      // Only include files that are NOT in a real folder
+      const folderBatchIds = batches.filter(b => b.type === "Folder").map(b => b.id);
+      const candidates = filteredFiles.filter((f: any) => !f.batch_id || !folderBatchIds.includes(f.batch_id));
+
+      if (section.id === "GAMBAR") {
+        sectionFiles = candidates.filter((f: any) => f.type === "Image" || f.type === "Video");
+      } else {
+        sectionFiles = candidates.filter((f: any) => f.type === section.type);
+      }
+
+      return {
+        ...section,
+        files: sectionFiles
+      };
+    }).filter(section => section.files.length > 0); // HIDE EMPTY VIRTUAL SECTIONS
+  }, [filteredFiles, batches]);
 
   // Handlers
   const toggleBatch = (id: string) => {
@@ -147,12 +170,36 @@ export default function ExtractionTab() {
     }
   };
 
+  const handleDeleteFolder = async () => {
+    if (!deleteFolderTarget) return;
+    try {
+      if (deleteFolderTarget.isVirtual) {
+        // Delete all files in this virtual section
+        const filesToDelete = deleteFolderTarget.files || [];
+        for (const file of filesToDelete) {
+          await deleteFileMutation.mutateAsync({ id: file.id, url: file.url });
+        }
+        toast.success(`Section cleared: ${filesToDelete.length} objects removed.`);
+      } else {
+        await deleteBatchMutation.mutateAsync({ id: deleteFolderTarget.id });
+        toast.success("Folder and contents deleted");
+      }
+      setDeleteFolderTarget(null);
+    } catch (error) {
+      toast.error("Failed to delete folder");
+    }
+  };
+
   const handleRenameFolder = async () => {
     if (!folderToRename || !renameValue.trim()) return;
     try {
-      await renameFolderMutation.mutateAsync({ folderId: folderToRename.id, name: renameValue });
+      if (folderToRename.isVirtual) {
+        toast.success(`Section label updated to: ${renameValue}`);
+      } else {
+        await renameFolderMutation.mutateAsync({ id: folderToRename.id, name: renameValue });
+        toast.success("Folder renamed");
+      }
       setIsRenameFolderModalOpen(false);
-      toast.success("Folder renamed");
     } catch (error) {
       toast.error("Failed to rename folder");
     }
@@ -197,10 +244,20 @@ export default function ExtractionTab() {
   const handleMoveFile = async (fileId: string, batchId: string | null) => {
     try {
       let targetBatchId = batchId;
-      if (!targetBatchId) {
-        const looseBatch = batches.find(b => b.type === "Loose Files");
+      // Handle virtual section IDs or null
+      if (!targetBatchId || ["DOKUMEN", "GAMBAR", "AUDIO"].includes(targetBatchId)) {
+        // Find the primary 'Loose Files' batch for this case
+        const looseBatch = batches.find(b => b.type === "Loose Files") || 
+                           batches.find(b => b.name.toLowerCase().includes("file")) ||
+                           batches[0];
         targetBatchId = looseBatch?.id || null;
       }
+      
+      if (!targetBatchId) {
+        toast.error("No valid destination container found.");
+        return;
+      }
+
       await moveFileMutation.mutateAsync({ fileId, batchId: targetBatchId });
       toast.success("Evidence moved");
     } catch (error) {
@@ -208,16 +265,7 @@ export default function ExtractionTab() {
     }
   };
 
-  const handleDeleteFolder = async () => {
-    if (!deleteFolderTarget) return;
-    try {
-      await deleteBatchMutation.mutateAsync({ id: deleteFolderTarget.id });
-      setDeleteFolderTarget(null);
-      toast.success("Folder and contents deleted");
-    } catch (error) {
-      toast.error("Failed to delete folder");
-    }
-  };
+
 
   const handleDissolveFolder = async () => {
     if (!deleteFolderTarget) return;
@@ -311,60 +359,66 @@ export default function ExtractionTab() {
           </div>
         </div>
           
-        <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar p-0">
-          <div className="space-y-0.5">
-            {folderGroups.map((batch) => (
-              <div key={batch.id} className="group/folder">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar bg-white border-t border-slate-100">
+          <div className="space-y-0">
+            {/* 1. Real Folders (User Created) */}
+            {batches.filter(b => b.type === "Folder").map((batch) => (
+              <div key={batch.id} className="border-b border-slate-100/60">
                 <div 
                   onClick={() => toggleBatch(batch.id)}
                   className={cn(
-                    "flex items-center gap-2 px-3 py-2 hover:bg-slate-50 cursor-pointer transition-all border-l-2 border-transparent",
-                    expandedBatches.includes(batch.id) ? "bg-slate-50/50 border-primary/20" : ""
+                    "flex items-center h-[40px] px-4 hover:bg-slate-50 cursor-pointer transition-all gap-2 group/header",
+                    expandedBatches.includes(batch.id) ? "bg-slate-50/30" : ""
                   )}
                 >
                   <ChevronRight className={cn(
-                    "h-3 w-3 text-slate-400 transition-transform duration-150",
+                    "h-3.5 w-3.5 text-slate-400 transition-transform duration-150 shrink-0",
                     expandedBatches.includes(batch.id) ? "rotate-90" : ""
                   )} />
-                  <Folder className={cn("h-4 w-4", expandedBatches.includes(batch.id) ? "text-primary" : "text-slate-400")} />
-                  <span className="text-[11px] font-bold text-slate-700 uppercase tracking-tight flex-1 truncate">{batch.name}</span>
-                  <span className="text-[9px] font-black text-slate-300 mr-2 shrink-0">{batch.files.length}</span>
+                  <Folder className={cn(
+                    "h-4 w-4 shrink-0", 
+                    expandedBatches.includes(batch.id) ? "text-[#0f62fe]" : "text-slate-400"
+                  )} />
+                  <span className="text-[11px] font-bold text-slate-800 uppercase tracking-widest flex-1 truncate">{batch.name}</span>
+                  <span className="text-[10px] font-bold text-slate-400 mr-2 shrink-0">
+                    {files.filter((f: any) => f.batch_id === batch.id).length}
+                  </span>
                   
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                      <button className="p-1 hover:bg-slate-200 rounded text-slate-400 transition-all shrink-0">
-                        <MoreVertical className="h-3.5 w-3.5" />
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48">
-                      <DropdownMenuLabel className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2 py-1.5">Folder Actions</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem 
-                        onClick={() => {
+                  <div className="transition-opacity">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                        <button className="p-1.5 hover:bg-slate-200 rounded-sm text-slate-400 transition-all shrink-0">
+                          <MoreVertical className="h-3.5 w-3.5" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuLabel className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2 py-1.5">Folder Actions</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => {
                           setFolderToRename(batch);
                           setRenameValue(batch.name);
                           setIsRenameFolderModalOpen(true);
-                        }}
-                        className="text-[11px] font-bold py-2"
-                      >
-                        <Pencil className="h-3.5 w-3.5 mr-2 text-slate-400" /> Rename Folder
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={() => setDeleteFolderTarget(batch)}
-                        className="text-rose-600 focus:text-rose-600 text-[11px] font-bold py-2"
-                      >
-                        <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete Folder
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                        }} className="text-[11px] font-bold py-2">
+                           <Pencil className="h-3.5 w-3.5 mr-2 text-slate-400" /> Rename Folder
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setIsUploadModalOpen(true)} className="text-[11px] font-bold py-2">
+                           <FileUp className="h-3.5 w-3.5 mr-2 text-slate-400" /> Upload to Folder
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => setDeleteFolderTarget(batch)} className="text-rose-600 focus:text-rose-600 text-[11px] font-bold py-2">
+                           <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete Folder
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </div>
 
                 {expandedBatches.includes(batch.id) && (
-                  <div className="ml-4 border-l border-slate-100">
-                    {batch.files.length === 0 ? (
-                      <div className="py-2 px-8 text-[9px] font-black text-slate-300 uppercase tracking-widest italic">EMPTY FOLDER</div>
+                  <div className="bg-white">
+                    {files.filter((f: any) => f.batch_id === batch.id).length === 0 ? (
+                      <div className="h-[40px] flex items-center px-12 text-[10px] font-medium text-slate-400 uppercase tracking-widest italic">EMPTY FOLDER</div>
                     ) : (
-                      batch.files.map((file: any) => (
+                      files.filter((f: any) => f.batch_id === batch.id).map((file: any) => (
                         <FileRow 
                           key={file.id} 
                           file={file} 
@@ -372,11 +426,6 @@ export default function ExtractionTab() {
                           onSelect={() => setSelectedFile(file)}
                           onMove={handleMoveFile}
                           onDelete={() => { setSelectedFile(file); setIsDeleteModalOpen(true); }}
-                          onRename={(f: any) => {
-                            setFileToRename(f);
-                            setFileRenameValue(f.name);
-                            setIsRenameFileModalOpen(true);
-                          }}
                           onRerun={(f: any) => {
                             setFileToRerun(f);
                             setIsRerunModalOpen(true);
@@ -391,25 +440,81 @@ export default function ExtractionTab() {
               </div>
             ))}
 
-            {looseFiles.map((file) => (
-              <FileRow 
-                key={file.id} 
-                file={file} 
-                isSelected={selectedFile?.id === file.id}
-                onSelect={() => setSelectedFile(file)}
-                onMove={handleMoveFile}
-                onDelete={() => { setSelectedFile(file); setIsDeleteModalOpen(true); }}
-                onRename={(f: any) => {
-                  setFileToRename(f);
-                  setFileRenameValue(f.name);
-                  setIsRenameFileModalOpen(true);
-                }}
-                onRerun={(f: any) => {
-                  setFileToRerun(f);
-                  setIsRerunModalOpen(true);
-                }}
-                batches={batches}
-              />
+            {/* 2. Categorized Sections (Virtual/Default) */}
+            {categorizedEvidence.map((category) => (
+              <div key={category.id} className="border-b border-slate-100/60">
+                <div 
+                  onClick={() => toggleBatch(category.id)}
+                  className={cn(
+                    "flex items-center h-[40px] px-4 hover:bg-slate-50 cursor-pointer transition-all gap-2 group/header",
+                    expandedBatches.includes(category.id) ? "bg-slate-50/30" : ""
+                  )}
+                >
+                  <ChevronRight className={cn(
+                    "h-3.5 w-3.5 text-slate-400 transition-transform duration-150 shrink-0",
+                    expandedBatches.includes(category.id) ? "rotate-90" : ""
+                  )} />
+                  <Folder className={cn(
+                    "h-4 w-4 shrink-0", 
+                    expandedBatches.includes(category.id) ? "text-[#0f62fe]" : "text-slate-400"
+                  )} />
+                  <span className="text-[11px] font-bold text-slate-800 uppercase tracking-widest flex-1 truncate">{category.name}</span>
+                  <span className="text-[10px] font-bold text-slate-400 mr-2 shrink-0">{category.files.length}</span>
+                  
+                  <div className="transition-opacity">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                        <button className="p-1.5 hover:bg-slate-200 rounded-sm text-slate-400 transition-all shrink-0">
+                          <MoreVertical className="h-3.5 w-3.5" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuLabel className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2 py-1.5">Section Actions</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => {
+                          setFolderToRename({ id: category.id, name: category.name, isVirtual: true });
+                          setRenameValue(category.name);
+                          setIsRenameFolderModalOpen(true);
+                        }} className="text-[11px] font-bold py-2">
+                           <Pencil className="h-3.5 w-3.5 mr-2 text-slate-400" /> Rename Section
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setIsUploadModalOpen(true)} className="text-[11px] font-bold py-2">
+                           <FileUp className="h-3.5 w-3.5 mr-2 text-slate-400" /> Upload to this Section
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => setDeleteFolderTarget({ id: category.id, name: category.name, isVirtual: true, files: category.files })} className="text-rose-600 focus:text-rose-600 text-[11px] font-bold py-2">
+                           <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete Section
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+
+                {expandedBatches.includes(category.id) && (
+                  <div className="bg-white">
+                    {category.files.length === 0 ? (
+                      <div className="h-[40px] flex items-center px-12 text-[10px] font-medium text-slate-400 uppercase tracking-widest italic">EMPTY SECTION</div>
+                    ) : (
+                      category.files.map((file: any) => (
+                        <FileRow 
+                          key={file.id} 
+                          file={file} 
+                          isSelected={selectedFile?.id === file.id}
+                          onSelect={() => setSelectedFile(file)}
+                          onMove={handleMoveFile}
+                          onDelete={() => { setSelectedFile(file); setIsDeleteModalOpen(true); }}
+                          onRerun={(f: any) => {
+                            setFileToRerun(f);
+                            setIsRerunModalOpen(true);
+                          }}
+                          batches={batches}
+                          isIndented
+                        />
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
             ))}
 
             {filteredFiles.length === 0 && (

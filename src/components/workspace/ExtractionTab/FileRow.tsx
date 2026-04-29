@@ -54,98 +54,110 @@ export function FileRow({ file, isSelected, onSelect, onMove, onDelete, onRename
     <div 
       onClick={onSelect}
       className={cn(
-        "flex items-center gap-2.5 px-3 py-2 border-b border-slate-50 cursor-pointer transition-all relative group",
-        isSelected ? "bg-primary/5 shadow-[inset_3px_0_0_#2563eb]" : "hover:bg-slate-50",
-        isIndented ? "pl-8" : ""
+        "flex items-center gap-3 px-4 h-[56px] border-b border-slate-100 cursor-pointer transition-all relative group",
+        isSelected ? "bg-[#e0e0e0] shadow-[inset_3px_0_0_#0f62fe]" : "hover:bg-[#f4f4f4]",
+        isIndented ? "pl-10" : ""
       )}
     >
+      {/* Icon Container 32x32 */}
       <div className={cn(
-        "h-7 w-7 rounded flex items-center justify-center shrink-0 border shadow-inner transition-all",
-        isSelected ? "bg-white border-primary/20" : "bg-slate-50 border-slate-100 group-hover:bg-white"
+        "h-8 w-8 rounded-sm flex items-center justify-center shrink-0 border transition-all",
+        isSelected ? "bg-white border-slate-200" : "bg-slate-50 border-slate-100 group-hover:bg-white"
       )}>
         {getFileIcon(file.type)}
       </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <p className={cn("text-[11px] font-bold truncate leading-tight", isSelected ? "text-slate-900" : "text-slate-600")}>{file.name}</p>
-          {file.extraction_status === "pending" && (
-            <TooltipProvider delayDuration={0}>
-              <Tooltip>
-                <TooltipTrigger asChild onClick={(e) => e.stopPropagation()}>
-                  <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-blue-50/50 border border-blue-100 text-blue-600 cursor-help transition-all hover:bg-blue-50">
-                    <span className="relative flex h-1.5 w-1.5">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-blue-500"></span>
-                    </span>
-                    <span className="text-[8px] font-black uppercase tracking-[0.15em]">Processing</span>
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent side="right" sideOffset={10} className="bg-slate-900 text-white border-none p-3 shadow-xl z-[100] animate-in zoom-in-95 duration-200">
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between gap-4">
-                      <p className="text-[9px] font-black uppercase tracking-widest text-blue-400">Forensic Engine Active</p>
-                      <span className="text-[8px] font-black text-blue-500/50">#EXT-294</span>
-                    </div>
-                    <p className="text-[9px] font-bold text-slate-300 leading-relaxed max-w-[200px]">
-                      Currently performing automated feature extraction: OCR parsing, diarization, and metadata indexing.
-                    </p>
-                    <div className="space-y-1 pt-1">
-                      <div className="flex justify-between items-center text-[8px] font-black uppercase tracking-tighter">
-                        <span className="text-slate-400">Sync Progress</span>
-                        <span className="text-blue-500">65%</span>
-                      </div>
-                      <div className="h-1 w-full bg-slate-800 rounded-full overflow-hidden">
-                        <div className="h-full bg-blue-500 w-[65%] animate-pulse" />
-                      </div>
-                    </div>
-                  </div>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
-        </div>
-        <div className="flex items-center gap-2 mt-0.5">
+
+      {/* Middle Content */}
+      <div className="flex-1 min-w-0 flex flex-col justify-center">
+        <TooltipProvider delayDuration={500}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <p className={cn(
+                "text-[12px] truncate leading-none mb-1.5", 
+                isSelected ? "font-semibold text-slate-900" : "font-medium text-slate-700"
+              )}>
+                {file.name}
+              </p>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="bg-slate-900 text-[10px] text-white px-2 py-1">
+              {file.name}
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        
+        <div className="flex items-center gap-1.5 leading-none">
            <span className="text-[10px] font-medium text-slate-500 tracking-tight">{formatSize(file.size)}</span>
-           <span className="h-0.5 w-0.5 rounded-full bg-slate-300" />
+           <span className="text-slate-300">·</span>
            <span className="text-[10px] font-medium text-slate-500 tracking-tight">{formatDate(file.created_at)}</span>
+           
+           {/* Status Label - Simplified to Dot/Loader with Tooltip */}
+           <div className="flex items-center ml-2">
+              <TooltipProvider delayDuration={0}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="cursor-help py-1">
+                      {file.extraction_status === "pending" ? (
+                        <div className="flex items-center justify-center">
+                          <Loader2 className="h-3 w-3 text-[#0f62fe] animate-spin" />
+                        </div>
+                      ) : file.extraction_status === "completed" ? (
+                        <div className="h-2 w-2 rounded-full bg-[#24a148] shadow-[0_0_8px_rgba(36,161,72,0.4)]" />
+                      ) : null}
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="bg-slate-900 text-[10px] text-white px-2 py-1 font-black uppercase tracking-widest border-none">
+                    {file.extraction_status === "pending" ? "Analysis in Progress..." : "Extraction Completed"}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+           </div>
         </div>
       </div>
       
-      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-         <DropdownMenu>
-            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-               <button className="p-1 hover:bg-slate-200 rounded text-slate-400 transition-all">
-                  <MoreVertical className="h-3.5 w-3.5" />
-               </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-               <DropdownMenuLabel className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2 py-1.5">Evidence Actions</DropdownMenuLabel>
-               <DropdownMenuSeparator />
-               <DropdownMenuItem onClick={() => onRename(file)} className="text-[11px] font-bold py-2">
-                  <Pencil className="h-3.5 w-3.5 mr-2 text-slate-400" /> Rename Evidence
-               </DropdownMenuItem>
-               <DropdownMenuItem onClick={() => onRerun(file)} className="text-[11px] font-bold py-2">
-                  <RefreshCw className="h-3.5 w-3.5 mr-2 text-slate-400" /> Rerun Extraction
-               </DropdownMenuItem>
-               <DropdownMenuSeparator />
-               <DropdownMenuLabel className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2 py-1.5">Move to Folder</DropdownMenuLabel>
-               {batches.filter((b: any) => b.id !== file.batch_id).map((b: any) => (
-                  <DropdownMenuItem key={b.id} onClick={() => onMove(file.id, b.id)} className="text-[11px] font-bold py-2">
-                     <Folder className="h-3.5 w-3.5 mr-2 text-slate-400" /> {b.name}
-                  </DropdownMenuItem>
-               ))}
-               {file.batch_id && (
-                  <DropdownMenuItem onClick={() => onMove(file.id, null)} className="text-[11px] font-bold py-2">
-                     <Box className="h-3.5 w-3.5 mr-2 text-slate-400" /> Move to Single Files
-                  </DropdownMenuItem>
-               )}
-               <DropdownMenuSeparator />
-               <DropdownMenuItem onClick={onDelete} className="text-rose-600 focus:text-rose-600 text-[11px] font-bold py-2">
-                  <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete Object
-               </DropdownMenuItem>
-            </DropdownMenuContent>
-         </DropdownMenu>
+      {/* Right Side: Actions Only */}
+      <div className="flex items-center gap-2 shrink-0 h-full">
+          <div className="transition-opacity">
+             <DropdownMenu>
+                <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                   <button className="p-1.5 hover:bg-slate-200 rounded-sm text-slate-500 transition-all">
+                      <MoreVertical className="h-4 w-4" />
+                   </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                   <DropdownMenuLabel className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2 py-1.5">Evidence Actions</DropdownMenuLabel>
+                   <DropdownMenuSeparator />
+                   <DropdownMenuItem onClick={() => onRerun(file)} className="text-[11px] font-bold py-2">
+                      <RefreshCw className="h-3.5 w-3.5 mr-2 text-slate-400" /> Rerun Extraction
+                   </DropdownMenuItem>
+                   {/* List all available custom folders */}
+                   {batches && batches.filter((b: any) => b.type === "Folder" && b.id !== file.batch_id).length > 0 && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuLabel className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2 py-1.5">Move to Folder</DropdownMenuLabel>
+                        {batches.filter((b: any) => b.type === "Folder" && b.id !== file.batch_id).map((b: any) => (
+                           <DropdownMenuItem key={b.id} onClick={() => onMove(file.id, b.id)} className="text-[11px] font-bold py-2">
+                              <Folder className="h-3.5 w-3.5 mr-2 text-slate-400" /> {b.name}
+                           </DropdownMenuItem>
+                        ))}
+                      </>
+                   )}
+                   
+                   {/* Move to Single Files: Show if the file is in a custom folder (not default 'Individual Files') */}
+                   {file.batch_id && batches.find(b => b.id === file.batch_id)?.name !== "Individual Files" && 
+                    batches.find(b => b.id === file.batch_id)?.type !== "Loose Files" && (
+                      <DropdownMenuItem onClick={() => onMove(file.id, null)} className="text-[11px] font-bold py-2">
+                         <Box className="h-3.5 w-3.5 mr-2 text-slate-400" /> Move to Single Files
+                      </DropdownMenuItem>
+                   )}
+                   <DropdownMenuSeparator />
+                   <DropdownMenuItem onClick={onDelete} className="text-rose-600 focus:text-rose-600 text-[11px] font-bold py-2">
+                      <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete Object
+                   </DropdownMenuItem>
+                </DropdownMenuContent>
+             </DropdownMenu>
+          </div>
       </div>
     </div>
   );
 }
+

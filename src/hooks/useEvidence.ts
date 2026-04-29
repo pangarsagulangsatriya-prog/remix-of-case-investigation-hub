@@ -110,6 +110,9 @@ export function useMoveFile() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["evidence"] });
     },
+    onSettled: () => {
+      queryClient.refetchQueries({ queryKey: ["evidence"] });
+    }
   });
 }
 
@@ -261,8 +264,13 @@ export function useDeleteBatch() {
       return true;
     },
     onSuccess: () => {
+      // Invalidate all evidence queries to ensure UI is in sync
       queryClient.invalidateQueries({ queryKey: ["evidence"] });
     },
+    // Ensure we refetch even if there was a minor hiccup
+    onSettled: () => {
+      queryClient.refetchQueries({ queryKey: ["evidence"] });
+    }
   });
 }
 
@@ -323,13 +331,16 @@ export function useRerunExtraction() {
 
   return useMutation({
     mutationFn: async ({ id }: { id: string }) => {
-      // 1. Set to pending
+      // 1. Set to pending immediately
       const { error: startError } = await supabase
         .from("evidence_files")
         .update({ extraction_status: "pending" })
         .eq("id", id);
 
       if (startError) throw startError;
+      
+      // Trigger immediate UI update to show loader
+      queryClient.invalidateQueries({ queryKey: ["evidence"] });
 
       // 2. Simulate delay for extraction process (10s)
       await new Promise(resolve => setTimeout(resolve, 10000));
@@ -344,7 +355,11 @@ export function useRerunExtraction() {
       return true;
     },
     onSuccess: () => {
+      // Final invalidation to ensure UI reflects completion
       queryClient.invalidateQueries({ queryKey: ["evidence"] });
     },
+    onSettled: () => {
+      queryClient.refetchQueries({ queryKey: ["evidence"] });
+    }
   });
 }
