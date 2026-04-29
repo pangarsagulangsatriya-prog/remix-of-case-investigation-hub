@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Database, Info, ChevronDown, Shield, FileText, Plus, Users, 
   MessageSquare, Clock, Brain, AlertTriangle, Activity, Search,
@@ -106,7 +106,7 @@ export function ImageExtractionConsole({ file }: { file: any }) {
 }
 
 export function DocumentExtractionConsole({ file }: { file: any }) {
-  const [activeTab, setActiveTab] = useState<"Analysis" | "Fact Extraction">("Analysis");
+  const [activeTab, setActiveTab] = useState<"Fact Extraction">("Fact Extraction");
   const [viewMode, setViewMode] = useState<"Structured" | "JSON">("Structured");
   const [expandedSections, setExpandedSections] = useState<string[]>(["Entity Extraction"]);
   
@@ -148,7 +148,7 @@ export function DocumentExtractionConsole({ file }: { file: any }) {
          </div>
          <div className="flex items-center gap-3">
             <div className="flex items-center gap-1 p-0.5 bg-slate-100 rounded-md border shadow-inner">
-               {(["Analysis", "Fact Extraction"] as const).map(tab => (
+               {(["Fact Extraction"] as const).map(tab => (
                  <button 
                    key={tab}
                    onClick={() => setActiveTab(tab)} 
@@ -159,64 +159,12 @@ export function DocumentExtractionConsole({ file }: { file: any }) {
                ))}
             </div>
 
-            {activeTab === "Analysis" && (
-              <div className="flex items-center gap-1 p-0.5 bg-slate-100 rounded-md border shadow-inner">
-                 <button onClick={() => setViewMode("Structured")} className={cn("px-2 py-1 text-[8px] font-black uppercase rounded transition-all", viewMode === "Structured" ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600")}>Structured</button>
-                 <button onClick={() => setViewMode("JSON")} className={cn("px-2 py-1 text-[8px] font-black uppercase rounded transition-all", viewMode === "JSON" ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600")}>JSON</button>
-              </div>
-            )}
+
          </div>
       </div>
 
       <div className="flex-1 overflow-auto custom-scrollbar">
-         {activeTab === "Analysis" && (
-            <div className="flex flex-col min-h-full">
-               {viewMode === "Structured" ? (
-                  <div className="flex flex-col divide-y divide-slate-100 border-b">
-                     {Object.entries(properties).map(([section, items]) => (
-                        <div key={section} className="flex flex-col">
-                           <SectionHeader 
-                              title={section} 
-                              icon={FileText} 
-                              isOpen={expandedSections.includes(section)}
-                              onToggle={() => toggle(section)}
-                              description={SECTION_DESCRIPTIONS[section]}
-                           />
-                           {expandedSections.includes(section) && (
-                              <div className="p-5 space-y-1 bg-white animate-in fade-in slide-in-from-top-1">
-                                 {Object.entries(items).map(([label, value]) => (
-                                    <KVP key={label} label={label} value={value} />
-                                 ))}
-                              </div>
-                           )}
-                        </div>
-                     ))}
-                     
-                     <div className="p-5 bg-slate-900 text-white relative overflow-hidden group border-t-0">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 blur-[60px] rounded-full pointer-events-none" />
-                        <span className="text-[10px] font-black text-primary uppercase tracking-[0.4em] block mb-4 relative z-10">Document Authority Score</span>
-                        <div className="flex items-baseline gap-2 relative z-10">
-                           <span className="text-4xl font-black text-white group-hover:scale-110 transition-transform duration-500">99</span>
-                           <span className="text-[11px] font-black text-slate-500 uppercase">Integrity Confidence</span>
-                        </div>
-                        <div className="mt-4 pt-4 border-t border-slate-800 relative z-10 flex items-center justify-between">
-                           <div className="flex items-center gap-2">
-                              <Shield className="h-3.5 w-3.5 text-emerald-500" />
-                              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Digital Signature Valid</span>
-                           </div>
-                           <span className="text-[8px] font-bold text-slate-600 uppercase">PKI Encrypted</span>
-                        </div>
-                     </div>
-                  </div>
-               ) : (
-                  <div className="p-4 bg-[#0d1117] min-h-full">
-                     <pre className="text-[10px] font-mono text-[#79c0ff] bg-[#0d1117] p-6 leading-relaxed overflow-auto custom-scrollbar">
-                        {JSON.stringify(properties, null, 2)}
-                     </pre>
-                  </div>
-               )}
-            </div>
-         )}
+
 
          {activeTab === "Fact Extraction" && (
             <div className="p-5 space-y-6 animate-in fade-in slide-in-from-top-1">
@@ -259,7 +207,7 @@ export function DocumentExtractionConsole({ file }: { file: any }) {
 }
 
 export function AudioExtractionConsole({ file, onJump, currentTime }: { file: any, onJump: (s: number) => void, currentTime: number }) {
-  const [activeTab, setActiveTab] = useState<"Diarization" | "Analysis" | "Metadata">("Diarization");
+  const [activeTab, setActiveTab] = useState<"Diarization" | "Metadata">("Diarization");
   const [viewMode, setViewMode] = useState<"Structured" | "JSON">("Structured");
 
   const audioExtractionData = useMemo(() => ({
@@ -392,7 +340,7 @@ export function AudioExtractionConsole({ file, onJump, currentTime }: { file: an
     <div className="flex flex-col h-full bg-white">
       <div className="sticky top-0 z-40 bg-[#f4f7f9] border-b border-slate-200 px-6 pt-3 flex flex-col shrink-0">
           <div className="flex items-center border-b border-slate-200 relative">
-             {(["Diarization", "Analysis", "Metadata"] as const).map((tab, idx) => (
+             {(["Diarization", "Metadata"] as const).map((tab, idx) => (
                <button 
                  key={tab}
                  onClick={() => setActiveTab(tab)} 
@@ -410,32 +358,11 @@ export function AudioExtractionConsole({ file, onJump, currentTime }: { file: an
              ))}
           </div>
 
-         {activeTab === "Analysis" && (
-           <div className="flex items-center justify-end">
-              <div className="flex items-center gap-1 p-0.5 bg-slate-100 rounded-md border shadow-inner">
-                 <button onClick={() => setViewMode("Structured")} className={cn("px-2 py-1 text-[8px] font-black uppercase rounded transition-all", viewMode === "Structured" ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600")}>Structured</button>
-                 <button onClick={() => setViewMode("JSON")} className={cn("px-2 py-1 text-[8px] font-black uppercase rounded transition-all", viewMode === "JSON" ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600")}>JSON</button>
-              </div>
-           </div>
-         )}
+
       </div>
 
       <div className="flex-1 overflow-auto custom-scrollbar">
-         {activeTab === "Analysis" && (
-            <div className="flex flex-col min-h-full">
-               <div className="flex-1">
-                  {viewMode === "Structured" ? (
-                     <AudioExtractionStructured data={normalizedExtraction} onJump={onJump} />
-                  ) : (
-                     <div className="p-4 bg-[#0d1117] min-h-full">
-                        <pre className="text-[10px] font-mono text-[#79c0ff] bg-[#0d1117] p-6 leading-relaxed overflow-auto custom-scrollbar">
-                           {JSON.stringify(normalizedExtraction, null, 2)}
-                        </pre>
-                     </div>
-                  )}
-               </div>
-            </div>
-         )}
+
 
          {activeTab === "Diarization" && (
            <AudioSceneSession data={normalizedScene} currentTime={currentTime} onJump={onJump} />
@@ -574,7 +501,7 @@ export function AudioExtractionStructured({ data, onJump }: { data: any, onJump:
               {data.extraction_summary.communication_events.map((e: any, i: number) => (
                 <div key={i} className="flex gap-4 p-3 hover:bg-slate-50 rounded-sm transition-all cursor-pointer group" onClick={() => onJump(parseInt(e.timestamp.split(':')[1]))}>
                    <div className="flex flex-col items-center shrink-0 pt-0.5">
-                      <span className="text-[10px] font-black text-primary bg-primary/5 px-1.5 py-0.5 rounded leading-none tabular-nums group-hover:bg-primary group-hover:text-white transition-all">{e.timestamp}</span>
+                       <span className="text-[10px] font-black text-slate-900 bg-slate-100 px-1.5 py-1 rounded leading-none tabular-nums group-hover:bg-slate-900 group-hover:text-white transition-all shadow-sm border border-slate-200">{e.timestamp}</span>
                       <div className="w-[1.5px] flex-1 bg-slate-100 my-2" />
                    </div>
                    <div className="flex-1 space-y-1.5">
@@ -608,7 +535,7 @@ export function AudioExtractionStructured({ data, onJump }: { data: any, onJump:
                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500 rounded-full" />
                        <div className="flex items-center gap-2 mb-1.5">
                           <StatusPill text={f.statement_type} type="observed" />
-                          <span className="text-[9px] font-black text-slate-400 tabular-nums">[{f.timestamp}]</span>
+                           <span className="text-[10px] font-black text-slate-900 tabular-nums bg-slate-100 px-1.5 py-0.5 rounded-sm">[{f.timestamp}]</span>
                           <ConfidenceChip level={(f.confidence || "high").toLowerCase() as any} />
                        </div>
                        <p className="text-[11px] font-bold text-slate-900 leading-relaxed italic">"{f.fact_text}"</p>
@@ -621,7 +548,7 @@ export function AudioExtractionStructured({ data, onJump }: { data: any, onJump:
                  <div className="space-y-3">
                    {data.extraction_summary.timeline_events.map((t: any, i: number) => (
                       <div key={i} className="flex gap-3">
-                         <span className="text-[10px] font-black text-slate-300 tabular-nums shrink-0">{t.timestamp}</span>
+                          <span className="text-[10px] font-black text-slate-900 tabular-nums shrink-0 bg-slate-50 px-1.5 py-0.5 rounded-sm">{t.timestamp}</span>
                          <div className="flex-1">
                             <p className="text-[11px] font-bold text-slate-700 leading-snug">{t.event_summary}</p>
                             <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block mt-0.5">Actor: {t.actor}</span>
@@ -761,9 +688,8 @@ export function AudioSceneSession({ data, currentTime, onJump }: { data: any, cu
                </div>
             </div>
          </div>
-
-         <div className="flex flex-col gap-2">
-            <div className="relative group">
+         <div className="flex gap-2">
+            <div className="relative group flex-1">
                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400 group-focus-within:text-slate-900 transition-colors" />
                <input 
                   type="text" 
@@ -774,10 +700,10 @@ export function AudioSceneSession({ data, currentTime, onJump }: { data: any, cu
                />
             </div>
             
-            <div className="relative group">
+            <div className="relative group w-[140px]">
                <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400 group-focus-within:text-slate-900 transition-colors" />
                <select 
-                  className="w-full bg-slate-50/50 border border-slate-100 pl-9 pr-8 py-2 text-[10px] font-bold uppercase tracking-tight focus:bg-white focus:border-slate-900 focus:ring-0 outline-none transition-all rounded-sm appearance-none cursor-pointer text-slate-600"
+                  className="w-full bg-slate-50/50 border border-slate-100 pl-9 pr-8 py-2 text-[10px] font-bold uppercase tracking-tight focus:bg-white focus:border-slate-900 focus:ring-0 outline-none transition-all rounded-sm appearance-none cursor-pointer text-slate-600 truncate"
                   onChange={(e) => {
                     const val = e.target.value;
                     if (!val) {
@@ -790,10 +716,10 @@ export function AudioSceneSession({ data, currentTime, onJump }: { data: any, cu
                     }
                   }}
                >
-                  <option value="">All Time Ranges</option>
+                  <option value="">All Time</option>
                   {data.scene_session.full_diarization.map((seg: any) => (
                     <option key={seg.segment_id} value={`${seg.start_time}|${seg.end_time}`}>
-                      {seg.start_time} — {seg.end_time} ({seg.speaker_label})
+                      {seg.start_time} — {seg.end_time}
                     </option>
                   ))}
                </select>
@@ -802,83 +728,167 @@ export function AudioSceneSession({ data, currentTime, onJump }: { data: any, cu
          </div>
       </div>
 
-      <div className="flex-1 overflow-auto custom-scrollbar p-4 space-y-2">
-        {filteredData.map((seg: any) => {
+      <div className="flex-1 overflow-auto custom-scrollbar p-4 space-y-4">
+        {filteredData.map((seg: any, idx: number) => {
           const active = isSegmentActive(seg.start_time, seg.end_time);
+          const nextSeg = filteredData[idx + 1];
+          const isNext = !active && idx > 0 && isSegmentActive(filteredData[idx-1].start_time, filteredData[idx-1].end_time);
+
           return (
-            <div
-              key={seg.segment_id}
-              onClick={() => {
-                const parts = seg.start_time.split(':').map(Number);
-                onJump(parts.length === 3 ? parts[0] * 3600 + parts[1] * 60 + parts[2] : parts[0] * 60 + parts[1]);
-              }}
-              className={cn(
-                "group flex flex-col bg-white border rounded-none transition-all duration-300 cursor-pointer relative overflow-hidden shadow-sm",
-                active ? "border-slate-900 ring-1 ring-slate-900/5 z-10" : "border-slate-200 hover:border-slate-400"
-              )}
-            >
-               <div className={cn("flex items-center justify-between border-b px-4 py-2 transition-colors", active ? "bg-slate-900 border-slate-800" : "bg-slate-50 border-slate-100")}>
-                  <div className="flex items-center gap-3">
-                     <span className={cn("text-[10px] font-mono font-black transition-colors", active ? "text-slate-400" : "text-slate-500")}>
-                        {seg.start_time} — {seg.end_time}
-                     </span>
-                     <div className="flex items-center gap-2">
-                        <span className={cn(
-                           "px-2 py-0.5 text-white text-[8px] font-black uppercase tracking-wider rounded-none",
-                           seg.speaker_label?.toUpperCase() === 'INVESTIGATOR' ? "bg-blue-600" : (active ? "bg-slate-700" : "bg-slate-900")
-                        )}>
-                           {seg.speaker_label}
-                        </span>
-                        <span className={cn("text-[8px] font-black uppercase tracking-widest", active ? "text-emerald-400" : "text-emerald-600")}>
-                           {seg.confidence}
-                        </span>
-                     </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                     {seg.theme_tag && (
-                        <div className={cn("flex items-center gap-1.5 px-2 py-0.5 border", active ? "bg-blue-900/30 border-blue-800" : "bg-blue-50 border-blue-100")}>
-                           <div className={cn("h-1 w-1", active ? "bg-blue-400" : "bg-blue-600")} />
-                           <span className={cn("text-[8px] font-black uppercase tracking-widest", active ? "text-blue-300" : "text-blue-700")}>{seg.theme_tag}</span>
-                        </div>
-                     )}
-                     {seg.interaction_type && (
-                        <div className={cn("flex items-center gap-1.5 px-2 py-0.5 border", active ? "bg-slate-800 border-slate-700" : "bg-slate-100 border-slate-200")}>
-                           <span className={cn("text-[8px] font-black uppercase tracking-widest", active ? "text-slate-400" : "text-slate-600")}>{seg.interaction_type}</span>
-                        </div>
-                     )}
-                  </div>
-               </div>
-
-               <div className="p-4 space-y-4">
-                  <div className="flex gap-4">
-                     <Clock className={cn("h-4 w-4 shrink-0 mt-1 transition-colors", active ? "text-slate-400" : "text-slate-200")} />
-                     <div className="space-y-2">
-                        <p className={cn("text-xs font-bold leading-relaxed transition-colors", active ? "text-slate-900" : "text-slate-800")}>
-                           "{seg.text}"
-                        </p>
-                        {seg.paralinguistics && seg.paralinguistics.length > 0 && (
-                           <div className="flex flex-wrap gap-2 pt-1">
-                              {seg.paralinguistics.map((p: string, pIdx: number) => (
-                                 <span key={pIdx} className="text-[9px] font-medium text-slate-400 italic">[{p}]</span>
-                              ))}
-                           </div>
-                        )}
-                     </div>
-                  </div>
-
-                  {seg.extracted_action_or_fact && (
-                     <div className={cn("border p-3 flex gap-3 transition-colors", active ? "bg-slate-50 border-slate-200" : "bg-slate-50/50 border-slate-100")}>
-                        <Brain className="h-3.5 w-3.5 text-blue-500 shrink-0 mt-0.5" />
-                        <div>
-                           <span className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-1">AI Extracted Fact</span>
-                           <p className="text-[11px] font-medium text-slate-600 leading-tight">{seg.extracted_action_or_fact}</p>
-                        </div>
-                     </div>
-                  )}
-               </div>
-            </div>
+            <DiarizationSegment 
+               key={seg.segment_id}
+               seg={seg}
+               active={active}
+               isNext={isNext}
+               onJump={() => onJump(getS(seg.start_time))}
+            />
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+function DiarizationSegment({ seg, active, isNext, onJump }: { seg: any, active: boolean, isNext: boolean, onJump: () => void }) {
+  const [isExpanded, setIsExpanded] = useState(active);
+
+  // Auto-expand if it becomes active
+  useEffect(() => {
+    if (active) setIsExpanded(true);
+  }, [active]);
+
+  return (
+    <div className="flex flex-col space-y-1">
+      {isNext && (
+        <div className="flex items-center gap-2 px-1 mb-1">
+           <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Upcoming Sequence</span>
+           <div className="h-[1px] flex-1 bg-slate-100" />
+        </div>
+      )}
+      
+      <div 
+         className={cn(
+            "flex flex-col border transition-all duration-300 cursor-pointer overflow-hidden rounded-sm",
+            active ? "border-primary bg-white shadow-md z-10" : 
+            (isNext ? "border-slate-200 bg-slate-50/50 opacity-60" : "border-slate-100 hover:border-slate-300 bg-white shadow-sm")
+         )}
+         onClick={onJump}
+      >
+         {/* SECTION 1: DIALOG */}
+         <div className="p-4 bg-white">
+            <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-50">
+               <div className="flex items-center gap-3">
+                  <div className={cn(
+                     "px-2 py-0.5 rounded-sm text-[10px] font-black tabular-nums tracking-widest border transition-colors",
+                     active ? "bg-slate-900 text-white border-slate-900" : "bg-slate-100 text-slate-500 border-transparent"
+                  )}>
+                     {seg.start_time} — {seg.end_time}
+                  </div>
+                  <span className={cn(
+                     "text-[10px] font-black uppercase tracking-[0.1em] px-2 py-0.5 rounded-sm transition-colors",
+                     active ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-600"
+                  )}>
+                     {seg.speaker_label}
+                  </span>
+               </div>
+               
+               <button 
+                 onClick={(e) => {
+                   e.stopPropagation();
+                   setIsExpanded(!isExpanded);
+                 }}
+                 className={cn(
+                   "p-1 rounded-sm transition-all hover:bg-slate-100",
+                   isExpanded ? "rotate-180" : "rotate-0"
+                 )}
+               >
+                 <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
+               </button>
+            </div>
+
+            <div className="flex gap-4 items-start">
+               <div className={cn(
+                  "h-8 w-8 rounded-sm flex items-center justify-center shrink-0 border transition-all duration-300",
+                  active ? "bg-slate-900 text-white border-slate-900" : "bg-slate-50 text-slate-300 border-slate-100"
+               )}>
+                  <MessageSquare className="h-4 w-4" />
+               </div>
+               <div className="flex-1">
+                  <p className={cn(
+                     "text-[13px] font-bold leading-relaxed transition-colors",
+                     active ? "text-slate-900" : (isNext ? "text-slate-400 italic" : "text-slate-700")
+                  )}>
+                     "{seg.text}"
+                  </p>
+               </div>
+            </div>
+         </div>
+
+         {/* SECTION 2: CONTEXT (COLLAPSIBLE) */}
+         {isExpanded && (
+           <div className={cn(
+              "p-4 border-t animate-in fade-in slide-in-from-top-1 duration-300",
+              active ? "bg-slate-50/50 border-slate-100" : "bg-slate-50/20 border-slate-50"
+           )}>
+              <div className="space-y-4">
+                 {/* Metadata Group */}
+                 <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest mr-1">Context Matrix</span>
+                    
+                    {seg.paralinguistics && seg.paralinguistics.length > 0 && (
+                       <div className="flex flex-wrap gap-1.5">
+                          {seg.paralinguistics.map((p: string, pIdx: number) => (
+                             <span key={pIdx} className="px-1.5 py-0.5 bg-white border border-slate-200 rounded-sm text-[8px] font-black text-slate-500 uppercase italic">
+                               {p}
+                             </span>
+                          ))}
+                       </div>
+                    )}
+
+                    {seg.theme_tag && (
+                       <div className={cn(
+                          "flex items-center gap-1 px-1.5 py-0.5 rounded-sm border text-[8px] font-black uppercase tracking-widest",
+                          active ? "bg-blue-600 border-blue-600 text-white" : "bg-white border-slate-200 text-slate-600"
+                       )}>
+                          <div className={cn("h-1 w-1 rounded-full", active ? "bg-white" : "bg-blue-500")} />
+                          {seg.theme_tag}
+                       </div>
+                    )}
+                    
+                    {seg.interaction_type && (
+                       <div className={cn(
+                          "flex items-center gap-1 px-1.5 py-0.5 rounded-sm border text-[8px] font-black uppercase tracking-widest",
+                          active ? "bg-slate-800 border-slate-800 text-white" : "bg-white border-slate-200 text-slate-600"
+                       )}>
+                          {seg.interaction_type}
+                       </div>
+                    )}
+                 </div>
+
+                 {/* Inference Box */}
+                 {seg.extracted_action_or_fact && (
+                    <div className={cn(
+                       "p-3 rounded-sm border flex gap-3 transition-all duration-300",
+                       active ? "bg-white border-slate-200" : "bg-white/50 border-slate-100"
+                    )}>
+                       <div className="h-6 w-6 rounded-sm bg-slate-50 flex items-center justify-center shrink-0 border border-slate-100">
+                          <Brain className="h-3.5 w-3.5 text-slate-400" />
+                       </div>
+                       <div className="flex-1">
+                          <div className="flex items-center justify-between mb-1">
+                             <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Inference Vector</span>
+                             <div className="flex items-center gap-1">
+                                <div className="h-1 w-1 rounded-full bg-emerald-500" />
+                                <span className="text-[8px] font-black text-emerald-600 uppercase">Validated</span>
+                             </div>
+                          </div>
+                          <p className="text-[11px] font-bold text-slate-700 leading-snug">{seg.extracted_action_or_fact}</p>
+                       </div>
+                    </div>
+                 )}
+              </div>
+           </div>
+         )}
       </div>
     </div>
   );

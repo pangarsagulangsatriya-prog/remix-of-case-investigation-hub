@@ -61,7 +61,7 @@ export function FileRow({ file, isSelected, onSelect, onMove, onDelete, onRename
     >
       {/* Icon Container 32x32 */}
       <div className={cn(
-        "h-8 w-8 rounded-sm flex items-center justify-center shrink-0 border transition-all",
+        "h-8 w-8 rounded-[4px] flex items-center justify-center shrink-0 border transition-all",
         isSelected ? "bg-white border-slate-200" : "bg-slate-50 border-slate-100 group-hover:bg-white"
       )}>
         {getFileIcon(file.type)}
@@ -101,7 +101,7 @@ export function FileRow({ file, isSelected, onSelect, onMove, onDelete, onRename
                           <Loader2 className="h-3 w-3 text-[#0f62fe] animate-spin" />
                         </div>
                       ) : file.extraction_status === "completed" ? (
-                        <div className="h-2 w-2 rounded-full bg-[#24a148] shadow-[0_0_8px_rgba(36,161,72,0.4)]" />
+                        <div className="h-2 w-2 rounded-[4px] bg-[#24a148] shadow-[0_0_8px_rgba(36,161,72,0.4)]" />
                       ) : null}
                     </div>
                   </TooltipTrigger>
@@ -119,39 +119,36 @@ export function FileRow({ file, isSelected, onSelect, onMove, onDelete, onRename
           <div className="transition-opacity">
              <DropdownMenu>
                 <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                   <button className="p-1.5 hover:bg-slate-200 rounded-sm text-slate-500 transition-all">
+                   <button className="p-1.5 hover:bg-slate-200 rounded-[4px] text-slate-500 transition-all">
                       <MoreVertical className="h-4 w-4" />
                    </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                   <DropdownMenuLabel className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2 py-1.5">Evidence Actions</DropdownMenuLabel>
+                <DropdownMenuContent align="end" className="w-48 rounded-[4px]">
+                   <DropdownMenuLabel className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2 py-1.5">Aksi Bukti</DropdownMenuLabel>
                    <DropdownMenuSeparator />
-                   <DropdownMenuItem onClick={() => onRerun(file)} className="text-[11px] font-bold py-2">
-                      <RefreshCw className="h-3.5 w-3.5 mr-2 text-slate-400" /> Rerun Extraction
+                   <DropdownMenuItem onClick={() => onRerun(file)} className="text-[11px] font-bold py-2 rounded-[4px]">
+                      <RefreshCw className="h-3.5 w-3.5 mr-2 text-slate-400" /> Proses Ulang
                    </DropdownMenuItem>
                    {/* List all available custom folders */}
                    {batches && batches.filter((b: any) => b.type === "Folder" && b.id !== file.batch_id).length > 0 && (
                       <>
                         <DropdownMenuSeparator />
-                        <DropdownMenuLabel className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2 py-1.5">Move to Folder</DropdownMenuLabel>
+                        <DropdownMenuLabel className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2 py-1.5">Pindah ke Folder</DropdownMenuLabel>
                         {batches.filter((b: any) => b.type === "Folder" && b.id !== file.batch_id).map((b: any) => (
-                           <DropdownMenuItem key={b.id} onClick={() => onMove(file.id, b.id)} className="text-[11px] font-bold py-2">
+                           <DropdownMenuItem key={b.id} onClick={() => onMove(file.id, b.id)} className="text-[11px] font-bold py-2 rounded-[4px]">
                               <Folder className="h-3.5 w-3.5 mr-2 text-slate-400" /> {b.name}
                            </DropdownMenuItem>
                         ))}
                       </>
                    )}
                    
-                   {/* Move to Single Files: Show if the file is in a custom folder (not default 'Individual Files') */}
-                   {file.batch_id && batches.find(b => b.id === file.batch_id)?.name !== "Individual Files" && 
-                    batches.find(b => b.id === file.batch_id)?.type !== "Loose Files" && (
-                      <DropdownMenuItem onClick={() => onMove(file.id, null)} className="text-[11px] font-bold py-2">
-                         <Box className="h-3.5 w-3.5 mr-2 text-slate-400" /> Move to Single Files
-                      </DropdownMenuItem>
-                   )}
                    <DropdownMenuSeparator />
-                   <DropdownMenuItem onClick={onDelete} className="text-rose-600 focus:text-rose-600 text-[11px] font-bold py-2">
-                      <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete Object
+                   <DropdownMenuItem onClick={() => onMove(file.id, null)} className="text-[11px] font-bold py-2 rounded-[4px]">
+                      <Box className="h-3.5 w-3.5 mr-2 text-slate-400" /> Pindah ke File Mandiri
+                   </DropdownMenuItem>
+                   <DropdownMenuSeparator />
+                   <DropdownMenuItem onClick={onDelete} className="text-rose-600 focus:text-rose-600 text-[11px] font-bold py-2 rounded-[4px]">
+                      <Trash2 className="h-3.5 w-3.5 mr-2" /> Hapus Bukti
                    </DropdownMenuItem>
                 </DropdownMenuContent>
              </DropdownMenu>

@@ -1,10 +1,10 @@
-import React, { useState, useRef, useMemo } from "react";
+import React, { useState, useRef, useMemo, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { 
   Search, Plus, FolderPlus, FileUp, FolderUp, ChevronRight, 
   Folder, Folders, MoreVertical, Pencil, Trash2, Loader2, CheckCircle2, 
   Box, Upload, ChevronLeft, ChevronRight as ChevronRightIcon, 
-  Cpu 
+  Cpu, ChevronsUpDown, ChevronsDownUp
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,7 +57,7 @@ export default function ExtractionTab() {
   const [hasInitializedExpansion, setHasInitializedExpansion] = useState(false);
 
   // Auto-expand first folder on load
-  React.useEffect(() => {
+  useEffect(() => {
     if (!isLoading && batches.length > 0 && !hasInitializedExpansion) {
       const firstFolder = batches.find(b => b.type === "Folder");
       if (firstFolder) {
@@ -66,6 +66,7 @@ export default function ExtractionTab() {
       setHasInitializedExpansion(true);
     }
   }, [isLoading, batches, hasInitializedExpansion]);
+
   const [deleteFolderTarget, setDeleteFolderTarget] = useState<any>(null);
   const [fileToRerun, setFileToRerun] = useState<any>(null);
   
@@ -115,35 +116,19 @@ export default function ExtractionTab() {
     );
   }, [files, searchQuery]);
 
-  const categorizedEvidence = useMemo(() => {
-    const sections = [
-      { id: "DOKUMEN", name: "DATA DOKUMEN", type: "Document" },
-      { id: "GAMBAR", name: "DATA GAMBAR", type: "Image" },
-      { id: "AUDIO", name: "DATA AUDIO", type: "Audio" }
-    ];
-
-    return sections.map(section => {
-      let sectionFiles = [];
-      // Only include files that are NOT in a real folder
-      const folderBatchIds = batches.filter(b => b.type === "Folder").map(b => b.id);
-      const candidates = filteredFiles.filter((f: any) => !f.batch_id || !folderBatchIds.includes(f.batch_id));
-
-      if (section.id === "GAMBAR") {
-        sectionFiles = candidates.filter((f: any) => f.type === "Image" || f.type === "Video");
-      } else {
-        sectionFiles = candidates.filter((f: any) => f.type === section.type);
-      }
-
-      return {
-        ...section,
-        files: sectionFiles
-      };
-    }).filter(section => section.files.length > 0); // HIDE EMPTY VIRTUAL SECTIONS
-  }, [filteredFiles, batches]);
-
   // Handlers
   const toggleBatch = (id: string) => {
     setExpandedBatches(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+
+  const expandAll = () => {
+    const allFolderIds = batches.filter(b => b.type === "Folder").map(b => b.id);
+    const virtualSections = ["DOKUMEN", "GAMBAR", "AUDIO"];
+    setExpandedBatches(Array.from(new Set([...allFolderIds, ...virtualSections])));
+  };
+
+  const collapseAll = () => {
+    setExpandedBatches([]);
   };
 
   const handleCreateFolder = async () => {
@@ -265,8 +250,6 @@ export default function ExtractionTab() {
     }
   };
 
-
-
   const handleDissolveFolder = async () => {
     if (!deleteFolderTarget) return;
     try {
@@ -298,14 +281,12 @@ export default function ExtractionTab() {
   const jumpToAudioTime = (time: number) => {
     if (audioRef.current) {
       audioRef.current.currentTime = time;
-      setAudioCurrentTime(time);
     }
   };
 
   const jumpToVideoTime = (time: number) => {
     if (videoRef.current) {
       videoRef.current.currentTime = time;
-      setVideoCurrentTime(time);
     }
   };
 
@@ -314,48 +295,69 @@ export default function ExtractionTab() {
   return (
     <div className="flex h-full bg-[#f0f2f4] overflow-hidden">
       <div className="w-[320px] border-r border-slate-200 bg-white flex flex-col shrink-0 z-10 shadow-[1px_0_10px_rgba(0,0,0,0.02)]">
-        <div className="p-5 border-b border-slate-100 shrink-0">
+        <div className="p-5 border-b border-slate-100 shrink-0 bg-white">
           <div className="flex flex-col gap-4">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Evidence Repository</span>
-                <div className="flex items-center gap-3">
-                  <button className="text-[9px] font-black text-rose-500 uppercase tracking-widest hover:opacity-70 transition-opacity">Cleanup</button>
-                  <span className="text-[9px] font-bold text-slate-300 bg-slate-50 px-2 py-0.5 rounded-full border">{filteredFiles.length} Objects</span>
+            {/* Header with Title and Counter */}
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Repositori Bukti</span>
+              <div className="flex items-center gap-2">
+                <div className="flex items-center bg-slate-50 border border-slate-100 rounded-[4px] p-0.5 mr-1">
+                   <button 
+                    onClick={expandAll}
+                    title="Expand All"
+                    className="p-1 hover:bg-white hover:shadow-sm rounded-[2px] text-slate-400 hover:text-slate-900 transition-all"
+                   >
+                     <ChevronsUpDown className="h-3 w-3" />
+                   </button>
+                   <button 
+                    onClick={collapseAll}
+                    title="Collapse All"
+                    className="p-1 hover:bg-white hover:shadow-sm rounded-[2px] text-slate-400 hover:text-slate-900 transition-all"
+                   >
+                     <ChevronsDownUp className="h-3 w-3" />
+                   </button>
                 </div>
+                <button className="text-[9px] font-black text-rose-500 uppercase tracking-widest hover:opacity-70 transition-opacity">Pembersihan</button>
+                <span className="text-[9px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded-[4px] border border-slate-100">
+                  {filteredFiles.length} BUKTI
+                </span>
               </div>
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-300" />
-                  <input 
-                    type="text" 
-                    placeholder="Search..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full h-9 bg-white border border-slate-200 rounded-sm pl-9 pr-4 text-[11px] font-bold focus:ring-1 focus:ring-primary/20 focus:border-primary transition-all outline-none "
-                  />
-                </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button 
-                      className="h-9 bg-slate-900 hover:bg-emerald-700 text-white font-black px-3 rounded-sm text-[10px] uppercase tracking-widest gap-1.5 shrink-0"
-                    >
-                      <Plus className="h-3.5 w-3.5" /> ADD
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48">
-                    <DropdownMenuItem onClick={() => setIsCreateFolderModalOpen(true)} className="text-[11px] font-bold py-2.5">
-                      <FolderPlus className="h-4 w-4 mr-2.5 text-emerald-600" /> Create Folder
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => setIsUploadModalOpen(true)} className="text-[11px] font-bold py-2.5">
-                      <FileUp className="h-4 w-4 mr-2.5 text-slate-500" /> File upload
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setIsUploadModalOpen(true)} className="text-[11px] font-bold py-2.5">
-                      <FolderUp className="h-4 w-4 mr-2.5 text-slate-500" /> Folder upload
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+            </div>
+
+            {/* Search and Add Actions */}
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-300" />
+                <input 
+                  type="text" 
+                  placeholder="Search..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full h-9 bg-slate-50 border border-slate-100 rounded-[4px] pl-9 pr-4 text-[11px] font-bold focus:ring-1 focus:ring-[#0f62fe]/20 focus:border-[#0f62fe] transition-all outline-none"
+                />
               </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    className="h-9 bg-slate-900 hover:bg-slate-800 text-white font-black px-3 rounded-[4px] text-[10px] uppercase tracking-widest gap-1.5 shrink-0 shadow-sm"
+                  >
+                    <Plus className="h-3.5 w-3.5" /> TAMBAH
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48 rounded-[4px]">
+                  <DropdownMenuItem onClick={() => setIsCreateFolderModalOpen(true)} className="text-[11px] font-bold py-2.5 rounded-[4px]">
+                    <FolderPlus className="h-4 w-4 mr-2.5 text-emerald-600" /> Buat Folder
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setIsUploadModalOpen(true)} className="text-[11px] font-bold py-2.5 rounded-[4px]">
+                    <FileUp className="h-4 w-4 mr-2.5 text-slate-500" /> Upload File
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setIsUploadModalOpen(true)} className="text-[11px] font-bold py-2.5 rounded-[4px]">
+                    <FolderUp className="h-4 w-4 mr-2.5 text-slate-500" /> Upload Folder
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         </div>
           
@@ -387,26 +389,26 @@ export default function ExtractionTab() {
                   <div className="transition-opacity">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                        <button className="p-1.5 hover:bg-slate-200 rounded-sm text-slate-400 transition-all shrink-0">
+                        <button className="p-1.5 hover:bg-slate-200 rounded-[4px] text-slate-400 transition-all shrink-0">
                           <MoreVertical className="h-3.5 w-3.5" />
                         </button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-48">
-                        <DropdownMenuLabel className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2 py-1.5">Folder Actions</DropdownMenuLabel>
+                        <DropdownMenuLabel className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2 py-1.5">Aksi Folder</DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => {
                           setFolderToRename(batch);
                           setRenameValue(batch.name);
                           setIsRenameFolderModalOpen(true);
-                        }} className="text-[11px] font-bold py-2">
-                           <Pencil className="h-3.5 w-3.5 mr-2 text-slate-400" /> Rename Folder
+                        }} className="text-[11px] font-bold py-2 rounded-[4px]">
+                           <Pencil className="h-3.5 w-3.5 mr-2 text-slate-400" /> Ubah Nama Folder
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setIsUploadModalOpen(true)} className="text-[11px] font-bold py-2">
-                           <FileUp className="h-3.5 w-3.5 mr-2 text-slate-400" /> Upload to Folder
+                        <DropdownMenuItem onClick={() => setIsUploadModalOpen(true)} className="text-[11px] font-bold py-2 rounded-[4px]">
+                           <FileUp className="h-3.5 w-3.5 mr-2 text-slate-400" /> Upload ke Folder
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => setDeleteFolderTarget(batch)} className="text-rose-600 focus:text-rose-600 text-[11px] font-bold py-2">
-                           <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete Folder
+                        <DropdownMenuItem onClick={() => setDeleteFolderTarget(batch)} className="text-rose-600 focus:text-rose-600 text-[11px] font-bold py-2 rounded-[4px]">
+                           <Trash2 className="h-3.5 w-3.5 mr-2" /> Hapus Folder
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -416,7 +418,7 @@ export default function ExtractionTab() {
                 {expandedBatches.includes(batch.id) && (
                   <div className="bg-white">
                     {files.filter((f: any) => f.batch_id === batch.id).length === 0 ? (
-                      <div className="h-[40px] flex items-center px-12 text-[10px] font-medium text-slate-400 uppercase tracking-widest italic">EMPTY FOLDER</div>
+                      <div className="h-[40px] flex items-center px-12 text-[10px] font-medium text-slate-400 uppercase tracking-widest italic">FOLDER KOSONG</div>
                     ) : (
                       files.filter((f: any) => f.batch_id === batch.id).map((file: any) => (
                         <FileRow 
@@ -440,82 +442,38 @@ export default function ExtractionTab() {
               </div>
             ))}
 
-            {/* 2. Categorized Sections (Virtual/Default) */}
-            {categorizedEvidence.map((category) => (
-              <div key={category.id} className="border-b border-slate-100/60">
-                <div 
-                  onClick={() => toggleBatch(category.id)}
-                  className={cn(
-                    "flex items-center h-[40px] px-4 hover:bg-slate-50 cursor-pointer transition-all gap-2 group/header",
-                    expandedBatches.includes(category.id) ? "bg-slate-50/30" : ""
-                  )}
-                >
-                  <ChevronRight className={cn(
-                    "h-3.5 w-3.5 text-slate-400 transition-transform duration-150 shrink-0",
-                    expandedBatches.includes(category.id) ? "rotate-90" : ""
-                  )} />
-                  <Folder className={cn(
-                    "h-4 w-4 shrink-0", 
-                    expandedBatches.includes(category.id) ? "text-[#0f62fe]" : "text-slate-400"
-                  )} />
-                  <span className="text-[11px] font-bold text-slate-800 uppercase tracking-widest flex-1 truncate">{category.name}</span>
-                  <span className="text-[10px] font-bold text-slate-400 mr-2 shrink-0">{category.files.length}</span>
-                  
-                  <div className="transition-opacity">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                        <button className="p-1.5 hover:bg-slate-200 rounded-sm text-slate-400 transition-all shrink-0">
-                          <MoreVertical className="h-3.5 w-3.5" />
-                        </button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-48">
-                        <DropdownMenuLabel className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2 py-1.5">Section Actions</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => {
-                          setFolderToRename({ id: category.id, name: category.name, isVirtual: true });
-                          setRenameValue(category.name);
-                          setIsRenameFolderModalOpen(true);
-                        }} className="text-[11px] font-bold py-2">
-                           <Pencil className="h-3.5 w-3.5 mr-2 text-slate-400" /> Rename Section
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setIsUploadModalOpen(true)} className="text-[11px] font-bold py-2">
-                           <FileUp className="h-3.5 w-3.5 mr-2 text-slate-400" /> Upload to this Section
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => setDeleteFolderTarget({ id: category.id, name: category.name, isVirtual: true, files: category.files })} className="text-rose-600 focus:text-rose-600 text-[11px] font-bold py-2">
-                           <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete Section
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </div>
-
-                {expandedBatches.includes(category.id) && (
-                  <div className="bg-white">
-                    {category.files.length === 0 ? (
-                      <div className="h-[40px] flex items-center px-12 text-[10px] font-medium text-slate-400 uppercase tracking-widest italic">EMPTY SECTION</div>
-                    ) : (
-                      category.files.map((file: any) => (
-                        <FileRow 
-                          key={file.id} 
-                          file={file} 
-                          isSelected={selectedFile?.id === file.id}
-                          onSelect={() => setSelectedFile(file)}
-                          onMove={handleMoveFile}
-                          onDelete={() => { setSelectedFile(file); setIsDeleteModalOpen(true); }}
-                          onRerun={(f: any) => {
-                            setFileToRerun(f);
-                            setIsRerunModalOpen(true);
-                          }}
-                          batches={batches}
-                          isIndented
-                        />
-                      ))
-                    )}
-                  </div>
+            {/* 2. Single Files Area (Flat List) */}
+            <div className="mt-4 border-t border-slate-100 pt-2">
+              <div className="px-4 py-2 flex items-center justify-between">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">File Mandiri</span>
+                <span className="text-[10px] font-bold text-slate-400">
+                  {filteredFiles.filter((f: any) => !batches.find(b => b.id === f.batch_id && b.type === "Folder")).length}
+                </span>
+              </div>
+              <div className="bg-white">
+                {filteredFiles
+                  .filter((f: any) => !batches.find(b => b.id === f.batch_id && b.type === "Folder"))
+                  .map((file: any) => (
+                    <FileRow 
+                      key={file.id} 
+                      file={file} 
+                      isSelected={selectedFile?.id === file.id}
+                      onSelect={() => setSelectedFile(file)}
+                      onMove={handleMoveFile}
+                      onDelete={() => { setSelectedFile(file); setIsDeleteModalOpen(true); }}
+                      onRerun={(f: any) => {
+                        setFileToRerun(f);
+                        setIsRerunModalOpen(true);
+                      }}
+                      batches={batches}
+                    />
+                  ))
+                }
+                {filteredFiles.filter((f: any) => !batches.find(b => b.id === f.batch_id && b.type === "Folder")).length === 0 && (
+                  <div className="px-8 py-4 text-[10px] font-medium text-slate-400 uppercase tracking-widest italic opacity-50">Tidak ada file mandiri</div>
                 )}
               </div>
-            ))}
+            </div>
 
             {filteredFiles.length === 0 && (
               <div className="py-20 flex flex-col items-center justify-center text-center px-6">
@@ -526,7 +484,7 @@ export default function ExtractionTab() {
                 <Button 
                   onClick={() => setIsUploadModalOpen(true)}
                   variant="outline"
-                  className="h-9 border-slate-200 text-slate-500 text-[10px] font-black uppercase tracking-widest rounded-sm hover:bg-slate-50"
+                  className="h-9 border-slate-200 text-slate-500 text-[10px] font-black uppercase tracking-widest rounded-[4px] hover:bg-slate-50"
                 >
                   <Upload className="h-3.5 w-3.5 mr-2" /> Upload
                 </Button>
@@ -571,7 +529,7 @@ export default function ExtractionTab() {
                     audioIsPlaying={audioIsPlaying}
                     setAudioIsPlaying={setAudioIsPlaying}
                     audioPlaybackSpeed={audioPlaybackSpeed}
-                    setAudioPlaybackSpeed={setAudioPlaybackSpeed}
+                    setPlaybackSpeed={setAudioPlaybackSpeed}
                     audioRef={audioRef}
                   />
               ) : (

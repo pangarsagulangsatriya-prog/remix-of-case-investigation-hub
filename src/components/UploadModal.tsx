@@ -1,4 +1,5 @@
-import React, { useState, useCallback, useRef } from "react";
+import React, { useState, useCallback, useRef, useEffect } from "react";
+import * as mammoth from "mammoth";
 import { toast } from "sonner";
 import {
   X,
@@ -191,7 +192,7 @@ function buildFileItem(
     groupId,
     relativePath,
     category,
-    previewUrl: (category === "Image" || category === "Audio" || category === "Video") ? URL.createObjectURL(file) : undefined,
+    previewUrl: (category === "Image" || category === "Audio" || category === "Video" || category === "Document") ? URL.createObjectURL(file) : undefined,
     progress: 0,
     status: "idle",
     error: category === "Unsupported" ? "Unsupported file type" : undefined,
@@ -212,9 +213,36 @@ export function UploadModal({
   const [isUploading, setIsUploading] = useState(false);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [warningsDismissed, setWarningsDismissed] = useState(false);
+  const [docxHtml, setDocxHtml] = useState<string | null>(null);
+  const [isDocxLoading, setIsDocxLoading] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
+
+  // ---- DOCX Preview Logic ----
+  useEffect(() => {
+    const convertDocx = async () => {
+      const selectedFile = fileItems.find(f => f.id === selectedFileId);
+      if (selectedFile?.category === "Document" && selectedFile.file.name.toLowerCase().endsWith(".docx")) {
+        setIsDocxLoading(true);
+        setDocxHtml(null);
+        try {
+          const arrayBuffer = await selectedFile.file.arrayBuffer();
+          const result = await mammoth.convertToHtml({ arrayBuffer });
+          setDocxHtml(result.value);
+        } catch (err) {
+          console.error("DOCX conversion error:", err);
+          setDocxHtml("<p class='text-rose-500 font-bold'>Gagal memproses pratinjau dokumen Word.</p>");
+        } finally {
+          setIsDocxLoading(false);
+        }
+      } else {
+        setDocxHtml(null);
+      }
+    };
+
+    convertDocx();
+  }, [selectedFileId, fileItems]);
 
   // ---- Reset ----
 
@@ -230,6 +258,8 @@ export function UploadModal({
     setIsUploading(false);
     setWarnings([]);
     setWarningsDismissed(false);
+    setDocxHtml(null);
+    setIsDocxLoading(false);
   }, []);
 
   const handleClose = useCallback(() => {
@@ -578,23 +608,23 @@ export function UploadModal({
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl overflow-hidden flex flex-col h-[680px] border border-slate-200 animate-in zoom-in-95 duration-200">
+      <div className="bg-white rounded-[4px] shadow-2xl w-full max-w-5xl overflow-hidden flex flex-col h-[680px] border border-slate-200 animate-in zoom-in-95 duration-200">
         {/* ---- Header ---- */}
         <div className="px-6 py-4 border-b flex items-center justify-between bg-slate-50/50 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 bg-slate-900 rounded-xl flex items-center justify-center shadow-sm">
+            <div className="h-10 w-10 bg-slate-900 rounded-[4px] flex items-center justify-center shadow-sm">
               <Upload className="h-5 w-5 text-white" />
             </div>
             <div>
               <h2 className="text-base font-black text-slate-900 uppercase tracking-widest">
-                Evidence Ingestion
+                Upload Bukti
               </h2>
             </div>
           </div>
           <button
             onClick={handleClose}
             disabled={isUploading}
-            className="p-2 hover:bg-slate-200 rounded-lg transition-colors disabled:opacity-40"
+            className="p-2 hover:bg-slate-200 rounded-[2px] transition-colors disabled:opacity-40"
           >
             <X className="h-5 w-5 text-slate-400" />
           </button>
@@ -661,40 +691,40 @@ export function UploadModal({
             onDrop={handleDrop}
           >
             <div
-              className={`w-full max-w-lg flex flex-col items-center justify-center p-14 border-2 border-dashed rounded-2xl transition-all duration-200
+              className={`w-full max-w-lg flex flex-col items-center justify-center p-14 border-2 border-dashed rounded-[2px] transition-all duration-200
                 ${
                   isDragActive
                     ? "border-primary bg-primary/5 scale-[0.99]"
                     : "border-slate-200 bg-slate-50/40"
                 }`}
             >
-              <div className="h-16 w-16 bg-white border border-slate-200 rounded-2xl flex items-center justify-center mb-5 shadow-sm">
+              <div className="h-16 w-16 bg-white border border-slate-200 rounded-[2px] flex items-center justify-center mb-5 shadow-sm">
                 <Folders className="h-8 w-8 text-slate-300" />
               </div>
               <h3 className="text-sm font-black text-slate-800 uppercase tracking-wide mb-1.5">
-                {isDragActive ? "Release to add" : "Drop files or folders here"}
+                {isDragActive ? "Lepaskan untuk menambahkan" : "Seret file atau folder ke sini"}
               </h3>
               <p className="text-xs text-slate-400 font-medium text-center mb-8 max-w-xs leading-relaxed">
-                Images · Documents · Audio · Video
+                Gambar · Dokumen · Audio · Video
                 <br />
-                Folders are read recursively and grouped automatically
+                Folder dibaca secara rekursif dan dikelompokkan otomatis
               </p>
               <div className="flex items-center gap-3">
                 <Button
                   variant="outline"
-                  className="h-10 px-6 text-xs font-bold border-slate-200 hover:border-primary/50 hover:text-primary hover:bg-primary/5 gap-2 transition-all"
+                  className="h-10 px-6 text-xs font-bold border-slate-200 rounded-[2px] hover:border-primary/50 hover:text-primary hover:bg-primary/5 gap-2 transition-all"
                   onClick={() => fileInputRef.current?.click()}
                 >
                   <FilePlus className="h-4 w-4" />
-                  Add Files
+                  Tambah File
                 </Button>
                 <Button
                   variant="outline"
-                  className="h-10 px-6 text-xs font-bold border-slate-200 hover:border-primary/50 hover:text-primary hover:bg-primary/5 gap-2 transition-all"
+                  className="h-10 px-6 text-xs font-bold border-slate-200 rounded-[2px] hover:border-primary/50 hover:text-primary hover:bg-primary/5 gap-2 transition-all"
                   onClick={() => folderInputRef.current?.click()}
                 >
                   <FolderPlus className="h-4 w-4" />
-                  Add Folder
+                  Tambah Folder
                 </Button>
               </div>
             </div>
@@ -851,81 +881,76 @@ export function UploadModal({
                     </span>
                   </div>
 
-                  <div className="flex-1 overflow-auto p-6 flex flex-col gap-6 bg-slate-50/20 custom-scrollbar">
-                    {/* Media preview area */}
-                    <div className="aspect-video bg-[#0c121e] rounded-sm overflow-hidden border border-slate-800 shadow-xl flex items-center justify-center relative group/prev">
-                       <div className="absolute top-3 right-3 z-10 opacity-0 group-hover/prev:opacity-100 transition-opacity">
-                          <div className="px-2 py-1 bg-slate-900/80 backdrop-blur rounded text-[9px] font-bold text-white uppercase tracking-widest border border-white/10">
-                             Forensic Preview
+                    <div className="flex-1 overflow-auto p-6 flex flex-col gap-6 bg-slate-50/20 custom-scrollbar">
+                      {/* Media preview area */}
+                      <div className="aspect-video bg-[#0c121e] rounded-[4px] overflow-hidden border border-slate-800 shadow-xl flex items-center justify-center relative group/prev">
+                         <div className="absolute top-3 right-3 z-10 opacity-0 group-hover/prev:opacity-100 transition-opacity">
+                            <div className="px-2 py-1 bg-slate-900/80 backdrop-blur rounded-[2px] text-[9px] font-bold text-white uppercase tracking-widest border border-white/10">
+                               Forensic Preview
+                            </div>
+                         </div>
+                        {selectedFile.category === "Image" && selectedFile.previewUrl ? (
+                          <img src={selectedFile.previewUrl} className="h-full w-full object-contain" alt="" />
+                        ) : selectedFile.category === "Audio" ? (
+                          <div className="flex flex-col items-center gap-5 text-white w-full px-8">
+                            <div className="h-14 w-14 bg-white/10 rounded-full flex items-center justify-center border border-white/20">
+                              <AudioIcon className="h-7 w-7 text-amber-400" />
+                            </div>
+                            <audio controls src={selectedFile.previewUrl} className="w-full max-w-sm" />
                           </div>
-                       </div>
-                      {selectedFile.category === "Image" &&
-                      selectedFile.previewUrl ? (
-                        <img
-                          src={selectedFile.previewUrl}
-                          className="h-full w-full object-contain"
-                          alt=""
-                        />
-                      ) : selectedFile.category === "Audio" ? (
-                        <div className="flex flex-col items-center gap-5 text-white w-full px-8">
-                          <div className="h-14 w-14 bg-white/10 rounded-full flex items-center justify-center border border-white/20">
-                            <AudioIcon className="h-7 w-7 text-amber-400" />
+                        ) : selectedFile.category === "Video" ? (
+                          <video src={selectedFile.previewUrl} controls className="h-full w-full object-contain" />
+                        ) : selectedFile.category === "Document" && selectedFile.file.name.toLowerCase().endsWith(".docx") ? (
+                           <div className="h-full w-full bg-white overflow-auto p-8 custom-scrollbar">
+                              {isDocxLoading ? (
+                                 <div className="flex flex-col items-center justify-center h-full gap-3">
+                                    <Loader2 className="h-6 w-6 text-slate-400 animate-spin" />
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Menyiapkan Pratinjau...</p>
+                                 </div>
+                              ) : (
+                                 <div 
+                                    className="prose prose-sm max-w-none text-slate-900"
+                                    dangerouslySetInnerHTML={{ __html: docxHtml || "" }} 
+                                 />
+                              )}
+                           </div>
+                        ) : selectedFile.category === "Document" && selectedFile.file.type === "application/pdf" ? (
+                          <iframe src={selectedFile.previewUrl} className="h-full w-full border-none bg-white" title="PDF Preview" />
+                        ) : selectedFile.category === "Document" && selectedFile.file.type === "text/plain" ? (
+                           <iframe src={selectedFile.previewUrl} className="h-full w-full border-none bg-white font-mono text-[10px] p-4" title="Text Preview" />
+                        ) : (
+                          <div className="flex flex-col items-center gap-4 text-white">
+                            <div className="h-16 w-16 bg-white/5 rounded-[4px] flex items-center justify-center border border-white/10">
+                              <CategoryIcon category={selectedFile.category} className="h-8 w-8 opacity-80" />
+                            </div>
+                            <div className="text-center">
+                              <p className="text-[11px] font-black uppercase tracking-widest text-white/90 mb-1">{selectedFile.category}</p>
+                              <p className="text-[9px] font-medium text-white/40 uppercase tracking-tight">Enterprise Document Preview</p>
+                            </div>
                           </div>
-                          <audio
-                            controls
-                            src={selectedFile.previewUrl}
-                            className="w-full max-w-sm"
-                          />
-                        </div>
-                      ) : selectedFile.category === "Video" ? (
-                        <video
-                          src={selectedFile.previewUrl}
-                          controls
-                          className="h-full w-full object-contain"
-                        />
-                      ) : (
-                        <div className="flex flex-col items-center gap-3 text-white">
-                          <CategoryIcon
-                            category={selectedFile.category}
-                            className="h-14 w-14 opacity-60"
-                          />
-                          <span className="text-[10px] font-bold uppercase tracking-widest opacity-40">
-                            {selectedFile.category}
-                          </span>
-                        </div>
-                      )}
-                    </div>
+                        )}
+                      </div>
 
-                    {/* Metadata grid */}
-                    <div className="grid grid-cols-2 gap-4">
-                      {[
-                        { label: "Filename", value: selectedFile.file.name },
-                        { label: "Modality", value: selectedFile.category },
-                        { label: "File Size", value: formatBytes(selectedFile.file.size) },
-                        { label: "Intake Path", value: selectedFile.relativePath },
-                      ].map(({ label, value }) => (
-                        <div key={label} className="border-b border-slate-100 pb-2">
-                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.15em] block mb-1">
-                            {label}
-                          </span>
-                          <span className="text-[11px] font-bold text-slate-700 truncate block tracking-tight">
-                            {value}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
+                      {/* Metadata grid */}
+                      <div className="grid grid-cols-2 gap-6 bg-white p-4 rounded-[4px] border border-slate-100 shadow-sm">
+                        {[
+                          { label: "NAMA FILE", value: selectedFile.file.name },
+                          { label: "MODALITAS", value: selectedFile.category },
+                          { label: "UKURAN", value: formatBytes(selectedFile.file.size) },
+                          { label: "PATH ASAL", value: selectedFile.relativePath },
+                        ].map(({ label, value }) => (
+                          <div key={label} className="space-y-1">
+                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] block">
+                              {label}
+                            </span>
+                            <span className="text-[11px] font-bold text-slate-800 truncate block tracking-tight">
+                              {value}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
 
-                    {/* Status Badge */}
-                    <div className="mt-2 flex items-center gap-3">
-                       <div className="flex items-center gap-1.5 px-2 py-1 bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-sm">
-                          <CheckCircle2 className="h-3 w-3" />
-                          <span className="text-[9px] font-black uppercase tracking-widest">Validated for Ingestion</span>
-                       </div>
-                       <div className="flex items-center gap-1.5 px-2 py-1 bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-sm">
-                          <Cpu className="h-3 w-3" />
-                          <span className="text-[9px] font-black uppercase tracking-widest">AI Extraction Ready</span>
-                       </div>
-                    </div>
+
                   </div>
                 </>
               ) : (
@@ -960,7 +985,7 @@ export function UploadModal({
             {!isEmpty && (
               <>
                 <div className="flex flex-col">
-                   <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest">{totalValid} Objects</span>
+                   <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest">{totalValid} BUKTI</span>
                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter mt-0.5">{formatBytes(totalBytes)} Payload</span>
                 </div>
                 {isUploading && (
@@ -981,9 +1006,9 @@ export function UploadModal({
           </div>
 
           <div className="flex items-center gap-3 shrink-0">
-            <Button
-              variant="ghost"
-              className="h-9 px-6 text-[11px] font-bold text-slate-500 hover:bg-slate-100 hover:text-slate-900 rounded-sm"
+              <Button
+                variant="ghost"
+                className="h-9 px-6 text-[11px] font-bold text-slate-500 hover:bg-slate-100 hover:text-slate-900 rounded-[4px]"
               onClick={handleClose}
               disabled={isUploading}
             >
@@ -992,7 +1017,7 @@ export function UploadModal({
             {!isEmpty && (
               <Button
                 className={cn(
-                  "h-9 px-8 text-[11px] font-black bg-slate-900 hover:bg-slate-800 text-white rounded-sm transition-all active:scale-[0.98] gap-2 uppercase tracking-[0.15em] shadow-lg shadow-slate-200",
+                  "h-10 px-8 text-[11px] font-black bg-slate-900 hover:bg-slate-800 text-white rounded-[4px] transition-all active:scale-[0.98] gap-2 uppercase tracking-[0.15em] shadow-lg shadow-slate-200",
                   isUploading ? "opacity-80" : ""
                 )}
                 onClick={handleUpload}
@@ -1001,12 +1026,12 @@ export function UploadModal({
                 {isUploading ? (
                   <>
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    Ingesting…
+                    Memproses…
                   </>
                 ) : (
                   <>
                     <Upload className="h-3.5 w-3.5" />
-                    Upload & Process
+                    MULAI PROSES
                   </>
                 )}
               </Button>

@@ -150,6 +150,8 @@ export function useUploadEvidence() {
 
   return useMutation({
     mutationFn: async ({ caseId, groups }: { caseId: string, groups: any[] }) => {
+      const insertedFileIds: string[] = [];
+
       for (const group of groups) {
         // 1. Create batch for EVERY group (Folder or Loose Files) 
         const { data: batchData, error: batchError } = await supabase
@@ -196,13 +198,13 @@ export function useUploadEvidence() {
             throw e; 
           }
 
-          const { error: fileError } = await supabase
+          const { data: fileData, error: fileError } = await supabase
             .from("evidence_files")
             .insert({
               batch_id: batchId,
               name: file.name,
-              type: fileItem.type || "Document",
-              size: fileItem.size || "0 KB",
+              type: fileItem.category || "Document",
+              size: formatBytes(file.size),
               url: publicUrl,
               source: "External Intake",
               extraction_status: "pending",
@@ -213,17 +215,40 @@ export function useUploadEvidence() {
                  originalName: file.name,
                  uploadedAt: new Date().toISOString()
               }
-            });
+            })
+            .select()
+            .single();
 
           if (fileError) throw fileError;
+          if (fileData) insertedFileIds.push(fileData.id);
         }
       }
+
+      // 3. Trigger dummy completion after 10 seconds in the background
+      if (insertedFileIds.length > 0) {
+        setTimeout(async () => {
+          await supabase
+            .from("evidence_files")
+            .update({ extraction_status: "completed" })
+            .in("id", insertedFileIds);
+          
+          // Invalidate query after completion
+          queryClient.invalidateQueries({ queryKey: ["evidence", caseId] });
+        }, 10000);
+      }
+
       return true;
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["evidence", variables.caseId] });
     },
   });
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return bytes + " B";
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+  return (bytes / (1024 * 1024)).toFixed(1) + " MB";
 }
 export function useCreateFolder() {
   const queryClient = useQueryClient();

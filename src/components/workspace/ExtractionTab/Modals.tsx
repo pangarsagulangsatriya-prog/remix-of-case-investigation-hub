@@ -105,6 +105,7 @@ export function DeleteFolderModal({
   target,
   onClose,
   onConfirm,
+  onDissolve,
 }: {
   target: any;
   onClose: () => void;
