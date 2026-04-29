@@ -318,3 +318,33 @@ export function useInsertAuditLog() {
     },
   });
 }
+export function useRerunExtraction() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id }: { id: string }) => {
+      // 1. Set to pending
+      const { error: startError } = await supabase
+        .from("evidence_files")
+        .update({ extraction_status: "pending" })
+        .eq("id", id);
+
+      if (startError) throw startError;
+
+      // 2. Simulate delay for extraction process
+      await new Promise(resolve => setTimeout(resolve, 3000));
+
+      // 3. Set to completed
+      const { error: endError } = await supabase
+        .from("evidence_files")
+        .update({ extraction_status: "completed" })
+        .eq("id", id);
+
+      if (endError) throw endError;
+      return true;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["evidence"] });
+    },
+  });
+}

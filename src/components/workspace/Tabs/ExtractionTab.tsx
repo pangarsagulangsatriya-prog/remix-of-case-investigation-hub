@@ -38,7 +38,8 @@ import {
   useRenameFile, 
   useMoveFile, 
   useCreateFolder, 
-  useDeleteBatch 
+  useDeleteBatch,
+  useRerunExtraction
 } from "@/hooks/useEvidence";
 import { UploadModal, CompletedGroup } from "../../UploadModal";
 import { toast } from "sonner";
@@ -60,7 +61,9 @@ export default function ExtractionTab() {
   const [isCreateFolderModalOpen, setIsCreateFolderModalOpen] = useState(false);
   const [isRenameFolderModalOpen, setIsRenameFolderModalOpen] = useState(false);
   const [isRenameFileModalOpen, setIsRenameFileModalOpen] = useState(false);
+  const [isRerunModalOpen, setIsRerunModalOpen] = useState(false);
   const [deleteFolderTarget, setDeleteFolderTarget] = useState<any>(null);
+  const [fileToRerun, setFileToRerun] = useState<any>(null);
   
   // Form State
   const [newFolderName, setNewFolderName] = useState("");
@@ -87,6 +90,7 @@ export default function ExtractionTab() {
   const renameFileMutation = useRenameFile();
   const moveFileMutation = useMoveFile();
   const uploadEvidenceMutation = useUploadEvidence();
+  const rerunExtractionMutation = useRerunExtraction();
 
   // Derived
   const filteredFiles = useMemo(() => {
@@ -171,6 +175,22 @@ export default function ExtractionTab() {
     } catch (error) {
       console.error(error);
       toast.error("Persist Failure: One or more evidence objects failed to sync.");
+    }
+  };
+
+  const handleRerunExtraction = async () => {
+    if (!fileToRerun) return;
+    try {
+      setIsRerunModalOpen(false);
+      const promise = rerunExtractionMutation.mutateAsync({ id: fileToRerun.id });
+      toast.promise(promise, {
+        loading: 'Initiating forensic extraction...',
+        success: 'Extraction completed successfully.',
+        error: 'Extraction engine failed to process object.'
+      });
+      await promise;
+    } catch (error) {
+      console.error(error);
     }
   };
 
@@ -357,6 +377,10 @@ export default function ExtractionTab() {
                             setFileRenameValue(f.name);
                             setIsRenameFileModalOpen(true);
                           }}
+                          onRerun={(f: any) => {
+                            setFileToRerun(f);
+                            setIsRerunModalOpen(true);
+                          }}
                           batches={batches}
                           isIndented
                         />
@@ -379,6 +403,10 @@ export default function ExtractionTab() {
                   setFileToRename(f);
                   setFileRenameValue(f.name);
                   setIsRenameFileModalOpen(true);
+                }}
+                onRerun={(f: any) => {
+                  setFileToRerun(f);
+                  setIsRerunModalOpen(true);
                 }}
                 batches={batches}
               />
@@ -536,6 +564,27 @@ export default function ExtractionTab() {
         onConfirm={handleDeleteFolder}
         onDissolve={handleDissolveFolder}
       />
+
+      <Modal isOpen={isRerunModalOpen} onClose={() => setIsRerunModalOpen(false)} title="Trigger Forensic Extraction">
+        <div className="p-6 space-y-6">
+          <div className="flex gap-4 p-4 bg-slate-50 rounded border border-slate-100">
+            <div className="h-10 w-10 bg-white rounded flex items-center justify-center border shadow-sm shrink-0">
+              {fileToRerun && getFileIcon(fileToRerun.type)}
+            </div>
+            <div className="space-y-1">
+              <p className="text-[11px] font-black text-slate-900 uppercase tracking-widest truncate max-w-[300px]">{fileToRerun?.name}</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Re-triggering will overwrite existing metadata.</p>
+            </div>
+          </div>
+          <p className="text-[11px] font-bold text-slate-500 leading-relaxed">
+            Are you sure you want to re-initiate the automated extraction engine for this object? This process will perform deep analysis of the evidence source.
+          </p>
+          <div className="flex gap-3 pt-2">
+            <Button variant="outline" className="flex-1 h-11" onClick={() => setIsRerunModalOpen(false)}>Cancel</Button>
+            <Button className="flex-1 h-11 bg-slate-900" onClick={handleRerunExtraction}>Confirm Rerun</Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

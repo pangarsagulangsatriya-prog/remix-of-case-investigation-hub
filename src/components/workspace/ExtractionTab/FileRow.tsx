@@ -1,7 +1,7 @@
 import { 
   Pencil, Trash2, MoreVertical, Folder, FileText, 
   Image as ImageIcon, Mic as AudioIcon, Video as VideoIcon, 
-  FileCode, Box
+  FileCode, Box, RefreshCw
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -43,7 +43,7 @@ const formatDate = (dateStr: string) => {
   }
 };
 
-export function FileRow({ file, isSelected, onSelect, onMove, onDelete, onRename, batches, isIndented }: any) {
+export function FileRow({ file, isSelected, onSelect, onMove, onDelete, onRename, onRerun, batches, isIndented }: any) {
   return (
     <div 
       onClick={onSelect}
@@ -80,6 +80,9 @@ export function FileRow({ file, isSelected, onSelect, onMove, onDelete, onRename
                <DropdownMenuSeparator />
                <DropdownMenuItem onClick={() => onRename(file)} className="text-[11px] font-bold py-2">
                   <Pencil className="h-3.5 w-3.5 mr-2 text-slate-400" /> Rename Evidence
+               </DropdownMenuItem>
+               <DropdownMenuItem onClick={() => onRerun(file)} className="text-[11px] font-bold py-2">
+                  <RefreshCw className="h-3.5 w-3.5 mr-2 text-slate-400" /> Rerun Extraction
                </DropdownMenuItem>
                <DropdownMenuSeparator />
                <DropdownMenuLabel className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2 py-1.5">Move to Folder</DropdownMenuLabel>
