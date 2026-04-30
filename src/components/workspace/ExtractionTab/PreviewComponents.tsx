@@ -751,22 +751,97 @@ export function AudioForensicWorkspace({
 }
 
 export function VideoPreview({ file, currentTime, setCurrentTime, isPlaying, setIsPlaying, videoRef }: any) {
+  const [duration, setDuration] = useState(0);
+
+  const togglePlay = () => {
+    if (videoRef.current) {
+      if (isPlaying) videoRef.current.pause();
+      else videoRef.current.play();
+      setIsPlaying(!isPlaying);
+    }
+  };
+
+  const handleTimeUpdate = () => {
+    if (videoRef.current) {
+      setCurrentTime(videoRef.current.currentTime);
+    }
+  };
+
+  const handleLoadedMetadata = () => {
+    if (videoRef.current) {
+      setDuration(videoRef.current.duration);
+    }
+  };
+
   return (
-    <div className="relative w-full aspect-video bg-black rounded-sm overflow-hidden  group border border-slate-800 ring-1 ring-white/10">
-      <video ref={videoRef} src={file.url} className="w-full h-full object-contain" />
-      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20">
-         <button className="h-16 w-16 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center text-white border border-white/20 hover:scale-110 active:scale-95 transition-all ">
-            <Play className="h-7 w-7 fill-current ml-1" />
+    <div className="relative w-full aspect-video bg-black rounded-sm overflow-hidden group border border-slate-800 ring-1 ring-white/10 shadow-2xl">
+      <video 
+        ref={videoRef} 
+        src={file.url} 
+        className="w-full h-full object-contain"
+        onTimeUpdate={handleTimeUpdate}
+        onLoadedMetadata={handleLoadedMetadata}
+        onClick={togglePlay}
+        playsInline
+      />
+      
+      {/* Play/Pause Overlay */}
+      <div 
+        className={cn(
+          "absolute inset-0 flex items-center justify-center transition-all duration-300",
+          isPlaying ? "opacity-0 group-hover:opacity-100 bg-black/10" : "opacity-100 bg-black/40"
+        )}
+      >
+         <button 
+           onClick={(e) => { e.stopPropagation(); togglePlay(); }}
+           className="h-20 w-20 bg-white/10 backdrop-blur-xl rounded-full flex items-center justify-center text-white border border-white/20 hover:scale-110 hover:bg-white/20 active:scale-95 transition-all shadow-2xl"
+         >
+            {isPlaying ? (
+              <Pause className="h-8 w-8 fill-current" />
+            ) : (
+              <Play className="h-8 w-8 fill-current ml-1" />
+            )}
          </button>
       </div>
-      <div className="absolute inset-x-0 bottom-0 p-5 bg-gradient-to-t from-black/90 to-transparent flex items-center justify-between">
-         <div className="flex flex-col gap-0.5">
-            <span className="text-[10px] font-black text-white uppercase tracking-widest ">{file.name}</span>
-            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter ">CCTV Feed · Site Alpha Zone B</span>
+
+      {/* Modern Control Bar */}
+      <div className="absolute inset-x-0 bottom-0 p-6 bg-gradient-to-t from-black/95 via-black/60 to-transparent flex flex-col gap-4">
+         {/* Progress Bar */}
+         <div 
+            className="w-full h-1 bg-white/10 rounded-full overflow-hidden group/progress cursor-pointer relative"
+            onClick={(e) => {
+               const rect = e.currentTarget.getBoundingClientRect();
+               const x = e.clientX - rect.left;
+               const pct = x / rect.width;
+               if (videoRef.current) {
+                  videoRef.current.currentTime = pct * duration;
+               }
+            }}
+         >
+            <div 
+              className="absolute h-full bg-[#0f62fe] transition-all duration-100" 
+              style={{ width: `${(currentTime / (duration || 1)) * 100}%` }} 
+            />
          </div>
-         <div className="flex items-center gap-3">
-            <span className="text-[10px] font-black text-white tabular-nums">00:14 / 05:00</span>
-            <button className="p-1.5 text-white hover:bg-white/10 rounded transition-colors"><Maximize2 className="h-3.5 w-3.5" /></button>
+
+         <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-1">
+               <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 rounded-full bg-red-600 animate-pulse" />
+                  <span className="text-[10px] font-black text-white uppercase tracking-[0.2em]">{file.name}</span>
+               </div>
+               <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter ml-4">Forensic CCTV Feed · Site Alpha Zone B</span>
+            </div>
+            
+            <div className="flex items-center gap-4">
+               <div className="flex items-center gap-2 px-3 py-1 bg-black/40 rounded-sm border border-white/5 shadow-inner">
+                  <span className="text-[10px] font-mono font-black text-white tabular-nums">{formatTime(currentTime)}</span>
+                  <span className="text-[10px] font-mono text-slate-500">/</span>
+                  <span className="text-[10px] font-mono font-bold text-slate-400 tabular-nums">{formatTime(duration)}</span>
+               </div>
+               <div className="h-4 w-[1px] bg-white/10 mx-1" />
+               <button className="p-1.5 text-white/40 hover:text-white transition-colors"><Maximize2 className="h-4 w-4" /></button>
+            </div>
          </div>
       </div>
     </div>
