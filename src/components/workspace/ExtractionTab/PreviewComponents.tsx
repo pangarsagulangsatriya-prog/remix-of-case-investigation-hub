@@ -4,7 +4,8 @@ import {
   Sun, Contrast, Zap, X, Grid3X3, ZoomIn, ZoomOut, 
   Play, Pause, ChevronLeft, ChevronRight, User, 
   Layout, BookText, Search, ExternalLink, Download, 
-  Maximize2, Activity, FileText, Folders 
+  Maximize2, Minimize2, Activity, FileText, Folders, Volume2, VolumeX,
+  SkipBack, SkipForward, Repeat, Gauge
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -752,6 +753,18 @@ export function AudioForensicWorkspace({
 
 export function VideoPreview({ file, currentTime, setCurrentTime, isPlaying, setIsPlaying, videoRef }: any) {
   const [duration, setDuration] = useState(0);
+  const [volume, setVolume] = useState(1);
+  const [isMuted, setIsMuted] = useState(false);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1);
+  const [isLooping, setIsLooping] = useState(false);
+  const [loopRange, setLoopRange] = useState<{ start: number, end: number } | null>(null);
+  
+  // Digital Zoom & Pan State
+  const [scale, setScale] = useState(1);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [lastMousePos, setLastMousePos] = useState({ x: 0, y: 0 });
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const togglePlay = () => {
     if (videoRef.current) {
@@ -761,9 +774,27 @@ export function VideoPreview({ file, currentTime, setCurrentTime, isPlaying, set
     }
   };
 
+  const stepFrame = (direction: 'prev' | 'next') => {
+    if (videoRef.current) {
+      videoRef.current.pause();
+      setIsPlaying(false);
+      // Approximately 1 frame at 30fps
+      const frameTime = 1/30;
+      videoRef.current.currentTime += (direction === 'next' ? frameTime : -frameTime);
+    }
+  };
+
   const handleTimeUpdate = () => {
     if (videoRef.current) {
-      setCurrentTime(videoRef.current.currentTime);
+      const cur = videoRef.current.currentTime;
+      setCurrentTime(cur);
+
+      // Handle Looping
+      if (isLooping && loopRange) {
+        if (cur >= loopRange.end) {
+          videoRef.current.currentTime = loopRange.start;
+        }
+      }
     }
   };
 
@@ -773,74 +804,199 @@ export function VideoPreview({ file, currentTime, setCurrentTime, isPlaying, set
     }
   };
 
-  return (
-    <div className="relative w-full aspect-video bg-black rounded-sm overflow-hidden group border border-slate-800 ring-1 ring-white/10 shadow-2xl">
-      <video 
-        ref={videoRef} 
-        src={file.url} 
-        className="w-full h-full object-contain"
-        onTimeUpdate={handleTimeUpdate}
-        onLoadedMetadata={handleLoadedMetadata}
-        onClick={togglePlay}
-        playsInline
-      />
-      
-      {/* Play/Pause Overlay */}
-      <div 
-        className={cn(
-          "absolute inset-0 flex items-center justify-center transition-all duration-300",
-          isPlaying ? "opacity-0 group-hover:opacity-100 bg-black/10" : "opacity-100 bg-black/40"
-        )}
-      >
-         <button 
-           onClick={(e) => { e.stopPropagation(); togglePlay(); }}
-           className="h-20 w-20 bg-white/10 backdrop-blur-xl rounded-full flex items-center justify-center text-white border border-white/20 hover:scale-110 hover:bg-white/20 active:scale-95 transition-all shadow-2xl"
-         >
-            {isPlaying ? (
-              <Pause className="h-8 w-8 fill-current" />
-            ) : (
-              <Play className="h-8 w-8 fill-current ml-1" />
-            )}
-         </button>
-      </div>
+  const handleZoom = (factor: number) => {
+    setScale(prev => Math.min(Math.max(1, prev * factor), 5));
+  };
 
-      {/* Modern Control Bar */}
-      <div className="absolute inset-x-0 bottom-0 p-6 bg-gradient-to-t from-black/95 via-black/60 to-transparent flex flex-col gap-4">
-         {/* Progress Bar */}
-         <div 
-            className="w-full h-1 bg-white/10 rounded-full overflow-hidden group/progress cursor-pointer relative"
-            onClick={(e) => {
-               const rect = e.currentTarget.getBoundingClientRect();
-               const x = e.clientX - rect.left;
-               const pct = x / rect.width;
-               if (videoRef.current) {
-                  videoRef.current.currentTime = pct * duration;
-               }
-            }}
-         >
+  const startDragging = (e: React.MouseEvent) => {
+    if (scale > 1) {
+      setIsDragging(true);
+      setLastMousePos({ x: e.clientX, y: e.clientY });
+    }
+  };
+
+  const onDrag = (e: React.MouseEvent) => {
+    if (!isDragging) return;
+    const dx = e.clientX - lastMousePos.x;
+    const dy = e.clientY - lastMousePos.y;
+    setPosition(prev => ({ x: prev.x + dx, y: prev.y + dy }));
+    setLastMousePos({ x: e.clientX, y: e.clientY });
+  };
+
+  const stopDragging = () => setIsDragging(false);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      containerRef.current?.requestFullscreen();
+    } else {
+      document.exitFullscreen();
+    }
+  };
+
+  const isFullscreen = !!document.fullscreenElement;
+
+  return (
+    <div 
+      ref={containerRef}
+      className="w-full h-full flex flex-col gap-4"
+    >
+      {/* 1. Video Frame (Unobstructed) */}
+      <div 
+        className="relative flex-1 bg-black rounded-sm overflow-hidden group border border-slate-800 ring-1 ring-white/5 shadow-2xl"
+        onMouseDown={startDragging}
+        onMouseMove={onDrag}
+        onMouseUp={stopDragging}
+        onMouseLeave={stopDragging}
+        style={{ cursor: isDragging ? 'grabbing' : (scale > 1 ? 'grab' : 'default') }}
+      >
+        <video 
+          ref={videoRef} 
+          src={file.url} 
+          className="w-full h-full object-contain transition-transform duration-75 ease-out"
+          style={{ 
+            transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
+            transformOrigin: 'center center'
+          }}
+          onTimeUpdate={handleTimeUpdate}
+          onLoadedMetadata={handleLoadedMetadata}
+          onClick={togglePlay}
+          playsInline
+        />
+        
+        {/* Simple Play Overlay (Only when paused) */}
+        {!isPlaying && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/20 pointer-events-none">
+             <div className="h-16 w-16 bg-white/10 backdrop-blur-xl rounded-full flex items-center justify-center text-white border border-white/20 shadow-2xl scale-110">
+                <Play className="h-6 w-6 fill-current ml-1" />
+             </div>
+          </div>
+        )}
+
+        {/* Zoom Indicator */}
+        {scale > 1 && (
+          <div className="absolute top-4 left-4 px-2 py-1 bg-indigo-600/90 text-white text-[9px] font-black uppercase tracking-widest rounded-sm backdrop-blur-md shadow-lg z-10 animate-in fade-in zoom-in duration-200">
+             Digital Zoom: {Math.round(scale * 100)}%
+          </div>
+        )}
+      </div>
+      
+      {/* 2. External Forensic Control Panel (Outside Frame) */}
+      <div className="bg-white border border-slate-200 rounded-sm p-4 flex flex-col gap-4 shadow-sm">
+         {/* Top Row: Progress & Time */}
+         <div className="flex flex-col gap-2">
             <div 
-              className="absolute h-full bg-[#0f62fe] transition-all duration-100" 
-              style={{ width: `${(currentTime / (duration || 1)) * 100}%` }} 
-            />
+               className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden cursor-pointer relative group"
+               onClick={(e) => {
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const x = e.clientX - rect.left;
+                  const pct = x / rect.width;
+                  if (videoRef.current) videoRef.current.currentTime = pct * duration;
+               }}
+            >
+               <div 
+                 className="absolute h-full bg-slate-900 transition-all duration-100" 
+                 style={{ width: `${(currentTime / (duration || 1)) * 100}%` }} 
+               />
+            </div>
+            <div className="flex justify-between items-center px-1">
+               <div className="flex items-center gap-2">
+                  <div className="h-1.5 w-1.5 rounded-full bg-slate-400" />
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">{file.name}</span>
+               </div>
+               <div className="flex items-center gap-2 text-[10px] font-mono font-bold tabular-nums">
+                  <span className="text-slate-900">{formatTime(currentTime)}</span>
+                  <span className="text-slate-300">/</span>
+                  <span className="text-slate-400">{formatTime(duration)}</span>
+               </div>
+            </div>
          </div>
 
-         <div className="flex items-center justify-between">
-            <div className="flex flex-col gap-1">
-               <div className="flex items-center gap-2">
-                  <div className="h-2 w-2 rounded-full bg-red-600 animate-pulse" />
-                  <span className="text-[10px] font-black text-white uppercase tracking-[0.2em]">{file.name}</span>
-               </div>
-               <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter ml-4">Forensic CCTV Feed · Site Alpha Zone B</span>
-            </div>
-            
+         {/* Bottom Row: Functional Clusters */}
+         <div className="flex items-center justify-between border-t border-slate-50 pt-4">
+            {/* Playback Cluster */}
             <div className="flex items-center gap-4">
-               <div className="flex items-center gap-2 px-3 py-1 bg-black/40 rounded-sm border border-white/5 shadow-inner">
-                  <span className="text-[10px] font-mono font-black text-white tabular-nums">{formatTime(currentTime)}</span>
-                  <span className="text-[10px] font-mono text-slate-500">/</span>
-                  <span className="text-[10px] font-mono font-bold text-slate-400 tabular-nums">{formatTime(duration)}</span>
+               <button 
+                 onClick={togglePlay}
+                 className="h-9 w-9 bg-slate-900 text-white rounded-sm flex items-center justify-center hover:bg-slate-800 transition-all active:scale-95 shadow-sm"
+               >
+                 {isPlaying ? <Pause className="h-4 w-4 fill-current" /> : <Play className="h-4 w-4 fill-current ml-0.5" />}
+               </button>
+
+               <div className="flex items-center gap-1 bg-slate-50 border border-slate-100 rounded-sm p-0.5">
+                  <button onClick={() => stepFrame('prev')} className="p-1.5 hover:bg-white hover:text-slate-900 text-slate-400 rounded-sm transition-all" title="Previous Frame"><SkipBack className="h-3.5 w-3.5" /></button>
+                  <div className="px-2 text-[8px] font-black uppercase text-slate-500 tracking-tighter">Frame Step</div>
+                  <button onClick={() => stepFrame('next')} className="p-1.5 hover:bg-white hover:text-slate-900 text-slate-400 rounded-sm transition-all" title="Next Frame"><SkipForward className="h-3.5 w-3.5" /></button>
                </div>
-               <div className="h-4 w-[1px] bg-white/10 mx-1" />
-               <button className="p-1.5 text-white/40 hover:text-white transition-colors"><Maximize2 className="h-4 w-4" /></button>
+
+               <div className="h-6 w-[1px] bg-slate-100 mx-1" />
+
+               <div className="flex bg-slate-50 border border-slate-100 rounded-sm p-0.5">
+                  {[0.5, 1, 2].map(s => (
+                    <button 
+                      key={s} 
+                      onClick={() => { setPlaybackSpeed(s); if(videoRef.current) videoRef.current.playbackRate = s; }}
+                      className={cn(
+                        "px-3 py-1 text-[9px] font-black uppercase rounded-sm transition-all",
+                        playbackSpeed === s ? "bg-white text-slate-900 shadow-sm border border-slate-100" : "text-slate-400 hover:text-slate-600"
+                      )}
+                    >
+                      {s}x
+                    </button>
+                  ))}
+               </div>
+            </div>
+
+            {/* Forensic & Utility Cluster */}
+            <div className="flex items-center gap-3">
+               <div className="flex items-center gap-2 pr-3 border-r border-slate-100">
+                  <button 
+                    onClick={() => { setIsMuted(!isMuted); if(videoRef.current) videoRef.current.muted = !isMuted; }} 
+                    className="p-1.5 text-slate-400 hover:text-slate-900 transition-colors"
+                  >
+                     {isMuted || volume === 0 ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+                  </button>
+                  <input 
+                    type="range" 
+                    min="0" max="1" step="0.01" 
+                    value={volume}
+                    onChange={(e) => {
+                      const v = parseFloat(e.target.value);
+                      setVolume(v);
+                      if(videoRef.current) videoRef.current.volume = v;
+                    }}
+                    className="w-16 h-1 bg-slate-100 rounded-full appearance-none cursor-pointer accent-slate-900"
+                  />
+               </div>
+
+               <div className="flex items-center gap-1">
+                  <button 
+                    onClick={() => handleZoom(0.8)} 
+                    className="p-1.5 text-slate-400 hover:text-slate-900 hover:bg-slate-50 rounded-sm transition-all"
+                  ><ZoomOut className="h-4 w-4" /></button>
+                  <button 
+                    onClick={() => { setScale(1); setPosition({ x: 0, y: 0 }); }} 
+                    className="p-1.5 text-slate-400 hover:text-slate-900 hover:bg-slate-50 rounded-sm transition-all"
+                  ><RefreshCcw className="h-3.5 w-3.5" /></button>
+                  <button 
+                    onClick={() => handleZoom(1.2)} 
+                    className="p-1.5 text-slate-400 hover:text-slate-900 hover:bg-slate-50 rounded-sm transition-all"
+                  ><ZoomIn className="h-4 w-4" /></button>
+               </div>
+
+               <button 
+                 onClick={() => setIsLooping(!isLooping)}
+                 className={cn(
+                    "px-3 py-1.5 border rounded-sm transition-all flex items-center gap-2",
+                    isLooping ? "bg-indigo-50 border-indigo-100 text-indigo-600" : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50"
+                 )}
+               >
+                  <Repeat className="h-3.5 w-3.5" />
+                  <span className="text-[9px] font-black uppercase tracking-widest">{isLooping ? "Looping" : "Loop"}</span>
+               </button>
+
+               <button onClick={toggleFullscreen} className="p-2 text-slate-400 hover:text-slate-900 transition-colors">
+                  {document.fullscreenElement ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+               </button>
             </div>
          </div>
       </div>
@@ -879,95 +1035,134 @@ export function DocumentPreview({ file }: { file: any }) {
 
   const isPdf = file.url?.split('?')[0].toLowerCase().endsWith('.pdf');
 
-  if (!isPdf) {
-    const previewUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(file.url)}&embedded=true`;
-    return (
-      <div className="flex flex-col h-full bg-[#f8f9fa] rounded-sm border border-slate-200 overflow-hidden select-none">
-        <iframe src={previewUrl} className="w-full h-full border-none" title="Document Preview" />
-      </div>
-    );
-  }
-
   return (
-    <div className="flex flex-col h-full bg-[#f8f9fa] rounded-sm border border-slate-200 overflow-hidden select-none">
-       {/* PDF Toolbar */}
-       <div className="h-12 bg-white border-b border-slate-200 flex items-center justify-between px-4 shrink-0 shadow-sm z-10">
-         <div className="flex items-center gap-4">
-           <div className="flex items-center gap-0.5">
-             <button className="p-1.5 hover:bg-slate-100 rounded-md transition-colors text-slate-500"><Layout className="h-4 w-4" /></button>
-             <button className="p-1.5 hover:bg-slate-100 rounded-md transition-colors text-slate-500"><BookText className="h-4 w-4" /></button>
-             <button className="p-1.5 hover:bg-slate-100 rounded-md transition-colors text-slate-500"><Search className="h-4 w-4" /></button>
+    <div className="flex flex-col h-full bg-[#f1f3f5] rounded-sm border border-slate-200 overflow-hidden select-none">
+       {/* 1. Standardized Forensic Document Toolbar */}
+       <div className="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-6 shrink-0 shadow-sm z-20">
+         <div className="flex items-center gap-6">
+           <div className="flex items-center gap-2">
+              <div className="h-8 w-8 bg-slate-900 rounded-sm flex items-center justify-center text-white">
+                 <FileText className="h-4 w-4" />
+              </div>
+              <div className="flex flex-col">
+                 <span className="text-[10px] font-black text-slate-900 uppercase tracking-tight truncate max-w-[200px]">{file.name}</span>
+                 <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Forensic Document Asset</span>
+              </div>
            </div>
-           <div className="h-4 w-[1px] bg-slate-200" />
+
+           <div className="h-6 w-[1px] bg-slate-200" />
+
            <div className="flex items-center gap-1">
-              <button onClick={() => zoom(0.9)} className="p-1.5 hover:bg-slate-100 rounded-md transition-colors text-slate-500"><Minus className="h-4 w-4" /></button>
-              <div className="px-3 py-1 text-[11px] font-black text-slate-600 bg-slate-50 border rounded-sm min-w-[90px] text-center uppercase tracking-tighter">
+              <button onClick={() => zoom(0.9)} className="p-2 hover:bg-slate-100 rounded-sm transition-colors text-slate-500"><Minus className="h-4 w-4" /></button>
+              <div className="px-3 py-1.5 text-[11px] font-mono font-black text-slate-700 bg-slate-50 border border-slate-100 rounded-sm min-w-[80px] text-center">
                 {Math.round(scale * 100)}%
               </div>
-              <button onClick={() => zoom(1.1)} className="p-1.5 hover:bg-slate-100 rounded-md transition-colors text-slate-500"><Plus className="h-4 w-4" /></button>
+              <button onClick={() => zoom(1.1)} className="p-2 hover:bg-slate-100 rounded-sm transition-colors text-slate-500"><Plus className="h-4 w-4" /></button>
            </div>
          </div>
 
-         <div className="flex items-center gap-3">
-           <div className="flex items-center gap-1">
-             <button 
-               onClick={() => changePage(-1)} 
-               disabled={pageNumber <= 1}
-               className="p-1.5 hover:bg-slate-100 rounded-md transition-colors text-slate-500 disabled:opacity-30"
-             >
-               <ChevronLeft className="h-4 w-4" />
-             </button>
-             <div className="flex items-center gap-1 px-3 py-1 border rounded-sm bg-white text-[11px] font-black text-slate-700">
-                <span>{pageNumber}</span>
-                <span className="text-slate-300 mx-1">/</span>
-                <span className="text-slate-400">{numPages || "--"}</span>
+         <div className="flex items-center gap-4">
+           {isPdf && (
+             <div className="flex items-center gap-2">
+               <button 
+                 onClick={() => changePage(-1)} 
+                 disabled={pageNumber <= 1}
+                 className="p-2 hover:bg-slate-100 rounded-sm transition-colors text-slate-500 disabled:opacity-30"
+               >
+                 <ChevronLeft className="h-4 w-4" />
+               </button>
+               <div className="flex items-center gap-1 px-3 py-1.5 border border-slate-100 rounded-sm bg-white text-[11px] font-black text-slate-900 tabular-nums shadow-inner">
+                  <span>{pageNumber}</span>
+                  <span className="text-slate-300 mx-1">/</span>
+                  <span className="text-slate-400">{numPages || "--"}</span>
+               </div>
+               <button 
+                 onClick={() => changePage(1)} 
+                 disabled={pageNumber >= numPages}
+                 className="p-2 hover:bg-slate-100 rounded-sm transition-colors text-slate-500 disabled:opacity-30"
+               >
+                 <ChevronRight className="h-4 w-4" />
+               </button>
              </div>
-             <button 
-               onClick={() => changePage(1)} 
-               disabled={pageNumber >= numPages}
-               className="p-1.5 hover:bg-slate-100 rounded-md transition-colors text-slate-500 disabled:opacity-30"
-             >
-               <ChevronRight className="h-4 w-4" />
-             </button>
-           </div>
-           <div className="h-4 w-[1px] bg-slate-200" />
+           )}
+           <div className="h-6 w-[1px] bg-slate-200" />
            <div className="flex items-center gap-1">
-              <button onClick={() => window.open(file.url, '_blank')} className="p-1.5 hover:bg-slate-100 rounded-md transition-colors text-slate-500" title="Full View"><ExternalLink className="h-4 w-4" /></button>
-              <button className="p-1.5 hover:bg-slate-100 rounded-md transition-colors text-slate-500"><Download className="h-4 w-4" /></button>
+              <button onClick={() => window.open(file.url, '_blank')} className="p-2 hover:bg-slate-100 rounded-sm transition-colors text-slate-400 hover:text-slate-900" title="Full View"><ExternalLink className="h-4 w-4" /></button>
+              <button className="p-2 hover:bg-slate-100 rounded-sm transition-colors text-slate-400 hover:text-slate-900"><Download className="h-4 w-4" /></button>
            </div>
          </div>
        </div>
 
-       {/* PDF Canvas Area */}
-       <div className="flex-1 overflow-auto bg-[#e9ecef] p-4 lg:p-10 flex justify-center custom-scrollbar scroll-smooth">
-          <div className="bg-white shadow-[0_20px_50px_rgba(0,0,0,0.15)] relative min-h-fit rounded-sm overflow-hidden ring-1 ring-black/5">
-             <Document
-               file={file.url}
-               onLoadSuccess={onDocumentLoadSuccess}
-               onLoadError={onDocumentLoadError}
-               loading={
-                 <div className="flex flex-col items-center justify-center p-20 gap-4">
-                    <RefreshCcw className="h-8 w-8 text-slate-300 animate-spin" />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Loading Forensic Asset...</span>
+        {/* 2. Document Content Area with "Paper" Aesthetic */}
+        <div className="flex-1 overflow-auto bg-[#ced4da] p-8 lg:p-12 flex justify-center custom-scrollbar scroll-smooth">
+           <div 
+              className={cn(
+                "bg-white shadow-[0_30px_60px_-12px_rgba(0,0,0,0.25),0_18px_36px_-18px_rgba(0,0,0,0.3)] relative rounded-sm overflow-hidden ring-1 ring-black/5 origin-top will-change-transform",
+                !isPdf && "transition-all duration-150 ease-out transition-transform"
+              )}
+              style={{ 
+                 width: isPdf ? 'auto' : '850px', // Standard A4-ish width for non-PDFs
+                 minHeight: isPdf ? 'auto' : '1100px',
+                 transform: isPdf ? 'none' : `scale(${scale})`,
+                 marginBottom: !isPdf ? `${(scale - 1) * 550}px` : '0', 
+                 marginTop: !isPdf ? `${(scale - 1) * 550}px` : '0'
+              }}
+           >
+              {isPdf ? (
+                 <Document
+                   file={file.url}
+                   onLoadSuccess={onDocumentLoadSuccess}
+                   onLoadError={onDocumentLoadError}
+                   loading={
+                     <div className="flex flex-col items-center justify-center p-40 gap-4">
+                        <RefreshCcw className="h-10 w-10 text-slate-300 animate-spin" />
+                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Rendering High-Fidelity PDF...</span>
+                     </div>
+                   }
+                   error={
+                     <div className="flex flex-col items-center justify-center p-20 gap-4">
+                        <AlertTriangle className="h-12 w-12 text-rose-500" />
+                        <span className="text-[10px] font-black uppercase tracking-widest text-rose-500">Failed to Load Document</span>
+                        <p className="text-[9px] text-slate-400 font-bold max-w-[200px] text-center">{error}</p>
+                     </div>
+                   }
+                 >
+                   <Page 
+                     pageNumber={pageNumber} 
+                     scale={scale}
+                     loading={
+                       <div className="flex flex-col items-center justify-center bg-slate-50/50" style={{ width: '600px', height: '800px' }}>
+                          <RefreshCcw className="h-6 w-6 text-slate-200 animate-spin mb-2" />
+                          <span className="text-[8px] font-black uppercase tracking-widest text-slate-300">Refreshing Render...</span>
+                       </div>
+                     }
+                     renderAnnotationLayer={true}
+                     renderTextLayer={true}
+                     className="shadow-sm"
+                   />
+                 </Document>
+              ) : (
+                 <div className="w-full h-full relative group/iframe" style={{ height: '1100px' }}>
+                    <iframe 
+                       src={`https://docs.google.com/viewer?url=${encodeURIComponent(file.url)}&embedded=true`} 
+                       className="w-full h-full border-none" 
+                       title="Document Preview" 
+                    />
+                    {/* Gradient overlay to make it look less like a raw iframe */}
+                    <div className="absolute inset-0 pointer-events-none border border-black/5" />
                  </div>
-               }
-               error={
-                 <div className="flex flex-col items-center justify-center p-20 gap-4">
-                    <AlertTriangle className="h-12 w-12 text-rose-500" />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-rose-500">Failed to Load Document</span>
-                    <p className="text-[9px] text-slate-400 font-bold max-w-[200px] text-center">{error}</p>
-                 </div>
-               }
-             >
-               <Page 
-                 pageNumber={pageNumber} 
-                 scale={scale} 
-                 renderAnnotationLayer={true}
-                 renderTextLayer={true}
-                 className="shadow-sm"
-               />
-             </Document>
+              )}
+           </div>
+        </div>
+
+       {/* 3. Footer Status Bar */}
+       <div className="h-8 bg-slate-100 border-t border-slate-200 flex items-center px-6 shrink-0 justify-between">
+          <div className="flex items-center gap-4">
+             <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Investigation Mode</span>
+             <div className="h-3 w-[1px] bg-slate-200" />
+             <span className="text-[9px] font-mono text-slate-400 uppercase">{isPdf ? "Adobe PDF Content" : "Embedded Office Resource"}</span>
           </div>
+          <div className="text-[9px] font-black text-slate-300 uppercase tracking-tighter">Forensic Review Interface v2.4</div>
        </div>
     </div>
   );

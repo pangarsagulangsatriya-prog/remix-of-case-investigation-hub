@@ -583,10 +583,15 @@ export default function ExtractionTab() {
 
             return (
               <div className="flex-1 overflow-y-auto custom-scrollbar">
-                  {isImage && <ImageExtractionConsole file={selectedFile} />}
-                  {isAudio && <AudioExtractionConsole file={selectedFile} onJump={jumpToAudioTime} currentTime={audioCurrentTime} />}
-                  {isVideo && <VideoAnalysisPanel file={selectedFile} currentTime={videoCurrentTime || 0} onJump={jumpToVideoTime} />}
-                  {isDocument && <DocumentExtractionConsole file={selectedFile} />}
+                  {isVideo ? (
+                    <VideoAnalysisPanel file={selectedFile} currentTime={videoCurrentTime || 0} onJump={jumpToVideoTime} />
+                  ) : isAudio ? (
+                    <AudioExtractionConsole file={selectedFile} onJump={jumpToAudioTime} currentTime={audioCurrentTime} />
+                  ) : isImage ? (
+                    <ImageExtractionConsole file={selectedFile} />
+                  ) : isDocument ? (
+                    <DocumentExtractionConsole file={selectedFile} />
+                  ) : null}
               </div>
             );
         })() : (

@@ -1213,39 +1213,48 @@ export default function AnalysisTab() {
                                                 <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">AI Entity Extraction</span>
                                              </div>
                                           </div>
-                                          
-                                           <div className="space-y-4 p-5 bg-slate-50/50 border border-slate-100 rounded-none shadow-inner">
-                                              {[
-                                                 { label: "Subject / Pelaku", key: "subject", icon: Users, color: "text-blue-600", bg: "bg-blue-50" },
-                                                 { label: "Action / Predikat", key: "action", icon: Activity, color: "text-amber-600", bg: "bg-amber-50" },
-                                                 { label: "Object / Korban-Alat", key: "object", icon: Crosshair, color: "text-rose-600", bg: "bg-rose-50" },
-                                                 { label: "Source System", key: "source_system", icon: Database, color: "text-slate-600", bg: "bg-slate-100" },
-                                                 { label: "Condition / Keterangan", key: "condition", icon: Shield, color: "text-emerald-600", bg: "bg-emerald-50" }
-                                              ].map((part) => (
-                                                 <div key={part.key} className="group/item relative">
-                                                    <div className="flex items-center gap-2 mb-1.5">
-                                                       <part.icon className={cn("h-3 w-3", part.color)} />
-                                                       <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{part.label}</span>
-                                                    </div>
-                                                    <div className={cn("px-3 py-2 border border-slate-200 rounded-none transition-all group-hover/item:border-slate-400", part.bg)}>
-                                                       <div className="text-[11px] font-black text-slate-900 leading-tight">
-                                                          {(item.breakdown?.[part.key] as any)?.value || "—"}
-                                                       </div>
-                                                       {(item.breakdown?.[part.key] as any)?.evidence && (
-                                                          <div className="mt-2 pt-2 border-t border-slate-900/5">
-                                                             <div className="flex items-center gap-1.5 mb-1 opacity-40">
-                                                                <Quote className="h-2 w-2" />
-                                                                <span className="text-[7px] font-black uppercase tracking-tighter">Situational Evidence</span>
-                                                             </div>
-                                                             <p className="text-[10px] font-bold text-slate-500 leading-relaxed italic">
-                                                                "{(item.breakdown[part.key] as any).evidence}"
-                                                             </p>
-                                                          </div>
-                                                       )}
-                                                    </div>
-                                                 </div>
-                                              ))}
-                                           </div>
+                                            <div className="space-y-4 p-5 bg-white border border-slate-100 rounded-sm">
+                                               {[
+                                                  { label: "Subject / Pelaku", key: "subject", icon: Users },
+                                                  { label: "Action / Predikat", key: "action", icon: Activity },
+                                                  { label: "Object / Korban-Alat", key: "object", icon: Crosshair },
+                                                  { label: "Source System", key: "source_system", icon: Database },
+                                                  { label: "Condition / Keterangan", key: "condition", icon: Shield }
+                                               ].map((part) => (
+                                                  <div key={part.key} className="group/item flex flex-col border border-slate-100 rounded-sm bg-white overflow-hidden hover:border-slate-300 transition-all shadow-sm">
+                                                     {/* Header */}
+                                                     <div className="p-2.5 bg-white border-b border-slate-50 flex items-center justify-between">
+                                                        <div className="flex items-center gap-2">
+                                                           <span className="px-1.5 py-0.5 bg-slate-900 text-white rounded-sm text-[8px] font-black uppercase tracking-widest">
+                                                              {part.label}
+                                                           </span>
+                                                        </div>
+                                                        <part.icon className="h-3 w-3 text-slate-300" />
+                                                     </div>
+                                                     
+                                                     {/* Body */}
+                                                     <div className="p-4">
+                                                        <div className="text-[12px] font-black text-slate-900 leading-tight mb-3">
+                                                           {(item.breakdown?.[part.key] as any)?.value || "—"}
+                                                        </div>
+                                                        
+                                                        {(item.breakdown?.[part.key] as any)?.evidence && (
+                                                           <div className="mt-2 pt-3 border-t border-slate-100">
+                                                              <div className="bg-slate-50 p-3 rounded-sm border border-slate-200 group/fact relative">
+                                                                 <div className="absolute top-0 right-0 p-1 opacity-20">
+                                                                    <Brain className="h-3 w-3" />
+                                                                 </div>
+                                                                 <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Situational Evidence</span>
+                                                                 <p className="text-[10px] font-bold text-slate-500 leading-relaxed italic">
+                                                                    "{(item.breakdown[part.key] as any).evidence}"
+                                                                 </p>
+                                                              </div>
+                                                           </div>
+                                                        )}
+                                                     </div>
+                                                  </div>
+                                               ))}
+                                            </div>
                                        </div>
 
                                        {/* B. Event Breakdown */}

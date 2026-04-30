@@ -364,61 +364,80 @@ export const imageDerivationMock = {
 export const videoDerivationMock = {
   video_metadata: {
     video_source_type: "Dashcam / Cabin Cam",
-    total_duration: "00:15",
-    scene_environment_notes: "Jalan pengangkutan tambang pada malam hari dengan pencahayaan terbatas dari lampu kendaraan."
+    total_duration: "02:24",
+    scene_environment_notes: "Interior kabin kendaraan berat di lingkungan operasi tambang pada malam hari."
   },
-  executive_video_summary: "Video merekam pergerakan kendaraan berat yang diam di jalan pengangkutan tambang pada malam hari. Tidak ada insiden kinetik atau bahaya yang terdeteksi selama durasi rekaman. Tanggul pengaman terlihat di sisi kiri jalan, namun kondisi gelap membatasi visibilitas area di luar jangkauan lampu.",
+  executive_video_summary: "Video ini merekam insiden keselamatan kerja di dalam kabin kendaraan berat (kemungkinan Dump Truck) yang beroperasi di area tambang pada malam hari. Operator menunjukkan tanda-tanda kelelahan ekstrem, termasuk menguap, menggosok wajah, dan mengalami microsleep berulang kali. Insiden puncak terjadi pada detik ke-02:14.5 ketika operator tertidur sejenak, menyebabkan kendaraan menabrak objek di depan dan operator terlempar ke arah kemudi.",
   ontology_mapping: {
     identified_objects: [
       {
-        object_class: "Equipment/Vehicle",
-        object_identifier: "Kendaraan Berat (Unit Pengamat)",
-        overall_role_or_state: "Statis (Berhenti) di jalan pengangkutan."
+        object_class: "Personnel",
+        object_identifier: "Operator_Kendaraan",
+        overall_role_or_state: "Operator mengalami kelelahan ekstrem dan microsleep berulang kali selama operasi."
       },
       {
-        object_class: "Infrastructure",
-        object_identifier: "Tanggul (Berm)",
-        overall_role_or_state: "Struktur pengaman statis di sisi kiri jalan."
+        object_class: "Equipment/Vehicle",
+        object_identifier: "Kendaraan_Berat",
+        overall_role_or_state: "Kendaraan berat beroperasi di jalan tambang dengan kecepatan bervariasi sebelum terjadi tabrakan."
       }
     ],
     kinetic_events_or_hazards: [
       {
-        event_type: "Pergerakan Kendaraan",
+        event_type: "Insiden Tabrakan",
         linked_objects: [
-          "Kendaraan Berat (Unit Pengamat)"
+          "Operator_Kendaraan",
+          "Kendaraan_Berat"
         ],
-        event_description: "Kendaraan bergerak maju perlahan di sepanjang jalan pengangkutan tanpa interaksi berbahaya dengan objek lain."
+        event_description: "Kendaraan mengalami tabrakan mendadak akibat operator tertidur (microsleep), menyebabkan operator terlempar ke depan dan menabrak kemudi."
       }
     ]
   },
   video_blocks: [
     {
-      time_block: "00:00 - 00:02",
-      visual_summary: "Layar biru solid muncul, menandakan inisialisasi kamera atau gangguan sinyal.",
-      confidence_score: "Low - Tidak ada data visual operasional.",
+      time_block: "00:00 - 00:19",
+      visual_summary: "Operator terlihat menguap lebar and menggosok wajahnya, menunjukkan tanda-tanda awal kelelahan. Kendaraan berhenti.",
+      confidence_score: "High - Visual jelas dan pencahayaan memadai.",
       critical_audio_cue: "",
       contains_critical_incident: false
     },
     {
-      time_block: "00:02 - 00:08",
-      visual_summary: "Pandangan malam hari jalan tambang dengan tanggul di sisi kiri, diterangi lampu depan.",
-      confidence_score: "Moderate - Pencahayaan rendah dan kualitas gambar malam hari.",
+      time_block: "00:19 - 00:40",
+      visual_summary: "Kendaraan bergerak hingga 40 km/h. Operator mulai mengantuk dengan mata sering tertutup (microsleep).",
+      confidence_score: "High - Visual jelas dan pencahayaan memadai.",
       critical_audio_cue: "",
       contains_critical_incident: false
     },
     {
-      time_block: "00:08 - 00:15",
-      visual_summary: "Kendaraan bergerak maju perlahan di jalan lurus tanpa objek lain dalam frame.",
-      confidence_score: "Moderate - Kondisi gelap dan minim objek referensi.",
+      time_block: "00:40 - 01:10",
+      visual_summary: "Operator menunjukkan kelelahan parah, sering menutup mata and menggosok wajah. Kecepatan turun ke 25-30 km/h.",
+      confidence_score: "High - Visual jelas dan pencahayaan memadai.",
       critical_audio_cue: "",
       contains_critical_incident: false
+    },
+    {
+      time_block: "01:10 - 02:13",
+      visual_summary: "Operator sangat mengantuk with mata hampir tertutup terus menerus. Kecepatan tetap rendah (20-30 km/h).",
+      confidence_score: "High - Visual jelas dan pencahayaan memadai.",
+      critical_audio_cue: "",
+      contains_critical_incident: false
+    },
+    {
+      time_block: "02:13 - 02:24",
+      visual_summary: "Operator tertidur sejenak sebelum kendaraan menabrak objek. Operator terlempar ke depan menabrak kemudi.",
+      confidence_score: "High - Visual jelas dan pencahayaan memadai.",
+      contains_critical_incident: true,
+      critical_incident_details: {
+        exact_timestamp: "02:14.5",
+        incident_type: "Tabrakan akibat Microsleep",
+        kinematics_description: "Kendaraan mengalami deceleration mendadak saat menabrak objek, menyebabkan operator terlempar ke depan and menabrak kemudi karena tidak menggunakan sabuk pengaman atau sabuk tidak efektif."
+      }
     }
   ],
   investigation_notes: {
     unclear_or_missing_info: [
-      "Wajah operator tidak terlihat karena sudut kamera menghadap ke depan.",
-      "Kondisi tanah di luar area yang diterangi lampu depan tidak dapat ditentukan.",
-      "Kecepatan kendaraan tercatat 0 km/jam pada overlay data, namun pergerakan visual menunjukkan adanya pergerakan maju perlahan."
+      "Kondisi jalan di luar kabin tidak terlihat karena video hanya menampilkan interior kabin (DMS).",
+      "Objek yang ditabrak tidak terlihat dalam frame video.",
+      "Tidak ada data audio yang tersedia untuk analisis suara insiden atau komunikasi operator."
     ]
   }
 };

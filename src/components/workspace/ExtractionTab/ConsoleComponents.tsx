@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { 
   Database, Info, ChevronDown, Shield, FileText, Plus, Users, 
   MessageSquare, Clock, Brain, AlertTriangle, Activity, Search,
@@ -18,15 +18,47 @@ import { supabase } from "@/lib/supabase";
 import { normalizeAudioTimestamp } from "@/lib/normalizeAudioTimestamp";
 
 export function ImageExtractionConsole({ file }: { file: any }) {
-  const [activeTab, setActiveTab] = useState<"Forensic Analysis" | "Visual Markers" | "Metadata" | "JSON">("Forensic Analysis");
-  const data = imageDerivationMock;
+  const [activeTab, setActiveTab] = useState<"Visual Markers" | "Forensic Analysis" | "Metadata">("Visual Markers");
+  const [derivationData, setDerivationData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    fetchDerivation();
+  }, [file.id, file.metadata?.image_derivation]);
+
+  const fetchDerivation = async () => {
+    setDerivationData(null);
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('evidence_image_derivation_outputs')
+        .select('*')
+        .eq('evidence_id', file.id)
+        .eq('is_active', true)
+        .single();
+      
+      if (data) {
+        setDerivationData(data.raw_json || data);
+      } else if (file?.metadata?.image_derivation) {
+        setDerivationData(file.metadata.image_derivation);
+      } else {
+        setDerivationData(imageDerivationMock);
+      }
+    } catch (e) {
+      setDerivationData(imageDerivationMock);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const data = derivationData || imageDerivationMock;
 
   return (
     <div className="flex flex-col h-full bg-white">
       {/* Tab Header - Premium Enterprise Style */}
       <div className="sticky top-0 z-40 bg-[#f8fafc] border-b border-slate-200 px-6 pt-3 flex flex-col shrink-0">
           <div className="flex items-center border-b border-slate-200 relative">
-             {(["Forensic Analysis", "Visual Markers", "Metadata", "JSON"] as const).map((tab, idx) => (
+             {(["Visual Markers", "Forensic Analysis", "Metadata"] as const).map((tab, idx) => (
                <button 
                  key={tab}
                  onClick={() => setActiveTab(tab)} 
@@ -42,23 +74,14 @@ export function ImageExtractionConsole({ file }: { file: any }) {
                  )}
                </button>
              ))}
-             <div className="ml-auto flex items-center gap-2 mb-1">
-                <div className="px-2 py-0.5 bg-slate-900 text-white text-[8px] font-black uppercase tracking-widest rounded-sm shadow-sm">VISION ENGINE V3.1</div>
-             </div>
+
           </div>
       </div>
 
       <div className="flex-1 overflow-auto custom-scrollbar">
-         {activeTab === "Forensic Analysis" && <ImageForensicView data={data} />}
          {activeTab === "Visual Markers" && <ImageMarkersView chunks={data.lossless_chunks} />}
+         {activeTab === "Forensic Analysis" && <ImageForensicView data={data} />}
          {activeTab === "Metadata" && <ImageMetadataView file={file} data={data} />}
-         {activeTab === "JSON" && (
-            <div className="p-4 bg-[#0d1117] min-h-full">
-               <pre className="text-[10px] font-mono text-[#79c0ff] bg-[#0d1117] p-6 leading-relaxed overflow-auto custom-scrollbar">
-                  {JSON.stringify(data, null, 2)}
-               </pre>
-            </div>
-         )}
       </div>
     </div>
   );
@@ -97,9 +120,11 @@ function ImageForensicView({ data }: { data: typeof imageDerivationMock }) {
            <FileText className="h-4 w-4 text-slate-900" />
            <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.2em]">Spatial Analysis Summary</h4>
         </div>
-        <div className="p-5 bg-white border border-slate-200 rounded-sm shadow-sm relative overflow-hidden group">
-           <div className="absolute top-0 left-0 w-1 h-full bg-blue-600" />
-           <p className="text-[12px] font-bold text-slate-700 leading-relaxed italic">
+        <div className="bg-slate-50 p-5 rounded-sm border border-slate-200 relative group overflow-hidden">
+           <div className="absolute top-0 right-0 p-2 opacity-10">
+              <Brain className="h-6 w-6" />
+           </div>
+           <p className="text-[12px] font-bold text-slate-700 leading-relaxed italic relative z-10">
              "{data.quick_summary_and_analysis.executive_summary}"
            </p>
         </div>
@@ -111,11 +136,17 @@ function ImageForensicView({ data }: { data: typeof imageDerivationMock }) {
            <AlertTriangle className="h-4 w-4 text-rose-600" />
            <h4 className="text-[11px] font-black text-rose-600 uppercase tracking-[0.2em]">Reconstruction Findings</h4>
         </div>
-        <div className="space-y-2.5">
+        <div className="space-y-3">
            {data.quick_summary_and_analysis.critical_findings.map((finding, idx) => (
-              <div key={idx} className="flex gap-4 p-4 bg-rose-50/30 border border-rose-100 rounded-sm hover:bg-rose-50 transition-all">
-                 <div className="h-5 w-5 bg-rose-100 text-rose-600 flex items-center justify-center rounded-[4px] text-[10px] font-black shrink-0">{idx + 1}</div>
-                 <p className="text-[11px] font-bold text-slate-800 leading-snug">{finding}</p>
+              <div key={idx} className="flex flex-col border border-slate-100 rounded-sm bg-white shadow-sm hover:border-slate-300 transition-all overflow-hidden">
+                 <div className="p-2.5 bg-white border-b border-slate-50 flex items-center justify-between">
+                    <span className="px-1.5 py-0.5 bg-slate-900 text-white rounded-sm text-[8px] font-black tabular-nums tracking-widest">
+                       FINDING #{idx + 1}
+                    </span>
+                 </div>
+                 <div className="p-4">
+                    <p className="text-[11px] font-bold text-slate-800 leading-snug">{finding}</p>
+                 </div>
               </div>
            ))}
         </div>
@@ -127,7 +158,7 @@ function ImageForensicView({ data }: { data: typeof imageDerivationMock }) {
          <div className="space-y-4">
             <div className="flex flex-wrap gap-2">
                {data.document_metadata.location_mentioned.map((loc, i) => (
-                  <span key={i} className="px-2 py-1 bg-blue-50 text-blue-600 text-[9px] font-black uppercase rounded-sm border border-blue-100">{loc}</span>
+                  <span key={i} className="px-2 py-1 bg-slate-900 text-white text-[8px] font-black uppercase rounded-sm tracking-widest">{loc}</span>
                ))}
             </div>
             <div className="p-3 bg-slate-50 border border-slate-100 rounded-sm flex items-center gap-3">
@@ -148,27 +179,38 @@ function ImageMarkersView({ chunks }: { chunks: typeof imageDerivationMock.lossl
           <span className="text-[9px] font-black text-slate-400 bg-slate-100 px-2 py-0.5 rounded uppercase">{chunks.length} Data Points</span>
        </div>
        
-       <div className="space-y-4 relative pl-4">
-          <div className="absolute left-[21px] top-4 bottom-4 w-0.5 bg-slate-100" />
+       <div className="space-y-4">
           {chunks.map((chunk) => (
-             <div key={chunk.sequence_id} className="relative group">
-                <div className="absolute -left-[24px] top-1 h-4 w-4 rounded-full bg-white border-2 border-slate-200 z-10 group-hover:border-blue-600 transition-colors flex items-center justify-center">
-                   <div className="h-1.5 w-1.5 rounded-full bg-slate-200 group-hover:bg-blue-600 transition-colors" />
+             <div key={chunk.sequence_id} className="group flex flex-col border border-slate-100 rounded-sm bg-white shadow-sm hover:border-slate-300 transition-all overflow-hidden">
+                {/* Header */}
+                <div className="p-3 bg-white border-b border-slate-50 flex items-center justify-between">
+                   <div className="flex items-center gap-2">
+                      <span className="px-1.5 py-0.5 bg-slate-900 text-white rounded-sm text-[9px] font-black tabular-nums tracking-widest">
+                         VIS-{chunk.sequence_id}
+                      </span>
+                      <span className="px-2 py-0.5 bg-blue-600 text-white text-[9px] font-black uppercase tracking-widest rounded-sm">
+                         {chunk.structural_context}
+                      </span>
+                   </div>
                 </div>
                 
-                <div className="p-4 bg-white border border-slate-200 rounded-sm hover:border-slate-400 transition-all group">
-                   <div className="flex items-center justify-between mb-3">
-                      <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest bg-blue-50 px-2 py-0.5 rounded-sm">{chunk.structural_context}</span>
-                      <span className="text-[9px] font-black text-slate-300 tabular-nums">VIS-{chunk.sequence_id}</span>
-                   </div>
-                   
-                   <p className="text-[11px] font-bold text-slate-800 leading-relaxed mb-3">
+                {/* Body */}
+                <div className="p-4">
+                   <p className="text-[11px] font-bold text-slate-800 leading-relaxed mb-4">
                       {chunk.extracted_content}
                    </p>
                    
-                   <div className="flex items-start gap-2 p-2 bg-slate-50 rounded-sm">
-                      <Search className="h-3 w-3 text-slate-300 mt-0.5" />
-                      <span className="text-[9px] font-bold text-slate-500 italic">Visual Reference: {chunk.visual_description}</span>
+                   {/* Ref Box */}
+                   <div className="mt-2 pt-3 border-t border-slate-100">
+                      <div className="bg-slate-50 p-3 rounded-sm border border-slate-200 group/fact relative">
+                         <div className="absolute top-0 right-0 p-1 opacity-20">
+                            <Search className="h-3 w-3" />
+                         </div>
+                         <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Visual Reference</span>
+                         <p className="text-[10px] font-bold text-slate-500 italic leading-snug">
+                            {chunk.visual_description}
+                         </p>
+                      </div>
                    </div>
                 </div>
              </div>
@@ -218,15 +260,47 @@ function ImageMetadataView({ file, data }: { file: any, data: typeof imageDeriva
 
 
 export function DocumentExtractionConsole({ file }: { file: any }) {
-  const [activeTab, setActiveTab] = useState<"Forensic Analysis" | "Sequence Chunks" | "Metadata" | "JSON">("Forensic Analysis");
-  const data = documentDerivationMock;
+  const [activeTab, setActiveTab] = useState<"Sequence Chunks" | "Forensic Analysis" | "Metadata">("Sequence Chunks");
+  const [derivationData, setDerivationData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    fetchDerivation();
+  }, [file.id, file.metadata?.document_derivation]);
+
+  const fetchDerivation = async () => {
+    setDerivationData(null);
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('evidence_document_derivation_outputs')
+        .select('*')
+        .eq('evidence_id', file.id)
+        .eq('is_active', true)
+        .single();
+      
+      if (data) {
+        setDerivationData(data.raw_json || data);
+      } else if (file?.metadata?.document_derivation) {
+        setDerivationData(file.metadata.document_derivation);
+      } else {
+        setDerivationData(documentDerivationMock);
+      }
+    } catch (e) {
+      setDerivationData(documentDerivationMock);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const data = derivationData || documentDerivationMock;
 
   return (
     <div className="flex flex-col h-full bg-white">
       {/* Tab Header - Premium Enterprise Style */}
       <div className="sticky top-0 z-40 bg-[#f8fafc] border-b border-slate-200 px-6 pt-3 flex flex-col shrink-0">
           <div className="flex items-center border-b border-slate-200 relative">
-             {(["Forensic Analysis", "Sequence Chunks", "Metadata", "JSON"] as const).map((tab, idx) => (
+             {(["Sequence Chunks", "Forensic Analysis", "Metadata"] as const).map((tab, idx) => (
                <button 
                  key={tab}
                  onClick={() => setActiveTab(tab)} 
@@ -242,23 +316,14 @@ export function DocumentExtractionConsole({ file }: { file: any }) {
                  )}
                </button>
              ))}
-             <div className="ml-auto flex items-center gap-2 mb-1">
-                <div className="px-2 py-0.5 bg-slate-900 text-white text-[8px] font-black uppercase tracking-widest rounded-sm shadow-sm">DERIVATION V2.1</div>
-             </div>
+
           </div>
       </div>
 
       <div className="flex-1 overflow-auto custom-scrollbar">
-         {activeTab === "Forensic Analysis" && <DocumentForensicView data={data} />}
          {activeTab === "Sequence Chunks" && <DocumentChunksView chunks={data.lossless_chunks} />}
+         {activeTab === "Forensic Analysis" && <DocumentForensicView data={data} />}
          {activeTab === "Metadata" && <DocumentMetadataView file={file} data={data} />}
-         {activeTab === "JSON" && (
-            <div className="p-4 bg-[#0d1117] min-h-full">
-               <pre className="text-[10px] font-mono text-[#79c0ff] bg-[#0d1117] p-6 leading-relaxed overflow-auto custom-scrollbar">
-                  {JSON.stringify(data, null, 2)}
-               </pre>
-            </div>
-         )}
       </div>
     </div>
   );
@@ -300,9 +365,11 @@ function DocumentForensicView({ data }: { data: typeof documentDerivationMock })
            <FileText className="h-4 w-4 text-slate-900" />
            <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.2em]">Executive Summary</h4>
         </div>
-        <div className="p-5 bg-white border border-slate-200 rounded-sm shadow-sm relative overflow-hidden group">
-           <div className="absolute top-0 left-0 w-1 h-full bg-slate-900 group-hover:bg-primary transition-colors" />
-           <p className="text-[12px] font-bold text-slate-700 leading-relaxed italic">
+        <div className="bg-slate-50 p-5 rounded-sm border border-slate-200 relative group overflow-hidden">
+           <div className="absolute top-0 right-0 p-2 opacity-10">
+              <Brain className="h-6 w-6" />
+           </div>
+           <p className="text-[12px] font-bold text-slate-700 leading-relaxed italic relative z-10">
              "{data.quick_summary_and_analysis.executive_summary}"
            </p>
         </div>
@@ -314,11 +381,17 @@ function DocumentForensicView({ data }: { data: typeof documentDerivationMock })
            <AlertTriangle className="h-4 w-4 text-rose-600" />
            <h4 className="text-[11px] font-black text-rose-600 uppercase tracking-[0.2em]">Critical Findings</h4>
         </div>
-        <div className="space-y-2.5">
+        <div className="space-y-3">
            {data.quick_summary_and_analysis.critical_findings.map((finding, idx) => (
-              <div key={idx} className="flex gap-4 p-4 bg-rose-50/30 border border-rose-100 rounded-sm hover:bg-rose-50 transition-all">
-                 <span className="text-[10px] font-black text-rose-400 tabular-nums pt-0.5">{String(idx + 1).padStart(2, '0')}</span>
-                 <p className="text-[11px] font-bold text-slate-800 leading-snug">{finding}</p>
+              <div key={idx} className="flex flex-col border border-slate-100 rounded-sm bg-white shadow-sm hover:border-slate-900 transition-all overflow-hidden">
+                 <div className="p-2.5 bg-white border-b border-slate-50 flex items-center justify-between">
+                    <span className="px-1.5 py-0.5 bg-slate-900 text-white rounded-sm text-[8px] font-black tabular-nums tracking-widest">
+                       FINDING #{idx + 1}
+                    </span>
+                 </div>
+                 <div className="p-4">
+                    <p className="text-[11px] font-bold text-slate-800 leading-snug">{finding}</p>
+                 </div>
               </div>
            ))}
         </div>
@@ -330,7 +403,7 @@ function DocumentForensicView({ data }: { data: typeof documentDerivationMock })
             <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b pb-2">Location Context</h4>
             <div className="flex flex-wrap gap-2">
                {data.document_metadata.location_mentioned.map((loc, i) => (
-                  <span key={i} className="px-2 py-1 bg-slate-100 text-slate-600 text-[9px] font-black uppercase rounded-sm border border-slate-200">{loc}</span>
+                  <span key={i} className="px-2 py-1 bg-slate-900 text-white text-[8px] font-black uppercase rounded-sm tracking-widest">{loc}</span>
                ))}
             </div>
          </div>
@@ -358,34 +431,41 @@ function DocumentChunksView({ chunks }: { chunks: typeof documentDerivationMock.
           <span className="text-[9px] font-black text-slate-400 bg-slate-100 px-2 py-0.5 rounded uppercase">{chunks.length} Units</span>
        </div>
        
-       <div className="space-y-8 relative pl-4">
-          <div className="absolute left-[21px] top-4 bottom-4 w-0.5 bg-slate-100" />
-          
-          {chunks.map((chunk, idx) => (
-             <div key={chunk.sequence_id} className="relative group">
-                {/* Timeline Node */}
-                <div className="absolute -left-[24px] top-1 h-4 w-4 rounded-full bg-white border-2 border-slate-200 z-10 group-hover:border-slate-900 transition-colors flex items-center justify-center">
-                   <div className="h-1.5 w-1.5 rounded-full bg-slate-200 group-hover:bg-slate-900 transition-colors" />
+       <div className="space-y-4">
+          {chunks.map((chunk) => (
+             <div key={chunk.sequence_id} className="group flex flex-col border border-slate-100 rounded-sm bg-white shadow-sm hover:border-slate-900 transition-all overflow-hidden">
+                {/* Header */}
+                <div className="p-3 bg-white border-b border-slate-50 flex items-center justify-between">
+                   <div className="flex items-center gap-2">
+                      <span className="px-1.5 py-0.5 bg-slate-900 text-white rounded-sm text-[9px] font-black tabular-nums tracking-widest">
+                         CHUNK {chunk.sequence_id}
+                      </span>
+                      <span className="px-2 py-0.5 bg-blue-600 text-white text-[9px] font-black uppercase tracking-widest rounded-sm">
+                         {chunk.structural_context}
+                      </span>
+                   </div>
                 </div>
                 
-                <div className="space-y-3">
-                   <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest bg-slate-100 px-2 py-0.5 rounded-sm">{chunk.structural_context}</span>
-                      <span className="text-[9px] font-black text-slate-300 tabular-nums">CHUNK #{chunk.sequence_id}</span>
-                   </div>
+                {/* Body */}
+                <div className="p-4">
+                   <p className="text-[11px] font-bold text-slate-800 leading-relaxed mb-4">
+                      {chunk.extracted_content}
+                   </p>
                    
-                   <div className="p-4 bg-white border border-slate-200 rounded-sm shadow-sm group-hover:border-slate-400 transition-all">
-                      <p className="text-[11px] font-bold text-slate-800 leading-relaxed">
-                         {chunk.extracted_content}
-                      </p>
-                      
-                      {chunk.visual_description && (
-                         <div className="mt-3 pt-3 border-t border-slate-50 flex items-start gap-2">
-                            <Search className="h-3 w-3 text-slate-300 mt-0.5" />
-                            <span className="text-[9px] font-bold text-slate-400 italic">Visual Reference: {chunk.visual_description}</span>
+                   {/* Ref Box */}
+                   {chunk.visual_description && (
+                      <div className="mt-2 pt-3 border-t border-slate-100">
+                         <div className="bg-slate-50 p-3 rounded-sm border border-slate-200 group/fact relative">
+                            <div className="absolute top-0 right-0 p-1 opacity-20">
+                               <Brain className="h-3 w-3" />
+                            </div>
+                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Extracted Action / Fact</span>
+                            <p className="text-[10px] font-bold text-slate-500 italic leading-snug">
+                               {chunk.visual_description}
+                            </p>
                          </div>
-                      )}
-                   </div>
+                      </div>
+                   )}
                 </div>
              </div>
           ))}
@@ -445,7 +525,7 @@ export function AudioExtractionConsole({ file, onJump, currentTime }: { file: an
 
   useEffect(() => {
     fetchDerivation();
-  }, [file.id]);
+  }, [file.id, file.metadata?.audio_derivation]);
 
   const fetchDerivation = async () => {
     setIsLoading(true);
@@ -1189,15 +1269,59 @@ function DiarizationSegment({ seg, active, isNext, onJump }: { seg: any, active:
 }
 
 export function VideoAnalysisPanel({ file, currentTime, onJump }: { file: any, currentTime: number, onJump: (s: number) => void }) {
-  const [activeTab, setActiveTab] = useState<"Forensic Analysis" | "Sequence Blocks" | "Ontology Map" | "Metadata" | "JSON">("Forensic Analysis");
-  const data = videoDerivationMock;
+  const [activeTab, setActiveTab] = useState<"Sequence Blocks" | "Forensic Analysis" | "Ontology Map" | "Metadata">("Sequence Blocks");
+  const [derivationData, setDerivationData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    fetchDerivation();
+  }, [file.id, file.metadata?.video_derivation]);
+
+  const fetchDerivation = async () => {
+    setDerivationData(null);
+    setIsLoading(true);
+    try {
+      // 1. Try specialized table
+      const { data, error } = await supabase
+        .from('evidence_video_derivation_outputs')
+        .select('*')
+        .eq('evidence_id', file.id)
+        .eq('is_active', true)
+        .single();
+      
+      if (data) {
+        setDerivationData(data.raw_json || data);
+      } else {
+        // 2. Fallback to file metadata
+        if (file?.metadata?.video_derivation) {
+           setDerivationData(file.metadata.video_derivation);
+        } else {
+           // 3. Last ditch: check if we can fetch the file again to get latest metadata
+           const { data: latestFile } = await supabase.from('evidence_files').select('metadata').eq('id', file.id).single();
+           if (latestFile?.metadata?.video_derivation) {
+              setDerivationData(latestFile.metadata.video_derivation);
+           } else {
+              // 4. Default Mock
+              setDerivationData(videoDerivationMock);
+           }
+        }
+      }
+    } catch (e) {
+      console.error(e);
+      setDerivationData(videoDerivationMock);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const data = derivationData || videoDerivationMock;
 
   return (
     <div className="flex flex-col h-full bg-white">
       {/* Tab Header - Premium Enterprise Style */}
       <div className="sticky top-0 z-40 bg-[#f8fafc] border-b border-slate-200 px-6 pt-3 flex flex-col shrink-0">
           <div className="flex items-center border-b border-slate-200 relative">
-             {(["Forensic Analysis", "Sequence Blocks", "Ontology Map", "Metadata", "JSON"] as const).map((tab, idx) => (
+             {(["Sequence Blocks", "Forensic Analysis", "Ontology Map", "Metadata"] as const).map((tab, idx) => (
                <button 
                  key={tab}
                  onClick={() => setActiveTab(tab)} 
@@ -1213,24 +1337,15 @@ export function VideoAnalysisPanel({ file, currentTime, onJump }: { file: any, c
                  )}
                </button>
              ))}
-             <div className="ml-auto flex items-center gap-2 mb-1">
-                <div className="px-2 py-0.5 bg-slate-900 text-white text-[8px] font-black uppercase tracking-widest rounded-sm shadow-sm">VIDEO ENGINE V4.0</div>
-             </div>
+
           </div>
       </div>
 
       <div className="flex-1 overflow-auto custom-scrollbar">
+         {activeTab === "Sequence Blocks" && <VideoBlocksView blocks={data.video_blocks} onJump={onJump} currentTime={currentTime} />}
          {activeTab === "Forensic Analysis" && <VideoForensicView data={data} />}
-         {activeTab === "Sequence Blocks" && <VideoBlocksView blocks={data.video_blocks} onJump={onJump} />}
          {activeTab === "Ontology Map" && <VideoOntologyView ontology={data.ontology_mapping} />}
          {activeTab === "Metadata" && <VideoMetadataView file={file} data={data} />}
-         {activeTab === "JSON" && (
-            <div className="p-4 bg-[#0d1117] min-h-full">
-               <pre className="text-[10px] font-mono text-[#79c0ff] bg-[#0d1117] p-6 leading-relaxed overflow-auto custom-scrollbar">
-                  {JSON.stringify(data, null, 2)}
-               </pre>
-            </div>
-         )}
       </div>
     </div>
   );
@@ -1298,57 +1413,231 @@ function VideoForensicView({ data }: { data: typeof videoDerivationMock }) {
   );
 }
 
-function VideoBlocksView({ blocks, onJump }: { blocks: typeof videoDerivationMock.video_blocks, onJump: (s: number) => void }) {
-  const parseSeconds = (timeStr: string) => {
-    const start = timeStr.split(' - ')[0];
-    const [m, s] = start.split(':').map(Number);
-    return m * 60 + s;
+function VideoBlocksView({ blocks, onJump, currentTime }: { blocks: any[], onJump: (s: number) => void, currentTime: number }) {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
+
+  const getS = (s: string) => {
+    if (!s) return 0;
+    const parts = s.split(':').map(Number);
+    if (parts.length === 2) return parts[0] * 60 + parts[1];
+    return Number(s) || 0;
   };
 
+  const parseStartSeconds = (timeStr: string) => {
+    const start = timeStr.split(' - ')[0];
+    const parts = start.split(':').map(Number);
+    if (parts.length === 2) return parts[0] * 60 + parts[1];
+    return Number(start) || 0;
+  };
+
+  const parseEndSeconds = (timeStr: string) => {
+    const end = timeStr.split(' - ')[1];
+    const parts = end.split(':').map(Number);
+    if (parts.length === 2) return parts[0] * 60 + parts[1];
+    return Number(end) || 0;
+  };
+
+  const isSegmentActive = (block: any, idx: number) => {
+    const s = parseStartSeconds(block.time_block);
+    const e = parseEndSeconds(block.time_block);
+    // Non-overlapping boundaries: [start, end)
+    // For the last block, make it inclusive
+    const isLast = idx === filteredData.length - 1;
+    return currentTime >= s && (isLast ? currentTime <= e : currentTime < e);
+  };
+
+  const filteredData = useMemo(() => {
+    return blocks.filter((block: any) => {
+      const text = block.visual_summary || "";
+      const matchesSearch = text.toLowerCase().includes(searchQuery.toLowerCase());
+      const blockStart = parseStartSeconds(block.time_block);
+      const filterStart = startTime ? getS(startTime) : 0;
+      const filterEnd = endTime ? getS(endTime) : Infinity;
+      return matchesSearch && blockStart >= filterStart && blockStart <= filterEnd;
+    });
+  }, [blocks, searchQuery, startTime, endTime]);
+
+  const criticalIncidents = blocks.filter((b: any) => b.contains_critical_incident);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  // Auto-expand the active segment
+  useEffect(() => {
+    const activeBlock = blocks.find(b => isSegmentActive(b));
+    if (activeBlock) {
+      setExpandedId(activeBlock.time_block);
+    }
+  }, [currentTime]);
+
   return (
-    <div className="p-6 space-y-6 animate-in fade-in duration-500">
-       <div className="flex items-center justify-between mb-4">
-          <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.2em]">Sequential Analysis Blocks</h4>
-          <span className="text-[9px] font-black text-slate-400 bg-slate-100 px-2 py-0.5 rounded uppercase">{blocks.length} Blocks Detected</span>
-       </div>
-       
-       <div className="space-y-4 relative pl-4">
-          <div className="absolute left-[21px] top-4 bottom-4 w-0.5 bg-slate-100" />
-          {blocks.map((block, idx) => (
-             <div 
-               key={idx} 
-               onClick={() => onJump(parseSeconds(block.time_block))}
-               className="relative group cursor-pointer"
-             >
-                <div className="absolute -left-[24px] top-1 h-4 w-4 rounded-full bg-white border-2 border-slate-200 z-10 group-hover:border-blue-600 transition-colors flex items-center justify-center">
-                   <div className="h-1.5 w-1.5 rounded-full bg-slate-200 group-hover:bg-blue-600 transition-colors" />
-                </div>
-                
-                <div className="p-4 bg-white border border-slate-200 rounded-sm group-hover:border-slate-400 group-hover:shadow-md transition-all">
-                   <div className="flex items-center justify-between mb-3">
-                      <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest bg-blue-50 px-2 py-0.5 rounded-sm tabular-nums">{block.time_block}</span>
-                      <ConfidenceChip level={block.confidence_score.split(' - ')[0].toLowerCase() as any} />
-                   </div>
-                   
-                   <p className="text-[11px] font-bold text-slate-800 leading-relaxed mb-3 group-hover:text-blue-700 transition-colors">
-                      {block.visual_summary}
-                   </p>
-                   
-                   {block.contains_critical_incident && (
-                      <div className="flex items-center gap-2 p-2 bg-rose-50 text-rose-600 rounded-sm mb-3">
-                         <AlertTriangle className="h-3 w-3" />
-                         <span className="text-[9px] font-black uppercase tracking-widest">Incident Identified</span>
-                      </div>
-                   )}
-                   
-                   <div className="flex items-center gap-2 pt-3 border-t border-slate-100">
-                      <div className="h-1 w-1 rounded-full bg-slate-300" />
-                      <span className="text-[9px] font-bold text-slate-400 italic leading-none">{block.confidence_score}</span>
-                   </div>
+    <div className="flex flex-col h-full bg-white">
+       {/* Search Header */}
+       <div className="px-6 py-4 border-b border-slate-100 bg-white sticky top-0 z-30 flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+             <div className="flex items-center gap-2">
+                <span className="text-[11px] font-bold text-slate-900 uppercase tracking-tight">Sequential Analysis</span>
+                <div className="h-1 w-1 bg-slate-300 rounded-full" />
+                <div className="flex items-center gap-3 text-[10px] font-mono text-slate-400 uppercase tabular-nums tracking-tighter">
+                   <span>{filteredData.length} Results</span>
                 </div>
              </div>
-          ))}
+             
+              {criticalIncidents.length > 0 && (
+                <button 
+                  onClick={() => {
+                    const block = criticalIncidents[0];
+                    const targetTime = parseStartSeconds(block.time_block);
+                    onJump(targetTime);
+                    setExpandedId(block.time_block);
+                  }}
+                  className="flex items-center gap-1.5 px-2 py-1 bg-rose-50 text-rose-600 border border-rose-100 rounded-sm text-[9px] font-black uppercase tracking-widest hover:bg-rose-100 transition-all hover:scale-105 active:scale-95"
+                >
+                  <AlertTriangle className="h-3 w-3" />
+                  Jump to Incident
+                </button>
+              )}
+          </div>
+          <div className="flex gap-2">
+             <div className="relative group flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400 group-focus-within:text-slate-900 transition-colors" />
+                <input 
+                   type="text" 
+                   placeholder="Search visual summary..."
+                   value={searchQuery}
+                   onChange={(e) => setSearchQuery(e.target.value)}
+                   className="w-full bg-slate-50/50 border border-slate-100 px-9 py-2 text-[10px] font-medium focus:bg-white focus:border-slate-900 focus:ring-0 outline-none transition-all rounded-sm placeholder:text-slate-400"
+                />
+             </div>
+             
+             <div className="relative group w-[140px]">
+                <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400 group-focus-within:text-slate-900 transition-colors" />
+                <select 
+                   className="w-full bg-slate-50/50 border border-slate-100 pl-9 pr-8 py-2 text-[10px] font-bold uppercase tracking-tight focus:bg-white focus:border-slate-900 focus:ring-0 outline-none transition-all rounded-sm appearance-none cursor-pointer text-slate-600 truncate"
+                   onChange={(e) => {
+                     const val = e.target.value;
+                     if (!val) {
+                       setStartTime("");
+                       setEndTime("");
+                     } else {
+                       const [s, eTime] = val.split('|');
+                       setStartTime(s);
+                       setEndTime(eTime);
+                     }
+                   }}
+                >
+                   <option value="">All Time</option>
+                   {blocks.map((block: any, idx: number) => (
+                     <option key={idx} value={`${block.time_block.split(' - ')[0]}|${block.time_block.split(' - ')[1]}`}>
+                       {block.time_block}
+                     </option>
+                   ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400 pointer-events-none" />
+             </div>
+          </div>
        </div>
+
+       <div className="flex-1 overflow-auto custom-scrollbar p-4 space-y-4">
+         {filteredData.map((block: any, idx: number) => (
+           <VideoBlockSegment 
+              key={idx}
+              block={block}
+              active={isSegmentActive(block, idx)}
+              isExpanded={expandedId === block.time_block}
+              onToggle={() => setExpandedId(expandedId === block.time_block ? null : block.time_block)}
+              onJump={() => {
+                onJump(parseStartSeconds(block.time_block));
+                setExpandedId(block.time_block);
+              }}
+           />
+         ))}
+       </div>
+    </div>
+  );
+}
+
+function VideoBlockSegment({ block, active, isExpanded, onToggle, onJump }: { block: any, active: boolean, isExpanded: boolean, onToggle: () => void, onJump: () => void }) {
+  const elementRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (active) {
+      // Only scroll if not already in view to avoid jarring jumps
+      elementRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [active]);
+
+  return (
+    <div 
+       ref={elementRef}
+       className={cn(
+          "flex flex-col border transition-all duration-300 cursor-pointer overflow-hidden rounded-sm relative",
+          active ? "border-slate-900 bg-white shadow-md z-10 scale-[1.01]" : "border-slate-100 hover:border-slate-300 bg-white shadow-sm hover:translate-x-1"
+       )}
+       onClick={() => {
+          onJump();
+       }}
+    >
+       {active && <div className="absolute top-0 left-0 bottom-0 w-1 bg-slate-900" />}
+       <div className="p-3 bg-white flex items-center justify-between border-b border-slate-50">
+          <div className="flex items-center gap-2">
+             <span className={cn(
+                "px-1.5 py-0.5 rounded-sm text-[9px] font-black tabular-nums tracking-widest border transition-colors",
+                active ? "bg-slate-900 text-white border-slate-900" : "bg-slate-50 text-slate-500 border-slate-100"
+             )}>
+                {block.time_block}
+             </span>
+             <ConfidenceChip level={block.confidence_score.split(' - ')[0].toLowerCase() as any} />
+          </div>
+          
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggle();
+            }}
+            className="p-1 hover:bg-slate-50 rounded transition-all"
+          >
+             <ChevronDown className={cn("h-3 w-3 text-slate-400 transition-transform", isExpanded ? "rotate-180" : "")} />
+          </button>
+       </div>
+
+       <div className="p-4 bg-white">
+          <p className={cn(
+             "text-[11px] font-bold leading-relaxed transition-colors",
+             active ? "text-slate-900" : "text-slate-600"
+          )}>
+             {block.visual_summary}
+          </p>
+       </div>
+
+       {isExpanded && (
+          <div className="px-4 pb-4 bg-white space-y-3 animate-in fade-in slide-in-from-top-1">
+             <div className="flex items-center gap-2 pt-1">
+                <div className="h-1 w-1 rounded-full bg-slate-300" />
+                <span className="text-[9px] font-bold text-slate-400 italic leading-none">{block.confidence_score}</span>
+             </div>
+
+             {block.contains_critical_incident && block.critical_incident_details && (
+                <div className="mt-2 pt-3 border-t border-slate-100">
+                   <div className="bg-rose-50 p-4 rounded-sm border border-rose-100 group/incident relative">
+                      <div className="absolute top-0 right-0 p-2 opacity-20 text-rose-600">
+                         <AlertTriangle className="h-4 w-4" />
+                      </div>
+                      <div className="flex items-center gap-2 mb-2">
+                         <span className="px-2 py-0.5 bg-rose-600 text-white text-[8px] font-black uppercase tracking-widest rounded-sm">Critical Incident</span>
+                         <span className="text-[10px] font-black text-rose-600 tabular-nums bg-white px-2 py-0.5 rounded-sm border border-rose-200">
+                            T = {block.critical_incident_details.exact_timestamp}
+                         </span>
+                      </div>
+                      <h5 className="text-[11px] font-black text-slate-900 uppercase mb-1">{block.critical_incident_details.incident_type}</h5>
+                      <p className="text-[10px] font-bold text-slate-700 leading-snug italic">
+                         {block.critical_incident_details.kinematics_description}
+                      </p>
+                   </div>
+                </div>
+             )}
+          </div>
+       )}
     </div>
   );
 }
