@@ -571,14 +571,23 @@ export default function ExtractionTab() {
       </div>
 
       <div className="w-[460px] border-l border-slate-200 bg-white flex flex-col shrink-0 z-20 shadow-[-2px_0_10px_rgba(0,0,0,0.03)] overflow-hidden">
-        {selectedFile ? (
-            <div className="flex-1 overflow-y-auto custom-scrollbar">
-                {selectedFile.type === "Image" && <ImageExtractionConsole file={selectedFile} />}
-                {selectedFile.type === "Audio" && <AudioExtractionConsole file={selectedFile} onJump={jumpToAudioTime} currentTime={audioCurrentTime} />}
-                {selectedFile.type === "Video" && <VideoAnalysisPanel file={selectedFile} currentTime={videoCurrentTime || 0} onJump={jumpToVideoTime} />}
-                {selectedFile.type === "Document" && <DocumentExtractionConsole file={selectedFile} />}
-            </div>
-        ) : (
+        {selectedFile ? (() => {
+            const lowerType = selectedFile.type?.toLowerCase();
+            const lowerName = selectedFile.name?.toLowerCase() || "";
+            const isImage = lowerType === "image" || lowerName.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/);
+            const isAudio = lowerType === "audio" || lowerName.match(/\.(mp3|wav|ogg|m4a|aac)$/);
+            const isVideo = lowerType === "video" || lowerName.match(/\.(mp4|webm|ogg|mov|m4v|avi|wmv)$/);
+            const isDocument = lowerType === "document" || lowerName.match(/\.(pdf|doc|docx|txt|rtf|xls|xlsx|csv)$/);
+
+            return (
+              <div className="flex-1 overflow-y-auto custom-scrollbar">
+                  {isImage && <ImageExtractionConsole file={selectedFile} />}
+                  {isAudio && <AudioExtractionConsole file={selectedFile} onJump={jumpToAudioTime} currentTime={audioCurrentTime} />}
+                  {isVideo && <VideoAnalysisPanel file={selectedFile} currentTime={videoCurrentTime || 0} onJump={jumpToVideoTime} />}
+                  {isDocument && <DocumentExtractionConsole file={selectedFile} />}
+              </div>
+            );
+        })() : (
           <div className="flex-1 flex flex-col items-center justify-center text-center p-12 opacity-30 grayscale saturate-0">
              <Cpu className="h-12 w-12 text-slate-200 mb-6" />
              <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900">Forensic Engine Standby</h3>
@@ -655,7 +664,7 @@ export default function ExtractionTab() {
         <div className="p-6 space-y-6">
           <div className="flex gap-4 p-4 bg-slate-50 rounded border border-slate-100">
             <div className="h-10 w-10 bg-white rounded flex items-center justify-center border shadow-sm shrink-0">
-              {fileToRerun && getFileIcon(fileToRerun.type)}
+              {fileToRerun && getFileIcon(fileToRerun.type, fileToRerun.name)}
             </div>
             <div className="space-y-1">
               <p className="text-[11px] font-black text-slate-900 uppercase tracking-widest truncate max-w-[300px]">{fileToRerun?.name}</p>

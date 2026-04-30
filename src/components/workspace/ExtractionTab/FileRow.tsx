@@ -19,14 +19,21 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
-export const getFileIcon = (type: string) => {
-  switch (type) {
-    case "Image": return <ImageIcon className="h-4 w-4 text-emerald-500" />;
-    case "Audio": return <AudioIcon className="h-4 w-4 text-indigo-500" />;
-    case "Video": return <VideoIcon className="h-4 w-4 text-rose-500" />;
-    case "Document": return <FileText className="h-4 w-4 text-amber-500" />;
-    default: return <FileCode className="h-4 w-4 text-slate-400" />;
-  }
+export const getFileIcon = (type: string, name: string = "") => {
+  const lowerType = type?.toLowerCase();
+  const lowerName = name?.toLowerCase();
+
+  const isImage = lowerType === "image" || lowerName.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/);
+  const isAudio = lowerType === "audio" || lowerName.match(/\.(mp3|wav|ogg|m4a|aac)$/);
+  const isVideo = lowerType === "video" || lowerName.match(/\.(mp4|webm|ogg|mov|m4v|avi|wmv)$/);
+  const isDocument = lowerType === "document" || lowerName.match(/\.(pdf|doc|docx|txt|rtf|xls|xlsx|csv)$/);
+
+  if (isImage) return <ImageIcon className="h-4 w-4 text-emerald-500" />;
+  if (isAudio) return <AudioIcon className="h-4 w-4 text-indigo-500" />;
+  if (isVideo) return <VideoIcon className="h-4 w-4 text-rose-500" />;
+  if (isDocument) return <FileText className="h-4 w-4 text-amber-500" />;
+  
+  return <FileCode className="h-4 w-4 text-slate-400" />;
 };
 
 const formatSize = (size: any) => {
@@ -64,7 +71,7 @@ export function FileRow({ file, isSelected, onSelect, onMove, onDelete, onRename
         "h-8 w-8 rounded-[4px] flex items-center justify-center shrink-0 border transition-all",
         isSelected ? "bg-white border-slate-200" : "bg-slate-50 border-slate-100 group-hover:bg-white"
       )}>
-        {getFileIcon(file.type)}
+        {getFileIcon(file.type, file.name)}
       </div>
 
       {/* Middle Content */}

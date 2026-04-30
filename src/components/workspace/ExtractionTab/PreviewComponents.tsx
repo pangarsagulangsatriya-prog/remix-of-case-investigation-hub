@@ -31,10 +31,19 @@ export function AdaptiveSourcePreview({
   videoCurrentTime, setVideoCurrentTime, videoIsPlaying, setVideoIsPlaying, videoRef,
   audioCurrentTime, setAudioCurrentTime, audioIsPlaying, setAudioIsPlaying, audioPlaybackSpeed, setAudioPlaybackSpeed, audioRef
 }: any) {
-  if (file.type === "Image") return <ImagePreview file={file} />;
-  if (file.type === "Audio") return <AudioPreview file={file} currentTime={audioCurrentTime} setCurrentTime={setAudioCurrentTime} isPlaying={audioIsPlaying} setIsPlaying={setAudioIsPlaying} playbackSpeed={audioPlaybackSpeed} setPlaybackSpeed={setAudioPlaybackSpeed} audioRef={audioRef} />;
-  if (file.type === "Video") return <VideoPreview file={file} currentTime={videoCurrentTime} setCurrentTime={setVideoCurrentTime} isPlaying={videoIsPlaying} setIsPlaying={setVideoIsPlaying} videoRef={videoRef} />;
-  if (file.type === "Document") return <DocumentPreview file={file} />;
+  const lowerType = file.type?.toLowerCase();
+  const lowerName = file.name?.toLowerCase() || "";
+
+  const isImage = lowerType === "image" || lowerName.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/);
+  const isAudio = lowerType === "audio" || lowerName.match(/\.(mp3|wav|ogg|m4a|aac)$/);
+  const isVideo = lowerType === "video" || lowerName.match(/\.(mp4|webm|ogg|mov|m4v|avi|wmv)$/);
+  const isDocument = lowerType === "document" || lowerName.match(/\.(pdf|doc|docx|txt|rtf|xls|xlsx|csv)$/);
+
+  if (isImage) return <ImagePreview file={file} />;
+  if (isAudio) return <AudioPreview file={file} currentTime={audioCurrentTime} setCurrentTime={setAudioCurrentTime} isPlaying={audioIsPlaying} setIsPlaying={setAudioIsPlaying} playbackSpeed={audioPlaybackSpeed} setPlaybackSpeed={setAudioPlaybackSpeed} audioRef={audioRef} />;
+  if (isVideo) return <VideoPreview file={file} currentTime={videoCurrentTime} setCurrentTime={setVideoCurrentTime} isPlaying={videoIsPlaying} setIsPlaying={setVideoIsPlaying} videoRef={videoRef} />;
+  if (isDocument) return <DocumentPreview file={file} />;
+
   return (
     <div className="flex flex-col items-center justify-center p-20 text-slate-300 opacity-50 bg-white/50 rounded-sm border-2 border-dashed border-slate-200">
        <Folders className="h-12 w-12 mb-4" />
