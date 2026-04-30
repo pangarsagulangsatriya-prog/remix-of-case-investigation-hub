@@ -57,14 +57,24 @@ export default function CaseWorkspacePage() {
 
   useEffect(() => {
     const checkDemo = async () => {
-      const { count } = await supabase
-        .from('evidence_audio_derivation_outputs')
-        .select('*', { count: 'exact', head: true })
-        .eq('case_id', caseId)
-        .eq('is_active', true)
-        .eq('is_demo_override', true);
-      
-      setHasDemoDerivation((count || 0) > 0);
+      try {
+        const { count, error } = await supabase
+          .from('evidence_audio_derivation_outputs')
+          .select('*', { count: 'exact', head: true })
+          .eq('case_id', caseId)
+          .eq('is_active', true)
+          .eq('is_demo_override', true);
+        
+        if (error) {
+          // Silent fail if table missing
+          setHasDemoDerivation(false);
+          return;
+        }
+        
+        setHasDemoDerivation((count || 0) > 0);
+      } catch (e) {
+        setHasDemoDerivation(false);
+      }
     };
     if (caseId) checkDemo();
   }, [caseId]);

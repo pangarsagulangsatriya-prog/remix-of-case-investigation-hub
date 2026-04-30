@@ -13,7 +13,7 @@ import {
 import { cn } from "@/lib/utils";
 import { SectionHeader, KVP, StatusPill } from "../WorkspacePrimitives";
 import { ConfidenceChip } from "../../StatusChip";
-import { SECTION_DESCRIPTIONS, videoExtractionRefined, documentDerivationMock, imageDerivationMock, videoDerivationMock } from "@/data/mockData";
+import { SECTION_DESCRIPTIONS, videoExtractionRefined, documentDerivationMock, imageDerivationMock, videoDerivationMock, audioDerivationMock } from "@/data/mockData";
 import { supabase } from "@/lib/supabase";
 import { normalizeAudioTimestamp } from "@/lib/normalizeAudioTimestamp";
 
@@ -478,11 +478,16 @@ export function AudioExtractionConsole({ file, onJump, currentTime }: { file: an
            }
         }
       }
-    } catch (e) {
-      // On error (e.g. table missing), still try metadata fallback
+    } catch (e: any) {
+      console.warn("Audio derivation fetch failed (likely missing table), falling back to mock:", e.message);
+      // On error (e.g. table missing), still try metadata fallback, then mock
       if (file?.metadata?.audio_derivation) {
         setDerivationData(file.metadata.audio_derivation);
         setIsDemo(file.metadata.audio_derivation.is_demo_override);
+      } else if (file?.name?.includes("Saiful") || file?.id?.includes("saiful")) {
+        // High-fidelity fallback for Saiful incident
+        setDerivationData(audioDerivationMock);
+        setIsDemo(true);
       } else {
         setDerivationData(null);
         setIsDemo(false);

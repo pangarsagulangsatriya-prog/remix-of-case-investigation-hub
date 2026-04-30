@@ -27,7 +27,9 @@ import {
   XCircle,
   HelpCircle,
   Database,
-  Folders
+  Folders,
+  Crosshair,
+  Shield
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -71,76 +73,124 @@ const initialAgentsState: AgentState[] = [
      knowledgeSelection: ['Audio Recording', 'Internal Document', 'External Document', 'Photos & Media'],
      results: {
         ringkasan: {
-           tanggal: "April 05, 2026",
-           jam: "14:10 - 14:45",
-           lokasi: "Conveyor Zone B, Section 14",
-           jenis: "Mechanical Failure & Material Spillage",
-           deskripsi: "Tear in conveyor belt led to massive spillage and structural stress at Section 14 conveyor drives.",
-           departemen: "Mining Operations",
-           sumber_bukti: "SCADA, CCTV-B14, HSE Logs",
-           severity: "High"
+           tanggal: "05 November 2024",
+           jam: "22:15 - 01:35",
+           lokasi: "KM 12 & KM 7 Hauling Road",
+           jenis: "Fatigue Validation Failure & Comms Failure",
+           deskripsi: "Kegagalan validasi intervensi kelelahan dan hambatan komunikasi radio berujung pada kecelakaan tunggal Operator Saiful.",
+           departemen: "Mining Operations / DMS Control Room",
+           sumber_bukti: "DMS Recap, WhatsApp, Radio, Video DMS",
+           severity: "Critical"
         },
         chronology_items: [
-            { 
-              id: 'chrono-001', 
-              phase: 'pra_kontak', 
-              time: "14:05", 
-              time_label: "14:05 WITA",
-              description: "Normal operation: Section 14 conveyor belt carrying material at 85% capacity", 
-              chronology_text: "Normal operation: Section 14 conveyor belt carrying material at 85% capacity",
-              confidence: "high",
-              status: "reviewed",
-              verification_status: "human_verified",
-              annotated_by_human: true,
-              breakdown: {
-                 time: "14:05",
-                 timezone: "WITA",
-                 phase: "pra_kontak",
-                 actor: "System",
-                 actorRole: "Automated Control",
-                 action: "Normal Operation",
-                 actionCategory: "observation",
-                 objectOrUnit: "Conveyor Section 14",
-                 location: "Section 14",
-                 condition: "85% Load Capacity",
-                 outcome: "Steady state performance"
-              },
-              evidenceLinks: [
-                 { id: 'ev-0', evidenceType: "document", sourceLabel: "Operations Log", sourceFileName: "ops_log_april05.pdf", page: 12, quote: "Section 14 operating at normal parameters with 85% throughput load.", relevance: "primary", confidence: "high" }
-              ],
-              annotations: [],
-              updatedAt: new Date().toISOString()
-            },
-            { 
-              id: 'chrono-002', 
-              phase: 'pra_kontak', 
-              time: "14:10", 
-              time_label: "14:10 WITA",
-              description: "Vibration sensor alert on Section 14 drive motor detected by SCADA", 
-              chronology_text: "Vibration sensor alert on Section 14 drive motor detected by SCADA",
-              confidence: "high",
-              status: "draft",
-              verification_status: "ai_generated",
-              annotated_by_human: false,
-              breakdown: {
-                 time: "14:10",
-                 timezone: "WITA",
-                 phase: "pra_kontak",
-                 actor: "Sensor System",
-                 actorRole: "Monitoring System",
-                 action: "Vibration alarm triggered",
-                 actionCategory: "system_alert",
-                 objectOrUnit: "Section 14 drive motor",
-                 location: "Section 14",
-                 condition: "Vibration exceeded safe threshold",
-                 outcome: "Early warning detected"
-              },
-              evidenceLinks: [
-                 { id: 'ev-1', evidenceType: "audio", sourceLabel: "Radio Comm", sourceFileName: "radio_0504.mp3", speaker: "Operator A", startTime: "00:04", endTime: "00:12", quote: "Control, ini Operator A. Getaran di Section 14 melebihi batas aman.", relevance: "primary", confidence: "high" }
-              ],
-              annotations: [],
-              updatedAt: new Date().toISOString()
-            }
+           { 
+             id: 'chrono-saiful-001', 
+             phase: 'pre_contact', 
+             time_label: "Minggu 10-41",
+             description: "Petugas DMS mengidentifikasi riwayat deviasi kelelahan sebanyak 41 kali pada profil Operator Saiful.", 
+             chronology_text: "Petugas DMS mengidentifikasi riwayat deviasi kelelahan sebanyak 41 kali pada profil Operator Saiful.",
+             confidence: "high",
+             status: "completed",
+             verification_status: "human_verified",
+             annotated_by_human: true,
+             breakdown: {
+                subject: { value: "Petugas DMS (Aris)", evidence: "tanggung jawab Pak Aris sebagai DMS control room" },
+                action: { value: "Mengidentifikasi riwayat deviasi", evidence: "ada juga banyak di rekapan juga sampai dari week 10 sampai week 41 itu 41 kali" },
+                object: { value: "Profil Operator Saiful", evidence: "catatannya banyak fatigue, ah itu biasa kami sering intens... mengontrol mereka" },
+                source_system: { value: "Rekapitulasi Data DMS", evidence: "laporan temuan deviasi fatigue itu ada yang kami catat tuh Pak di rekap itu" },
+                condition: { value: "Pemantauan Intensif", evidence: "kalau misalnya dari orang ini eh catatannya banyak fatigue, ah itu biasa kami sering intens" }
+             }
+           },
+           { 
+             id: 'chrono-saiful-002', 
+             phase: 'pre_contact', 
+             time_label: "22:15 WITA",
+             description: "Sistem DMS memicu peringatan kritis kategori Lockdown pada unit yang sedang dioperasikan oleh Operator Saiful.", 
+             chronology_text: "Sistem DMS memicu peringatan kritis kategori Lockdown pada unit yang sedang dioperasikan oleh Operator Saiful.",
+             confidence: "high",
+             status: "completed",
+             verification_status: "ai_generated",
+             annotated_by_human: false,
+             breakdown: {
+                subject: { value: "Sistem DMS", evidence: "kalau di klik DMS dua, kalau di Gimo satu" },
+                action: { value: "Memicu peringatan kritis", evidence: "Yang pertama itu eh Lockdown, itu di jam 22:15" },
+                object: { value: "Unit Operator Saiful", evidence: "Jam 22:15 ada alert lockdown-nya Pak Saiful ya" },
+                source_system: { value: "Dashboard Control Room", evidence: "Terus saya pantau lagi di klik DMS" },
+                condition: { value: "Operasional Malam Hari", evidence: "pengawas room yang bertugas pada malam hari itu" }
+             }
+           },
+           { 
+             id: 'chrono-saiful-003', 
+             phase: 'pre_contact', 
+             time_label: "Pasca 22:15",
+             description: "Pengawas Fatur mengonfirmasi kondisi operator dalam keadaan baik secara verbal melalui aplikasi WhatsApp tanpa bukti visual.", 
+             chronology_text: "Pengawas Fatur mengonfirmasi kondisi operator dalam keadaan baik secara verbal melalui aplikasi WhatsApp tanpa bukti visual.",
+             confidence: "high",
+             status: "completed",
+             verification_status: "human_verified",
+             annotated_by_human: true,
+             breakdown: {
+                subject: { value: "Pengawas Fatur", evidence: "dia lapor kondisi beliau yang kondisinya baik-baik saja" },
+                action: { value: "Mengonfirmasi status secara verbal", evidence: "Minta evidence lanjut? Enggak. Karena saya yakin chat itu sudah memastikan" },
+                object: { value: "Kondisi Operator", evidence: "Sudah diintervensi komunikasi dua arah sama Pak Saiful... beliau baik-baik saja" },
+                source_system: { value: "Aplikasi WhatsApp", evidence: "Komunikasi japri lewat WA ke pengawas room" },
+                condition: { value: "Ketiadaan Bukti Foto", evidence: "Aris did not request photo evidence of the intervention, relying on the text message" }
+             }
+           },
+           { 
+             id: 'chrono-saiful-004', 
+             phase: 'contact', 
+             time_label: "01:35 WITA",
+             description: "Unit Operator Saiful mengalami kecelakaan tunggal yang teramati melalui pemantauan video real-time di Control Room.", 
+             chronology_text: "Unit Operator Saiful mengalami kecelakaan tunggal yang teramati melalui pemantauan video real-time di Control Room.",
+             confidence: "high",
+             status: "completed",
+             verification_status: "human_verified",
+             annotated_by_human: true,
+             breakdown: {
+                subject: { value: "Unit Operator Saiful", evidence: "Pak Saiful itu alertnya di mana... kecelakaan tunggal" },
+                action: { value: "Mengalami kecelakaan tunggal", evidence: "itu masuk pas di nonton pas di pertengahan video itu sudah kecelakaan tunggal" },
+                object: { value: "Fasilitas Operasional", evidence: "sudah kecelakaan tunggal jam 01:35" },
+                source_system: { value: "Video Surveillance DMS", evidence: "pas di nonton pas di pertengahan video" },
+                condition: { value: "Shift Kritis", evidence: "pada saat shift kritis Pak di hari Jumat" }
+             }
+           },
+           { 
+             id: 'chrono-saiful-005', 
+             phase: 'post_contact', 
+             time_label: "Pasca 01:35",
+             description: "Infrastruktur komunikasi mengalami gangguan sinyal pada area KM 12 dan KM 7 menghambat koordinasi jalur radio.", 
+             chronology_text: "Infrastruktur komunikasi mengalami gangguan sinyal pada area KM 12 dan KM 7 menghambat koordinasi jalur radio.",
+             confidence: "high",
+             status: "completed",
+             verification_status: "human_verified",
+             annotated_by_human: true,
+             breakdown: {
+                subject: { value: "Sinyal Radio", evidence: "radio enggak nyampe. KM 12 ke hauling enggak nyampe radio" },
+                action: { value: "Mengalami kegagalan transmisi", evidence: "Komunikasi via radio sama pengawas di jalur safety itu... radio enggak nyampe" },
+                object: { value: "Koordinasi Jalur Radio", evidence: "jalur komunikasi sama pengawas radio" },
+                source_system: { value: "Perangkat Radio Lapangan", evidence: "ada di KM 12 dan KM 7 itu radio enggak nyampe" },
+                condition: { value: "Zona Mati (Dead Zone)", evidence: "Radio communication dead zones are identified at KM 12 and KM 7" }
+             }
+           },
+           { 
+             id: 'chrono-saiful-006', 
+             phase: 'post_contact', 
+             time_label: "Pasca 01:35",
+             description: "Petugas Control Room memfokuskan pemantauan pada jalur darurat dikarenakan respons pengawas lapangan terbatas.", 
+             chronology_text: "Petugas Control Room memfokuskan pemantauan pada jalur darurat dikarenakan respons pengawas lapangan terbatas.",
+             confidence: "high",
+             status: "completed",
+             verification_status: "human_verified",
+             annotated_by_human: true,
+             breakdown: {
+                subject: { value: "Petugas Control Room (Aris)", evidence: "Saya monitor stanby di jalur emergency saja fokusnya" },
+                action: { value: "Memfokuskan pemantauan darurat", evidence: "sudah enggak kepikiran lagi hubungi beliau... monitor stanby di jalur emergency" },
+                object: { value: "Jalur Emergency", evidence: "TC nya sudah kecelakaan tunggal... monitor stanby di jalur emergency" },
+                source_system: { value: "Monitoring System", evidence: "Aris focused on the emergency channel rather than further operator contact" },
+                condition: { value: "Respons Pengawas Terbatas", evidence: "Pak Fatur cuma balas Allahuakbar gitu aja di WA. Habis itu enggak ditanya lagi" }
+             }
+           }
         ]
      }
   },
@@ -1164,79 +1214,38 @@ export default function AnalysisTab() {
                                              </div>
                                           </div>
                                           
-                                          <div className="space-y-4 p-4 bg-white border border-slate-200 rounded-none">
-                                             <div className="flex flex-wrap gap-y-3 gap-x-2 items-baseline">
-                                                <TooltipProvider delayDuration={100}>
-                                                   <div className="border border-slate-200 bg-slate-50 px-2 py-1 rounded-none flex items-center gap-1.5 transition-colors hover:bg-slate-100 group">
-                                                      <span className="text-[10px] font-black text-slate-900 uppercase">{item.breakdown?.time || item.time || item.time_label}</span>
-                                                      <Tooltip>
-                                                         <TooltipTrigger asChild>
-                                                            <div className="h-1.5 w-1.5 bg-slate-400 group-hover:scale-125 transition-transform" />
-                                                         </TooltipTrigger>
-                                                         <TooltipContent className="bg-slate-900 text-white rounded-none border-none text-[8px] font-black uppercase px-3 py-2">TIME / TEMPORAL</TooltipContent>
-                                                      </Tooltip>
-                                                   </div>
-
-                                                   <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest px-1">in</span>
-
-                                                   <div className="border border-slate-200 bg-slate-50 px-2 py-1 rounded-none flex items-center gap-1.5 transition-colors hover:bg-slate-100 group">
-                                                      <span className="text-[10px] font-black text-slate-900 uppercase">{(item.breakdown?.phase || item.phase || "PRE CONTACT").replace('_', ' ')}</span>
-                                                      <Tooltip>
-                                                         <TooltipTrigger asChild>
-                                                            <div className="h-1.5 w-1.5 bg-slate-400 group-hover:scale-125 transition-transform" />
-                                                         </TooltipTrigger>
-                                                         <TooltipContent className="bg-slate-900 text-white rounded-none border-none text-[8px] font-black uppercase px-3 py-2">INCIDENT PHASE</TooltipContent>
-                                                      </Tooltip>
-                                                   </div>
-
-                                                   <div className="border-2 border-amber-500 bg-white px-2 py-1 rounded-none flex items-center gap-1.5 transition-colors hover:bg-amber-50 group">
-                                                      <span className="text-[10px] font-black text-slate-900 uppercase">{item.breakdown?.action || 'VIBRATION ALARM TRIGGERED'}</span>
-                                                      <Tooltip>
-                                                         <TooltipTrigger asChild>
-                                                            <div className="h-1.5 w-1.5 bg-amber-500 group-hover:scale-125 transition-transform" />
-                                                         </TooltipTrigger>
-                                                         <TooltipContent className="bg-slate-900 text-white rounded-none border-none text-[8px] font-black uppercase px-3 py-2">ACTION / EVENT</TooltipContent>
-                                                      </Tooltip>
-                                                   </div>
-
-                                                   <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest px-1">by</span>
-
-                                                   <div className="border border-purple-500 bg-white px-2 py-1 rounded-none flex items-center gap-1.5 transition-colors hover:bg-purple-50 group">
-                                                      <span className="text-[10px] font-black text-slate-900 uppercase">{item.breakdown?.actor || 'SENSOR SYSTEM'}</span>
-                                                      <Tooltip>
-                                                         <TooltipTrigger asChild>
-                                                            <div className="h-1.5 w-1.5 bg-purple-500 group-hover:scale-125 transition-transform" />
-                                                         </TooltipTrigger>
-                                                         <TooltipContent className="bg-slate-900 text-white rounded-none border-none text-[8px] font-black uppercase px-3 py-2">ACTOR / AGENT</TooltipContent>
-                                                      </Tooltip>
-                                                   </div>
-
-                                                   <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest px-1">on</span>
-
-                                                   <div className="border border-blue-500 bg-white px-2 py-1 rounded-none flex items-center gap-1.5 transition-colors hover:bg-blue-50 group">
-                                                      <span className="text-[10px] font-black text-slate-900 uppercase">{item.breakdown?.objectOrUnit || 'SECTION 14 DRIVE MOTOR'}</span>
-                                                      <Tooltip>
-                                                         <TooltipTrigger asChild>
-                                                            <div className="h-1.5 w-1.5 bg-blue-500 group-hover:scale-125 transition-transform" />
-                                                         </TooltipTrigger>
-                                                         <TooltipContent className="bg-slate-900 text-white rounded-none border-none text-[8px] font-black uppercase px-3 py-2">OBJECT / UNIT</TooltipContent>
-                                                      </Tooltip>
-                                                   </div>
-
-                                                   <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest px-1">at</span>
-
-                                                   <div className="border border-blue-500 bg-white px-2 py-1 rounded-none flex items-center gap-1.5 transition-colors hover:bg-blue-50 group">
-                                                      <span className="text-[10px] font-black text-slate-900 uppercase">{item.breakdown?.location || 'SECTION 14'}</span>
-                                                      <Tooltip>
-                                                         <TooltipTrigger asChild>
-                                                            <div className="h-1.5 w-1.5 bg-blue-500 group-hover:scale-125 transition-transform" />
-                                                         </TooltipTrigger>
-                                                         <TooltipContent className="bg-slate-900 text-white rounded-none border-none text-[8px] font-black uppercase px-3 py-2">PHYSICAL LOCATION</TooltipContent>
-                                                      </Tooltip>
-                                                   </div>
-                                                </TooltipProvider>
-                                             </div>
-                                          </div>
+                                           <div className="space-y-4 p-5 bg-slate-50/50 border border-slate-100 rounded-none shadow-inner">
+                                              {[
+                                                 { label: "Subject / Pelaku", key: "subject", icon: Users, color: "text-blue-600", bg: "bg-blue-50" },
+                                                 { label: "Action / Predikat", key: "action", icon: Activity, color: "text-amber-600", bg: "bg-amber-50" },
+                                                 { label: "Object / Korban-Alat", key: "object", icon: Crosshair, color: "text-rose-600", bg: "bg-rose-50" },
+                                                 { label: "Source System", key: "source_system", icon: Database, color: "text-slate-600", bg: "bg-slate-100" },
+                                                 { label: "Condition / Keterangan", key: "condition", icon: Shield, color: "text-emerald-600", bg: "bg-emerald-50" }
+                                              ].map((part) => (
+                                                 <div key={part.key} className="group/item relative">
+                                                    <div className="flex items-center gap-2 mb-1.5">
+                                                       <part.icon className={cn("h-3 w-3", part.color)} />
+                                                       <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{part.label}</span>
+                                                    </div>
+                                                    <div className={cn("px-3 py-2 border border-slate-200 rounded-none transition-all group-hover/item:border-slate-400", part.bg)}>
+                                                       <div className="text-[11px] font-black text-slate-900 leading-tight">
+                                                          {(item.breakdown?.[part.key] as any)?.value || "—"}
+                                                       </div>
+                                                       {(item.breakdown?.[part.key] as any)?.evidence && (
+                                                          <div className="mt-2 pt-2 border-t border-slate-900/5">
+                                                             <div className="flex items-center gap-1.5 mb-1 opacity-40">
+                                                                <Quote className="h-2 w-2" />
+                                                                <span className="text-[7px] font-black uppercase tracking-tighter">Situational Evidence</span>
+                                                             </div>
+                                                             <p className="text-[10px] font-bold text-slate-500 leading-relaxed italic">
+                                                                "{(item.breakdown[part.key] as any).evidence}"
+                                                             </p>
+                                                          </div>
+                                                       )}
+                                                    </div>
+                                                 </div>
+                                              ))}
+                                           </div>
                                        </div>
 
                                        {/* B. Event Breakdown */}
@@ -1257,19 +1266,19 @@ export default function AnalysisTab() {
                                                       { type: 'doc', page: '01', context: 'Site local timezone configuration for Berau Coal operations.', source: 'SITE_HANDBOOK_2026.PDF' }
                                                    ]
                                                 },
-                                                { id: 'actor', label: 'Actor', value: item.breakdown?.actor || 'SENSOR SYSTEM', 
+                                                { id: 'actor', label: 'Actor', value: (item.breakdown?.subject as any)?.value || item.breakdown?.actor || 'SENSOR SYSTEM', 
                                                    evidence: [
                                                       { type: 'doc', page: '142', context: 'Automated vibration monitoring protocol for Titan-X series drive motors.', source: 'MAINTENANCE_LOG_APR.PDF' },
                                                       { type: 'audio', speaker: 'CONTROL ROOM', timeframe: '02:15 — 02:20', context: 'Diterima Operator A. Sensor kami juga menunjukkan anomali.', source: 'VOIP_REC_14.WAV' }
                                                    ]
                                                 },
-                                                { id: 'action', label: 'Action', value: item.breakdown?.action || 'VIBRATION ALARM', 
+                                                { id: 'action', label: 'Action', value: (item.breakdown?.action as any)?.value || item.breakdown?.action || 'VIBRATION ALARM', 
                                                    evidence: [
                                                       { type: 'audio', speaker: 'OPERATOR A', timeframe: '02:14 — 02:18', context: 'Mohon dicek segera, alarm vibrasi berbunyi.', source: 'VOIP_REC_14.WAV' },
                                                       { type: 'doc', page: '04', context: 'System Status: ALARM_VIB_HIGH triggered at 14:10:22', source: 'SCADA_EVENT_EXPORT.CSV' }
                                                    ]
                                                 },
-                                                { id: 'object', label: 'Object / Unit', value: item.breakdown?.objectOrUnit || 'SECTION 14 MOTOR', 
+                                                { id: 'object', label: 'Object / Unit', value: (item.breakdown?.object as any)?.value || item.breakdown?.objectOrUnit || 'SECTION 14 MOTOR', 
                                                    evidence: [
                                                       { type: 'doc', page: '12', context: 'Drive Motor Unit ID: UNIT_S14_M01', source: 'ASSET_REGISTRY.XLSX' }
                                                    ]
@@ -1279,7 +1288,7 @@ export default function AnalysisTab() {
                                                       { type: 'audio', speaker: 'OPERATOR A', timeframe: '02:14 — 02:16', context: 'Saya di lokasi Section 14.', source: 'VOIP_REC_14.WAV' }
                                                    ]
                                                 },
-                                                { id: 'condition', label: 'Condition', value: item.breakdown?.condition || 'EXCEEDED THRESHOLD', 
+                                                { id: 'condition', label: 'Condition', value: (item.breakdown?.condition as any)?.value || item.breakdown?.condition || 'EXCEEDED THRESHOLD', 
                                                    evidence: [
                                                       { type: 'doc', page: '08', context: 'Vibration Level: 4.8mm/s (Limit: 2.5mm/s)', source: 'SCADA_EVENT_EXPORT.CSV' }
                                                    ]

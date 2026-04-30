@@ -35,7 +35,7 @@ import {
   ShieldCheck,
   Zap,
   Quote,
-  Target,
+  Crosshair,
   BarChart3
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -64,12 +64,18 @@ export interface Traceability {
   confidence_score: number;
 }
 
+export interface SPOKField {
+  value: string;
+  evidence?: string;
+}
+
 export interface ChronologyItem {
   id: string;
   time_label: string;
   chronology_text: string;
+  description?: string;
   phase: ChronologyPhase;
-  source: "ai" | "human";
+  source?: "ai" | "human";
   annotated_by_human: boolean;
   verification_status: VerificationStatus;
   created_at: string;
@@ -79,6 +85,18 @@ export interface ChronologyItem {
   traceability?: Traceability[];
   synthesis_summary?: string;
   support_strength?: number;
+  confidence?: "high" | "medium" | "low";
+  status?: "completed" | "draft" | "reviewed";
+  breakdown?: {
+    subject?: SPOKField;
+    action?: SPOKField;
+    object?: SPOKField;
+    source_system?: SPOKField;
+    condition?: SPOKField;
+    time?: string;
+    phase?: string;
+    actor?: string;
+  };
 }
 
 export interface FactMetadata {
@@ -134,7 +152,7 @@ export const STATUS_CONFIG: Record<VerificationStatus, { label: string, color: s
   ai_generated: { label: "AI Generated", color: "bg-blue-50 text-blue-600 border-blue-100", icon: Brain },
   human_verified: { label: "Human Verified", color: "bg-emerald-50 text-emerald-600 border-emerald-100", icon: ShieldCheck },
   needs_review: { label: "Needs Review", color: "bg-amber-50 text-amber-600 border-amber-100", icon: Clock },
-  partially_supported: { label: "Partially Supported", color: "bg-violet-50 text-violet-600 border-violet-100", icon: Target },
+  partially_supported: { label: "Partially Supported", color: "bg-violet-50 text-violet-600 border-violet-100", icon: Crosshair },
   unsupported: { label: "Unsupported", color: "bg-rose-50 text-rose-600 border-rose-100", icon: AlertTriangle },
 };
 
@@ -456,7 +474,7 @@ export const TraceabilityPanel: React.FC<{
              variant="outline"
              className="border-slate-200 text-slate-700 h-10 text-[9px] font-black uppercase tracking-widest gap-2 rounded-sm"
            >
-              <Target className="h-3.5 w-3.5 text-blue-500" /> Part Support
+              <Crosshair className="h-3.5 w-3.5 text-blue-500" /> Part Support
            </Button>
            <Button 
              onClick={() => onUpdateStatus('needs_review')}

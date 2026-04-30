@@ -422,3 +422,56 @@ export const videoDerivationMock = {
     ]
   }
 };
+
+export const audioDerivationMock = {
+  document_metadata: {
+    inferred_document_type: "Audio Forensic Transcript / Diarization",
+    date_mentioned: "05 November 2024",
+    location_mentioned: ["KM 12 Hauling", "KM 7 Hauling", "Control Room DMS", "Workshop"],
+    personnel_involved: ["Aris (DMS Control Room)", "Tommy (Hauling Supervisor)", "Syaiful (Operator)", "Yusup (Mobile Supervisor)"]
+  },
+  quick_summary_and_analysis: {
+    executive_summary: "Rekaman audio ini merinci kegagalan komunikasi dan validasi intervensi kelelahan pada shift malam 05 November 2024. Poin kritis meliputi riwayat 41 kali deviasi fatigue Operator Saiful, alert 'Lockdown' pada pukul 22:15 yang hanya divalidasi via WhatsApp tanpa bukti visual, serta adanya 'Radio Dead Zone' di KM 12 dan KM 7 yang menghambat koordinasi saat insiden terjadi pukul 01:35.",
+    critical_findings: [
+      "Operator Saiful memiliki 41 riwayat deviasi fatigue sejak Week 10 hingga Week 41, mengindikasikan akumulasi kelelahan kronis.",
+      "Intervensi terhadap alert 'Lockdown' (22:15) dilakukan secara informal via WA; Pengawas tidak meminta bukti foto/visual kondisi operator.",
+      "Terjadi hambatan komunikasi radio di area KM 12 ke hauling, menyebabkan keterlambatan respon darurat.",
+      "Operator terdeteksi mengalami micro-sleep sesaat sebelum unit rebah di Jalan Kutilang.",
+      "Terdapat indikasi rasa 'sungkan' atau enggan melaporkan kondisi lelah dari sisi operator kepada pengawas (Missed Speak-up)."
+    ]
+  },
+  sentiment_analysis: {
+    overall_tone: "Analytical / Forensic",
+    emotional_peaks: [
+      { timestamp: "01:30", speaker: "Tommy", sentiment: "Urgent", context: "Reporting 'Urgent di Jalan Kutilang' via radio." },
+      { timestamp: "01:40", speaker: "Aris", sentiment: "Stressed", context: "Managing emergency channel focus after visual confirmation of accident." }
+    ]
+  },
+  lossless_chunks: [
+    {
+      sequence_id: 1,
+      structural_context: "Fatigue History Disclosure",
+      extracted_content: "Ada juga banyak di rekapan juga sampai dari week 10 sampai week 41 itu 41 kali (Saiful). Catatannya banyak fatigue. Kami sering intens mengontrol mereka.",
+      visual_description: "DMS Control Room recap data analysis."
+    },
+    {
+      sequence_id: 2,
+      structural_context: "Intervention Protocol Failure",
+      extracted_content: "Jam 22:15 ada alert lockdown-nya Pak Saiful. Sudah diintervensi komunikasi dua arah sama Pak Saiful, beliau baik-baik saja. Minta evidence lanjut (foto)? Enggak. Karena saya yakin chat itu sudah memastikan.",
+      visual_description: "Validation of WhatsApp-based informal intervention."
+    },
+    {
+      sequence_id: 3,
+      structural_context: "Communication Infrastructure Failure",
+      extracted_content: "Radio enggak nyampe. KM 12 ke hauling enggak nyampe radio. Ada di KM 12 dan KM 7 itu radio enggak nyampe. Fokus di jalur emergency saja.",
+      visual_description: "Radio signal coverage gap identification."
+    },
+    {
+      sequence_id: 4,
+      structural_context: "Post-Incident Forensic Feedback",
+      extracted_content: "Syaiful tidak mau speak up, mungkin sungkan. Memungkinkan CR (Control Room) di KM 7? Sangat membantu.",
+      visual_description: "Management feedback on reporting culture and infrastructure improvements."
+    }
+  ]
+};
+
