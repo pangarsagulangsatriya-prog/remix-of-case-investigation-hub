@@ -12,6 +12,12 @@ import { cn } from "@/lib/utils";
 import { getFileIcon } from "./FileRow";
 import { audioDiarizationData } from "@/data/mockData";
 import { useMemo } from "react";
+import { Document, Page, pdfjs } from 'react-pdf';
+import 'react-pdf/dist/Page/AnnotationLayer.css';
+import 'react-pdf/dist/Page/TextLayer.css';
+
+pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+
 
 const formatTime = (seconds: number) => {
   if (!seconds || isNaN(seconds)) return "00:00";
@@ -759,18 +765,48 @@ export function VideoPreview({ file, currentTime, setCurrentTime, isPlaying, set
 }
 
 export function DocumentPreview({ file }: { file: any }) {
-  const getPreviewUrl = () => {
-    if (!file.url) return null;
-    const url = file.url;
-    const isPdf = url.split('?')[0].toLowerCase().endsWith('.pdf');
-    if (isPdf) return url; 
-    return `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
+  const [numPages, setNumPages] = useState<number>(0);
+  const [pageNumber, setPageNumber] = useState<number>(1);
+  const [scale, setScale] = useState<number>(1.0);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
+    setNumPages(numPages);
+    setLoading(false);
   };
 
-  const previewUrl = getPreviewUrl();
+  const onDocumentLoadError = (err: Error) => {
+    console.error("PDF Load Error:", err);
+    setError(err.message);
+    setLoading(false);
+  };
+
+  const changePage = (offset: number) => {
+    setPageNumber(prevPageNumber => {
+      const next = prevPageNumber + offset;
+      return Math.min(Math.max(1, next), numPages || 1);
+    });
+  };
+
+  const zoom = (factor: number) => {
+    setScale(prev => Math.min(Math.max(0.5, prev * factor), 3.0));
+  };
+
+  const isPdf = file.url?.split('?')[0].toLowerCase().endsWith('.pdf');
+
+  if (!isPdf) {
+    const previewUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(file.url)}&embedded=true`;
+    return (
+      <div className="flex flex-col h-full bg-[#f8f9fa] rounded-sm border border-slate-200 overflow-hidden select-none">
+        <iframe src={previewUrl} className="w-full h-full border-none" title="Document Preview" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full bg-[#f8f9fa] rounded-sm border border-slate-200 overflow-hidden select-none">
+       {/* PDF Toolbar */}
        <div className="h-12 bg-white border-b border-slate-200 flex items-center justify-between px-4 shrink-0 shadow-sm z-10">
          <div className="flex items-center gap-4">
            <div className="flex items-center gap-0.5">
@@ -780,21 +816,35 @@ export function DocumentPreview({ file }: { file: any }) {
            </div>
            <div className="h-4 w-[1px] bg-slate-200" />
            <div className="flex items-center gap-1">
-              <button className="p-1.5 hover:bg-slate-100 rounded-md transition-colors text-slate-500"><Minus className="h-4 w-4" /></button>
-              <div className="px-3 py-1 text-[11px] font-black text-slate-600 bg-slate-50 border rounded-sm min-w-[90px] text-center uppercase tracking-tighter">Auto Fit</div>
-              <button className="p-1.5 hover:bg-slate-100 rounded-md transition-colors text-slate-500"><Plus className="h-4 w-4" /></button>
+              <button onClick={() => zoom(0.9)} className="p-1.5 hover:bg-slate-100 rounded-md transition-colors text-slate-500"><Minus className="h-4 w-4" /></button>
+              <div className="px-3 py-1 text-[11px] font-black text-slate-600 bg-slate-50 border rounded-sm min-w-[90px] text-center uppercase tracking-tighter">
+                {Math.round(scale * 100)}%
+              </div>
+              <button onClick={() => zoom(1.1)} className="p-1.5 hover:bg-slate-100 rounded-md transition-colors text-slate-500"><Plus className="h-4 w-4" /></button>
            </div>
          </div>
 
          <div className="flex items-center gap-3">
            <div className="flex items-center gap-1">
-             <button className="p-1.5 hover:bg-slate-100 rounded-md transition-colors text-slate-300"><ChevronLeft className="h-4 w-4" /></button>
+             <button 
+               onClick={() => changePage(-1)} 
+               disabled={pageNumber <= 1}
+               className="p-1.5 hover:bg-slate-100 rounded-md transition-colors text-slate-500 disabled:opacity-30"
+             >
+               <ChevronLeft className="h-4 w-4" />
+             </button>
              <div className="flex items-center gap-1 px-3 py-1 border rounded-sm bg-white text-[11px] font-black text-slate-700">
-                <span>1</span>
+                <span>{pageNumber}</span>
                 <span className="text-slate-300 mx-1">/</span>
-                <span className="text-slate-400">24</span>
+                <span className="text-slate-400">{numPages || "--"}</span>
              </div>
-             <button className="p-1.5 hover:bg-slate-100 rounded-md transition-colors text-slate-300"><ChevronRight className="h-4 w-4" /></button>
+             <button 
+               onClick={() => changePage(1)} 
+               disabled={pageNumber >= numPages}
+               className="p-1.5 hover:bg-slate-100 rounded-md transition-colors text-slate-500 disabled:opacity-30"
+             >
+               <ChevronRight className="h-4 w-4" />
+             </button>
            </div>
            <div className="h-4 w-[1px] bg-slate-200" />
            <div className="flex items-center gap-1">
@@ -804,20 +854,35 @@ export function DocumentPreview({ file }: { file: any }) {
          </div>
        </div>
 
-       <div className="flex-1 overflow-auto bg-[#e9ecef] p-4 lg:p-10 flex justify-center custom-scrollbar">
-          <div className="w-full max-w-5xl bg-white shadow-[0_20px_50px_rgba(0,0,0,0.15)] relative min-h-full rounded-sm overflow-hidden ring-1 ring-black/5">
-             {previewUrl ? (
-               <iframe 
-                 src={previewUrl} 
-                 className="w-full h-full border-none absolute inset-0"
-                 title="Document Preview"
+       {/* PDF Canvas Area */}
+       <div className="flex-1 overflow-auto bg-[#e9ecef] p-4 lg:p-10 flex justify-center custom-scrollbar scroll-smooth">
+          <div className="bg-white shadow-[0_20px_50px_rgba(0,0,0,0.15)] relative min-h-fit rounded-sm overflow-hidden ring-1 ring-black/5">
+             <Document
+               file={file.url}
+               onLoadSuccess={onDocumentLoadSuccess}
+               onLoadError={onDocumentLoadError}
+               loading={
+                 <div className="flex flex-col items-center justify-center p-20 gap-4">
+                    <RefreshCcw className="h-8 w-8 text-slate-300 animate-spin" />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Loading Forensic Asset...</span>
+                 </div>
+               }
+               error={
+                 <div className="flex flex-col items-center justify-center p-20 gap-4">
+                    <AlertTriangle className="h-12 w-12 text-rose-500" />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-rose-500">Failed to Load Document</span>
+                    <p className="text-[9px] text-slate-400 font-bold max-w-[200px] text-center">{error}</p>
+                 </div>
+               }
+             >
+               <Page 
+                 pageNumber={pageNumber} 
+                 scale={scale} 
+                 renderAnnotationLayer={true}
+                 renderTextLayer={true}
+                 className="shadow-sm"
                />
-             ) : (
-               <div className="flex flex-col items-center justify-center h-full text-slate-300 gap-4">
-                  <FileText className="h-16 w-16 opacity-10" />
-                  <span className="text-xs font-black uppercase tracking-[0.3em] opacity-30">Forensic Link Inactive</span>
-               </div>
-             )}
+             </Document>
           </div>
        </div>
     </div>

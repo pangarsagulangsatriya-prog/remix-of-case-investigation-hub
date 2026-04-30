@@ -538,7 +538,7 @@ export default function ExtractionTab() {
         </div>
 
         <div className="flex-1 overflow-auto bg-[#f0f2f4] p-6 flex flex-col items-center custom-scrollbar" style={{ minWidth: 0 }}>
-             <div className={`w-full flex ${selectedFile?.type === "Image" ? "max-w-3xl h-full items-center justify-center" : "max-w-5xl items-start justify-center pt-4"}`}>
+             <div className={`w-full flex ${(selectedFile?.type === "Image" || selectedFile?.type === "Document") ? "max-w-5xl h-full items-center justify-center" : "max-w-5xl items-start justify-center pt-4"}`}>
                {selectedFile ? (
                  <AdaptiveSourcePreview 
                     file={selectedFile} 
