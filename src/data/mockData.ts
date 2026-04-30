@@ -304,3 +304,60 @@ export const documentDerivationMock = {
     }
   ]
 };
+export const imageDerivationMock = {
+  document_metadata: {
+    inferred_document_type: "Sketsa Kejadian / Rekonstruksi Insiden",
+    date_mentioned: "05 November 2024",
+    location_mentioned: ["Jalan Kutilang", "Jalur Kosongan", "Jalur Muatan", "Tanggul Muatan", "Tanggul Kosongan"],
+    personnel_involved: ["Operator TC-4007 (Nama tidak tertera pada dokumen visual)"]
+  },
+  quick_summary_and_analysis: {
+    executive_summary: "Dokumen ini merupakan sketsa teknis rekonstruksi kejadian unit TC-4007 yang mengalami insiden rebah di Jalan Kutilang pada 05 November 2024. Analisis visual menunjukkan unit bergerak dari jalur kosongan melintasi jalan menuju tanggul jalur muatan, menyisir tanggul sepanjang 16 meter, hingga akhirnya terbalik tanpa adanya bukti pengereman di lokasi.",
+    critical_findings: [
+      "Tidak ditemukan jejak pengereman di area kejadian, mengindikasikan potensi micro-sleep atau kegagalan mekanis rem yang tidak sempat diantisipasi.",
+      "Unit menyimpang dari lintasan normal (titik A ke B) sejauh 44,9 meter sebelum menabrak tanggul.",
+      "Kontak fisik dengan tanggul setinggi 1,7 meter terjadi sepanjang 16 meter (titik 2) sebelum unit kehilangan keseimbangan.",
+      "Kondisi cuaca dilaporkan cerah, sehingga faktor visibilitas akibat cuaca buruk dapat dikesampingkan.",
+      "Lebar jalan di area kejadian memadai (20,8m - 21,7m) dengan kemiringan (grade) rendah antara 1% hingga 2%."
+    ]
+  },
+  readability_status: "High - Clear",
+  lossless_chunks: [
+    {
+      sequence_id: 1,
+      structural_context: "Header",
+      extracted_content: "TANGGAL 05 November 2024. PT MTN-SMO_TC-4007 Rebah di Jalan Kutilang arah kosongan.",
+      visual_description: "Judul dokumen di bagian atas dengan teks tebal berisi informasi waktu, unit, dan lokasi kejadian."
+    },
+    {
+      sequence_id: 2,
+      structural_context: "Visual Sketch / Map Analysis",
+      extracted_content: "SKETSA KEJADIAN TC-4007",
+      visual_description: "Diagram pandangan atas (aerial sketch) area Jalan Kutilang. Menunjukkan lintasan unit dengan garis putus-putus berwarna putih dari sisi kiri (Kosongan) ke sisi kanan (Muatan). Terdapat unit DT yang digambarkan dalam posisi rebah (terbalik) di sisi kanan jalan."
+    },
+    {
+      sequence_id: 3,
+      structural_context: "Incident Facts Callout",
+      extracted_content: "Fakta Kejadian: Cuaca dilokasi kejadian: Cerah. Tidak terdapat jejak pengereman.",
+      visual_description: "Kotak teks di pojok kanan atas yang merinci kondisi lingkungan dan temuan fisik di TKP."
+    },
+    {
+      sequence_id: 4,
+      structural_context: "Marker Definitions (A-D)",
+      extracted_content: "A: Posisi awal unit di jalur kosongan mulai mengarah ke arah muatan. B: Unit mulai menaiki tanggul. C: Unit mulai oleng dan hilang keseimbangan. D: Posisi akhir unit TC 4007 dalam kondisi rebah.",
+      visual_description: "Legenda alfabetis yang menjelaskan kronologi fisik pergerakan unit berdasarkan titik-titik yang ditandai pada peta sketsa."
+    },
+    {
+      sequence_id: 5,
+      structural_context: "Technical Measurements (1-5)",
+      extracted_content: "1: Lebar Jalan titik 1: 21.7M, Grade: 1%. 2: Jarak Tyre menyisir tanggul: 16M. 3: Lebar jalan titik 3: 20.8M, Grade: 2%. 4: Tinggi tanggul kosongan: 1.5 M. 5: Tinggi tanggul Muatan: 1.7 M.",
+      visual_description: "Daftar dimensi teknis jalan dan struktur tanggul yang diukur di lokasi kejadian (titik ukur ditandai dengan kotak biru pada sketsa)."
+    },
+    {
+      sequence_id: 6,
+      structural_context: "Distance Calculations",
+      extracted_content: "Jarak titik A ke B: 44.9m. jarak titik B ke C: 17m.",
+      visual_description: "Informasi jarak tempuh unit selama fase kehilangan kendali hingga mulai menaiki tanggul dan akhirnya terbalik."
+    }
+  ]
+};
