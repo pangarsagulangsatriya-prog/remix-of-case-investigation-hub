@@ -1,4 +1,5 @@
 import React, { useState, useRef, useMemo, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 import { 
   Search, Plus, FolderPlus, FileUp, FolderUp, ChevronRight, 
@@ -43,11 +44,12 @@ import {
 } from "@/hooks/useEvidence";
 import { UploadModal, CompletedGroup } from "../../UploadModal";
 import { toast } from "sonner";
-import { AudioDerivationInjector } from "../ExtractionTab/AudioDerivationInjector";
+import { EvidenceDerivationInjector } from "../ExtractionTab/EvidenceDerivationInjector";
 import { useSearchParams } from "react-router-dom";
 
 export default function ExtractionTab() {
   const { caseId } = useParams<{ caseId: string }>();
+  const queryClient = useQueryClient();
   const { data: evidence, isLoading } = useEvidence(caseId!);
   const files = evidence?.files || [];
   const batches = evidence?.batches || [];
@@ -681,12 +683,20 @@ export default function ExtractionTab() {
         </div>
       </Modal>
 
-      <AudioDerivationInjector 
+      <EvidenceDerivationInjector 
         isOpen={isDerivationInjectorOpen}
         onClose={() => setIsDerivationInjectorOpen(false)}
         caseId={caseId || ""}
         evidenceId={selectedFile?.id || ""}
         evidenceName={selectedFile?.name || ""}
+        evidenceType={(() => {
+          const lowerType = selectedFile?.type?.toLowerCase();
+          const lowerName = selectedFile?.name?.toLowerCase() || "";
+          if (lowerType === "audio" || lowerName.match(/\.(mp3|wav|ogg|m4a|aac)$/)) return 'audio';
+          if (lowerType === "video" || lowerName.match(/\.(mp4|webm|ogg|mov|m4v|avi|wmv)$/)) return 'video';
+          if (lowerType === "image" || lowerName.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/)) return 'image';
+          return 'document';
+        })()}
         onApply={() => {
            queryClient.invalidateQueries({ queryKey: ["evidence", caseId] });
         }}
