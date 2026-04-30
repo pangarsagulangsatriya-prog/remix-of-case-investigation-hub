@@ -221,6 +221,7 @@ export function AudioExtractionConsole({ file, onJump, currentTime }: { file: an
   const fetchDerivation = async () => {
     setIsLoading(true);
     try {
+      // 1. Try specialized table
       const { data, error } = await supabase
         .from('evidence_audio_derivation_outputs')
         .select('*')
@@ -232,12 +233,31 @@ export function AudioExtractionConsole({ file, onJump, currentTime }: { file: an
         setDerivationData(data);
         setIsDemo(data.is_demo_override);
       } else {
+        // 2. Fallback to file metadata
+        if (file?.metadata?.audio_derivation) {
+           setDerivationData(file.metadata.audio_derivation);
+           setIsDemo(file.metadata.audio_derivation.is_demo_override);
+        } else {
+           // 3. Last ditch: check if we can fetch the file again to get latest metadata
+           const { data: latestFile } = await supabase.from('evidence_files').select('metadata').eq('id', file.id).single();
+           if (latestFile?.metadata?.audio_derivation) {
+              setDerivationData(latestFile.metadata.audio_derivation);
+              setIsDemo(latestFile.metadata.audio_derivation.is_demo_override);
+           } else {
+              setDerivationData(null);
+              setIsDemo(false);
+           }
+        }
+      }
+    } catch (e) {
+      // On error (e.g. table missing), still try metadata fallback
+      if (file?.metadata?.audio_derivation) {
+        setDerivationData(file.metadata.audio_derivation);
+        setIsDemo(file.metadata.audio_derivation.is_demo_override);
+      } else {
         setDerivationData(null);
         setIsDemo(false);
       }
-    } catch (e) {
-      setDerivationData(null);
-      setIsDemo(false);
     } finally {
       setIsLoading(false);
     }
@@ -364,10 +384,18 @@ export function AudioExtractionConsole({ file, onJump, currentTime }: { file: an
 
   const normalizedScene = useMemo(() => {
     if (derivationData) {
+      // Map properties to ensure consistency
+      const mappedDiarization = (derivationData.dialogue_map || []).map((seg: any) => ({
+        ...seg,
+        start_time: seg.start_time || seg.start_dialog,
+        end_time: seg.end_time || seg.end_dialog,
+        text: seg.text || seg.verbatim_text
+      }));
+
       return {
         scene_session: {
           speaker_count: derivationData.investigation_metadata?.total_speakers_detected || 0,
-          full_diarization: derivationData.dialogue_map || []
+          full_diarization: mappedDiarization
         }
       };
     }
@@ -731,8 +759,9 @@ export function AudioSceneSession({ data, currentTime, onJump, isDemo }: { data:
   const filteredData = useMemo(() => {
     if (!data?.scene_session?.full_diarization) return [];
     return data.scene_session.full_diarization.filter((seg: any) => {
-      const matchesSearch = seg.text.toLowerCase().includes(searchQuery.toLowerCase());
-      const segStart = getS(seg.start_time);
+      const text = seg.text || seg.verbatim_text || "";
+      const matchesSearch = text.toLowerCase().includes(searchQuery.toLowerCase());
+      const segStart = getS(seg.start_time || seg.start_dialog);
       const filterStart = startTime ? getS(startTime) : 0;
       const filterEnd = endTime ? getS(endTime) : Infinity;
       return matchesSearch && segStart >= filterStart && segStart <= filterEnd;
@@ -799,11 +828,11 @@ export function AudioSceneSession({ data, currentTime, onJump, isDemo }: { data:
 
           return (
             <DiarizationSegment 
-               key={seg.segment_id}
+               key={seg.segment_id || idx}
                seg={seg}
                active={active}
                isNext={isNext}
-               onJump={() => onJump(getS(seg.start_time))}
+               onJump={() => onJump(getS(seg.start_time || seg.start_dialog))}
             />
           );
         })}
@@ -844,7 +873,7 @@ function DiarizationSegment({ seg, active, isNext, onJump }: { seg: any, active:
                   "px-1.5 py-0.5 rounded-sm text-[9px] font-black tabular-nums tracking-widest border transition-colors",
                   active ? "bg-slate-900 text-white border-slate-900" : "bg-slate-50 text-slate-500 border-slate-100"
                )}>
-                  {normalizeAudioTimestamp(seg.start_time)} — {normalizeAudioTimestamp(seg.end_time)}
+                  {normalizeAudioTimestamp(seg.start_time || seg.start_dialog)} — {normalizeAudioTimestamp(seg.end_time || seg.end_dialog)}
                </span>
                <span className={cn(
                   "text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-sm transition-colors",

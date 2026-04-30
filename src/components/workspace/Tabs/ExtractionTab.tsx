@@ -678,9 +678,7 @@ export default function ExtractionTab() {
         evidenceId={selectedFile?.id || ""}
         evidenceName={selectedFile?.name || ""}
         onApply={() => {
-           // Refetch evidence or just the derivation data in the console
-           // ExtractionTab's evidence query will likely refetch if we invalidate tags, 
-           // but for prototype we can just let ConsoleComponents handle its own fetch
+           queryClient.invalidateQueries({ queryKey: ["evidence", caseId] });
         }}
       />
     </div>
