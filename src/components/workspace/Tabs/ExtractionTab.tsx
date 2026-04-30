@@ -301,6 +301,7 @@ export default function ExtractionTab() {
   };
 
   const jumpToAudioTime = (time: number) => {
+    setAudioCurrentTime(time);
     if (audioRef.current) {
       audioRef.current.currentTime = time;
     }

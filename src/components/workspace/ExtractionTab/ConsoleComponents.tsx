@@ -13,7 +13,7 @@ import {
 import { cn } from "@/lib/utils";
 import { SectionHeader, KVP, StatusPill } from "../WorkspacePrimitives";
 import { ConfidenceChip } from "../../StatusChip";
-import { SECTION_DESCRIPTIONS, videoExtractionRefined } from "@/data/mockData";
+import { SECTION_DESCRIPTIONS, videoExtractionRefined, documentDerivationMock } from "@/data/mockData";
 import { supabase } from "@/lib/supabase";
 import { normalizeAudioTimestamp } from "@/lib/normalizeAudioTimestamp";
 
@@ -108,105 +108,224 @@ export function ImageExtractionConsole({ file }: { file: any }) {
 }
 
 export function DocumentExtractionConsole({ file }: { file: any }) {
-  const [activeTab, setActiveTab] = useState<"Fact Extraction">("Fact Extraction");
-  const [viewMode, setViewMode] = useState<"Structured" | "JSON">("Structured");
-  const [expandedSections, setExpandedSections] = useState<string[]>(["Entity Extraction"]);
-  
-  const properties = useMemo(() => ({
-     "Entity Extraction": {
-        "Document Class": "Incident Report Form B-12",
-        "Author": "Sarah J. (Safety Officer)",
-        "Signature Status": "Verified (Digital Hash)",
-        "Entity Mentions": "Ahmed, Sarah, Section 14, Conveyor A-1"
-     },
-     "Semantic Summary": {
-        "Key Findings": "Structural integrity compromised at joint 14A. Immediate cessation recommended.",
-        "Timeline Reference": "Event occurred at 14:22:15 local time.",
-        "Risk Level": "Level 4 (Life Critical)",
-        "Policy Violations": "None detected based on report content"
-     },
-     "Forensic Metadata": {
-        "OCR Engine": "Tesseract Matrix v5.0",
-        "Confidence Score": "98.2%",
-        "Source Integrity": "SHA-256 Validated",
-        "Processing Time": "1.2s"
-     }
-  }), []);
-
-  const factExtractionData = useMemo(() => [
-    { fact: "The document is titled 'How to Overcome the Predictable Crises of Growth'.", context: "The title of the document." },
-    { fact: "The authors are bestselling authors of 'Profit from the Core'.", context: "The previous work of the authors." },
-    { fact: "The document is written by Chris Zook and James Allen.", context: "The authors of the document." }
-  ], []);
-
-  const toggle = (s: string) => setExpandedSections(p => p.includes(s) ? p.filter(x => x !== s) : [...p, s]);
+  const [activeTab, setActiveTab] = useState<"Forensic Analysis" | "Sequence Chunks" | "Metadata" | "JSON">("Forensic Analysis");
+  const data = documentDerivationMock;
 
   return (
     <div className="flex flex-col h-full bg-white">
-      <div className="sticky top-0 z-40 bg-white border-b px-5 py-4 flex items-center justify-between shrink-0 shadow-sm">
-         <div className="flex flex-col">
-            <span className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em] leading-none">Protocol Matrix v2.1</span>
-            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter mt-1 opacity-60">Forensic Document Extraction</span>
-         </div>
-         <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1 p-0.5 bg-slate-100 rounded-md border shadow-inner">
-               {(["Fact Extraction"] as const).map(tab => (
-                 <button 
-                   key={tab}
-                   onClick={() => setActiveTab(tab)} 
-                   className={cn("px-3 py-1 text-[8px] font-black uppercase rounded transition-all", activeTab === tab ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600")}
-                 >
-                   {tab}
-                 </button>
-               ))}
-            </div>
-
-
-         </div>
+      {/* Tab Header - Premium Enterprise Style */}
+      <div className="sticky top-0 z-40 bg-[#f8fafc] border-b border-slate-200 px-6 pt-3 flex flex-col shrink-0">
+          <div className="flex items-center border-b border-slate-200 relative">
+             {(["Forensic Analysis", "Sequence Chunks", "Metadata", "JSON"] as const).map((tab, idx) => (
+               <button 
+                 key={tab}
+                 onClick={() => setActiveTab(tab)} 
+                 className={cn(
+                   "py-3.5 text-[10px] font-bold uppercase tracking-widest transition-all relative",
+                   idx === 0 ? "pr-5" : "px-5",
+                   activeTab === tab ? "text-slate-900" : "text-slate-400 hover:text-slate-600"
+                 )}
+               >
+                 {tab}
+                 {activeTab === tab && (
+                   <div className="absolute -bottom-[1px] left-0 right-0 h-0.5 bg-slate-900 z-20" />
+                 )}
+               </button>
+             ))}
+             <div className="ml-auto flex items-center gap-2 mb-1">
+                <div className="px-2 py-0.5 bg-slate-900 text-white text-[8px] font-black uppercase tracking-widest rounded-sm shadow-sm">DERIVATION V2.1</div>
+             </div>
+          </div>
       </div>
 
       <div className="flex-1 overflow-auto custom-scrollbar">
-
-
-         {activeTab === "Fact Extraction" && (
-            <div className="p-5 space-y-6 animate-in fade-in slide-in-from-top-1">
-               <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                     <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Page</span>
-                     <select className="h-8 px-2 bg-slate-100 border border-slate-200 rounded-sm text-[10px] font-bold outline-none cursor-pointer">
-                        <option>1</option>
-                        <option>2</option>
-                        <option>3</option>
-                     </select>
-                  </div>
-                  <button className="flex items-center gap-1.5 text-primary hover:text-primary/80 transition-colors">
-                     <Plus className="h-3 w-3" />
-                     <span className="text-[10px] font-black uppercase tracking-widest">Add fact manually</span>
-                  </button>
-               </div>
-
-               <div className="space-y-4">
-                  {factExtractionData.map((f, i) => (
-                    <div key={i} className="p-5 bg-slate-50/80 border border-slate-100 rounded-lg hover:border-slate-200 transition-all group">
-                       <div className="space-y-4">
-                          <div className="space-y-1.5">
-                             <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.1em]">Fact</span>
-                             <p className="text-[11px] font-medium text-slate-800 leading-relaxed">{f.fact}</p>
-                          </div>
-                          <div className="space-y-1.5">
-                             <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.1em]">Context</span>
-                             <p className="text-[11px] font-medium text-slate-600 leading-relaxed italic">{f.context}</p>
-                          </div>
-                       </div>
-                    </div>
-                  ))}
-               </div>
+         {activeTab === "Forensic Analysis" && <DocumentForensicView data={data} />}
+         {activeTab === "Sequence Chunks" && <DocumentChunksView chunks={data.lossless_chunks} />}
+         {activeTab === "Metadata" && <DocumentMetadataView file={file} data={data} />}
+         {activeTab === "JSON" && (
+            <div className="p-4 bg-[#0d1117] min-h-full">
+               <pre className="text-[10px] font-mono text-[#79c0ff] bg-[#0d1117] p-6 leading-relaxed overflow-auto custom-scrollbar">
+                  {JSON.stringify(data, null, 2)}
+               </pre>
             </div>
          )}
       </div>
     </div>
   );
 }
+
+function DocumentForensicView({ data }: { data: typeof documentDerivationMock }) {
+  return (
+    <div className="p-6 space-y-8 animate-in fade-in duration-500">
+      {/* Document Classification */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+           <Shield className="h-4 w-4 text-slate-900" />
+           <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.2em]">Document Classification</h4>
+        </div>
+        <div className="grid grid-cols-1 gap-3">
+           <div className="p-4 bg-slate-50 border border-slate-100 rounded-sm">
+              <span className="text-[8px] font-black text-slate-400 uppercase block mb-1">Inferred Type</span>
+              <span className="text-[11px] font-black text-slate-800">{data.document_metadata.inferred_document_type}</span>
+           </div>
+           <div className="grid grid-cols-2 gap-3">
+              <div className="p-4 bg-slate-50 border border-slate-100 rounded-sm">
+                 <span className="text-[8px] font-black text-slate-400 uppercase block mb-1">Date Mentioned</span>
+                 <span className="text-[11px] font-black text-slate-800">{data.document_metadata.date_mentioned}</span>
+              </div>
+              <div className="p-4 bg-slate-50 border border-slate-100 rounded-sm">
+                 <span className="text-[8px] font-black text-slate-400 uppercase block mb-1">Readability Status</span>
+                 <span className={cn(
+                    "text-[11px] font-black px-2 py-0.5 rounded-sm inline-block",
+                    data.readability_status.includes('High') ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
+                 )}>{data.readability_status}</span>
+              </div>
+           </div>
+        </div>
+      </div>
+
+      {/* Executive Summary */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+           <FileText className="h-4 w-4 text-slate-900" />
+           <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.2em]">Executive Summary</h4>
+        </div>
+        <div className="p-5 bg-white border border-slate-200 rounded-sm shadow-sm relative overflow-hidden group">
+           <div className="absolute top-0 left-0 w-1 h-full bg-slate-900 group-hover:bg-primary transition-colors" />
+           <p className="text-[12px] font-bold text-slate-700 leading-relaxed italic">
+             "{data.quick_summary_and_analysis.executive_summary}"
+           </p>
+        </div>
+      </div>
+
+      {/* Critical Findings */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+           <AlertTriangle className="h-4 w-4 text-rose-600" />
+           <h4 className="text-[11px] font-black text-rose-600 uppercase tracking-[0.2em]">Critical Findings</h4>
+        </div>
+        <div className="space-y-2.5">
+           {data.quick_summary_and_analysis.critical_findings.map((finding, idx) => (
+              <div key={idx} className="flex gap-4 p-4 bg-rose-50/30 border border-rose-100 rounded-sm hover:bg-rose-50 transition-all">
+                 <span className="text-[10px] font-black text-rose-400 tabular-nums pt-0.5">{String(idx + 1).padStart(2, '0')}</span>
+                 <p className="text-[11px] font-bold text-slate-800 leading-snug">{finding}</p>
+              </div>
+           ))}
+        </div>
+      </div>
+
+      {/* Location & Personnel */}
+      <div className="grid grid-cols-1 gap-6">
+         <div className="space-y-4">
+            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b pb-2">Location Context</h4>
+            <div className="flex flex-wrap gap-2">
+               {data.document_metadata.location_mentioned.map((loc, i) => (
+                  <span key={i} className="px-2 py-1 bg-slate-100 text-slate-600 text-[9px] font-black uppercase rounded-sm border border-slate-200">{loc}</span>
+               ))}
+            </div>
+         </div>
+         <div className="space-y-4">
+            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b pb-2">Personnel Identified</h4>
+            <div className="grid grid-cols-2 gap-2">
+               {data.document_metadata.personnel_involved.map((person, i) => (
+                  <div key={i} className="flex items-center gap-2 p-2 bg-slate-50 border border-slate-100 rounded-sm">
+                     <Users className="h-3 w-3 text-slate-400" />
+                     <span className="text-[10px] font-bold text-slate-700 truncate">{person}</span>
+                  </div>
+               ))}
+            </div>
+         </div>
+      </div>
+    </div>
+  );
+}
+
+function DocumentChunksView({ chunks }: { chunks: typeof documentDerivationMock.lossless_chunks }) {
+  return (
+    <div className="p-6 space-y-6 animate-in fade-in duration-500">
+       <div className="flex items-center justify-between mb-4">
+          <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.2em]">Sequential Processing</h4>
+          <span className="text-[9px] font-black text-slate-400 bg-slate-100 px-2 py-0.5 rounded uppercase">{chunks.length} Units</span>
+       </div>
+       
+       <div className="space-y-8 relative pl-4">
+          <div className="absolute left-[21px] top-4 bottom-4 w-0.5 bg-slate-100" />
+          
+          {chunks.map((chunk, idx) => (
+             <div key={chunk.sequence_id} className="relative group">
+                {/* Timeline Node */}
+                <div className="absolute -left-[24px] top-1 h-4 w-4 rounded-full bg-white border-2 border-slate-200 z-10 group-hover:border-slate-900 transition-colors flex items-center justify-center">
+                   <div className="h-1.5 w-1.5 rounded-full bg-slate-200 group-hover:bg-slate-900 transition-colors" />
+                </div>
+                
+                <div className="space-y-3">
+                   <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest bg-slate-100 px-2 py-0.5 rounded-sm">{chunk.structural_context}</span>
+                      <span className="text-[9px] font-black text-slate-300 tabular-nums">CHUNK #{chunk.sequence_id}</span>
+                   </div>
+                   
+                   <div className="p-4 bg-white border border-slate-200 rounded-sm shadow-sm group-hover:border-slate-400 transition-all">
+                      <p className="text-[11px] font-bold text-slate-800 leading-relaxed">
+                         {chunk.extracted_content}
+                      </p>
+                      
+                      {chunk.visual_description && (
+                         <div className="mt-3 pt-3 border-t border-slate-50 flex items-start gap-2">
+                            <Search className="h-3 w-3 text-slate-300 mt-0.5" />
+                            <span className="text-[9px] font-bold text-slate-400 italic">Visual Reference: {chunk.visual_description}</span>
+                         </div>
+                      )}
+                   </div>
+                </div>
+             </div>
+          ))}
+       </div>
+    </div>
+  );
+}
+
+function DocumentMetadataView({ file, data }: { file: any, data: typeof documentDerivationMock }) {
+  return (
+    <div className="p-6 space-y-8 animate-in fade-in duration-500">
+       <div className="space-y-4">
+          <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em] border-b pb-2">Technical Properties</h4>
+          <div className="grid grid-cols-1 gap-4">
+             <div className="flex justify-between items-center py-1 border-b border-slate-50">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">File Name</span>
+                <span className="text-[11px] font-bold text-slate-700">{file.name}</span>
+             </div>
+             <div className="flex justify-between items-center py-1 border-b border-slate-50">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Inferred Class</span>
+                <span className="text-[11px] font-bold text-slate-700">{data.document_metadata.inferred_document_type}</span>
+             </div>
+             <div className="flex justify-between items-center py-1 border-b border-slate-50">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Integrity Hash</span>
+                <span className="text-[10px] font-mono text-slate-500">SHA-256: e3b0c442...</span>
+             </div>
+             <div className="flex justify-between items-center py-1 border-b border-slate-50">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Scan Confidence</span>
+                <span className="text-[11px] font-black text-emerald-600 uppercase tracking-widest">98.2% (High)</span>
+             </div>
+          </div>
+       </div>
+
+       <div className="space-y-4">
+          <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em] border-b pb-2">AI Extraction Metadata</h4>
+          <div className="grid grid-cols-2 gap-4">
+             <div className="p-3 bg-slate-50 rounded-sm border border-slate-100">
+                <span className="text-[8px] font-black text-slate-400 uppercase block mb-1">OCR Engine</span>
+                <span className="text-[10px] font-black text-slate-700">Tesseract Matrix v5.0</span>
+             </div>
+             <div className="p-3 bg-slate-50 rounded-sm border border-slate-100">
+                <span className="text-[8px] font-black text-slate-400 uppercase block mb-1">Reasoning Agent</span>
+                <span className="text-[10px] font-black text-blue-600">PEEPO v4.2</span>
+             </div>
+          </div>
+       </div>
+    </div>
+  );
+}
+
 
 export function AudioExtractionConsole({ file, onJump, currentTime }: { file: any, onJump: (s: number) => void, currentTime: number }) {
   const [activeTab, setActiveTab] = useState<"Audio Derivation" | "Metadata">("Audio Derivation");
@@ -844,9 +963,9 @@ export function AudioSceneSession({ data, currentTime, onJump, isDemo }: { data:
 function DiarizationSegment({ seg, active, isNext, onJump }: { seg: any, active: boolean, isNext: boolean, onJump: () => void }) {
   const [isExpanded, setIsExpanded] = useState(active);
 
-  // Auto-expand if it becomes active
+  // Auto-sync expansion with active state
   useEffect(() => {
-    if (active) setIsExpanded(true);
+    setIsExpanded(active);
   }, [active]);
 
   return (
@@ -864,7 +983,14 @@ function DiarizationSegment({ seg, active, isNext, onJump }: { seg: any, active:
             active ? "border-slate-900 bg-white shadow-md z-10" : 
             (isNext ? "border-slate-200 bg-slate-50/50 opacity-60" : "border-slate-100 hover:border-slate-300 bg-white shadow-sm")
          )}
-         onClick={onJump}
+         onClick={() => {
+            if (active) {
+               setIsExpanded(!isExpanded);
+            } else {
+               onJump();
+               setIsExpanded(true);
+            }
+         }}
       >
          {/* Top Row: compact enterprise style */}
          <div className="p-3 bg-white flex items-center justify-between border-b border-slate-50">

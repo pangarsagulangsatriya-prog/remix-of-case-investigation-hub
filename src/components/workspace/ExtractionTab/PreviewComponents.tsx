@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { getFileIcon } from "./FileRow";
 import { audioDiarizationData } from "@/data/mockData";
+import { useMemo } from "react";
 
 const formatTime = (seconds: number) => {
   if (!seconds || isNaN(seconds)) return "00:00";
@@ -461,19 +462,35 @@ export function ImagePreview({ file }: { file: any }) {
 
 export function AudioPreview({ file, currentTime, setCurrentTime, isPlaying, setIsPlaying, playbackSpeed, setPlaybackSpeed, audioRef }: any) {
   const parseTimeToSeconds = (timeStr: string) => {
-    const [mins, secs] = timeStr.split(':').map(Number);
-    return mins * 60 + secs;
+    if (!timeStr) return 0;
+    const parts = timeStr.split(':').map(Number);
+    if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+    if (parts.length === 2) return parts[0] * 60 + parts[1];
+    return parts[0] || 0;
   };
 
-  const activeSegmentIndex = audioDiarizationData.findIndex(seg => {
+  const derivation = file?.metadata?.audio_derivation;
+  const diarization = useMemo(() => {
+    if (derivation?.dialogue_map) {
+      return derivation.dialogue_map.map((seg: any) => ({
+        ...seg,
+        start_time: seg.start_time || seg.start_dialog,
+        end_time: seg.end_time || seg.end_dialog,
+        text: seg.text || seg.verbatim_text
+      }));
+    }
+    return audioDiarizationData;
+  }, [derivation]);
+
+  const activeSegmentIndex = diarization.findIndex((seg: any) => {
     const start = parseTimeToSeconds(seg.start_time);
     const end = parseTimeToSeconds(seg.end_time);
     return currentTime >= start && currentTime <= end;
   });
 
-  const activeSegment = activeSegmentIndex !== -1 ? audioDiarizationData[activeSegmentIndex] : null;
-  const nextSegment = activeSegmentIndex !== -1 && activeSegmentIndex < audioDiarizationData.length - 1 
-    ? audioDiarizationData[activeSegmentIndex + 1] 
+  const activeSegment = activeSegmentIndex !== -1 ? diarization[activeSegmentIndex] : null;
+  const nextSegment = activeSegmentIndex !== -1 && activeSegmentIndex < diarization.length - 1 
+    ? diarization[activeSegmentIndex + 1] 
     : null;
 
   return (

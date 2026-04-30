@@ -219,3 +219,88 @@ export const videoExtractionRefined = {
     { category: "Equipment", items: ["Titan-X roller bracket fatigue", "Retrofit needed for e-stop proximity"] },
   ]
 };
+export const documentDerivationMock = {
+  document_metadata: {
+    inferred_document_type: "Interview BAP / Incident Investigation Data Interview",
+    date_mentioned: "5 November 2024",
+    location_mentioned: ["Jl Kutilang", "KM 2", "KM 6", "ROM C2HS", "CPP", "Simpang Kaniungan", "Disposal Utara"],
+    personnel_involved: [
+      "Syaiful Anwar (Operator TC-4007)",
+      "Aris Achdiat (Control Room)",
+      "Fathurohman (Mine Foreman)",
+      "Yusup (Act. Mine Supervisor)",
+      "Pak Bambang",
+      "Pak Hendro",
+      "Pak Thobias",
+      "Pak Tommy",
+      "Pak Senda",
+      "Pak El",
+      "Pak Musthofa",
+      "Pak Dhehave",
+      "Pak Yuda",
+      "Bu Nabilah",
+      "Pak Elfizar"
+    ]
+  },
+  quick_summary_and_analysis: {
+    executive_summary: "This document records interviews following a truck roll-over incident (rebah) involving unit TC-4007 (noted as TC-4008 in the header) driven by Syaiful Anwar. The accident occurred on November 5, 2024, at Jalan Kutilang, primarily caused by operator fatigue/micro-sleep during the 4th night shift after technical delays and ineffective fatigue interventions.",
+    critical_findings: [
+      "Operator experienced fatigue and micro-sleep leading to the unit hitting a berm and overturning at Jalan Kutilang.",
+      "Technical issues (ABS malfunction) at 23:15 caused the driver to wait until 01:02, increasing fatigue risk.",
+      "Control Room detected a 'look down' alert at 22:15, but intervention was limited to a WhatsApp message to the foreman who cleared the driver based on a radio check.",
+      "Communication gaps: Use of private WhatsApp (japri) instead of radio for fatigue alerts to 'save face' prevented broader situational awareness.",
+      "Operator reported noise at home from neighboring construction (molen) affecting sleep quality during the day."
+    ]
+  },
+  readability_status: "High - Clear",
+  lossless_chunks: [
+    {
+      sequence_id: 1,
+      structural_context: "Header and Operator Metadata",
+      extracted_content: "DATA INTERVIEW TC-4008 REBAH (5 NOVEMBER 2024 PUKUL 01.34 WITA). PELAKU (OPERATOR TC-4007). Nama: Syaiful Anwar, NIK: 16385, SID: FGXOY, Pendidikan: SMA (Biologi), DOH: 4 November 2021. Pengalaman Kerja: MTN 3 tahun, BC 3 tahun. Jabatan: Driver DT 40 TON, Umur: 45 Tahun. Jam tidur: 6 Jam (08.00 – 11.00), (13.00 – 16.00). Hari kerja: Hari ke 4 malam.",
+      visual_description: "Title page with bold header and bulleted personal details of the operator."
+    },
+    {
+      sequence_id: 2,
+      structural_context: "Operator Chronology",
+      extracted_content: "Kronologi: Pada tanggal 4 November setelah shift malam saya tidur jam 08.00 – 11.00 wita, bangun untuk makan, tidur lagi jam 13.00 – 16.00 wita. Pukul 18.00 fingerprint & P5M di ROM C2HS. Jam 23.15 alarm ABS malfunction di CPP, melapor ke timbangan. Jam 01.02 pengawas (Pak Yusuf) datang menyuruh unit ke workshop. Di KM 2 berhenti karena fatigue, cuci muka. Di KM 6 Alert ABS normal kembali, melapor ke pengawas diminta lanjut operasi. Jam 01.25 di simpang kaniungan mata berat tapi terus jalan. Mendekati tanjakan kutilang tidak sadar, menyerempet tanggul, banting steering agar tidak masuk jurang, berakhir rebah.",
+      visual_description: "Narrative bullet points describing the timeline from the start of the shift to the accident."
+    },
+    {
+      sequence_id: 3,
+      structural_context: "Interview Q&A - Operator Part 1",
+      extracted_content: "Pak Bambang: Anak 2, SD kelas 2 & 4. Gangguan tidur: tetangga bangun rumah, ada molen 2 minggu berisik jarak 50m. P5M: saya speak up fatigue tapi diminta pindah ke tempat aman (rest area/rom). Pak Hendro: Pulang kerja nunggu anak. Istri ijin beli HP. Paham program fatigue. Jam 23.00-01.05 di CPP merokok, ngopi, tanya petugas timbangan soal ABS. Pak Thobias: Kewajiban operator shift kritis: check fatigue, sapa teman, pasang bendera. Tanda fatigue: kepala berat, beban di mata.",
+      visual_description: "Transcript of questions from various interviewers addressed to the operator Syaiful Anwar."
+    },
+    {
+      sequence_id: 4,
+      structural_context: "Interview Q&A - Operator Part 2",
+      extracted_content: "Pak Tommy: Keadaan jalan sunyi malam itu. Ingin diperbaiki: baiknya cek unit sekalian ke workshop. Pak Senda: Niat istirahat di workshop tapi di KM 6 ABS normal jadi lanjut. Pak Musthofa: Pernah alert fatigue 2 minggu lalu (yawning). DMS bermanfaat mengingatkan fokus. Pak Dhehave: Setelah kejadian kontak radio sunyi. Main game dengan anak di rumah tapi tidak saat istirahat kerja. Pak Yuda: Saat kejadian terlihat jurang langsung berbelok. TKP gelap dari simpang menuju pit.",
+      visual_description: "Continuation of the operator's interview transcript covering fatigue management and road conditions."
+    },
+    {
+      sequence_id: 5,
+      structural_context: "Control Room Personnel Metadata and Chronology",
+      extracted_content: "PENGAWAS (PETUGAS CONTROL ROOM). Nama: Aris Achdiat, NIK: 16506, SID: E91J6, Jabatan: Petugas Control Room, Umur: 32 tahun. Jam tidur: 6 jam, Hari kerja: Hari ke 2. Kronologi: Jam 22.15 alert TC-4007 look down di DMS. Video di-japri ke pengawas ROM C2HS. Balasan: driver kondisi baik. Jam 01.35 alert masuk lagi, saat putar video TC 4007 mengalami kecelakaan tunggal.",
+      visual_description: "Metadata section for the Control Room officer followed by their perspective of the incident timeline."
+    },
+    {
+      sequence_id: 6,
+      structural_context: "Interview Q&A - Control Room",
+      extracted_content: "Pak Bambang: Fokus alert fatigue. Siang bisa 1000 alert, malam 500. Pak Hendro: Kendala CR: jaringan dan komunikasi hauling terbatas. Alert TC 4007: klik DMS 2, Jimu 3. Look down jam 22.15. Pak Elfizar: Alert 22.15 tidak distop karena mau masuk ROM. Pak Senda: Kriteria stop: 3x temuan (pribadi), standar baru 1x stop. Pak Dhehave: Kenapa tidak langsung kontak Syaiful? Langsung ke pengawas. Alasan tidak lewat radio: menjaga nama baik beliau karena fatigue diawal shift.",
+      visual_description: "Transcript of the Control Room officer explaining the monitoring process and intervention decisions."
+    },
+    {
+      sequence_id: 7,
+      structural_context: "ROM Foreman Personnel Metadata and Chronology",
+      extracted_content: "PENGAWAS (PENGAWAS ROM). Nama: Fathurohman, NIK: 16218, SID: YRGLW, Jabatan: Mine Foreman, Umur: 42 tahun. Kronologi: Pukul 22.33 dikontak petugas CR untuk cek Syaiful. Syaiful jawab aman dan fit. Jam 23.40 info TC 4007 breakdown di CPP. Jam 01.53 telpon dari DMS tanya posisi unit. Pukul 02.05 kabar TC 4007 rebah di Jl Kutilang. Pak Hendro: Syaiful hari ke-4 (hari kritis). Pak Bambang: Kenapa tidak diturunkan? Karena menjawab aman dengan semangat.",
+      visual_description: "Metadata and interview transcript for the ROM Foreman regarding his communication with the driver."
+    },
+    {
+      sequence_id: 8,
+      structural_context: "Hauling Supervisor Personnel Metadata and Chronology",
+      extracted_content: "PENGAWAS (PENGAWAS HAULING MOBILE). Nama: Yusup, NIK: 11508, SID: Y14BN, Jabatan: Act. Mine Supervisor. Kronologi: Jam 01.00 bangunkan rekan di CPP termasuk Syaiful. Syaiful lapor ABS malfunction. Disuruh bawa ke workshop. Jam 01.30 info radio 'urgent di jalan kutilang'. Meluncur ke TKP, unit rebah, Syaiful sudah di luar. Pak Tommy: Miss-nya adalah Pak Syaiful tidak mau speak up, mungkin sungkan. Pak Dhehave: Memungkinkan CR di KM 7? Sangat membantu.",
+      visual_description: "Final section covering the mobile supervisor's actions and general feedback on the incident."
+    }
+  ]
+};
