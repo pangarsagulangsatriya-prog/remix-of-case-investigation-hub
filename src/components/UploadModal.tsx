@@ -568,20 +568,24 @@ export function UploadModal({
       .filter((g) => g.files.length > 0);
 
     try {
-      // Trigger background processing non-blockingly
-      onUploadComplete(completed);
+      // 1. Await the actual persistence mutation
+      await onUploadComplete(completed);
       
       setFileItems((prev) => prev.map((f) => !f.error ? { ...f, status: "success", progress: 100 } : f));
       
-      // Close instantly
-      setIsUploading(false);
-      resetState();
-      onClose();
+      toast.success(`Berhasil mengunggah ${valid.length} objek bukti.`);
       
-      toast.success(`Ingestion started for ${valid.length} objects.`);
+      // 2. Close after brief delay to show completion
+      setTimeout(() => {
+        setIsUploading(false);
+        resetState();
+        onClose();
+      }, 500);
+      
     } catch (err: any) {
+      console.error("Upload process failure:", err);
       setIsUploading(false);
-      setWarnings([err?.message || "Upload failed"]);
+      setWarnings([err?.message || "Proses unggah gagal. Silakan periksa koneksi atau kredensial Supabase Anda."]);
       setFileItems((prev) => prev.map((f) => !f.error ? { ...f, status: "error", progress: 0, error: err?.message || "Upload failed" } : f));
     }
   }, [fileItems, groups, onUploadComplete, resetState, onClose]);

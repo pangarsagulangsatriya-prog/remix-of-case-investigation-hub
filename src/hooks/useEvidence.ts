@@ -21,6 +21,9 @@ function getFallbackMimeType(fileName: string): string {
     case 'mov': return 'video/quicktime';
     case 'mkv': return 'video/x-matroska';
     case 'avi': return 'video/x-msvideo';
+    case 'm4v': return 'video/x-m4v';
+    case '3gp': return 'video/3gpp';
+    case 'ts': return 'video/mp2t';
     case 'mp3': return 'audio/mpeg';
     case 'wav': return 'audio/wav';
     case 'm4a': return 'audio/mp4';
@@ -179,22 +182,36 @@ export function useUploadEvidence() {
           let publicUrl = "";
 
           try {
+            const contentType = file.type || getFallbackMimeType(file.name);
+            console.log(`Uploading ${file.name} to ${filePath} with type ${contentType}...`);
+            
             const { error: uploadError } = await supabase.storage
               .from("evidence")
               .upload(filePath, file, {
                  upsert: true,
-                 contentType: file.type || getFallbackMimeType(file.name),
+                 contentType: contentType,
                  cacheControl: '3600'
               });
 
-            if (uploadError) throw uploadError;
+            if (uploadError) {
+              console.error("Supabase Storage Upload Error:", uploadError);
+              // Check for common errors
+              if (uploadError.message.includes("bucket not found")) {
+                throw new Error("Storage Bucket 'evidence' not found. Please create it in Supabase Dashboard.");
+              }
+              if (uploadError.message.includes("Payload Too Large")) {
+                throw new Error("File too large. Maximum upload size exceeded.");
+              }
+              throw uploadError;
+            }
 
             const { data: publicUrlData } = supabase.storage
               .from("evidence")
               .getPublicUrl(filePath);
             publicUrl = publicUrlData.publicUrl;
-          } catch (e) {
+          } catch (e: any) {
             console.error("Storage error:", e);
+            toast.error(`Upload failed for ${file.name}: ${e.message || 'Unknown error'}`);
             throw e; 
           }
 
