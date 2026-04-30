@@ -1414,28 +1414,7 @@ function VideoMetadataView({ file, data }: { file: any, data: typeof videoDeriva
     </div>
   );
 }
-            {Object.entries(data.human_performance_signals).map(([key, items]: [string, any]) => (
-              <div key={key}>
-                <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.1em] mb-1.5 block">{key.replace(/_/g, ' ')}</span>
-                <div className="space-y-1.5">
-                  {items.map((item: any, i: number) => (
-                    <div key={i} className="p-2 bg-slate-50 border border-slate-100 rounded-sm">
-                       <div className="flex items-center justify-between mb-1">
-                          <span className="text-[9px] font-black text-primary bg-primary/5 px-1.5 py-0.5 rounded tabular-nums">{item.timestamp}</span>
-                          <span className="text-[8px] font-bold text-slate-400 uppercase">{item.category}</span>
-                       </div>
-                       <p className="text-[10px] font-bold text-slate-700 leading-snug">{item.detail}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
+
 
 export function VideoSceneSession({ currentTime, onJump }: { currentTime: number, onJump: (s: number) => void }) {
   const data = videoExtractionRefined.scene_timeline;
