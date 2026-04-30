@@ -43,6 +43,8 @@ import {
 } from "@/hooks/useEvidence";
 import { UploadModal, CompletedGroup } from "../../UploadModal";
 import { toast } from "sonner";
+import { AudioDerivationInjector } from "../ExtractionTab/AudioDerivationInjector";
+import { useSearchParams } from "react-router-dom";
 
 export default function ExtractionTab() {
   const { caseId } = useParams<{ caseId: string }>();
@@ -84,6 +86,8 @@ export default function ExtractionTab() {
   const [fileRenameValue, setFileRenameValue] = useState("");
   const [folderToRename, setFolderToRename] = useState<any>(null);
   const [fileToRename, setFileToRename] = useState<any>(null);
+  const [isDerivationInjectorOpen, setIsDerivationInjectorOpen] = useState(false);
+  const [searchParams] = useSearchParams();
 
   // Media State
   const [videoCurrentTime, setVideoCurrentTime] = useState(0);
@@ -104,6 +108,24 @@ export default function ExtractionTab() {
   const moveFileMutation = useMoveFile();
   const uploadEvidenceMutation = useUploadEvidence();
   const rerunExtractionMutation = useRerunExtraction();
+
+  // Injector Shortcut
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+        e.preventDefault();
+        // Here we should ideally check user role, but for prototype we allow in dev/staging env
+        setIsDerivationInjectorOpen(true);
+      }
+    };
+
+    if (searchParams.get('audioDerivationInjector') === 'true') {
+      setIsDerivationInjectorOpen(true);
+    }
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [searchParams]);
 
   // Derived
   const filteredFiles = useMemo(() => {
@@ -648,6 +670,19 @@ export default function ExtractionTab() {
           </div>
         </div>
       </Modal>
+
+      <AudioDerivationInjector 
+        isOpen={isDerivationInjectorOpen}
+        onClose={() => setIsDerivationInjectorOpen(false)}
+        caseId={caseId || ""}
+        evidenceId={selectedFile?.id || ""}
+        evidenceName={selectedFile?.name || ""}
+        onApply={() => {
+           // Refetch evidence or just the derivation data in the console
+           // ExtractionTab's evidence query will likely refetch if we invalidate tags, 
+           // but for prototype we can just let ConsoleComponents handle its own fetch
+        }}
+      />
     </div>
   );
 }

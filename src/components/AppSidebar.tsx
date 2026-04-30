@@ -10,6 +10,7 @@ import {
   Shield,
   PanelLeftClose,
   PanelLeftOpen,
+  FlaskConical,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -32,6 +33,7 @@ const navItems = [
   { title: "Review & Approval", url: "/review", icon: CheckCircle2 },
   { title: "Audit Trail", url: "/audit-trail", icon: History },
   { title: "Admin", url: "/admin", icon: Settings },
+  { title: "Labs", url: "/labs/audio-extraction", icon: FlaskConical },
 ];
 
 import { BerauCoalLogo } from "./BrandLogo";

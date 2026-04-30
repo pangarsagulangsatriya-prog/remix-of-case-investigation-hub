@@ -6,7 +6,8 @@ import { useCase, useCases } from "@/hooks/useCases";
 import { useEvidence, useUploadEvidence } from "@/hooks/useEvidence";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Loader2, ArrowLeft, ChevronLeft, ChevronRight, Clock } from "lucide-react";
+import { Loader2, ArrowLeft, ChevronLeft, ChevronRight, Clock, AlertTriangle } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 // Modular Tab Components (Lazy Loaded)
 const ExtractionTab = React.lazy(() => import("@/components/workspace/Tabs/ExtractionTab"));
@@ -52,6 +53,21 @@ export default function CaseWorkspacePage() {
   const { caseId } = useParams<{ caseId: string }>();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("Evidence Review");
+  const [hasDemoDerivation, setHasDemoDerivation] = useState(false);
+
+  useEffect(() => {
+    const checkDemo = async () => {
+      const { count } = await supabase
+        .from('evidence_audio_derivation_outputs')
+        .select('*', { count: 'exact', head: true })
+        .eq('case_id', caseId)
+        .eq('is_active', true)
+        .eq('is_demo_override', true);
+      
+      setHasDemoDerivation((count || 0) > 0);
+    };
+    if (caseId) checkDemo();
+  }, [caseId]);
 
   // Real Data Hooks
   const { data: cases } = useCases();
@@ -130,7 +146,15 @@ export default function CaseWorkspacePage() {
                    Next <ChevronRight className="h-3.5 w-3.5" />
                  </Button>
               </div>
-              <Button className="h-9 font-bold px-4 bg-slate-900 text-white ">Submit Case</Button>
+              <div className="flex items-center gap-4">
+                {hasDemoDerivation && (
+                   <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-sm animate-pulse">
+                      <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />
+                      <span className="text-[10px] font-black text-amber-700 uppercase tracking-tight">Demo Derivation Active</span>
+                   </div>
+                )}
+                <Button className="h-9 font-bold px-4 bg-slate-900 text-white ">Submit Case</Button>
+              </div>
             </div>
           </div>
 

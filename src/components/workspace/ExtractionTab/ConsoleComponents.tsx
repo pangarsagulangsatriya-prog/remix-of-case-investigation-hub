@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Database, Info, ChevronDown, Shield, FileText, Plus, Users, 
   MessageSquare, Clock, Brain, AlertTriangle, Activity, Search,
-  Video as VideoIcon, LayoutGrid, Play, Wind, Cpu, Footprints 
+  Video as VideoIcon, Mic as AudioIcon, LayoutGrid, Play, Wind, Cpu, Footprints 
 } from 'lucide-react';
 import {
   Tooltip,
@@ -14,6 +14,8 @@ import { cn } from "@/lib/utils";
 import { SectionHeader, KVP, StatusPill } from "../WorkspacePrimitives";
 import { ConfidenceChip } from "../../StatusChip";
 import { SECTION_DESCRIPTIONS, videoExtractionRefined } from "@/data/mockData";
+import { supabase } from "@/lib/supabase";
+import { normalizeAudioTimestamp } from "@/lib/normalizeAudioTimestamp";
 
 export function ImageExtractionConsole({ file }: { file: any }) {
   const [viewMode, setViewMode] = useState<"Structured" | "JSON">("Structured");
@@ -207,8 +209,39 @@ export function DocumentExtractionConsole({ file }: { file: any }) {
 }
 
 export function AudioExtractionConsole({ file, onJump, currentTime }: { file: any, onJump: (s: number) => void, currentTime: number }) {
-  const [activeTab, setActiveTab] = useState<"Diarization" | "Metadata">("Diarization");
-  const [viewMode, setViewMode] = useState<"Structured" | "JSON">("Structured");
+  const [activeTab, setActiveTab] = useState<"Audio Derivation" | "Metadata">("Audio Derivation");
+  const [derivationData, setDerivationData] = useState<any>(null);
+  const [isDemo, setIsDemo] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    fetchDerivation();
+  }, [file.id]);
+
+  const fetchDerivation = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('evidence_audio_derivation_outputs')
+        .select('*')
+        .eq('evidence_id', file.id)
+        .eq('is_active', true)
+        .single();
+      
+      if (data) {
+        setDerivationData(data);
+        setIsDemo(data.is_demo_override);
+      } else {
+        setDerivationData(null);
+        setIsDemo(false);
+      }
+    } catch (e) {
+      setDerivationData(null);
+      setIsDemo(false);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const audioExtractionData = useMemo(() => ({
     recording_meta: {
@@ -329,18 +362,28 @@ export function AudioExtractionConsole({ file, onJump, currentTime }: { file: an
     };
   }, [file, audioExtractionData]);
 
-  const normalizedScene = useMemo(() => ({
-    scene_session: {
-      speaker_count: audioExtractionData.speaker_profiles.length,
-      full_diarization: audioDiarizationData
+  const normalizedScene = useMemo(() => {
+    if (derivationData) {
+      return {
+        scene_session: {
+          speaker_count: derivationData.investigation_metadata?.total_speakers_detected || 0,
+          full_diarization: derivationData.dialogue_map || []
+        }
+      };
     }
-  }), [audioDiarizationData, audioExtractionData.speaker_profiles.length]);
+    return {
+      scene_session: {
+        speaker_count: audioExtractionData.speaker_profiles.length,
+        full_diarization: audioDiarizationData
+      }
+    };
+  }, [audioDiarizationData, audioExtractionData.speaker_profiles.length, derivationData]);
 
   return (
     <div className="flex flex-col h-full bg-white">
       <div className="sticky top-0 z-40 bg-[#f4f7f9] border-b border-slate-200 px-6 pt-3 flex flex-col shrink-0">
           <div className="flex items-center border-b border-slate-200 relative">
-             {(["Diarization", "Metadata"] as const).map((tab, idx) => (
+             {(["Audio Derivation", "Metadata"] as const).map((tab, idx) => (
                <button 
                  key={tab}
                  onClick={() => setActiveTab(tab)} 
@@ -356,6 +399,11 @@ export function AudioExtractionConsole({ file, onJump, currentTime }: { file: an
                  )}
                </button>
              ))}
+             {isDemo && (
+                <div className="ml-auto flex items-center gap-2 mb-1">
+                   <div className="px-2 py-0.5 bg-blue-600 text-white text-[8px] font-black uppercase tracking-widest rounded-sm shadow-sm">DEMO DERIVATION</div>
+                </div>
+             )}
           </div>
 
 
@@ -364,12 +412,27 @@ export function AudioExtractionConsole({ file, onJump, currentTime }: { file: an
       <div className="flex-1 overflow-auto custom-scrollbar">
 
 
-         {activeTab === "Diarization" && (
-           <AudioSceneSession data={normalizedScene} currentTime={currentTime} onJump={onJump} />
+         {activeTab === "Audio Derivation" && (
+           <AudioSceneSession data={normalizedScene} currentTime={currentTime} onJump={onJump} isDemo={isDemo} />
          )}
 
          {activeTab === "Metadata" && (
            <div className="p-6 space-y-8 animate-in fade-in duration-500">
+             {derivationData && (
+                <div className="space-y-4">
+                   <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em] border-b pb-2">Derivation Context</h4>
+                   <div className="grid grid-cols-2 gap-4">
+                      <div className="p-3 bg-slate-50 rounded-sm border border-slate-100">
+                         <span className="text-[8px] font-black text-slate-400 uppercase block mb-1">Total Speakers</span>
+                         <span className="text-[10px] font-black text-slate-700">{derivationData.investigation_metadata?.total_speakers_detected}</span>
+                      </div>
+                      <div className="p-3 bg-slate-50 rounded-sm border border-slate-100">
+                         <span className="text-[8px] font-black text-slate-400 uppercase block mb-1">Source</span>
+                         <span className="text-[10px] font-black text-blue-600">{derivationData.output_source}</span>
+                      </div>
+                   </div>
+                </div>
+             )}
              <div className="space-y-4">
                 <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em] border-b pb-2">Technical Properties</h4>
                 <div className="grid grid-cols-1 gap-4">
@@ -648,7 +711,7 @@ export function AudioExtractionStructured({ data, onJump }: { data: any, onJump:
   );
 }
 
-export function AudioSceneSession({ data, currentTime, onJump }: { data: any, currentTime: number, onJump: (s: number) => void }) {
+export function AudioSceneSession({ data, currentTime, onJump, isDemo }: { data: any, currentTime: number, onJump: (s: number) => void, isDemo?: boolean }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
@@ -769,125 +832,86 @@ function DiarizationSegment({ seg, active, isNext, onJump }: { seg: any, active:
       <div 
          className={cn(
             "flex flex-col border transition-all duration-300 cursor-pointer overflow-hidden rounded-sm",
-            active ? "border-primary bg-white shadow-md z-10" : 
+            active ? "border-slate-900 bg-white shadow-md z-10" : 
             (isNext ? "border-slate-200 bg-slate-50/50 opacity-60" : "border-slate-100 hover:border-slate-300 bg-white shadow-sm")
          )}
          onClick={onJump}
       >
-         {/* SECTION 1: DIALOG */}
-         <div className="p-4 bg-white">
-            <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-50">
-               <div className="flex items-center gap-3">
-                  <div className={cn(
-                     "px-2 py-0.5 rounded-sm text-[10px] font-black tabular-nums tracking-widest border transition-colors",
-                     active ? "bg-slate-900 text-white border-slate-900" : "bg-slate-100 text-slate-500 border-transparent"
-                  )}>
-                     {seg.start_time} — {seg.end_time}
-                  </div>
-                  <span className={cn(
-                     "text-[10px] font-black uppercase tracking-[0.1em] px-2 py-0.5 rounded-sm transition-colors",
-                     active ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-600"
-                  )}>
-                     {seg.speaker_label}
-                  </span>
-               </div>
-               
-               <button 
-                 onClick={(e) => {
-                   e.stopPropagation();
-                   setIsExpanded(!isExpanded);
-                 }}
-                 className={cn(
-                   "p-1 rounded-sm transition-all hover:bg-slate-100",
-                   isExpanded ? "rotate-180" : "rotate-0"
-                 )}
-               >
-                 <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
-               </button>
-            </div>
-
-            <div className="flex gap-4 items-start">
-               <div className={cn(
-                  "h-8 w-8 rounded-sm flex items-center justify-center shrink-0 border transition-all duration-300",
-                  active ? "bg-slate-900 text-white border-slate-900" : "bg-slate-50 text-slate-300 border-slate-100"
+         {/* Top Row: compact enterprise style */}
+         <div className="p-3 bg-white flex items-center justify-between border-b border-slate-50">
+            <div className="flex items-center gap-2">
+               <span className={cn(
+                  "px-1.5 py-0.5 rounded-sm text-[9px] font-black tabular-nums tracking-widest border transition-colors",
+                  active ? "bg-slate-900 text-white border-slate-900" : "bg-slate-50 text-slate-500 border-slate-100"
                )}>
-                  <MessageSquare className="h-4 w-4" />
-               </div>
-               <div className="flex-1">
-                  <p className={cn(
-                     "text-[13px] font-bold leading-relaxed transition-colors",
-                     active ? "text-slate-900" : (isNext ? "text-slate-400 italic" : "text-slate-700")
-                  )}>
-                     "{seg.text}"
-                  </p>
-               </div>
+                  {normalizeAudioTimestamp(seg.start_time)} — {normalizeAudioTimestamp(seg.end_time)}
+               </span>
+               <span className={cn(
+                  "text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-sm transition-colors",
+                  active ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-600"
+               )}>
+                  {seg.speaker_label}
+               </span>
+               {seg.theme_tag && (
+                  <span className="px-2 py-0.5 bg-slate-50 text-slate-400 border border-slate-100 text-[8px] font-black uppercase tracking-widest rounded-sm">
+                    {seg.theme_tag}
+                  </span>
+               )}
+               {seg.interaction_type && (
+                  <span className="px-2 py-0.5 bg-slate-50 text-slate-400 border border-slate-100 text-[8px] font-black uppercase tracking-widest rounded-sm hidden sm:inline-block">
+                    {seg.interaction_type}
+                  </span>
+               )}
             </div>
+            
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsExpanded(!isExpanded);
+              }}
+              className="p-1 hover:bg-slate-50 rounded transition-all"
+            >
+               <ChevronDown className={cn("h-3 w-3 text-slate-400 transition-transform", isExpanded ? "rotate-180" : "")} />
+            </button>
          </div>
 
-         {/* SECTION 2: CONTEXT (COLLAPSIBLE) */}
+         {/* Body: Verbatim Text */}
+         <div className="p-4 bg-white">
+            <p className={cn(
+               "text-[11px] font-bold leading-relaxed transition-colors",
+               active ? "text-slate-900" : "text-slate-600"
+            )}>
+               {seg.text || seg.verbatim_text}
+            </p>
+         </div>
+
+         {/* Expanded Section */}
          {isExpanded && (
-           <div className={cn(
-              "p-4 border-t animate-in fade-in slide-in-from-top-1 duration-300",
-              active ? "bg-slate-50/50 border-slate-100" : "bg-slate-50/20 border-slate-50"
-           )}>
-              <div className="space-y-4">
-                 {/* Metadata Group */}
-                 <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest mr-1">Context Matrix</span>
-                    
-                    {seg.paralinguistics && seg.paralinguistics.length > 0 && (
-                       <div className="flex flex-wrap gap-1.5">
-                          {seg.paralinguistics.map((p: string, pIdx: number) => (
-                             <span key={pIdx} className="px-1.5 py-0.5 bg-white border border-slate-200 rounded-sm text-[8px] font-black text-slate-500 uppercase italic">
-                               {p}
-                             </span>
-                          ))}
-                       </div>
-                    )}
-
-                    {seg.theme_tag && (
-                       <div className={cn(
-                          "flex items-center gap-1 px-1.5 py-0.5 rounded-sm border text-[8px] font-black uppercase tracking-widest",
-                          active ? "bg-blue-600 border-blue-600 text-white" : "bg-white border-slate-200 text-slate-600"
-                       )}>
-                          <div className={cn("h-1 w-1 rounded-full", active ? "bg-white" : "bg-blue-500")} />
-                          {seg.theme_tag}
-                       </div>
-                    )}
-                    
-                    {seg.interaction_type && (
-                       <div className={cn(
-                          "flex items-center gap-1 px-1.5 py-0.5 rounded-sm border text-[8px] font-black uppercase tracking-widest",
-                          active ? "bg-slate-800 border-slate-800 text-white" : "bg-white border-slate-200 text-slate-600"
-                       )}>
-                          {seg.interaction_type}
-                       </div>
-                    )}
-                 </div>
-
-                 {/* Inference Box */}
-                 {seg.extracted_action_or_fact && (
-                    <div className={cn(
-                       "p-3 rounded-sm border flex gap-3 transition-all duration-300",
-                       active ? "bg-white border-slate-200" : "bg-white/50 border-slate-100"
-                    )}>
-                       <div className="h-6 w-6 rounded-sm bg-slate-50 flex items-center justify-center shrink-0 border border-slate-100">
-                          <Brain className="h-3.5 w-3.5 text-slate-400" />
-                       </div>
-                       <div className="flex-1">
-                          <div className="flex items-center justify-between mb-1">
-                             <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Inference Vector</span>
-                             <div className="flex items-center gap-1">
-                                <div className="h-1 w-1 rounded-full bg-emerald-500" />
-                                <span className="text-[8px] font-black text-emerald-600 uppercase">Validated</span>
-                             </div>
-                          </div>
-                          <p className="text-[11px] font-bold text-slate-700 leading-snug">{seg.extracted_action_or_fact}</p>
-                       </div>
-                    </div>
-                 )}
-              </div>
-           </div>
+            <div className="px-4 pb-4 bg-white space-y-3 animate-in fade-in slide-in-from-top-1">
+               {seg.paralinguistics && Array.isArray(seg.paralinguistics) && seg.paralinguistics.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                     {seg.paralinguistics.map((p: string, i: number) => (
+                        <span key={i} className="px-2 py-0.5 bg-amber-50 text-amber-600 border border-amber-100 text-[8px] font-black uppercase tracking-widest rounded-sm">
+                           {p}
+                        </span>
+                     ))}
+                  </div>
+               )}
+               
+               {seg.extracted_action_or_fact && (
+                  <div className="mt-2 pt-3 border-t border-slate-100">
+                     <div className="bg-slate-50 p-3 rounded-sm border border-slate-200 group/fact relative">
+                        <div className="absolute top-0 right-0 p-1 opacity-20">
+                           <Brain className="h-3 w-3" />
+                        </div>
+                        <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Extracted Action / Fact</span>
+                        <p className="text-[10px] font-bold text-slate-800 leading-snug">
+                           {seg.extracted_action_or_fact}
+                        </p>
+                     </div>
+                  </div>
+               )}
+            </div>
          )}
       </div>
     </div>
