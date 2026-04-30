@@ -13,7 +13,7 @@ import {
 import { cn } from "@/lib/utils";
 import { SectionHeader, KVP, StatusPill } from "../WorkspacePrimitives";
 import { ConfidenceChip } from "../../StatusChip";
-import { SECTION_DESCRIPTIONS, videoExtractionRefined, documentDerivationMock, imageDerivationMock } from "@/data/mockData";
+import { SECTION_DESCRIPTIONS, videoExtractionRefined, documentDerivationMock, imageDerivationMock, videoDerivationMock } from "@/data/mockData";
 import { supabase } from "@/lib/supabase";
 import { normalizeAudioTimestamp } from "@/lib/normalizeAudioTimestamp";
 
@@ -1184,269 +1184,236 @@ function DiarizationSegment({ seg, active, isNext, onJump }: { seg: any, active:
 }
 
 export function VideoAnalysisPanel({ file, currentTime, onJump }: { file: any, currentTime: number, onJump: (s: number) => void }) {
-  const [activeTab, setActiveTab] = useState<"Extraction" | "Diarization">("Extraction");
-  const [viewMode, setViewMode] = useState<"Structured" | "JSON">("Structured");
+  const [activeTab, setActiveTab] = useState<"Forensic Analysis" | "Sequence Blocks" | "Ontology Map" | "Metadata" | "JSON">("Forensic Analysis");
+  const data = videoDerivationMock;
 
   return (
     <div className="flex flex-col h-full bg-white">
-      <div className="sticky top-0 z-40 bg-white border-b px-5 py-4 flex items-center justify-between shrink-0 shadow-sm">
-         <div className="flex flex-col">
-            <span className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em] leading-none">Protocol Matrix v2.1</span>
-            <div className="flex items-center gap-2 mt-1">
-               <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter opacity-60">Video Layer Analysis</span>
-               <div className="h-1 w-1 rounded-full bg-slate-200" />
-               <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter opacity-60">ID: {file?.id?.slice(0,8) || "N/A"}</span>
-            </div>
-         </div>
-         <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1 p-0.5 bg-slate-100 rounded-md border shadow-inner">
-               {(["Extraction", "Diarization"] as const).map(tab => (
-                 <button 
-                   key={tab}
-                   onClick={() => setActiveTab(tab)} 
-                   className={cn("px-3 py-1 text-[8px] font-black uppercase rounded transition-all", activeTab === tab ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600")}
-                 >
-                   {tab}
-                 </button>
-               ))}
-            </div>
-            
-            {activeTab === "Extraction" && (
-               <div className="flex items-center gap-1 p-0.5 bg-slate-100 rounded-md border shadow-inner">
-                  <button onClick={() => setViewMode("Structured")} className={cn("px-2 py-1 text-[8px] font-black uppercase rounded transition-all", viewMode === "Structured" ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600")}>Structured</button>
-                  <button onClick={() => setViewMode("JSON")} className={cn("px-2 py-1 text-[8px] font-black uppercase rounded transition-all", viewMode === "JSON" ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600")}>JSON</button>
-               </div>
-            )}
-         </div>
+      {/* Tab Header - Premium Enterprise Style */}
+      <div className="sticky top-0 z-40 bg-[#f8fafc] border-b border-slate-200 px-6 pt-3 flex flex-col shrink-0">
+          <div className="flex items-center border-b border-slate-200 relative">
+             {(["Forensic Analysis", "Sequence Blocks", "Ontology Map", "Metadata", "JSON"] as const).map((tab, idx) => (
+               <button 
+                 key={tab}
+                 onClick={() => setActiveTab(tab)} 
+                 className={cn(
+                   "py-3.5 text-[10px] font-bold uppercase tracking-widest transition-all relative",
+                   idx === 0 ? "pr-5" : "px-5",
+                   activeTab === tab ? "text-slate-900" : "text-slate-400 hover:text-slate-600"
+                 )}
+               >
+                 {tab}
+                 {activeTab === tab && (
+                   <div className="absolute -bottom-[1px] left-0 right-0 h-0.5 bg-slate-900 z-20" />
+                 )}
+               </button>
+             ))}
+             <div className="ml-auto flex items-center gap-2 mb-1">
+                <div className="px-2 py-0.5 bg-slate-900 text-white text-[8px] font-black uppercase tracking-widest rounded-sm shadow-sm">VIDEO ENGINE V4.0</div>
+             </div>
+          </div>
       </div>
 
       <div className="flex-1 overflow-auto custom-scrollbar">
-        {activeTab === "Extraction" ? (
-          <div className="flex flex-col min-h-full">
-             <div className="flex-1">
-                {viewMode === "Structured" ? (
-                  <VideoExtractionStructured data={videoExtractionRefined} onJump={onJump} />
-                ) : (
-                  <div className="p-4 bg-[#0d1117] min-h-full">
-                     <pre className="text-[10px] font-mono text-[#79c0ff] bg-[#0d1117] p-6 leading-relaxed overflow-auto custom-scrollbar">
-                        {JSON.stringify(videoExtractionRefined, null, 2)}
-                     </pre>
-                  </div>
-                )}
-             </div>
-          </div>
-        ) : (
-          <VideoSceneSession currentTime={currentTime} onJump={onJump} />
-        )}
+         {activeTab === "Forensic Analysis" && <VideoForensicView data={data} />}
+         {activeTab === "Sequence Blocks" && <VideoBlocksView blocks={data.video_blocks} onJump={onJump} />}
+         {activeTab === "Ontology Map" && <VideoOntologyView ontology={data.ontology_mapping} />}
+         {activeTab === "Metadata" && <VideoMetadataView file={file} data={data} />}
+         {activeTab === "JSON" && (
+            <div className="p-4 bg-[#0d1117] min-h-full">
+               <pre className="text-[10px] font-mono text-[#79c0ff] bg-[#0d1117] p-6 leading-relaxed overflow-auto custom-scrollbar">
+                  {JSON.stringify(data, null, 2)}
+               </pre>
+            </div>
+         )}
       </div>
     </div>
   );
 }
 
-export function VideoExtractionStructured({ data, onJump }: { data: typeof videoExtractionRefined, onJump: (s: number) => void }) {
-  const [expandedSections, setExpandedSections] = useState<string[]>(["Video Session Meta"]);
-  const toggle = (s: string) => setExpandedSections(p => p.includes(s) ? p.filter(x => x !== s) : [...p, s]);
+function VideoForensicView({ data }: { data: typeof videoDerivationMock }) {
+  return (
+    <div className="p-6 space-y-8 animate-in fade-in duration-500">
+      {/* Executive Summary */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+           <Brain className="h-4 w-4 text-slate-900" />
+           <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.2em]">Executive Video Summary</h4>
+        </div>
+        <div className="p-5 bg-white border border-slate-200 rounded-sm shadow-sm relative overflow-hidden group border-l-4 border-l-slate-900">
+           <p className="text-[12px] font-bold text-slate-700 leading-relaxed italic">
+             "{data.executive_video_summary}"
+           </p>
+        </div>
+      </div>
+
+      {/* Kinetic Events */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+           <Activity className="h-4 w-4 text-rose-600" />
+           <h4 className="text-[11px] font-black text-rose-600 uppercase tracking-[0.2em]">Kinetic Events & Hazards</h4>
+        </div>
+        <div className="space-y-3">
+           {data.ontology_mapping.kinetic_events_or_hazards.map((event, idx) => (
+              <div key={idx} className="p-4 bg-rose-50/30 border border-rose-100 rounded-sm hover:bg-rose-50 transition-all">
+                 <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] font-black text-rose-600 uppercase tracking-widest">{event.event_type}</span>
+                    <StatusPill status="Nominal Operation" variant="success" />
+                 </div>
+                 <p className="text-[11px] font-bold text-slate-800 leading-snug mb-3">{event.event_description}</p>
+                 <div className="flex items-center gap-2 pt-3 border-t border-rose-100/50">
+                    <span className="text-[8px] font-black text-slate-400 uppercase">Linked:</span>
+                    <div className="flex flex-wrap gap-1">
+                      {event.linked_objects.map((obj, i) => (
+                        <span key={i} className="px-1.5 py-0.5 bg-white border border-rose-100 text-[9px] font-bold text-slate-600 rounded-sm">{obj}</span>
+                      ))}
+                    </div>
+                 </div>
+              </div>
+           ))}
+        </div>
+      </div>
+
+      {/* Investigation Notes */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+           <Info className="h-4 w-4 text-slate-900" />
+           <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.2em]">Investigation Ambiguities</h4>
+        </div>
+        <div className="space-y-2.5">
+           {data.investigation_notes.unclear_or_missing_info.map((note, idx) => (
+              <div key={idx} className="flex gap-3 p-4 bg-slate-50 border border-slate-100 rounded-sm group hover:border-amber-200 transition-all">
+                 <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5 opacity-40 group-hover:opacity-100 transition-opacity" />
+                 <p className="text-[10px] font-bold text-slate-600 leading-snug">{note}</p>
+              </div>
+           ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function VideoBlocksView({ blocks, onJump }: { blocks: typeof videoDerivationMock.video_blocks, onJump: (s: number) => void }) {
+  const parseSeconds = (timeStr: string) => {
+    const start = timeStr.split(' - ')[0];
+    const [m, s] = start.split(':').map(Number);
+    return m * 60 + s;
+  };
 
   return (
-    <div className="flex flex-col divide-y divide-slate-100 border-b">
-      <div className="flex flex-col">
-        <SectionHeader 
-           title="Video Session Meta" 
-           icon={VideoIcon} 
-           isOpen={expandedSections.includes("Video Session Meta")}
-           onToggle={() => toggle("Video Session Meta")}
-           description={SECTION_DESCRIPTIONS["Video Session Meta"]}
-        />
-        {expandedSections.includes("Video Session Meta") && (
-          <div className="p-5 grid grid-cols-2 gap-y-3 gap-x-4 bg-white animate-in fade-in slide-in-from-top-1">
-            <KVP label="Session" value={data.video_session_meta.session_name} />
-            <KVP label="Duration" value={data.video_session_meta.duration} />
-            <KVP label="Quality" value={data.video_session_meta.quality} />
-            <KVP label="FPS" value={data.video_session_meta.fps} />
-            <KVP label="Source" value={data.video_session_meta.camera_type} />
-            <KVP label="Confidence" value={data.video_session_meta.confidence} />
-          </div>
-        )}
-      </div>
-
-      <div className="flex flex-col">
-        <SectionHeader 
-           title="Scene Timeline" 
-           icon={LayoutGrid} 
-           count={data.scene_timeline.length}
-           isOpen={expandedSections.includes("Scene Timeline")}
-           onToggle={() => toggle("Scene Timeline")}
-           description={SECTION_DESCRIPTIONS["Scene Timeline"]}
-        />
-        {expandedSections.includes("Scene Timeline") && (
-          <div className="p-5 bg-white space-y-2 animate-in fade-in slide-in-from-top-1">
-            {data.scene_timeline.map((s) => (
-              <div 
-                key={s.id} 
-                onClick={() => onJump(s.seconds)}
-                className="p-2.5 rounded-sm border border-slate-50 bg-slate-50/30 hover:bg-white hover:border-primary/20 hover: cursor-pointer transition-all group"
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-[10px] font-black text-primary bg-primary/5 px-1.5 py-0.5 rounded tabular-nums">{s.timestamp}</span>
-                  <ConfidenceChip level={s.confidence.toLowerCase() as any} />
+    <div className="p-6 space-y-6 animate-in fade-in duration-500">
+       <div className="flex items-center justify-between mb-4">
+          <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.2em]">Sequential Analysis Blocks</h4>
+          <span className="text-[9px] font-black text-slate-400 bg-slate-100 px-2 py-0.5 rounded uppercase">{blocks.length} Blocks Detected</span>
+       </div>
+       
+       <div className="space-y-4 relative pl-4">
+          <div className="absolute left-[21px] top-4 bottom-4 w-0.5 bg-slate-100" />
+          {blocks.map((block, idx) => (
+             <div 
+               key={idx} 
+               onClick={() => onJump(parseSeconds(block.time_block))}
+               className="relative group cursor-pointer"
+             >
+                <div className="absolute -left-[24px] top-1 h-4 w-4 rounded-full bg-white border-2 border-slate-200 z-10 group-hover:border-blue-600 transition-colors flex items-center justify-center">
+                   <div className="h-1.5 w-1.5 rounded-full bg-slate-200 group-hover:bg-blue-600 transition-colors" />
                 </div>
-                <p className="text-[11px] font-black text-slate-900 group-hover:text-primary transition-colors leading-snug">{s.scene_label}</p>
-                <p className="text-[10px] font-medium text-slate-500 line-clamp-2 mt-1 italic leading-relaxed">"{s.summary}"</p>
-                <div className="flex items-center gap-2 mt-2 opacity-60">
-                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{s.actor}</span>
-                  <div className="h-0.5 w-0.5 rounded-full bg-slate-300" />
-                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{s.location}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="flex flex-col">
-        <SectionHeader 
-           title="Actor Profiles" 
-           icon={Users} 
-           count={data.actor_profiles.length}
-           isOpen={expandedSections.includes("Actor Profiles")}
-           onToggle={() => toggle("Actor Profiles")}
-           description={SECTION_DESCRIPTIONS["Actor Profiles"]}
-        />
-        {expandedSections.includes("Actor Profiles") && (
-          <div className="p-5 bg-white space-y-2 animate-in fade-in slide-in-from-top-1">
-            {data.actor_profiles.map((a) => (
-              <div key={a.actor_id} className="p-3 rounded-sm border border-slate-100 bg-white ">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[11px] font-black text-slate-900 uppercase tracking-tight">{a.actor_label}</span>
-                  <ConfidenceChip level={a.confidence.toLowerCase() as any} />
-                </div>
-                <div className="grid grid-cols-2 gap-2 mb-3">
-                  <KVP label="Role" value={a.probable_role} />
-                  <KVP label="Screen Time" value={a.screen_time} />
-                </div>
-                <div className="p-2 rounded-sm bg-slate-50 border border-slate-100 space-y-1.5">
-                   <div className="flex items-center justify-between text-[9px] font-bold">
-                      <span className="text-slate-400">Activity:</span>
-                      <span className="text-slate-700">{a.activity}</span>
+                
+                <div className="p-4 bg-white border border-slate-200 rounded-sm group-hover:border-slate-400 group-hover:shadow-md transition-all">
+                   <div className="flex items-center justify-between mb-3">
+                      <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest bg-blue-50 px-2 py-0.5 rounded-sm tabular-nums">{block.time_block}</span>
+                      <ConfidenceChip level={block.confidence_score.split(' - ')[0].toLowerCase() as any} />
                    </div>
-                   <div className="flex items-center justify-between text-[9px] font-bold">
-                      <span className="text-slate-400">Behavior:</span>
-                      <span className="text-slate-700">{a.behavior}</span>
-                   </div>
-                   <div className="flex items-center justify-between text-[9px] font-bold">
-                      <span className="text-slate-400">Stress:</span>
-                      <span className={cn("px-1 rounded", a.stress.includes('High') ? 'bg-rose-100 text-rose-700' : 'text-slate-700')}>{a.stress}</span>
+                   
+                   <p className="text-[11px] font-bold text-slate-800 leading-relaxed mb-3 group-hover:text-blue-700 transition-colors">
+                      {block.visual_summary}
+                   </p>
+                   
+                   {block.contains_critical_incident && (
+                      <div className="flex items-center gap-2 p-2 bg-rose-50 text-rose-600 rounded-sm mb-3">
+                         <AlertTriangle className="h-3 w-3" />
+                         <span className="text-[9px] font-black uppercase tracking-widest">Incident Identified</span>
+                      </div>
+                   )}
+                   
+                   <div className="flex items-center gap-2 pt-3 border-t border-slate-100">
+                      <div className="h-1 w-1 rounded-full bg-slate-300" />
+                      <span className="text-[9px] font-bold text-slate-400 italic leading-none">{block.confidence_score}</span>
                    </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+             </div>
+          ))}
+       </div>
+    </div>
+  );
+}
 
-      <div className="flex flex-col">
-        <SectionHeader 
-           title="Action / Event Detection" 
-           icon={Activity} 
-           count={data.action_events.length}
-           isOpen={expandedSections.includes("Action / Event Detection")}
-           onToggle={() => toggle("Action / Event Detection")}
-           description={SECTION_DESCRIPTIONS["Action / Event Detection"]}
-        />
-        {expandedSections.includes("Action / Event Detection") && (
-          <div className="p-5 bg-white space-y-1.5 animate-in fade-in slide-in-from-top-1">
-            {data.action_events.map((e, i) => (
-              <div 
-                key={i} 
-                onClick={() => onJump(e.seconds)}
-                className="flex gap-3 p-2 rounded-sm hover:bg-slate-50 cursor-pointer group"
-              >
-                <span className="text-[10px] font-black text-slate-400 tabular-nums pt-0.5">{e.timestamp}</span>
-                <div className="flex-1 space-y-1">
-                   <div className="flex items-center gap-2">
-                      <span className={cn(
-                        "text-[9px] font-black uppercase px-1.5 py-0.5 rounded border",
-                        e.severity === 'Critical' ? 'bg-rose-50 text-rose-700 border-rose-100' : 'bg-amber-50 text-amber-700 border-amber-100'
-                      )}>{e.event_type}</span>
-                      <span className="text-[9px] font-bold text-slate-400 truncate">{e.object}</span>
+function VideoOntologyView({ ontology }: { ontology: typeof videoDerivationMock.ontology_mapping }) {
+  return (
+    <div className="p-6 space-y-8 animate-in fade-in duration-500">
+       <div className="space-y-4">
+          <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.2em]">Identified Assets & Infrastructure</h4>
+          <div className="grid grid-cols-1 gap-3">
+             {ontology.identified_objects.map((obj, i) => (
+                <div key={i} className="p-4 bg-slate-50 border border-slate-100 rounded-sm group hover:bg-white hover:border-slate-300 transition-all">
+                   <div className="flex items-center gap-3 mb-2">
+                      <div className={cn(
+                        "px-1.5 py-0.5 rounded-sm text-[8px] font-black uppercase tracking-widest",
+                        obj.object_class === 'Infrastructure' ? 'bg-amber-100 text-amber-700' : 'bg-slate-900 text-white'
+                      )}>
+                        {obj.object_class}
+                      </div>
+                      <span className="text-[11px] font-black text-slate-800 uppercase tracking-tight">{obj.object_identifier}</span>
                    </div>
-                   <p className="text-[11px] font-bold text-slate-800 leading-snug group-hover:text-primary transition-colors">{e.summary}</p>
-                   <div className="flex items-center gap-1.5 text-[9px] font-bold text-slate-400">
-                      <span className="uppercase">{e.actor}</span>
-                      <div className="h-0.5 w-0.5 bg-slate-300 rounded-full" />
-                      <span>Status: {e.status}</span>
+                   <div className="p-2.5 bg-white border border-slate-100/50 rounded-sm flex items-start gap-2">
+                      <span className="text-[8px] font-black text-slate-400 uppercase mt-0.5">Role/State:</span>
+                      <p className="text-[10px] font-bold text-slate-600 italic leading-relaxed">{obj.overall_role_or_state}</p>
                    </div>
                 </div>
-              </div>
-            ))}
+             ))}
           </div>
-        )}
-      </div>
+       </div>
+    </div>
+  );
+}
 
-      <div className="flex flex-col">
-        <SectionHeader 
-           title="Environmental Observations" 
-           icon={Wind} 
-           isOpen={expandedSections.includes("Environmental Observations")}
-           onToggle={() => toggle("Environmental Observations")}
-           description={SECTION_DESCRIPTIONS["Environmental Observations"]}
-        />
-        {expandedSections.includes("Environmental Observations") && (
-          <div className="p-5 bg-white space-y-3 animate-in fade-in slide-in-from-top-1">
-            {data.environmental_observations.map((o, i) => (
-              <div key={i} onClick={() => onJump(o.seconds)} className="p-2 border-l-2 border-slate-100 hover:border-primary/40 cursor-pointer">
-                <span className="text-[10px] font-black text-slate-300 tabular-nums">{o.timestamp}</span>
-                <p className="text-[11px] font-bold text-slate-700 leading-snug mb-2 mt-0.5">{o.summary}</p>
-                <div className="flex flex-wrap gap-1.5">
-                   <span className="px-1.5 py-0.5 bg-slate-100 text-[8px] font-black uppercase rounded text-slate-500">Vis: {o.visibility}</span>
-                   <span className="px-1.5 py-0.5 bg-slate-100 text-[8px] font-black uppercase rounded text-slate-500">Hazard: {o.hazard}</span>
-                </div>
-              </div>
-            ))}
+function VideoMetadataView({ file, data }: { file: any, data: typeof videoDerivationMock }) {
+  return (
+    <div className="p-6 space-y-8 animate-in fade-in duration-500">
+       <div className="space-y-4">
+          <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em] border-b pb-2">Forensic Session Metadata</h4>
+          <div className="grid grid-cols-1 gap-4">
+             <div className="flex justify-between items-center py-1 border-b border-slate-50">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Modality Source</span>
+                <span className="text-[11px] font-bold text-slate-700">{data.video_metadata.video_source_type}</span>
+             </div>
+             <div className="flex justify-between items-center py-1 border-b border-slate-50">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Certified Duration</span>
+                <span className="text-[11px] font-bold text-slate-700 tabular-nums">{data.video_metadata.total_duration}</span>
+             </div>
+             <div className="flex justify-between items-center py-1 border-b border-slate-50">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Scene Environment</span>
+                <span className="text-[11px] font-bold text-slate-700 text-right max-w-[200px]">{data.video_metadata.scene_environment_notes}</span>
+             </div>
           </div>
-        )}
-      </div>
+       </div>
 
-      <div className="flex flex-col">
-        <SectionHeader 
-           title="Equipment & Object Signals" 
-           icon={Cpu} 
-           isOpen={expandedSections.includes("Equipment & Object Signals")}
-           onToggle={() => toggle("Equipment & Object Signals")}
-           description={SECTION_DESCRIPTIONS["Equipment & Object Signals"]}
-        />
-        {expandedSections.includes("Equipment & Object Signals") && (
-          <div className="p-5 bg-white grid gap-2 animate-in fade-in slide-in-from-top-1">
-            {data.equipment_and_object_signals.map((o, i) => (
-              <div key={i} onClick={() => onJump(o.seconds)} className="p-2.5 rounded-sm bg-slate-50 border border-transparent hover:bg-white hover:border-slate-100 hover: cursor-pointer group">
-                <div className="flex items-center justify-between mb-1.5">
-                   <span className="text-[11px] font-black text-slate-900 uppercase tracking-tight">{o.object}</span>
-                   <span className="text-[9px] font-black text-primary bg-primary/5 px-1.5 py-0.5 rounded">{o.timestamp}</span>
-                </div>
-                <div className="flex items-center gap-2 mb-2">
-                   <span className={cn("px-1.5 py-0.5 text-[8px] font-black uppercase rounded", o.condition === 'Removed' || o.condition === 'Skewed' ? 'bg-rose-50 text-rose-600' : 'bg-slate-100 text-slate-500')}>{o.condition}</span>
-                   <span className="text-[9px] font-bold text-slate-400 italic">"{o.anomaly}"</span>
-                </div>
-                <div className="flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase">
-                   <span>Actor: {o.actor}</span>
-                   <ConfidenceChip level={o.confidence.toLowerCase() as any} />
-                </div>
-              </div>
-            ))}
+       <div className="space-y-4">
+          <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em] border-b pb-2">Analysis Pipeline Logs</h4>
+          <div className="grid grid-cols-1 gap-3">
+             <div className="p-3 bg-slate-50 rounded-sm border border-slate-100 flex justify-between items-center hover:bg-white transition-all">
+                <span className="text-[9px] font-black text-slate-400 uppercase">Detection Framework</span>
+                <span className="text-[10px] font-black text-slate-700">TensorFlow-Video v4.1</span>
+             </div>
+             <div className="p-3 bg-slate-50 rounded-sm border border-slate-100 flex justify-between items-center hover:bg-white transition-all">
+                <span className="text-[9px] font-black text-slate-400 uppercase">Kinetic Mapping</span>
+                <span className="text-[10px] font-black text-slate-700">Vision-Flow Fusion v2.0</span>
+             </div>
           </div>
-        )}
-      </div>
-
-      <div className="flex flex-col">
-        <SectionHeader 
-           title="Human Performance Signals" 
-           icon={Footprints} 
-           isOpen={expandedSections.includes("Human Performance Signals")}
-           onToggle={() => toggle("Human Performance Signals")}
-           description={SECTION_DESCRIPTIONS["Human Performance Signals"]}
-        />
-        {expandedSections.includes("Human Performance Signals") && (
-          <div className="p-5 bg-white space-y-3 animate-in fade-in slide-in-from-top-1">
+       </div>
+    </div>
+  );
+}
             {Object.entries(data.human_performance_signals).map(([key, items]: [string, any]) => (
               <div key={key}>
                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.1em] mb-1.5 block">{key.replace(/_/g, ' ')}</span>

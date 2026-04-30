@@ -361,3 +361,64 @@ export const imageDerivationMock = {
     }
   ]
 };
+export const videoDerivationMock = {
+  video_metadata: {
+    video_source_type: "Dashcam / Cabin Cam",
+    total_duration: "00:15",
+    scene_environment_notes: "Jalan pengangkutan tambang pada malam hari dengan pencahayaan terbatas dari lampu kendaraan."
+  },
+  executive_video_summary: "Video merekam pergerakan kendaraan berat yang diam di jalan pengangkutan tambang pada malam hari. Tidak ada insiden kinetik atau bahaya yang terdeteksi selama durasi rekaman. Tanggul pengaman terlihat di sisi kiri jalan, namun kondisi gelap membatasi visibilitas area di luar jangkauan lampu.",
+  ontology_mapping: {
+    identified_objects: [
+      {
+        object_class: "Equipment/Vehicle",
+        object_identifier: "Kendaraan Berat (Unit Pengamat)",
+        overall_role_or_state: "Statis (Berhenti) di jalan pengangkutan."
+      },
+      {
+        object_class: "Infrastructure",
+        object_identifier: "Tanggul (Berm)",
+        overall_role_or_state: "Struktur pengaman statis di sisi kiri jalan."
+      }
+    ],
+    kinetic_events_or_hazards: [
+      {
+        event_type: "Pergerakan Kendaraan",
+        linked_objects: [
+          "Kendaraan Berat (Unit Pengamat)"
+        ],
+        event_description: "Kendaraan bergerak maju perlahan di sepanjang jalan pengangkutan tanpa interaksi berbahaya dengan objek lain."
+      }
+    ]
+  },
+  video_blocks: [
+    {
+      time_block: "00:00 - 00:02",
+      visual_summary: "Layar biru solid muncul, menandakan inisialisasi kamera atau gangguan sinyal.",
+      confidence_score: "Low - Tidak ada data visual operasional.",
+      critical_audio_cue: "",
+      contains_critical_incident: false
+    },
+    {
+      time_block: "00:02 - 00:08",
+      visual_summary: "Pandangan malam hari jalan tambang dengan tanggul di sisi kiri, diterangi lampu depan.",
+      confidence_score: "Moderate - Pencahayaan rendah dan kualitas gambar malam hari.",
+      critical_audio_cue: "",
+      contains_critical_incident: false
+    },
+    {
+      time_block: "00:08 - 00:15",
+      visual_summary: "Kendaraan bergerak maju perlahan di jalan lurus tanpa objek lain dalam frame.",
+      confidence_score: "Moderate - Kondisi gelap dan minim objek referensi.",
+      critical_audio_cue: "",
+      contains_critical_incident: false
+    }
+  ],
+  investigation_notes: {
+    unclear_or_missing_info: [
+      "Wajah operator tidak terlihat karena sudut kamera menghadap ke depan.",
+      "Kondisi tanah di luar area yang diterangi lampu depan tidak dapat ditentukan.",
+      "Kecepatan kendaraan tercatat 0 km/jam pada overlay data, namun pergerakan visual menunjukkan adanya pergerakan maju perlahan."
+    ]
+  }
+};
