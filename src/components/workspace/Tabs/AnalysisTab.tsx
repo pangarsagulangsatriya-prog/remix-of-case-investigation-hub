@@ -285,8 +285,14 @@ const initialAgentsState: AgentState[] = [
 ];
 
 function EvidenceCitationPanel({ citations, forceExpand }: { citations: any[], forceExpand?: boolean }) {
-  const [localExpanded, setLocalExpanded] = useState(false);
-  const isExpanded = forceExpand || localExpanded;
+  const [localExpanded, setLocalExpanded] = useState<boolean | null>(null);
+  
+  // Reset local override when global state changes
+  useEffect(() => {
+    setLocalExpanded(null);
+  }, [forceExpand]);
+
+  const isExpanded = localExpanded ?? forceExpand ?? false;
 
   if (!citations || citations.length === 0) return null;
 
@@ -375,7 +381,7 @@ function EvidenceCitationPanel({ citations, forceExpand }: { citations: any[], f
                   </div>
                </div>
                
-               {idx === 0 && !forceExpand && (
+               {idx === 0 && (
                   <button 
                     onClick={() => setLocalExpanded(false)}
                     className="absolute top-2 right-2 p-1 text-slate-300 hover:text-slate-500 transition-colors"
@@ -1339,20 +1345,26 @@ export default function AnalysisTab() {
                                           <div className="flex items-center justify-between border-b border-slate-100 pb-2">
                                              <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Fact Decomposition</span>
                                              <div className="flex items-center gap-3">
-                                                <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 p-0.5 rounded-sm">
-                                                   <button 
-                                                      onClick={() => setAllEvidenceExpanded(true)}
-                                                      className={cn("px-1.5 py-0.5 text-[8px] font-black uppercase transition-all", allEvidenceExpanded ? "bg-white shadow-sm text-slate-900" : "text-slate-400 hover:text-slate-600")}
-                                                   >
-                                                      Expand All
-                                                   </button>
-                                                   <button 
-                                                      onClick={() => setAllEvidenceExpanded(false)}
-                                                      className={cn("px-1.5 py-0.5 text-[8px] font-black uppercase transition-all", !allEvidenceExpanded ? "bg-white shadow-sm text-slate-900" : "text-slate-400 hover:text-slate-600")}
-                                                   >
-                                                      Collapse
-                                                   </button>
-                                                </div>
+                                                 <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 p-0.5 rounded-sm">
+                                                    <button 
+                                                       onClick={() => {
+                                                          setAllEvidenceExpanded(true);
+                                                          setExpandedEntityRows(['time', 'timezone', 'actor', 'action', 'object', 'location', 'condition']);
+                                                       }}
+                                                       className={cn("px-1.5 py-0.5 text-[8px] font-black uppercase transition-all", allEvidenceExpanded ? "bg-white shadow-sm text-slate-900" : "text-slate-400 hover:text-slate-600")}
+                                                    >
+                                                       Expand All
+                                                    </button>
+                                                    <button 
+                                                       onClick={() => {
+                                                          setAllEvidenceExpanded(false);
+                                                          setExpandedEntityRows([]);
+                                                       }}
+                                                       className={cn("px-1.5 py-0.5 text-[8px] font-black uppercase transition-all", !allEvidenceExpanded ? "bg-white shadow-sm text-slate-900" : "text-slate-400 hover:text-slate-600")}
+                                                    >
+                                                       Collapse
+                                                    </button>
+                                                 </div>
                                                 <div className="flex items-center gap-1.5">
                                                    <div className="h-1.5 w-1.5 bg-blue-600" />
                                                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">AI Entity Extraction</span>
