@@ -429,14 +429,14 @@ export default function AnalysisTab() {
               content: {
                  summary: agent.results.ringkasan?.deskripsi || "No summary available.",
                  metadata: {
-                    incidentDate: agent.results.ringkasan?.tanggal || "—",
-                    incidentTime: agent.results.ringkasan?.jam || "—",
-                    location: agent.results.ringkasan?.lokasi || "—",
-                    incidentType: agent.results.ringkasan?.jenis || "—",
-                    department: agent.results.ringkasan?.departemen || "—",
-                    evidenceSource: agent.results.ringkasan?.sumber_bukti || "—",
-                    severity: agent.results.ringkasan?.severity || "—",
-                    summary: agent.results.ringkasan?.deskripsi || "—",
+                    incidentDate: agent.results.ringkasan?.tanggal || "---",
+                    incidentTime: agent.results.ringkasan?.jam || "---",
+                    location: agent.results.ringkasan?.lokasi || "---",
+                    incidentType: agent.results.ringkasan?.jenis || "---",
+                    department: agent.results.ringkasan?.departemen || "---",
+                    evidenceSource: agent.results.ringkasan?.sumber_bukti || "---",
+                    severity: agent.results.ringkasan?.severity || "---",
+                    summary: agent.results.ringkasan?.deskripsi || "---",
                     caseCode: 'CS-2026-0147'
                  },
                  items: agent.results.chronology_items || []
@@ -1305,7 +1305,7 @@ export default function AnalysisTab() {
                                                      {/* Body */}
                                                      <div className="p-4">
                                                         <div className="text-[12px] font-black text-slate-900 leading-tight mb-3">
-                                                           {(item.breakdown?.[part.key] as any)?.value || "—"}
+                                                           {(item.breakdown?.[part.key] as any)?.value || "---"}
                                                         </div>
                                                         
                                                         {(item.breakdown?.[part.key] as any)?.evidence && (
@@ -1335,7 +1335,7 @@ export default function AnalysisTab() {
                                              {[
                                                 { id: 'time', label: 'Time', value: item.breakdown?.time || item.time || item.time_label, 
                                                    evidence: [
-                                                      { type: 'audio', speaker: 'OPERATOR A', timeframe: '02:14 — 02:22', context: 'Control, ini Operator A. Getaran di Section 14 melebihi batas aman.', source: 'VOIP_REC_14.WAV' }
+                                                      { type: 'audio', speaker: 'OPERATOR A', timeframe: '02:14 --- 02:22', context: 'Control, ini Operator A. Getaran di Section 14 melebihi batas aman.', source: 'VOIP_REC_14.WAV' }
                                                    ]
                                                 },
                                                 { id: 'timezone', label: 'Timezone', value: item.breakdown?.timezone || item.timezone || 'WITA', 
@@ -1346,12 +1346,12 @@ export default function AnalysisTab() {
                                                 { id: 'actor', label: 'Actor', value: (item.breakdown?.subject as any)?.value || item.breakdown?.actor || 'SENSOR SYSTEM', 
                                                    evidence: [
                                                       { type: 'doc', page: '142', context: 'Automated vibration monitoring protocol for Titan-X series drive motors.', source: 'MAINTENANCE_LOG_APR.PDF' },
-                                                      { type: 'audio', speaker: 'CONTROL ROOM', timeframe: '02:15 — 02:20', context: 'Diterima Operator A. Sensor kami juga menunjukkan anomali.', source: 'VOIP_REC_14.WAV' }
+                                                      { type: 'audio', speaker: 'CONTROL ROOM', timeframe: '02:15 --- 02:20', context: 'Diterima Operator A. Sensor kami juga menunjukkan anomali.', source: 'VOIP_REC_14.WAV' }
                                                    ]
                                                 },
                                                 { id: 'action', label: 'Action', value: (item.breakdown?.action as any)?.value || item.breakdown?.action || 'VIBRATION ALARM', 
                                                    evidence: [
-                                                      { type: 'audio', speaker: 'OPERATOR A', timeframe: '02:14 — 02:18', context: 'Mohon dicek segera, alarm vibrasi berbunyi.', source: 'VOIP_REC_14.WAV' },
+                                                      { type: 'audio', speaker: 'OPERATOR A', timeframe: '02:14 --- 02:18', context: 'Mohon dicek segera, alarm vibrasi berbunyi.', source: 'VOIP_REC_14.WAV' },
                                                       { type: 'doc', page: '04', context: 'System Status: ALARM_VIB_HIGH triggered at 14:10:22', source: 'SCADA_EVENT_EXPORT.CSV' }
                                                    ]
                                                 },
@@ -1362,7 +1362,7 @@ export default function AnalysisTab() {
                                                 },
                                                 { id: 'location', label: 'Location', value: item.breakdown?.location || 'SECTION 14', 
                                                    evidence: [
-                                                      { type: 'audio', speaker: 'OPERATOR A', timeframe: '02:14 — 02:16', context: 'Saya di lokasi Section 14.', source: 'VOIP_REC_14.WAV' }
+                                                      { type: 'audio', speaker: 'OPERATOR A', timeframe: '02:14 --- 02:16', context: 'Saya di lokasi Section 14.', source: 'VOIP_REC_14.WAV' }
                                                    ]
                                                 },
                                                 { id: 'condition', label: 'Condition', value: (item.breakdown?.condition as any)?.value || item.breakdown?.condition || 'EXCEEDED THRESHOLD', 
@@ -1470,7 +1470,7 @@ export default function AnalysisTab() {
                                            <div key={idx} className="bg-white border border-slate-200 rounded-none flex flex-col group hover:border-slate-400 transition-colors shadow-sm">
                                               <div className="flex items-center justify-between border-b border-slate-100 px-4 py-2 bg-slate-50/50">
                                                  <div className="flex items-center gap-3">
-                                                    <span className="text-[10px] font-mono font-black text-slate-500">{seg.start_dialog} ΓÇö {seg.end_dialog}</span>
+                                                    <span className="text-[10px] font-mono font-black text-slate-500">{seg.start_dialog} ------ {seg.end_dialog}</span>
                                                     <div className="flex items-center gap-2">
                                                        <span className={cn(
                                                           "px-2 py-0.5 text-white text-[8px] font-black uppercase tracking-wider rounded-none",
@@ -1723,7 +1723,7 @@ export default function AnalysisTab() {
                                                    <div key={idx} className="bg-white border border-slate-200 rounded-none mb-6 flex flex-col group hover:border-slate-400 transition-colors shadow-sm">
                                                       <div className="flex items-center justify-between border-b border-slate-100 px-4 py-2 bg-slate-50/50">
                                                          <div className="flex items-center gap-3">
-                                                            <span className="text-[10px] font-mono font-black text-slate-500">{seg.start_dialog} ΓÇö {seg.end_dialog}</span>
+                                                            <span className="text-[10px] font-mono font-black text-slate-500">{seg.start_dialog} - {seg.end_dialog}</span>
                                                             <div className="flex items-center gap-2">
                                                                <span className={cn(
                                                                   "px-2 py-0.5 text-white text-[8px] font-black uppercase tracking-wider rounded-none",
@@ -1989,7 +1989,7 @@ function AgentHistoryPanel({ agent, onClose }: { agent: AgentState, onClose: () 
                   <div className="grid grid-cols-2 gap-4 mb-4">
                      <div>
                         <div className="text-[8px] font-black text-slate-400 uppercase mb-1">Token Usage</div>
-                        <div className="text-[12px] font-black text-slate-900 tabular-nums">{run.token_usage?.toLocaleString() || "—"}</div>
+                        <div className="text-[12px] font-black text-slate-900 tabular-nums">{run.token_usage?.toLocaleString() || "---"}</div>
                      </div>
                      <div>
                         <div className="text-[8px] font-black text-slate-400 uppercase mb-1">Duration</div>

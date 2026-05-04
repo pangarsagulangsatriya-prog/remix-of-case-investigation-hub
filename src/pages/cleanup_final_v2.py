@@ -1,35 +1,25 @@
-import sys
+import os
 
-file_path = r'c:\\Users\\Feedloop\\OneDrive\\Desktop\\Demo File\\remix-of-case-investigation-hub\\src\\pages\\CaseWorkspacePage.tsx'
+file_path = r"c:\Users\Feedloop\OneDrive\Desktop\Demo File\remix-of-case-investigation-hub\src\components\workspace\Tabs\AnalysisTab.tsx"
 
-with open(file_path, 'r', encoding='utf-8') as f:
-    lines = f.readlines()
+with open(file_path, 'rb') as f:
+    content = f.read()
 
-start_idx = -1
-for i in range(len(lines) - 10):
-    if '</div>' in lines[i] and '</td>' in lines[i+1] and '</tr>' in lines[i+2]:
-        start_idx = i
-        break
+# Replace common corrupted em-dash/en-dash sequences
+# In many encodings, em-dash is \xe2\x80\x94
+# Corrupted UTF-8 might show up as other things.
 
-if start_idx != -1:
-    print(f"Found mess start at line {start_idx + 1}")
-    
-    end_idx = -1
-    for i in range(start_idx, len(lines)):
-        if "selectedAgentId === 'prev' ? (" in lines[i]:
-            end_idx = i
-            break
-            
-    if end_idx != -1:
-        # We want to keep lines up to start_idx (the first </div>), then jump to end_idx.
-        final_lines = lines[:start_idx + 1] + lines[end_idx:]
-        
-        with open(file_path, 'w', encoding='utf-8') as f:
-            f.writelines(final_lines)
-        print("Successfully cleaned up mess.")
+# Let's try to replace common non-ascii characters with a simple hyphen
+new_content = bytearray()
+for b in content:
+    if b < 128:
+        new_content.append(b)
     else:
-        print("Could not find end of mess.")
-        sys.exit(1)
-else:
-    print("Could not find start of mess.")
-    sys.exit(1)
+        # Replace non-ascii with a space or hyphen
+        # For our specific case, most non-ascii are dashes
+        new_content.append(ord('-'))
+
+with open(file_path, 'wb') as f:
+    f.write(new_content)
+
+print("File cleaned of non-ASCII characters.")
