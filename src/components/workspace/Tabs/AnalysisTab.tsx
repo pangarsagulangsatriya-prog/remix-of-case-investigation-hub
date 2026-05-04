@@ -262,6 +262,59 @@ const initialAgentsState: AgentState[] = [
   }
 ];
 
+function EvidenceQuote({ text, speaker, source, time, forceExpand }: { text: string, speaker?: string, source?: string, time?: string, forceExpand?: boolean }) {
+  const [localExpanded, setLocalExpanded] = useState(false);
+  const isExpanded = forceExpand || localExpanded;
+  const isLong = text.length > 120;
+
+  return (
+    <div className="bg-indigo-50/40 p-4 rounded-sm border-l-2 border-indigo-400 group/fact relative">
+      <div className="absolute top-2 right-2 p-1 text-indigo-400 opacity-40">
+        <Brain className="h-3.5 w-3.5" />
+      </div>
+      <div className="flex items-center gap-1.5 mb-2">
+        <Quote className="h-2.5 w-2.5 text-indigo-500" />
+        <span className="text-[8px] font-black text-indigo-600/70 uppercase tracking-widest">Situational Evidence</span>
+      </div>
+      <p className={cn(
+        "text-[10px] font-medium text-slate-700 leading-relaxed italic transition-all duration-300",
+        !isExpanded && isLong && "line-clamp-2"
+      )}>
+        "{text}"
+      </p>
+
+      <div className="mt-3 flex items-center justify-between border-t border-indigo-100/50 pt-2.5">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-1.5 text-[10px] font-bold text-indigo-600">
+             <Users className="h-3 w-3" />
+             <span>{speaker || "Unknown Speaker"}</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-sm">
+             <span className="truncate max-w-[140px]">{source || "Source Asset"}</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-[10px] font-mono font-black text-slate-900 bg-amber-100 px-2 py-0.5 rounded-sm border border-amber-200">
+             <Clock className="h-3 w-3 text-amber-600" />
+             <span>{time || "00:00"}</span>
+          </div>
+        </div>
+        
+        {isLong && !forceExpand && (
+          <button 
+            onClick={() => setLocalExpanded(!localExpanded)}
+            className="text-[8px] font-black uppercase text-indigo-600 hover:text-indigo-800 transition-colors flex items-center gap-1"
+          >
+            {isExpanded ? (
+              <><ChevronDown className="h-2 w-2 rotate-180" /></>
+            ) : (
+              <><ChevronDown className="h-2 w-2" /></>
+            )}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function AnalysisTab() {
   const { caseId } = useParams<{ caseId: string }>();
   const { data: evidence } = useEvidence(caseId!);
@@ -271,6 +324,7 @@ export default function AnalysisTab() {
   const [agents, setAgents] = useState<AgentState[]>(initialAgentsState);
   const [factViewMode, setFactViewMode] = useState<'slide' | 'default'>('default');
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
+  const [allEvidenceExpanded, setAllEvidenceExpanded] = useState(false);
 
   const [activeEvidenceType, setActiveEvidenceType] = useState('audio_diarization');
   const [expandedFolders, setExpandedFolders] = useState<string[]>(['audio', 'document']);
@@ -1208,12 +1262,28 @@ export default function AnalysisTab() {
                                        <div className="space-y-3">
                                           <div className="flex items-center justify-between border-b border-slate-100 pb-2">
                                              <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Fact Decomposition</span>
-                                             <div className="flex items-center gap-1.5">
-                                                <div className="h-1.5 w-1.5 bg-blue-600" />
-                                                <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">AI Entity Extraction</span>
+                                             <div className="flex items-center gap-3">
+                                                <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 p-0.5 rounded-sm">
+                                                   <button 
+                                                      onClick={() => setAllEvidenceExpanded(true)}
+                                                      className={cn("px-1.5 py-0.5 text-[8px] font-black uppercase transition-all", allEvidenceExpanded ? "bg-white shadow-sm text-slate-900" : "text-slate-400 hover:text-slate-600")}
+                                                   >
+                                                      Expand All
+                                                   </button>
+                                                   <button 
+                                                      onClick={() => setAllEvidenceExpanded(false)}
+                                                      className={cn("px-1.5 py-0.5 text-[8px] font-black uppercase transition-all", !allEvidenceExpanded ? "bg-white shadow-sm text-slate-900" : "text-slate-400 hover:text-slate-600")}
+                                                   >
+                                                      Collapse
+                                                   </button>
+                                                </div>
+                                                <div className="flex items-center gap-1.5">
+                                                   <div className="h-1.5 w-1.5 bg-blue-600" />
+                                                   <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">AI Entity Extraction</span>
+                                                </div>
                                              </div>
                                           </div>
-                                            <div className="space-y-4 p-5 bg-white border border-slate-100 rounded-sm">
+                                            <div className="space-y-4 pt-2">
                                                {[
                                                   { label: "Subject / Pelaku", key: "subject", icon: Users },
                                                   { label: "Action / Predikat", key: "action", icon: Activity },
@@ -1221,9 +1291,9 @@ export default function AnalysisTab() {
                                                   { label: "Source System", key: "source_system", icon: Database },
                                                   { label: "Condition / Keterangan", key: "condition", icon: Shield }
                                                ].map((part) => (
-                                                  <div key={part.key} className="group/item flex flex-col border border-slate-100 rounded-sm bg-white overflow-hidden hover:border-slate-300 transition-all shadow-sm">
+                                                  <div key={part.key} className="group/item flex flex-col border-b border-slate-100 pb-8 last:border-0">
                                                      {/* Header */}
-                                                     <div className="p-2.5 bg-white border-b border-slate-50 flex items-center justify-between">
+                                                     <div className="flex items-center justify-between mb-2">
                                                         <div className="flex items-center gap-2">
                                                            <span className="px-1.5 py-0.5 bg-slate-900 text-white rounded-sm text-[8px] font-black uppercase tracking-widest">
                                                               {part.label}
@@ -1239,16 +1309,14 @@ export default function AnalysisTab() {
                                                         </div>
                                                         
                                                         {(item.breakdown?.[part.key] as any)?.evidence && (
-                                                           <div className="mt-2 pt-3 border-t border-slate-100">
-                                                              <div className="bg-slate-50 p-3 rounded-sm border border-slate-200 group/fact relative">
-                                                                 <div className="absolute top-0 right-0 p-1 opacity-20">
-                                                                    <Brain className="h-3 w-3" />
-                                                                 </div>
-                                                                 <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Situational Evidence</span>
-                                                                 <p className="text-[10px] font-bold text-slate-500 leading-relaxed italic">
-                                                                    "{(item.breakdown[part.key] as any).evidence}"
-                                                                 </p>
-                                                              </div>
+                                                           <div className="mt-4">
+                                                              <EvidenceQuote 
+                                                                 text={(item.breakdown[part.key] as any).evidence} 
+                                                                 speaker={(item.breakdown[part.key] as any).speaker || "Operator Saiful"}
+                                                                 source={(item.breakdown[part.key] as any).source || "Audio_Rec_2024.mp3"}
+                                                                 time={(item.breakdown[part.key] as any).time || "00:42"}
+                                                                 forceExpand={allEvidenceExpanded}
+                                                              />
                                                            </div>
                                                         )}
                                                      </div>
