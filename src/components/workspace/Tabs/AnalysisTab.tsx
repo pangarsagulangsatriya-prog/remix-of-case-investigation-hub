@@ -95,10 +95,32 @@ const initialAgentsState: AgentState[] = [
              annotated_by_human: true,
              breakdown: {
                 subject: { value: "Petugas DMS (Aris)", evidence: "tanggung jawab Pak Aris sebagai DMS control room" },
-                action: { value: "Mengidentifikasi riwayat deviasi", evidence: "ada juga banyak di rekapan juga sampai dari week 10 sampai week 41 itu 41 kali" },
-                object: { value: "Profil Operator Saiful", evidence: "catatannya banyak fatigue, ah itu biasa kami sering intens... mengontrol mereka" },
-                source_system: { value: "Rekapitulasi Data DMS", evidence: "laporan temuan deviasi fatigue itu ada yang kami catat tuh Pak di rekap itu" },
-                condition: { value: "Pemantauan Intensif", evidence: "kalau misalnya dari orang ini eh catatannya banyak fatigue, ah itu biasa kami sering intens" }
+                action: { 
+                    value: "Mengidentifikasi riwayat deviasi", 
+                    citations: [
+                       { type: 'document', content: "ada juga banyak di rekapan juga sampai dari week 10 sampai week 41 itu 41 kali", page: "04", source: "DMS_RECAP_WEEKLY.XLSX" },
+                       { type: 'image', content: "Screenshot dashboard DMS menunjukkan lonjakan deviasi pada profil Saiful.", source: "DMS_ALERT_SS_01.PNG", thumbnail: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=200" }
+                    ]
+                 },
+                object: { 
+                    value: "Profil Operator Saiful", 
+                    citations: [
+                       { type: 'audio', content: "catatannya banyak fatigue, ah itu biasa kami sering intens... mengontrol mereka", speaker: "Aris", time: "02:16", source: "VOIP_REC_01.WAV" },
+                       { type: 'video', content: "Rekaman CCTV menunjukkan operator Saiful terlihat kelelahan saat memasuki unit.", time: "22:05", source: "CCTV_GATE_A.MP4", thumbnail: "https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&q=80&w=200" }
+                    ]
+                 },
+                source_system: { 
+                    value: "Rekapitulasi Data DMS", 
+                    citations: [
+                       { type: 'document', content: "laporan temuan deviasi fatigue itu ada yang kami catat tuh Pak di rekap itu", page: "08", source: "DMS_RECAP_WEEKLY.XLSX" }
+                    ]
+                 },
+                condition: { 
+                    value: "Pemantauan Intensif", 
+                    citations: [
+                       { type: 'audio', content: "kalau misalnya dari orang ini eh catatannya banyak fatigue, ah itu biasa kami sering intens", speaker: "Aris", time: "02:18", source: "VOIP_REC_01.WAV" }
+                    ]
+                 }
              }
            },
            { 
@@ -262,55 +284,109 @@ const initialAgentsState: AgentState[] = [
   }
 ];
 
-function EvidenceQuote({ text, speaker, source, time, forceExpand }: { text: string, speaker?: string, source?: string, time?: string, forceExpand?: boolean }) {
+function EvidenceCitationPanel({ citations, forceExpand }: { citations: any[], forceExpand?: boolean }) {
   const [localExpanded, setLocalExpanded] = useState(false);
   const isExpanded = forceExpand || localExpanded;
-  const isLong = text.length > 120;
+
+  if (!citations || citations.length === 0) return null;
 
   return (
-    <div className="bg-indigo-50/40 p-4 rounded-sm border-l-2 border-indigo-400 group/fact relative">
-      <div className="absolute top-2 right-2 p-1 text-indigo-400 opacity-40">
-        <Brain className="h-3.5 w-3.5" />
-      </div>
-      <div className="flex items-center gap-1.5 mb-2">
-        <Quote className="h-2.5 w-2.5 text-indigo-500" />
-        <span className="text-[8px] font-black text-indigo-600/70 uppercase tracking-widest">Situational Evidence</span>
-      </div>
-      <p className={cn(
-        "text-[10px] font-medium text-slate-700 leading-relaxed italic transition-all duration-300",
-        !isExpanded && isLong && "line-clamp-2"
-      )}>
-        "{text}"
-      </p>
-
-      <div className="mt-3 flex items-center justify-between border-t border-indigo-100/50 pt-2.5">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-1.5 text-[10px] font-bold text-indigo-600">
-             <Users className="h-3 w-3" />
-             <span>{speaker || "Unknown Speaker"}</span>
-          </div>
-          <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-sm">
-             <span className="truncate max-w-[140px]">{source || "Source Asset"}</span>
-          </div>
-          <div className="flex items-center gap-1.5 text-[10px] font-mono font-black text-slate-900 bg-amber-100 px-2 py-0.5 rounded-sm border border-amber-200">
-             <Clock className="h-3 w-3 text-amber-600" />
-             <span>{time || "00:00"}</span>
-          </div>
-        </div>
-        
-        {isLong && !forceExpand && (
-          <button 
-            onClick={() => setLocalExpanded(!localExpanded)}
-            className="text-[8px] font-black uppercase text-indigo-600 hover:text-indigo-800 transition-colors flex items-center gap-1"
-          >
-            {isExpanded ? (
-              <><ChevronDown className="h-2 w-2 rotate-180" /></>
-            ) : (
-              <><ChevronDown className="h-2 w-2" /></>
+    <div className="space-y-4">
+      {!isExpanded ? (
+        <button 
+          onClick={() => setLocalExpanded(true)}
+          className="flex items-center gap-3 group/expand"
+        >
+          <div className="flex -space-x-2">
+            {citations.slice(0, 3).map((c, i) => (
+              <div key={i} className="h-6 w-6 rounded-full bg-white border border-slate-200 flex items-center justify-center shadow-sm group-hover/expand:border-indigo-300 transition-colors">
+                {c.type === 'audio' ? <Activity className="h-3 w-3 text-emerald-500" /> : 
+                 c.type === 'document' ? <FileText className="h-3 w-3 text-blue-500" /> :
+                 c.type === 'video' ? <Play className="h-3 w-3 text-rose-500" /> :
+                 <Paperclip className="h-3 w-3 text-slate-400" />}
+              </div>
+            ))}
+            {citations.length > 3 && (
+              <div className="h-6 w-6 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[8px] font-black text-slate-500">
+                +{citations.length - 3}
+              </div>
             )}
-          </button>
-        )}
-      </div>
+          </div>
+          <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest group-hover/expand:text-indigo-800 flex items-center gap-1.5">
+            View {citations.length} Evidence Traces
+            <ChevronDown className="h-2.5 w-2.5" />
+          </span>
+        </button>
+      ) : (
+        <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
+          {citations.map((cite, idx) => (
+            <div key={idx} className="bg-indigo-50/40 p-4 rounded-sm border-l-2 border-indigo-400 group/cite relative">
+               <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                     <div className="p-1 bg-white rounded-sm border border-indigo-100">
+                        {cite.type === 'audio' ? <Activity className="h-3 w-3 text-emerald-500" /> : 
+                         cite.type === 'document' ? <FileText className="h-3 w-3 text-blue-500" /> :
+                         cite.type === 'video' ? <Play className="h-3 w-3 text-rose-500" /> :
+                         <Paperclip className="h-3 w-3 text-slate-400" />}
+                     </div>
+                     <span className="text-[8px] font-black text-indigo-600 uppercase tracking-widest">{cite.type} Evidence</span>
+                  </div>
+                  <div className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">REF #{idx + 1}</div>
+               </div>
+
+               <div className="flex gap-4 mb-4">
+                  {(cite.type === 'image' || cite.type === 'video') && cite.thumbnail && (
+                    <div className="h-16 w-24 shrink-0 border border-indigo-200 bg-slate-900 overflow-hidden rounded-sm relative group/thumb">
+                       <img src={cite.thumbnail} className="h-full w-full object-cover opacity-60 group-hover/thumb:opacity-100 transition-opacity" />
+                       {cite.type === 'video' && (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                             <Play className="h-4 w-4 text-white fill-current" />
+                          </div>
+                       )}
+                    </div>
+                  )}
+                  <p className="text-[11px] font-medium text-slate-700 leading-relaxed italic">
+                    "{cite.content || cite.text}"
+                  </p>
+               </div>
+
+               <div className="flex flex-wrap gap-2 pt-3 border-t border-indigo-100/50">
+                  {cite.speaker && (
+                    <div className="flex items-center gap-1.5 px-2 py-0.5 bg-white border border-indigo-100 rounded-sm text-[9px] font-bold text-indigo-600">
+                       <Users className="h-3 w-3" />
+                       <span>{cite.speaker}</span>
+                    </div>
+                  )}
+                  {cite.time && (
+                    <div className="flex items-center gap-1.5 px-2 py-0.5 bg-amber-100 border border-amber-200 rounded-sm text-[9px] font-mono font-black text-slate-900">
+                       <Clock className="h-3 w-3 text-amber-600" />
+                       <span>{cite.time}</span>
+                    </div>
+                  )}
+                  {cite.page && (
+                    <div className="flex items-center gap-1.5 px-2 py-0.5 bg-blue-50 border border-blue-200 rounded-sm text-[9px] font-black text-blue-700">
+                       <FileText className="h-3 w-3" />
+                       <span>PAGE {cite.page}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-1.5 px-2 py-0.5 bg-slate-100 border border-slate-200 rounded-sm text-[9px] font-bold text-slate-500">
+                     <Paperclip className="h-3 w-3" />
+                     <span className="truncate max-w-[150px]">{cite.source}</span>
+                  </div>
+               </div>
+               
+               {idx === 0 && !forceExpand && (
+                  <button 
+                    onClick={() => setLocalExpanded(false)}
+                    className="absolute top-2 right-2 p-1 text-slate-300 hover:text-slate-500 transition-colors"
+                  >
+                    <ChevronDown className="h-3 w-3 rotate-180" />
+                  </button>
+               )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -1308,17 +1384,20 @@ export default function AnalysisTab() {
                                                            {(item.breakdown?.[part.key] as any)?.value || "---"}
                                                         </div>
                                                         
-                                                        {(item.breakdown?.[part.key] as any)?.evidence && (
-                                                           <div className="mt-4">
-                                                              <EvidenceQuote 
-                                                                 text={(item.breakdown[part.key] as any).evidence} 
-                                                                 speaker={(item.breakdown[part.key] as any).speaker || "Operator Saiful"}
-                                                                 source={(item.breakdown[part.key] as any).source || "Audio_Rec_2024.mp3"}
-                                                                 time={(item.breakdown[part.key] as any).time || "00:42"}
-                                                                 forceExpand={allEvidenceExpanded}
-                                                              />
-                                                           </div>
-                                                        )}
+                                                        {((item.breakdown?.[part.key] as any)?.citations || (item.breakdown?.[part.key] as any)?.evidence) && (
+                                                            <div className="mt-4">
+                                                               <EvidenceCitationPanel 
+                                                                  citations={(item.breakdown[part.key] as any).citations || [{ 
+                                                                     type: 'audio', 
+                                                                     content: (item.breakdown[part.key] as any).evidence,
+                                                                     speaker: (item.breakdown[part.key] as any).speaker || "Operator Saiful",
+                                                                     source: (item.breakdown[part.key] as any).source || "Audio_Rec_2024.mp3",
+                                                                     time: (item.breakdown[part.key] as any).time || "00:42"
+                                                                  }]} 
+                                                                  forceExpand={allEvidenceExpanded}
+                                                               />
+                                                            </div>
+                                                         )}
                                                      </div>
                                                   </div>
                                                ))}
