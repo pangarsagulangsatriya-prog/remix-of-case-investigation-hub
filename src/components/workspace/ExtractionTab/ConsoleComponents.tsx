@@ -17,13 +17,55 @@ import { SECTION_DESCRIPTIONS, videoExtractionRefined, documentDerivationMock, i
 import { supabase } from "@/lib/supabase";
 import { normalizeAudioTimestamp } from "@/lib/normalizeAudioTimestamp";
 
-function SpinnerOverlay({ text }: { text: string }) {
+const PROCESSING_PHASES = {
+  audio: [
+    "📄 Reading file structure and verifying audio quality...",
+    "🎙️ Identifying speakers and mapping conversation timelines...",
+    "🔍 Analyzing conversation context and organizing data findings"
+  ],
+  video: [
+    "📄 Loading video stream and verifying file track integrity...",
+    "👁️ Scanning frames and indexing visual timeline changes...",
+    "🔍 Analyzing timeline sequence and compiling incident markers"
+  ],
+  image: [
+    "📄 Processing image resolution and reading metadata layout...",
+    "📐 Detecting environmental layout and structural boundaries...",
+    "🔍 Framing spatial reference elements for the investigation review"
+  ],
+  document: [
+    "📄 Reading file format and initializing text alignment...",
+    "📝 Processing text content and indexing document chapters...",
+    "🔍 Reviewing text context against operational information logs"
+  ]
+};
+
+function AdaptiveProcessingStatus({ type }: { type: 'audio' | 'video' | 'image' | 'document' }) {
+  const [phase, setPhase] = useState(0);
+
+  useEffect(() => {
+    const t1 = setTimeout(() => setPhase(1), 4000);
+    const t2 = setTimeout(() => setPhase(2), 8500);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, []);
+
+  const phrases = PROCESSING_PHASES[type] || PROCESSING_PHASES.document;
+  const currentText = phrases[phase];
+
   return (
-    <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/50 backdrop-blur-[1px]">
-      <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4 shadow-sm" />
-      <p className="text-[11px] font-bold text-slate-700 tracking-wider uppercase bg-white/80 px-4 py-1.5 rounded-full shadow-xs border border-slate-100">
-        {text}
-      </p>
+    <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/60 backdrop-blur-[2px]">
+      <div className="w-8 h-8 border-[3px] border-slate-200 border-t-slate-600 rounded-full animate-spin mb-5 shadow-sm" />
+      <div className="bg-white/95 px-5 py-2.5 rounded shadow-sm border border-slate-100 flex items-center justify-center text-center max-w-sm">
+        <p className="text-xs text-slate-500 font-medium">
+          {currentText}
+          {phase === 2 && (
+            <span className="inline-flex tracking-widest animate-pulse ml-0.5">...</span>
+          )}
+        </p>
+      </div>
     </div>
   );
 }
@@ -31,7 +73,7 @@ function SpinnerOverlay({ text }: { text: string }) {
 function ImageProcessingSkeleton() {
   return (
     <div className="relative p-6 space-y-6 h-full overflow-hidden">
-      <SpinnerOverlay text="Extracting forensic markers & structural metadata..." />
+      <AdaptiveProcessingStatus type="image" />
       <div className="flex items-center justify-between mb-4 animate-pulse">
         <div className="h-4 w-40 bg-slate-200 rounded" />
         <div className="h-4 w-20 bg-slate-200 rounded" />
@@ -67,7 +109,7 @@ function ImageProcessingSkeleton() {
 function AudioProcessingSkeleton() {
   return (
     <div className="relative p-6 space-y-6 h-full overflow-hidden">
-      <SpinnerOverlay text="Extracting forensic markers & structural metadata..." />
+      <AdaptiveProcessingStatus type="audio" />
       <div className="flex items-center justify-between mb-4 animate-pulse">
         <div className="h-4 w-48 bg-slate-200 rounded" />
         <div className="flex gap-2">
@@ -104,7 +146,7 @@ function AudioProcessingSkeleton() {
 function VideoProcessingSkeleton() {
   return (
     <div className="relative p-6 space-y-6 h-full overflow-hidden">
-      <SpinnerOverlay text="Extracting forensic markers & structural metadata..." />
+      <AdaptiveProcessingStatus type="video" />
       <div className="flex items-center justify-between mb-4 animate-pulse">
         <div className="h-4 w-48 bg-slate-200 rounded" />
         <div className="h-6 w-32 bg-slate-200 rounded-sm" />
@@ -132,7 +174,7 @@ function VideoProcessingSkeleton() {
 function DocumentProcessingSkeleton() {
   return (
     <div className="relative p-6 space-y-6 h-full overflow-hidden">
-      <SpinnerOverlay text="Extracting forensic markers & structural metadata..." />
+      <AdaptiveProcessingStatus type="document" />
       <div className="mb-4 animate-pulse">
         <div className="h-4 w-48 bg-slate-200 rounded" />
       </div>
