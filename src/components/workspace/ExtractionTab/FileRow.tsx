@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { 
   Pencil, Trash2, MoreVertical, Folder, FileText, 
   Image as ImageIcon, Mic as AudioIcon, Video as VideoIcon, 
-  FileCode, Box, RefreshCw, Loader2, Check, AlertCircle
+  FileCode, Box, RefreshCw, Loader2, Check, AlertCircle, X
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -196,10 +196,10 @@ export function FileRow({ file, isSelected, onSelect, onMove, onDelete, onRename
                           <span>Done</span>
                         </div>
                      ) : file.extraction_status === "failed" ? (
-                       <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-[3px] text-[8px] font-semibold uppercase tracking-wider bg-rose-50 text-rose-700 border border-rose-100 shadow-sm leading-none transition-all duration-200 hover:bg-rose-100">
-                         <AlertCircle className="h-2 w-2 text-rose-600 shrink-0" />
-                         <span>Gagal</span>
-                       </div>
+                        <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-[3px] text-[8px] font-bold bg-rose-50/80 text-rose-700 leading-none transition-all duration-200 hover:opacity-85 hover:-translate-y-[0.5px]">
+                          <X className="h-2 w-2 text-rose-600 shrink-0" />
+                          <span>Failed</span>
+                        </div>
                      ) : null}
                    </div>
                  </TooltipTrigger>
