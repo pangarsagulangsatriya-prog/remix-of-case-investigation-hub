@@ -383,10 +383,28 @@ export function useRerunExtraction() {
 
   return useMutation({
     mutationFn: async ({ id }: { id: string }) => {
-      // Skip pending/uploading stage entirely, set directly to processing stage!
+      // 1. Set to pending (uploading) first
+      const { error: pendingError } = await supabase
+        .from("evidence_files")
+        .update({ 
+          extraction_status: "pending",
+          updated_at: new Date().toISOString() // Force timestamp update for timer reset
+        })
+        .eq("id", id);
+
+      if (pendingError) throw pendingError;
+      queryClient.invalidateQueries({ queryKey: ["evidence"] });
+
+      // Simulate 20 seconds in pending (uploading) stage
+      await new Promise(resolve => setTimeout(resolve, 20000));
+
+      // 2. Set to processing
       const { error: procError } = await supabase
         .from("evidence_files")
-        .update({ extraction_status: "processing" })
+        .update({ 
+          extraction_status: "processing",
+          updated_at: new Date().toISOString()
+        })
         .eq("id", id);
 
       if (procError) throw procError;
@@ -398,7 +416,10 @@ export function useRerunExtraction() {
       // 3. Set to completed
       const { error: endError } = await supabase
         .from("evidence_files")
-        .update({ extraction_status: "completed" })
+        .update({ 
+          extraction_status: "completed",
+          updated_at: new Date().toISOString()
+        })
         .eq("id", id);
 
       if (endError) throw endError;

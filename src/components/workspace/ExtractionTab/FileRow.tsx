@@ -81,7 +81,7 @@ export function FileRow({ file, isSelected, onSelect, onMove, onDelete, onRename
 
   useEffect(() => {
     if (file.extraction_status === "pending" || file.extraction_status === "processing") {
-      const start = new Date(file.created_at || new Date()).getTime();
+      const start = new Date(file.updated_at || file.created_at || new Date()).getTime();
       const updateTimer = () => {
         const diff = Math.max(0, Math.floor((Date.now() - start) / 1000));
         setElapsedSeconds(diff);
