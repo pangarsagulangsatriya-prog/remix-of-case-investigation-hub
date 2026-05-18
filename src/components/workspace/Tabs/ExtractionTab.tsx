@@ -27,6 +27,7 @@ import {
   VideoAnalysisPanel 
 } from "../ExtractionTab/ConsoleComponents";
 import EvidencePreparationExperience from "../ExtractionTab/EvidencePreparationExperience";
+import { EvidenceCenterEmptyState, EvidenceRightEmptyState } from "../ExtractionTab/EvidenceEmptyState";
 import { 
   Modal, 
   DeleteConfirmationModal, 
@@ -538,6 +539,7 @@ export default function ExtractionTab() {
   // Transition Tracking for Success State (800ms)
   const prevStatusMap = useRef<Record<string, string>>({});
   const [successFileId, setSuccessFileId] = useState<string | null>(null);
+  const [hoveredFile, setHoveredFile] = useState<any | null>(null);
 
   useEffect(() => {
     if (!activeFile) return;
@@ -699,6 +701,7 @@ export default function ExtractionTab() {
                           }}
                           batches={batches}
                           isIndented
+                          onHoverChange={setHoveredFile}
                         />
                       ))
                     )}
@@ -744,6 +747,7 @@ export default function ExtractionTab() {
                           setIsHistoryDrawerOpen(true);
                         }}
                         batches={batches}
+                        onHoverChange={setHoveredFile}
                       />
                     );
                   });
@@ -818,15 +822,22 @@ export default function ExtractionTab() {
                     audioRef={audioRef}
                   />
               ) : (
-                <div className="flex flex-col items-center justify-center p-12 text-center">
-                   <div className="h-20 w-20 rounded-[2.5rem] bg-white  flex items-center justify-center mb-8 border border-white/50 animate-in fade-in zoom-in duration-700">
-                      <Folders className="h-10 w-10 text-slate-200" />
-                   </div>
-                   <h3 className="text-sm font-black text-slate-800 uppercase tracking-[0.2em] mb-3">No Evidence Selected</h3>
-                   <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest max-w-[280px] leading-relaxed opacity-80">
-                     Select an object from the library or use the Add Evidence button to begin the review workflow.
-                   </p>
-                </div>
+                <EvidenceCenterEmptyState 
+                  repositoryHasFiles={filteredFiles.length > 0}
+                  failedCount={filteredFiles.filter((f: any) => f.extraction_status === "failed").length}
+                  hoveredFile={hoveredFile}
+                  onSelectFirstEvidence={() => {
+                    const first = filteredFiles.find((f: any) => f.extraction_status !== "failed");
+                    if (first) setSelectedFile(first);
+                    else if (filteredFiles.length > 0) setSelectedFile(filteredFiles[0]);
+                  }}
+                  onReviewFailedFiles={() => {
+                    const failed = filteredFiles.find((f: any) => f.extraction_status === "failed");
+                    if (failed) setSelectedFile(failed);
+                  }}
+                  onUploadEvidence={() => setIsUploadModalOpen(true)}
+                  onCreateFolder={() => setIsCreateFolderModalOpen(true)}
+                />
               )}
             </div>
          </div>
@@ -855,11 +866,7 @@ export default function ExtractionTab() {
               </div>
             );
         })() : (
-          <div className="flex-1 flex flex-col items-center justify-center text-center p-12 opacity-30 grayscale saturate-0">
-             <Cpu className="h-12 w-12 text-slate-200 mb-6" />
-             <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900">Forensic Engine Standby</h3>
-             <p className="text-[10px] font-bold text-slate-400 uppercase mt-4 max-w-[220px] leading-relaxed">Select an evidence object to initiate automated feature extraction.</p>
-          </div>
+          <EvidenceRightEmptyState hoveredFile={hoveredFile} />
         )}
       </div>
       </>

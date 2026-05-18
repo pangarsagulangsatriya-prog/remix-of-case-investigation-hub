@@ -75,7 +75,7 @@ const getProcessedDuration = (file: any) => {
   return `${s}s`;
 };
 
-export function FileRow({ file, isSelected, onSelect, onMove, onDelete, onRename, onRerun, onOpenHistory, batches, isIndented }: any) {
+export function FileRow({ file, isSelected, onSelect, onMove, onDelete, onRename, onRerun, onOpenHistory, batches, isIndented, onHoverChange }: any) {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [isFailedHovered, setIsFailedHovered] = useState(false);
 
@@ -109,6 +109,8 @@ export function FileRow({ file, isSelected, onSelect, onMove, onDelete, onRename
   return (
     <div 
       onClick={onSelect}
+      onMouseEnter={() => onHoverChange && onHoverChange(file)}
+      onMouseLeave={() => onHoverChange && onHoverChange(null)}
       className={cn(
         "flex items-center gap-3 px-4 h-[62px] border-b border-slate-100 cursor-pointer transition-all relative group",
         isSelected ? "bg-[#e0e0e0] shadow-[inset_3px_0_0_#0f62fe]" : "hover:bg-[#f4f4f4]",
