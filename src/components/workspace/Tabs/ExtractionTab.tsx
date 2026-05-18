@@ -271,7 +271,32 @@ export default function ExtractionTab() {
         f.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         f.type.toLowerCase().includes(searchQuery.toLowerCase())
       )
-    );
+    ).map((f: any) => {
+      // Hardcode demo simulation: always fail these two files unless currently retrying
+      if (f.extraction_status !== "pending" && f.extraction_status !== "processing") {
+        if (f.name.includes("WhatsApp Image")) {
+          return {
+            ...f,
+            extraction_status: "failed",
+            metadata: {
+              ...(f.metadata || {}),
+              error_message: "Failed to upload evidence payload. Connection lost during chunk upload (408)."
+            }
+          };
+        }
+        if (f.name.includes("ChatGPT Image")) {
+          return {
+            ...f,
+            extraction_status: "failed",
+            metadata: {
+              ...(f.metadata || {}),
+              error_message: "Analysis engine timeout or connection reset by peer (504)."
+            }
+          };
+        }
+      }
+      return f;
+    });
   }, [files, searchQuery]);
 
   // Handlers
