@@ -920,100 +920,146 @@ export default function ExtractionTab() {
                 </div>
               </div>
 
-              {/* Timeline List */}
+              {/* SECTION 1: RIWAYAT VERSI CADANGAN */}
               <div className="space-y-3">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Log Riwayat Eksekusi</p>
+                <h3 className="text-xs font-semibold text-slate-500 tracking-wider uppercase flex items-center gap-1.5">
+                  <Box className="h-3.5 w-3.5 text-indigo-500" /> Riwayat Versi Cadangan (Maks. 3)
+                </h3>
+                
+                <div className="space-y-3">
+                  {(() => {
+                    const runs = getFileHistory(historyFile);
+                    const successfulRuns = runs.filter((r: any) => r.status === "completed");
+                    const versionHistoryPool = successfulRuns.slice(0, 3);
+                    const activeRunId = getActiveRunId(historyFile);
+
+                    if (versionHistoryPool.length === 0) {
+                      return (
+                        <p className="text-[10px] text-slate-400 italic bg-slate-50 border border-dashed rounded-[6px] p-3 text-center">
+                          Tidak ada versi cadangan yang tersedia.
+                        </p>
+                      );
+                    }
+
+                    return versionHistoryPool.map((run: any) => {
+                      const isActive = run.id === activeRunId;
+                      return (
+                        <div 
+                          key={run.id} 
+                          className={cn(
+                            "p-3 rounded-[6px] border transition-all duration-200 text-left",
+                            isActive 
+                              ? "bg-indigo-50/30 border-indigo-100 shadow-xs" 
+                              : "bg-white border-slate-100 hover:border-slate-200 hover:shadow-xs"
+                          )}
+                        >
+                          <div className="flex items-center justify-between gap-2 flex-wrap mb-2">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[11px] font-black text-slate-800 uppercase tracking-wider">
+                                Run #{run.runIndex}
+                              </span>
+                              <span className="text-[8px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-[3px] border shadow-xs leading-none bg-emerald-50 text-emerald-700 border-emerald-100">
+                                Done
+                              </span>
+                            </div>
+                            
+                            {isActive && (
+                              <span className="text-[8px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-[3px] bg-indigo-50 text-indigo-700 border border-indigo-100 shadow-xs leading-none">
+                                Versi Aktif
+                              </span>
+                            )}
+                          </div>
+
+                          <p className="text-[9px] text-slate-400 font-bold mb-2">
+                            Eksekusi: {run.timestamp}
+                          </p>
+
+                          <p className="text-[10.5px] text-slate-600 font-medium italic bg-slate-50/50 border border-slate-100/50 rounded-[4px] p-2 leading-relaxed mb-1">
+                            {run.data?.extractedText}
+                          </p>
+
+                          {/* Revert button is ONLY shown for older, non-active versions */}
+                          {!isActive && (
+                            <div className="mt-2.5 flex justify-end">
+                              <button
+                                onClick={() => handleRestoreVersion(run.id)}
+                                className="flex items-center gap-1 text-[9.5px] font-bold text-slate-600 border border-slate-200 bg-white hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 hover:cursor-pointer px-3 py-1 rounded-[4px] shadow-xs transition-all duration-150 active:scale-95 leading-none"
+                              >
+                                <RotateCcw className="h-3 w-3" /> Revert to This Version
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
+              </div>
+
+              <hr className="border-slate-100 my-6" />
+
+              {/* SECTION 2: LOG AUDIT EKSEKUSI */}
+              <div className="space-y-3">
+                <h3 className="text-xs font-semibold text-slate-500 tracking-wider uppercase flex items-center gap-1.5">
+                  <Clock className="h-3.5 w-3.5 text-slate-400" /> Log Audit Eksekusi
+                </h3>
+
                 <div className="relative border-l border-slate-100 pl-6 ml-3 space-y-6 pt-3 pb-3">
                   {(() => {
                     const runs = getFileHistory(historyFile);
                     if (runs.length === 0) {
                       return (
-                        <p className="text-[10px] text-slate-400 italic">Tidak ada log riwayat.</p>
+                        <p className="text-[9.5px] text-slate-400 italic text-left">Tidak ada log riwayat.</p>
                       );
                     }
-                    
-                    // Track B: Version History Pool (Successful runs, strictly capped at maximum of 3 items)
-                    const successfulRuns = runs.filter((r: any) => r.status === "completed");
-                    const versionHistoryPoolIds = successfulRuns.slice(0, 3).map((r: any) => r.id);
-                    const activeRunId = getActiveRunId(historyFile);
 
                     return runs.map((run: any) => {
                       const isCompleted = run.status === "completed";
-                      const isTrackB = versionHistoryPoolIds.includes(run.id);
-                      const isActive = run.id === activeRunId;
                       
                       return (
                         <div key={run.id} className="relative">
                           {/* Timeline Bullet Indicator */}
                           <div className={cn(
-                            "absolute -left-[35px] top-0 w-6 h-6 rounded-full border flex items-center justify-center shadow-sm z-10",
+                            "absolute -left-[35px] top-0 w-5 h-5 rounded-full border flex items-center justify-center shadow-xs z-10",
                             isCompleted 
-                              ? "bg-emerald-50 border-emerald-200 text-emerald-600" 
-                              : "bg-rose-50 border-rose-200 text-rose-600"
+                              ? "bg-emerald-50/50 border-emerald-100 text-emerald-500" 
+                              : "bg-rose-50/50 border-rose-100 text-rose-500"
                           )}>
                             {isCompleted ? (
-                              <Check className="h-3 w-3" />
+                              <Check className="h-2.5 w-2.5" />
                             ) : (
-                              <X className="h-3 w-3" />
+                              <X className="h-2.5 w-2.5" />
                             )}
                           </div>
 
-                          {/* Timeline Content Item */}
+                          {/* Timeline Content Item (Slightly smaller, more muted text) */}
                           <div className="space-y-1 text-left">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span className="text-[11px] font-black text-slate-800 uppercase tracking-wider">
+                              <span className="text-[10px] font-black text-slate-600 uppercase tracking-wider">
                                 Run #{run.runIndex}
                               </span>
                               <span className={cn(
-                                "text-[8px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-[3px] border shadow-sm leading-none",
+                                "text-[7.5px] font-semibold uppercase tracking-wider px-1 py-0.5 rounded-[3px] border shadow-xs leading-none",
                                 isCompleted 
-                                  ? "bg-emerald-50 text-emerald-700 border-emerald-100" 
-                                  : "bg-rose-50 text-rose-700 border-rose-100"
+                                  ? "bg-emerald-50/50 text-emerald-600/90 border-emerald-100/50" 
+                                  : "bg-rose-50/50 text-rose-600/90 border-rose-100/50"
                               )}>
                                 {run.status === "completed" ? "Done" : "Failed"}
                               </span>
-                              
-                              {/* Track B: Active Version badge */}
-                              {isTrackB && isActive && (
-                                <span className="text-[8px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-[3px] bg-indigo-50 text-indigo-700 border border-indigo-100 shadow-sm leading-none">
-                                  Versi Aktif
-                                </span>
-                              )}
                             </div>
 
-                            <p className="text-[9px] text-slate-400 font-bold">
+                            <p className="text-[8.5px] text-slate-400 font-bold">
                               Eksekusi: {run.timestamp}
                             </p>
 
-                            {/* Track A: Error Breakdown Block for Failed Run Items */}
-                            {!isCompleted && (
-                              <div className="bg-rose-50/40 border border-rose-100/50 rounded-[4px] p-2 mt-1.5 text-[9.5px] text-rose-700 leading-normal font-mono break-words">
+                            {/* Error reason or success summary (Slightly smaller and more muted) */}
+                            {!isCompleted ? (
+                              <div className="bg-rose-50/20 border border-rose-100/30 rounded-[4px] p-2 mt-1 text-[9px] text-rose-600/80 leading-normal font-mono break-words">
                                 {run.error}
                               </div>
-                            )}
-
-                            {/* Successful run data preview */}
-                            {isCompleted && (
-                              <div className="bg-slate-50 border border-slate-100 rounded-[4px] p-2 mt-1.5 text-[10px] text-slate-600 font-medium italic leading-relaxed">
+                            ) : (
+                              <div className="bg-slate-50/30 border border-slate-100/30 rounded-[4px] p-2 mt-1 text-[9px] text-slate-500/90 italic leading-relaxed">
                                 {run.data?.extractedText}
-                              </div>
-                            )}
-
-                            {/* Track B: Version History Pool Rollback Action Button */}
-                            {isCompleted && isTrackB && (
-                              <div className="mt-2">
-                                {isActive ? (
-                                  <button className="flex items-center gap-1 text-[9.5px] font-bold text-indigo-400 border border-indigo-50 bg-indigo-50/20 px-2.5 py-1 rounded-[4px] shadow-sm pointer-events-none opacity-50 leading-none">
-                                    <RotateCcw className="h-3 w-3" /> Revert to This Version
-                                  </button>
-                                ) : (
-                                  <button
-                                    onClick={() => handleRestoreVersion(run.id)}
-                                    className="flex items-center gap-1 text-[9.5px] font-bold text-slate-500 border border-slate-200 bg-white hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 hover:cursor-pointer px-2.5 py-1 rounded-[4px] shadow-sm transition-all duration-150 active:scale-95 leading-none"
-                                  >
-                                    <RotateCcw className="h-3 w-3" /> Revert to This Version
-                                  </button>
-                                )}
                               </div>
                             )}
                           </div>
