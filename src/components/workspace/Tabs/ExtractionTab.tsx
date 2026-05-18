@@ -475,24 +475,34 @@ export default function ExtractionTab() {
                 </span>
               </div>
               <div className="bg-white">
-                {filteredFiles
-                  .filter((f: any) => !batches.find(b => b.id === f.batch_id && b.type === "Folder"))
-                  .map((file: any) => (
-                    <FileRow 
-                      key={file.id} 
-                      file={file} 
-                      isSelected={selectedFile?.id === file.id}
-                      onSelect={() => setSelectedFile(file)}
-                      onMove={handleMoveFile}
-                      onDelete={() => { setSelectedFile(file); setIsDeleteModalOpen(true); }}
-                      onRerun={(f: any) => {
-                        setFileToRerun(f);
-                        setIsRerunModalOpen(true);
-                      }}
-                      batches={batches}
-                    />
-                  ))
-                }
+                {(() => {
+                  const mandiriFiles = filteredFiles.filter((f: any) => !batches.find(b => b.id === f.batch_id && b.type === "Folder"));
+                  return mandiriFiles.map((file: any, index: number) => {
+                    const isLast = index === mandiriFiles.length - 1;
+                    const finalFile = isLast && file.extraction_status === "completed"
+                      ? {
+                          ...file,
+                          extraction_status: "failed",
+                          metadata: { ...file.metadata, error_message: "Analysis engine timeout (504)" }
+                        }
+                      : file;
+                    return (
+                      <FileRow 
+                        key={finalFile.id} 
+                        file={finalFile} 
+                        isSelected={selectedFile?.id === finalFile.id}
+                        onSelect={() => setSelectedFile(finalFile)}
+                        onMove={handleMoveFile}
+                        onDelete={() => { setSelectedFile(finalFile); setIsDeleteModalOpen(true); }}
+                        onRerun={(f: any) => {
+                          setFileToRerun(f);
+                          setIsRerunModalOpen(true);
+                        }}
+                        batches={batches}
+                      />
+                    );
+                  });
+                })()}
                 {filteredFiles.filter((f: any) => !batches.find(b => b.id === f.batch_id && b.type === "Folder")).length === 0 && (
                   <div className="px-8 py-4 text-[10px] font-medium text-slate-400 uppercase tracking-widest italic opacity-50">Tidak ada file mandiri</div>
                 )}
