@@ -383,6 +383,16 @@ export function useRerunExtraction() {
 
   return useMutation({
     mutationFn: async ({ id }: { id: string }) => {
+      // Get file details to determine if we should simulate failure
+      const { data: fileData } = await supabase
+        .from("evidence_files")
+        .select("name, metadata")
+        .eq("id", id)
+        .single();
+        
+      const isWhatsApp = fileData?.name?.includes("WhatsApp Image");
+      const isChatGPT = fileData?.name?.includes("ChatGPT Image");
+
       // 1. Set to pending (uploading) first
       const { error: pendingError } = await supabase
         .from("evidence_files")
@@ -397,6 +407,23 @@ export function useRerunExtraction() {
 
       // Simulate 20 seconds in pending (uploading) stage
       await new Promise(resolve => setTimeout(resolve, 20000));
+      
+      if (isWhatsApp) {
+        // Fail at uploading stage
+        await supabase
+          .from("evidence_files")
+          .update({ 
+            extraction_status: "failed",
+            updated_at: new Date().toISOString(),
+            metadata: {
+              ...(fileData?.metadata || {}),
+              error_message: "Failed to upload evidence payload. Connection lost during chunk upload (408)."
+            }
+          })
+          .eq("id", id);
+        queryClient.invalidateQueries({ queryKey: ["evidence"] });
+        return true;
+      }
 
       // 2. Set to processing
       const { error: procError } = await supabase
@@ -412,6 +439,23 @@ export function useRerunExtraction() {
 
       // Simulate 30 seconds in processing stage
       await new Promise(resolve => setTimeout(resolve, 30000));
+      
+      if (isChatGPT) {
+        // Fail at processing stage
+        await supabase
+          .from("evidence_files")
+          .update({ 
+            extraction_status: "failed",
+            updated_at: new Date().toISOString(),
+            metadata: {
+              ...(fileData?.metadata || {}),
+              error_message: "Analysis engine timeout or connection reset by peer (504)."
+            }
+          })
+          .eq("id", id);
+        queryClient.invalidateQueries({ queryKey: ["evidence"] });
+        return true;
+      }
 
       // 3. Set to completed
       const { error: endError } = await supabase
