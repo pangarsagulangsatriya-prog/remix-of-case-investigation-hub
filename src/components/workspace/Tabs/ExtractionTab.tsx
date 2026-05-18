@@ -26,6 +26,7 @@ import {
   AudioExtractionConsole, 
   VideoAnalysisPanel 
 } from "../ExtractionTab/ConsoleComponents";
+import EvidencePreparationExperience from "../ExtractionTab/EvidencePreparationExperience";
 import { 
   Modal, 
   DeleteConfirmationModal, 
@@ -69,6 +70,23 @@ export default function ExtractionTab() {
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [expandedBatches, setExpandedBatches] = useState<string[]>(["DOKUMEN", "GAMBAR", "AUDIO"]);
   const [hasInitializedExpansion, setHasInitializedExpansion] = useState(false);
+
+  // Transition Tracking for Success State (800ms)
+  const prevStatusMap = useRef<Record<string, string>>({});
+  const [successFileId, setSuccessFileId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!activeFile) return;
+    const prevStatus = prevStatusMap.current[activeFile.id];
+    const currStatus = activeFile.extraction_status;
+    
+    if ((prevStatus === "processing" || prevStatus === "pending") && currStatus === "completed") {
+      setSuccessFileId(activeFile.id);
+      setTimeout(() => setSuccessFileId(null), 800);
+    }
+    
+    prevStatusMap.current[activeFile.id] = currStatus;
+  }, [activeFile]);
 
   // Auto-expand first folder on load
   useEffect(() => {
@@ -753,9 +771,14 @@ export default function ExtractionTab() {
         </div>
       </div>
 
-
-      <div className="flex-1 flex flex-col relative z-0 bg-white">
-        <div className="h-12 border-b flex items-center justify-between px-6 shrink-0 bg-white">
+      {(activeFile && (activeFile.extraction_status === "processing" || activeFile.extraction_status === "pending" || successFileId === activeFile.id)) ? (
+         <div className="flex-1 flex flex-col relative z-0 bg-white">
+           <EvidencePreparationExperience file={activeFile} isSuccess={successFileId === activeFile.id} />
+         </div>
+      ) : (
+        <>
+          <div className="flex-1 flex flex-col relative z-0 bg-white">
+            <div className="h-12 border-b flex items-center justify-between px-6 shrink-0 bg-white">
            {activeFile ? (
              <div className="flex items-center gap-4">
                  <div className="flex items-center gap-1 border-r pr-4 border-slate-100">
@@ -837,6 +860,8 @@ export default function ExtractionTab() {
           </div>
         )}
       </div>
+      </>
+      )}
 
       <DeleteConfirmationModal 
         isOpen={isDeleteModalOpen}
