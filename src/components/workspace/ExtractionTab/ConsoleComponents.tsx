@@ -58,15 +58,37 @@ function AdaptiveProcessingStatus({ type }: { type: 'audio' | 'video' | 'image' 
   const Icon = current.Icon;
 
   return (
-    <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/40 backdrop-blur-[1px]">
-      <div className="flex items-center gap-3 justify-center">
-        <Icon className={cn("h-4 w-4 text-emerald-600/80", current.animation)} />
-        <p className="text-xs text-slate-600 font-medium tracking-wide">
-          {current.text}
-          {phase === 2 && (
-            <span className="inline-flex tracking-widest animate-pulse ml-0.5">...</span>
-          )}
-        </p>
+    <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/40 backdrop-blur-[2px] transition-all duration-500 ease-in-out">
+      <div className="flex flex-col items-center justify-center gap-4">
+        {/* Agentic Orb Core */}
+        <div className="w-12 h-12 rounded-full bg-slate-50 border border-slate-100/80 flex items-center justify-center relative shadow-sm">
+          <div className="absolute inset-0 rounded-full bg-emerald-500/10 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite]" />
+          <Icon className={cn("h-5 w-5 text-emerald-600/90 relative z-10", current.animation)} />
+        </div>
+        
+        {/* Typography & Terminal Status */}
+        <div className="h-6 flex items-center justify-center overflow-hidden">
+           <p key={phase} className="text-xs font-mono font-medium text-slate-700 text-center tracking-wide animate-in fade-in duration-300">
+             {current.text}
+             {phase === 2 && (
+               <span className="inline-flex tracking-widest animate-pulse ml-0.5">...</span>
+             )}
+           </p>
+        </div>
+
+        {/* Micro Progress Dots */}
+        <div className="flex gap-1.5 items-center justify-center">
+          {[0, 1, 2].map((idx) => (
+            <div
+              key={idx}
+              className={cn(
+                "rounded-full transition-all duration-300",
+                phase === idx ? "w-3 h-1 bg-emerald-500" : "w-1 h-1 bg-slate-200",
+                (phase === 2 && idx === 2) ? "animate-pulse" : ""
+              )}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );
