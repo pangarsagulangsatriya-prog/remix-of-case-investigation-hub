@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from "react";
 import { 
   Pencil, Trash2, MoreVertical, Folder, FileText, 
   Image as ImageIcon, Mic as AudioIcon, Video as VideoIcon, 
@@ -57,6 +58,35 @@ const formatDate = (dateStr: string) => {
 };
 
 export function FileRow({ file, isSelected, onSelect, onMove, onDelete, onRename, onRerun, batches, isIndented }: any) {
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  useEffect(() => {
+    if (file.extraction_status === "pending" || file.extraction_status === "processing") {
+      const start = new Date(file.created_at || new Date()).getTime();
+      const updateTimer = () => {
+        const diff = Math.max(0, Math.floor((Date.now() - start) / 1000));
+        setElapsedSeconds(diff);
+      };
+      
+      updateTimer();
+      const interval = setInterval(updateTimer, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [file.extraction_status, file.created_at]);
+
+  const formatElapsedTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    if (m > 0) return `${m}m ${s}s`;
+    return `${s}s`;
+  };
+
+  // Upload progress simulation (pending status lasts 20 seconds)
+  const uploadProgress = Math.min(99, Math.max(1, Math.floor((elapsedSeconds / 20) * 100)));
+  
+  // Processing progress simulation (processing status lasts 30 seconds after the first 20 seconds)
+  const processingProgress = Math.min(99, Math.max(1, Math.floor(((elapsedSeconds - 20) / 30) * 100)));
+
   return (
     <div 
       onClick={onSelect}
@@ -97,23 +127,41 @@ export function FileRow({ file, isSelected, onSelect, onMove, onDelete, onRename
            <span className="text-slate-300">·</span>
            <span className="text-[10px] font-medium text-slate-500 tracking-tight">{formatDate(file.created_at)}</span>
            
-           {/* Status Label - Simplified to Dot/Loader with Tooltip */}
+           {/* Status Label */}
            <div className="flex items-center ml-2">
               <TooltipProvider delayDuration={0}>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <div className="cursor-help py-1">
+                    <div className="cursor-help py-0.5">
                       {file.extraction_status === "pending" ? (
-                        <div className="flex items-center justify-center">
-                          <Loader2 className="h-3 w-3 text-[#0f62fe] animate-spin" />
+                        <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-[4px] text-[8px] font-black uppercase tracking-wider bg-blue-50 text-blue-600 border border-blue-100 leading-none">
+                          <Loader2 className="h-2.5 w-2.5 text-blue-600 animate-spin shrink-0" />
+                          <span>Uploading...</span>
+                        </div>
+                      ) : file.extraction_status === "processing" ? (
+                        <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-[4px] text-[8px] font-black uppercase tracking-wider bg-purple-50 text-purple-700 border border-purple-200 leading-none">
+                          <Loader2 className="h-2.5 w-2.5 text-purple-700 animate-spin shrink-0" />
+                          <span>Processing...</span>
                         </div>
                       ) : file.extraction_status === "completed" ? (
                         <div className="h-2 w-2 rounded-[4px] bg-[#24a148] shadow-[0_0_8px_rgba(36,161,72,0.4)]" />
                       ) : null}
                     </div>
                   </TooltipTrigger>
-                  <TooltipContent side="top" className="bg-slate-900 text-[10px] text-white px-2 py-1 font-black uppercase tracking-widest border-none">
-                    {file.extraction_status === "pending" ? "Analysis in Progress..." : "Extraction Completed"}
+                  <TooltipContent side="top" className="bg-slate-900 text-[10px] text-white px-3 py-2 font-bold border-none shadow-lg rounded-[4px]">
+                    {file.extraction_status === "pending" ? (
+                      <div className="flex flex-col gap-0.5">
+                        <span className="font-extrabold text-blue-400 text-[11px]">{uploadProgress}% uploaded</span>
+                        <span className="text-[9px] opacity-80 font-normal">Running for {formatElapsedTime(elapsedSeconds)}</span>
+                      </div>
+                    ) : file.extraction_status === "processing" ? (
+                      <div className="flex flex-col gap-0.5">
+                        <span className="font-extrabold text-purple-300 text-[11px]">{processingProgress}% processed</span>
+                        <span className="text-[9px] opacity-80 font-normal">Processing for {formatElapsedTime(elapsedSeconds)}</span>
+                      </div>
+                    ) : (
+                      <span>Extraction Completed</span>
+                    )}
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -142,8 +190,9 @@ export function FileRow({ file, isSelected, onSelect, onMove, onDelete, onRename
                         <DropdownMenuSeparator />
                         <DropdownMenuLabel className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2 py-1.5">Pindah ke Folder</DropdownMenuLabel>
                         {batches.filter((b: any) => b.type === "Folder" && b.id !== file.batch_id).map((b: any) => (
-                           <DropdownMenuItem key={b.id} onClick={() => onMove(file.id, b.id)} className="text-[11px] font-bold py-2 rounded-[4px]">
-                              <Folder className="h-3.5 w-3.5 mr-2 text-slate-400" /> {b.name}
+                           <DropdownMenuItem key={b.id} onClick={() => onMove(file.id, b.id)} className="text-[11px] font-bold py-2 rounded-[4px] flex items-center w-full" title={b.name}>
+                              <Folder className="h-3.5 w-3.5 mr-2 text-slate-400 shrink-0" />
+                              <span className="truncate max-w-[130px] block">{b.name}</span>
                            </DropdownMenuItem>
                         ))}
                       </>

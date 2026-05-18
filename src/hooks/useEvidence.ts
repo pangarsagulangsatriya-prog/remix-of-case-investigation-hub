@@ -241,17 +241,27 @@ export function useUploadEvidence() {
         }
       }
 
-      // 3. Trigger dummy completion after 10 seconds in the background
+      // 3. Trigger dummy completion in the background for testing:
+      // Uploading (pending) lasts 20 seconds.
+      // Processing lasts 30 seconds (completes at 50 seconds total).
       if (insertedFileIds.length > 0) {
+        // Step A: Transition from uploading (pending) to processing at 20 seconds
+        setTimeout(async () => {
+          await supabase
+            .from("evidence_files")
+            .update({ extraction_status: "processing" })
+            .in("id", insertedFileIds);
+          queryClient.invalidateQueries({ queryKey: ["evidence", caseId] });
+        }, 20000);
+
+        // Step B: Transition from processing to completed at 50 seconds
         setTimeout(async () => {
           await supabase
             .from("evidence_files")
             .update({ extraction_status: "completed" })
             .in("id", insertedFileIds);
-          
-          // Invalidate query after completion
           queryClient.invalidateQueries({ queryKey: ["evidence", caseId] });
-        }, 10000);
+        }, 50000);
       }
 
       return true;
@@ -380,12 +390,22 @@ export function useRerunExtraction() {
         .eq("id", id);
 
       if (startError) throw startError;
-      
-      // Trigger immediate UI update to show loader
       queryClient.invalidateQueries({ queryKey: ["evidence"] });
 
-      // 2. Simulate delay for extraction process (10s)
-      await new Promise(resolve => setTimeout(resolve, 10000));
+      // Simulate 20 seconds in pending/uploading stage
+      await new Promise(resolve => setTimeout(resolve, 20000));
+
+      // 2. Set to processing stage
+      const { error: procError } = await supabase
+        .from("evidence_files")
+        .update({ extraction_status: "processing" })
+        .eq("id", id);
+
+      if (procError) throw procError;
+      queryClient.invalidateQueries({ queryKey: ["evidence"] });
+
+      // Simulate 30 seconds in processing stage
+      await new Promise(resolve => setTimeout(resolve, 30000));
 
       // 3. Set to completed
       const { error: endError } = await supabase

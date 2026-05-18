@@ -1,12 +1,13 @@
-// BUILD_VERSION: 2026-04-28 — Modularized Forensic Architecture
+// BUILD_VERSION: 2026-05-18 — Modularized Forensic Architecture with Inline Renaming
 import React, { useState, useEffect, useMemo, Suspense } from "react"; 
 import { useParams, useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/AppLayout";
-import { useCase, useCases } from "@/hooks/useCases";
+import { useCase, useCases, useUpdateCase } from "@/hooks/useCases";
 import { useEvidence, useUploadEvidence } from "@/hooks/useEvidence";
+import { useInsertAuditLog } from "@/hooks/useAuditLogs";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Loader2, ArrowLeft, ChevronLeft, ChevronRight, Clock, AlertTriangle } from "lucide-react";
+import { Loader2, ArrowLeft, ChevronLeft, ChevronRight, Clock, AlertTriangle, Pencil, Check, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 // Modular Tab Components (Lazy Loaded)
@@ -55,6 +56,23 @@ export default function CaseWorkspacePage() {
   const [activeTab, setActiveTab] = useState("Evidence Review");
   const [hasDemoDerivation, setHasDemoDerivation] = useState(false);
 
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [titleInput, setTitleInput] = useState("");
+
+  const updateCaseMutation = useUpdateCase();
+  const insertAuditLogMutation = useInsertAuditLog();
+
+  // Real Data Hooks
+  const { data: cases } = useCases();
+  const { data: caseData, isLoading: caseLoading, isError: caseError } = useCase(caseId || "");
+  const { isLoading: evidenceLoading, isError: evidenceError } = useEvidence(caseId || "");
+
+  useEffect(() => {
+    if (caseData?.title) {
+      setTitleInput(caseData.title);
+    }
+  }, [caseData?.title]);
+
   useEffect(() => {
     const checkDemo = async () => {
       try {
@@ -79,10 +97,40 @@ export default function CaseWorkspacePage() {
     if (caseId) checkDemo();
   }, [caseId]);
 
-  // Real Data Hooks
-  const { data: cases } = useCases();
-  const { data: caseData, isLoading: caseLoading, isError: caseError } = useCase(caseId || "");
-  const { isLoading: evidenceLoading, isError: evidenceError } = useEvidence(caseId || "");
+  const handleSaveTitle = async () => {
+    const trimmedTitle = titleInput.trim();
+    if (!trimmedTitle) {
+      toast.error("Case title cannot be empty");
+      setTitleInput(caseData?.title || "");
+      setIsEditingTitle(false);
+      return;
+    }
+    
+    if (trimmedTitle === caseData?.title) {
+      setIsEditingTitle(false);
+      return;
+    }
+
+    try {
+      await updateCaseMutation.mutateAsync({
+        id: caseId || "",
+        title: trimmedTitle
+      });
+      toast.success("Case renamed successfully");
+      setIsEditingTitle(false);
+
+      // Audit Log insertion
+      insertAuditLogMutation.mutate({
+        case_id: caseId || "",
+        action: `Renamed case to "${trimmedTitle}"`,
+        entity_type: "case",
+        entity_name: trimmedTitle
+      });
+    } catch (err: any) {
+      toast.error(`Failed to rename case: ${err.message || 'Unknown error'}`);
+      setTitleInput(caseData?.title || "");
+    }
+  };
 
   const currentIndex = Array.isArray(cases) ? cases.findIndex(c => c.id === caseId) : -1;
   const prevCase = currentIndex > 0 ? cases![currentIndex - 1] : null;
@@ -98,6 +146,7 @@ export default function CaseWorkspacePage() {
           </div>
         </div>
       </AppLayout>
+
     );
   }
 
@@ -129,9 +178,69 @@ export default function CaseWorkspacePage() {
                 <ArrowLeft className="h-4 w-4" />
               </Button>
               <div>
-                <h1 className="text-xl font-bold tracking-tight text-slate-900 border-none p-0 flex items-center gap-2 leading-none">
-                  {caseData?.title || "Unknown Case"} <span className="text-slate-400 font-mono text-sm leading-none ml-1">#{caseData?.case_number || "???"}</span>
-                </h1>
+                {isEditingTitle ? (
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={titleInput}
+                      onChange={(e) => setTitleInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          handleSaveTitle();
+                        } else if (e.key === "Escape") {
+                          setIsEditingTitle(false);
+                          setTitleInput(caseData?.title || "");
+                        }
+                      }}
+                      onBlur={handleSaveTitle}
+                      className="text-lg font-bold tracking-tight text-slate-900 border border-slate-200 rounded px-2.5 py-1 bg-slate-50 w-72 focus:outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all leading-tight h-8"
+                      autoFocus
+                      maxLength={100}
+                      disabled={updateCaseMutation.isPending}
+                    />
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      onClick={handleSaveTitle}
+                      disabled={updateCaseMutation.isPending}
+                      className="h-8 w-8 p-0 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded"
+                    >
+                      {updateCaseMutation.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
+                      ) : (
+                        <Check className="h-4 w-4" />
+                      )}
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      onClick={() => {
+                        setIsEditingTitle(false);
+                        setTitleInput(caseData?.title || "");
+                      }}
+                      disabled={updateCaseMutation.isPending}
+                      className="h-8 w-8 p-0 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div 
+                    className="flex items-center gap-2 group/title cursor-pointer py-1 px-1.5 -ml-1.5 rounded hover:bg-slate-50 transition-colors"
+                    onClick={() => setIsEditingTitle(true)}
+                    title="Click to rename case"
+                  >
+                    <h1 className="text-xl font-bold tracking-tight text-slate-900 border-none p-0 flex items-center gap-2 leading-none">
+                      {caseData?.title || "Unknown Case"}
+                    </h1>
+                    <span className="text-slate-400 font-mono text-sm leading-none ml-1">#{caseData?.case_number || "???"}</span>
+                    <button 
+                      className="opacity-0 group-hover/title:opacity-100 p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all ml-1 shrink-0"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
             

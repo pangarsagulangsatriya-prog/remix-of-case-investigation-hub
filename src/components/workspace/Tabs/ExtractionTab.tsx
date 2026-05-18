@@ -5,7 +5,7 @@ import {
   Search, Plus, FolderPlus, FileUp, FolderUp, ChevronRight, 
   Folder, Folders, MoreVertical, Pencil, Trash2, Loader2, CheckCircle2, 
   Box, Upload, ChevronLeft, ChevronRight as ChevronRightIcon, 
-  Cpu, ChevronsUpDown, ChevronsDownUp
+  Cpu, ChevronsDown, ChevronsUp
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -332,18 +332,17 @@ export default function ExtractionTab() {
                     title="Expand All"
                     className="p-1 hover:bg-white hover:shadow-sm rounded-[2px] text-slate-400 hover:text-slate-900 transition-all"
                    >
-                     <ChevronsUpDown className="h-3 w-3" />
+                     <ChevronsDown className="h-3 w-3" />
                    </button>
                    <button 
                     onClick={collapseAll}
                     title="Collapse All"
                     className="p-1 hover:bg-white hover:shadow-sm rounded-[2px] text-slate-400 hover:text-slate-900 transition-all"
                    >
-                     <ChevronsDownUp className="h-3 w-3" />
+                     <ChevronsUp className="h-3 w-3" />
                    </button>
                 </div>
-                <button className="text-[9px] font-black text-rose-500 uppercase tracking-widest hover:opacity-70 transition-opacity">Pembersihan</button>
-                <span className="text-[9px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded-[4px] border border-slate-100">
+                 <span className="text-[9px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded-[4px] border border-slate-100">
                   {filteredFiles.length} BUKTI
                 </span>
               </div>
@@ -406,7 +405,7 @@ export default function ExtractionTab() {
                     "h-4 w-4 shrink-0", 
                     expandedBatches.includes(batch.id) ? "text-[#0f62fe]" : "text-slate-400"
                   )} />
-                  <span className="text-[11px] font-bold text-slate-800 uppercase tracking-widest flex-1 truncate">{batch.name}</span>
+                  <span className="text-[11px] font-bold text-slate-800 uppercase tracking-widest flex-1 truncate" title={batch.name}>{batch.name}</span>
                   <span className="text-[10px] font-bold text-slate-400 mr-2 shrink-0">
                     {files.filter((f: any) => f.batch_id === batch.id).length}
                   </span>
