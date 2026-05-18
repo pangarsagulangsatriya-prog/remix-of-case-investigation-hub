@@ -10,10 +10,10 @@ import {
   FileImage, FileAudio, FileText, CheckCircle2, Clock, 
   Play, Pause, Info, Folder, AlertCircle, Calendar, 
   MapPin, Shield, Brain, Sparkles, ChevronRight, ChevronLeft, Check, 
-  Volume2, Eye, Database
+  Volume2, Eye, Database, Upload, Cpu
 } from "lucide-react";
 import { useCreateCase } from "@/hooks/useCases";
-import { useUploadEvidence } from "@/hooks/useEvidence";
+import { useUploadEvidence, getFallbackMimeType } from "@/hooks/useEvidence";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
