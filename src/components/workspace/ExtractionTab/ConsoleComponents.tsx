@@ -59,31 +59,26 @@ function AdaptiveProcessingStatus({ type }: { type: 'audio' | 'video' | 'image' 
 
   return (
     <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/40 backdrop-blur-[2px] transition-opacity duration-200">
-      {/* Ambient Radial Glow */}
-      <div className="absolute pointer-events-none w-[300px] h-[300px] bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.08)_0%,transparent_65%)]" />
       
-      {/* Unified Floating HUD Card */}
-      <div className="flex flex-col items-center justify-center p-6 bg-white/80 border border-slate-100/60 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.02)] backdrop-blur-md max-w-[280px] w-full transition-all duration-500 relative z-10">
+      {/* Sleek Matte Floating Capsule Panel */}
+      <div className="flex flex-col items-center justify-center p-5 bg-white/60 border border-slate-200/40 rounded-xl shadow-sm backdrop-blur-md max-w-[240px] w-full transition-all duration-500 relative z-10">
         
-        {/* The High-Fidelity Glowing Orb (Top) */}
-        <div className="w-14 h-14 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center relative">
-          {/* Dual-Pulse Ripple Rings */}
-          <div className="absolute inset-0 rounded-full bg-emerald-500/10 animate-[ping_2.5s_cubic-bezier(0,0,0.2,1)_infinite]" />
-          <div className="absolute inset-0 rounded-full bg-emerald-500/5 animate-[ping_2.5s_cubic-bezier(0,0,0.2,1)_infinite]" style={{ animationDelay: '1000ms' }} />
-          {/* Spinning Gear Accent */}
-          <div className="absolute inset-1 rounded-full border-t-2 border-r-2 border-transparent border-t-emerald-500/30 border-r-emerald-500/30 animate-[spin_3s_linear_infinite]" />
+        {/* The Continuous Gear & Pulse Orb (Top) */}
+        <div className="w-11 h-11 bg-white/80 border border-slate-200/50 rounded-full flex items-center justify-center relative shadow-sm">
+          {/* Border Shimmer Effect */}
+          <div className="absolute inset-0.5 rounded-full border-t border-r border-transparent border-t-emerald-500/40 border-r-emerald-500/20 animate-[spin_4s_linear_infinite]" />
           {/* Active Icon */}
-          <Icon className={cn("h-5 w-5 text-emerald-600 drop-shadow-[0_0_4px_rgba(16,185,129,0.2)] relative z-10", current.animation)} />
+          <Icon className={cn("h-4 w-4 text-emerald-600/90 relative z-10", current.animation)} />
         </div>
         
-        {/* Sophisticated Micro-Steps Progress Indicators (Middle) */}
-        <div className="flex gap-1.5 items-center justify-center mt-5 mb-4">
+        {/* Integrated Capsule Progress Tracker (Middle) */}
+        <div className="flex gap-1 items-center justify-center mt-3 mb-2.5">
           {[0, 1, 2].map((idx) => (
             <div
               key={idx}
               className={cn(
-                "h-1.5 rounded-full transition-all duration-300 ease-out",
-                phase === idx ? "w-5 bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]" : "w-1.5 bg-slate-200",
+                "rounded-full transition-all duration-500 ease-out",
+                phase === idx ? "w-4 h-1 bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.3)]" : "w-1.5 h-1.5 bg-slate-200/70",
                 (phase === 2 && idx === 2) ? "animate-pulse" : ""
               )}
             />
@@ -92,7 +87,7 @@ function AdaptiveProcessingStatus({ type }: { type: 'audio' | 'video' | 'image' 
 
         {/* Micro-Typography Status Log (Bottom) */}
         <div className="h-10 flex items-center justify-center overflow-hidden w-full relative">
-           <p key={phase} className="text-[11px] font-mono font-medium text-slate-600 text-center leading-relaxed max-w-[220px] animate-in fade-in slide-in-from-bottom-2 duration-500 ease-in-out absolute">
+           <p key={phase} className="text-[10.5px] font-mono text-slate-500 leading-normal text-center tracking-normal px-2 animate-in fade-in duration-300 absolute">
              {current.text}
              {phase === 2 && (
                <span className="inline-flex tracking-widest animate-pulse ml-0.5">...</span>
