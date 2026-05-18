@@ -77,6 +77,7 @@ const getProcessedDuration = (file: any) => {
 
 export function FileRow({ file, isSelected, onSelect, onMove, onDelete, onRename, onRerun, batches, isIndented }: any) {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [isFailedHovered, setIsFailedHovered] = useState(false);
 
   useEffect(() => {
     if (file.extraction_status === "pending" || file.extraction_status === "processing") {
@@ -214,9 +215,31 @@ export function FileRow({ file, isSelected, onSelect, onMove, onDelete, onRename
                           <span>Done</span>
                         </div>
                       ) : file.extraction_status === "failed" ? (
-                        <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-[3px] text-[8px] font-semibold uppercase tracking-wider bg-rose-50 text-rose-700 border border-rose-100 shadow-sm leading-none transition-all duration-200 hover:bg-rose-100">
-                          <X className="h-2 w-2 text-rose-600 shrink-0" />
-                          <span>Failed</span>
+                        <div 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onRerun(file);
+                          }}
+                          onMouseEnter={() => setIsFailedHovered(true)}
+                          onMouseLeave={() => setIsFailedHovered(false)}
+                          className={cn(
+                            "flex items-center gap-1 transition-all duration-200 leading-none font-semibold text-xs",
+                            isFailedHovered 
+                              ? "px-2 py-0.5 rounded bg-rose-50/60 text-rose-700 cursor-pointer border border-rose-100 shadow-sm animate-in fade-in duration-200" 
+                              : "p-0 bg-transparent text-rose-500 cursor-default"
+                          )}
+                        >
+                          {isFailedHovered ? (
+                            <>
+                              <RefreshCw className="h-3 w-3 text-rose-600 animate-spin-once shrink-0" />
+                              <span>Retry</span>
+                            </>
+                          ) : (
+                            <>
+                              <X className="h-3 w-3 text-rose-500 shrink-0" />
+                              <span>Failed</span>
+                            </>
+                          )}
                         </div>
                       ) : null}
                     </div>
@@ -245,15 +268,19 @@ export function FileRow({ file, isSelected, onSelect, onMove, onDelete, onRename
                         </span>
                       </div>
                     ) : file.extraction_status === "failed" ? (
-                      <div className="flex flex-col gap-0.5 text-left min-w-[120px]">
+                      <div className="flex flex-col gap-0.5 text-left min-w-[150px]">
                         <span className="font-semibold text-rose-600 text-[11px] flex items-center gap-1">
-                          ✕ Extraction Failed
+                          ✕ Processing Failed
                         </span>
                         <span className="text-[10px] text-slate-700 font-medium max-w-[180px] break-words">
-                          Error: {file.metadata?.error_message || "Analysis engine timeout"}
+                          Reason: {file.metadata?.error_message || "Analysis engine timeout"}
                         </span>
                         <span className="text-[9px] text-slate-400 mt-0.5 font-normal">
                           Finished at: {formatFinishedAt(file.updated_at || file.created_at)}
+                        </span>
+                        <div className="my-1.5 border-t border-slate-100" />
+                        <span className="text-[9.5px] text-slate-500 font-medium flex items-center gap-1 leading-normal">
+                          <span>💡</span> Click this badge to retry processing.
                         </span>
                       </div>
                     ) : null}</TooltipContent>
