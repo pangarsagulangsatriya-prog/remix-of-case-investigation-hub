@@ -119,12 +119,13 @@ export default function ExtractionTab() {
   const renameFileMutation = useRenameFile();
   const moveFileMutation = useMoveFile();
   const uploadEvidenceMutation = useUploadEvidence();
-  const formatSize = (bytes: number) => {
-    if (!bytes) return "0 B";
-    const k = 1024;
-    const sizes = ["B", "KB", "MB", "GB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+  const formatSize = (size: any) => {
+    if (!size) return "0 B";
+    const bytes = typeof size === 'string' ? parseInt(size) : size;
+    if (isNaN(bytes)) return size;
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
   };
 
   const getFileHistory = (file: any) => {
@@ -205,8 +206,26 @@ export default function ExtractionTab() {
     return mockRuns;
   };
 
+  const getActiveRunId = (file: any) => {
+    if (!file) return null;
+    const activeKey = `file_active_run_${file.id}`;
+    const activeStored = localStorage.getItem(activeKey);
+    if (activeStored) return activeStored;
+
+    const history = getFileHistory(file);
+    const completedRuns = history.filter((r: any) => r.status === "completed");
+    const activeItem = history.find((r: any) => r.isActive) || completedRuns[0] || history[0];
+    if (activeItem) {
+      localStorage.setItem(activeKey, activeItem.id);
+      return activeItem.id;
+    }
+    return null;
+  };
+
   const handleRestoreVersion = (runId: string) => {
     if (!historyFile) return;
+    localStorage.setItem(`file_active_run_${historyFile.id}`, runId);
+    
     const key = `file_history_${historyFile.id}`;
     const history = getFileHistory(historyFile);
     const updated = history.map((run: any) => ({
@@ -351,17 +370,70 @@ export default function ExtractionTab() {
 
   const handleRerunExtraction = async () => {
     if (!fileToRerun) return;
+    const targetFile = fileToRerun;
     try {
       setIsRerunModalOpen(false);
-      const promise = rerunExtractionMutation.mutateAsync({ id: fileToRerun.id });
+      const promise = rerunExtractionMutation.mutateAsync({ id: targetFile.id });
       toast.promise(promise, {
         loading: 'Initiating forensic extraction...',
         success: 'Extraction completed successfully.',
         error: 'Extraction engine failed to process object.'
       });
       await promise;
+
+      // SUCCESS: Append a brand new successful run to both tracks in localStorage
+      const historyKey = `file_history_${targetFile.id}`;
+      const runs = getFileHistory(targetFile);
+      const newRunIndex = runs.length > 0 ? Math.max(...runs.map((r: any) => r.runIndex)) + 1 : 1;
+      
+      const now = new Date();
+      const formatDateFull = (date: Date) => {
+        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}, ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:${date.getSeconds().toString().padStart(2, '0')}`;
+      };
+
+      const newRun = {
+        id: `${targetFile.id}_run_${newRunIndex}`,
+        runIndex: newRunIndex,
+        status: "completed",
+        timestamp: formatDateFull(now),
+        isActive: false, // will become active in activeRunId
+        data: {
+          extractedText: `[Run #${newRunIndex} Active Version] Deep audio forensic extraction completed with KM 14-500 Rebah markers successfully mapped.`
+        }
+      };
+
+      const updatedRuns = [newRun, ...runs.map((r: any) => ({ ...r, isActive: false }))];
+      localStorage.setItem(historyKey, JSON.stringify(updatedRuns));
+      localStorage.setItem(`file_active_run_${targetFile.id}`, newRun.id);
+
+      queryClient.invalidateQueries({ queryKey: ["evidence"] });
     } catch (error) {
       console.error(error);
+      
+      // FAILURE: Append a brand new failed run to execution log track in localStorage
+      const historyKey = `file_history_${targetFile.id}`;
+      const runs = getFileHistory(targetFile);
+      const newRunIndex = runs.length > 0 ? Math.max(...runs.map((r: any) => r.runIndex)) + 1 : 1;
+      
+      const now = new Date();
+      const formatDateFull = (date: Date) => {
+        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}, ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:${date.getSeconds().toString().padStart(2, '0')}`;
+      };
+
+      const newRun = {
+        id: `${targetFile.id}_run_${newRunIndex}`,
+        runIndex: newRunIndex,
+        status: "failed",
+        timestamp: formatDateFull(now),
+        error: "Reason: Unsupported audio format or token limit exceeded"
+      };
+
+      const updatedRuns = [newRun, ...runs];
+      localStorage.setItem(historyKey, JSON.stringify(updatedRuns));
+
+      queryClient.invalidateQueries({ queryKey: ["evidence"] });
     }
   };
 
@@ -859,8 +931,17 @@ export default function ExtractionTab() {
                         <p className="text-[10px] text-slate-400 italic">Tidak ada log riwayat.</p>
                       );
                     }
+                    
+                    // Track B: Version History Pool (Successful runs, strictly capped at maximum of 3 items)
+                    const successfulRuns = runs.filter((r: any) => r.status === "completed");
+                    const versionHistoryPoolIds = successfulRuns.slice(0, 3).map((r: any) => r.id);
+                    const activeRunId = getActiveRunId(historyFile);
+
                     return runs.map((run: any) => {
                       const isCompleted = run.status === "completed";
+                      const isTrackB = versionHistoryPoolIds.includes(run.id);
+                      const isActive = run.id === activeRunId;
+                      
                       return (
                         <div key={run.id} className="relative">
                           {/* Timeline Bullet Indicator */}
@@ -879,7 +960,7 @@ export default function ExtractionTab() {
 
                           {/* Timeline Content Item */}
                           <div className="space-y-1 text-left">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-wrap">
                               <span className="text-[11px] font-black text-slate-800 uppercase tracking-wider">
                                 Run #{run.runIndex}
                               </span>
@@ -892,7 +973,8 @@ export default function ExtractionTab() {
                                 {run.status === "completed" ? "Done" : "Failed"}
                               </span>
                               
-                              {isCompleted && run.isActive && (
+                              {/* Track B: Active Version badge */}
+                              {isTrackB && isActive && (
                                 <span className="text-[8px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-[3px] bg-indigo-50 text-indigo-700 border border-indigo-100 shadow-sm leading-none">
                                   Versi Aktif
                                 </span>
@@ -903,26 +985,33 @@ export default function ExtractionTab() {
                               Eksekusi: {run.timestamp}
                             </p>
 
-                            {/* Failed Error breakdown box */}
+                            {/* Track A: Error Breakdown Block for Failed Run Items */}
                             {!isCompleted && (
                               <div className="bg-rose-50/40 border border-rose-100/50 rounded-[4px] p-2 mt-1.5 text-[9.5px] text-rose-700 leading-normal font-mono break-words">
                                 {run.error}
                               </div>
                             )}
 
-                            {/* Success text or actions */}
+                            {/* Successful run data preview */}
                             {isCompleted && (
-                              <div className="space-y-2 mt-1.5">
-                                <p className="text-[10px] text-slate-600 font-medium bg-slate-50 border border-slate-100 rounded-[4px] p-2 italic leading-relaxed">
-                                  {run.data.extractedText}
-                                </p>
-                                
-                                {!run.isActive && (
+                              <div className="bg-slate-50 border border-slate-100 rounded-[4px] p-2 mt-1.5 text-[10px] text-slate-600 font-medium italic leading-relaxed">
+                                {run.data?.extractedText}
+                              </div>
+                            )}
+
+                            {/* Track B: Version History Pool Rollback Action Button */}
+                            {isCompleted && isTrackB && (
+                              <div className="mt-2">
+                                {isActive ? (
+                                  <button className="flex items-center gap-1 text-[9.5px] font-bold text-indigo-400 border border-indigo-50 bg-indigo-50/20 px-2.5 py-1 rounded-[4px] shadow-sm pointer-events-none opacity-50 leading-none">
+                                    <RotateCcw className="h-3 w-3" /> Revert to This Version
+                                  </button>
+                                ) : (
                                   <button
                                     onClick={() => handleRestoreVersion(run.id)}
-                                    className="flex items-center gap-1 text-[9.5px] font-bold text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 px-2 py-1 rounded-[4px] border border-indigo-100 shadow-sm bg-transparent cursor-pointer transition-all duration-150 active:scale-95 mt-1"
+                                    className="flex items-center gap-1 text-[9.5px] font-bold text-slate-500 border border-slate-200 bg-white hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 hover:cursor-pointer px-2.5 py-1 rounded-[4px] shadow-sm transition-all duration-150 active:scale-95 leading-none"
                                   >
-                                    <RotateCcw className="h-3 w-3" /> Gunakan Versi Ini
+                                    <RotateCcw className="h-3 w-3" /> Revert to This Version
                                   </button>
                                 )}
                               </div>
