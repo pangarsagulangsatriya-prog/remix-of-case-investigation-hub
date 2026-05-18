@@ -58,36 +58,41 @@ function AdaptiveProcessingStatus({ type }: { type: 'audio' | 'video' | 'image' 
   const Icon = current.Icon;
 
   return (
-    <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/40 backdrop-blur-[2px] transition-opacity duration-200">
+    <div className="absolute inset-0 z-50 flex items-center justify-center transition-opacity duration-200 pointer-events-none">
       
-      {/* Sleek Matte Floating Capsule Panel */}
-      <div className="flex flex-col items-center justify-center p-5 bg-white/60 border border-slate-200/40 rounded-xl shadow-sm backdrop-blur-md max-w-[240px] w-full transition-all duration-500 relative z-10">
+      {/* Pure Glassmorphism Floating HUD Wrapper */}
+      <div className="flex flex-col items-center justify-center p-6 bg-slate-50/20 backdrop-blur-md border border-white/20 rounded-2xl w-full max-w-[220px] mx-auto relative shadow-[0_8px_32px_rgba(0,0,0,0.04)] pointer-events-auto">
         
-        {/* The Continuous Gear & Pulse Orb (Top) */}
-        <div className="w-11 h-11 bg-white/80 border border-slate-200/50 rounded-full flex items-center justify-center relative shadow-sm">
-          {/* Border Shimmer Effect */}
-          <div className="absolute inset-0.5 rounded-full border-t border-r border-transparent border-t-emerald-500/40 border-r-emerald-500/20 animate-[spin_4s_linear_infinite]" />
-          {/* Active Icon */}
-          <Icon className={cn("h-4 w-4 text-emerald-600/90 relative z-10", current.animation)} />
+        {/* The Active Dual-Orb Core (Top) */}
+        <div className="w-12 h-12 rounded-full bg-white/40 border border-white/40 flex items-center justify-center relative shadow-sm">
+          {/* Conic Aura Sweep (Premium Spin) */}
+          <div className="absolute inset-0 rounded-full border-t border-r border-transparent border-t-emerald-500 border-r-emerald-400/30 animate-[spin_2s_cubic-bezier(0.4,0,0.2,1)_infinite]" />
+          {/* Breathing Icon */}
+          <Icon className={cn("w-4 h-4 text-emerald-600 animate-[pulse_2s_ease-in-out_infinite] relative z-10", current.animation)} />
         </div>
         
-        {/* Integrated Capsule Progress Tracker (Middle) */}
-        <div className="flex gap-1 items-center justify-center mt-3 mb-2.5">
-          {[0, 1, 2].map((idx) => (
-            <div
-              key={idx}
-              className={cn(
-                "rounded-full transition-all duration-500 ease-out",
-                phase === idx ? "w-4 h-1 bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.3)]" : "w-1.5 h-1.5 bg-slate-200/70",
-                (phase === 2 && idx === 2) ? "animate-pulse" : ""
-              )}
-            />
-          ))}
+        {/* Elastic Liquid Progress Capsules (Middle) */}
+        <div className="flex gap-1.5 items-center justify-center mt-4 mb-3">
+          {[0, 1, 2].map((idx) => {
+            const isActive = phase === idx;
+            const isLongHold = phase === 2 && idx === 2;
+            return (
+              <div
+                key={idx}
+                className={cn(
+                  "h-1.5 rounded-full transition-all duration-500",
+                  isActive ? "w-5 bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" : "w-1.5 bg-slate-300/60",
+                  isLongHold ? "animate-[pulse_1.5s_ease-in-out_infinite]" : ""
+                )}
+                style={isActive ? { transitionTimingFunction: 'cubic-bezier(0.25, 1, 0.5, 1)' } : undefined}
+              />
+            );
+          })}
         </div>
 
-        {/* Micro-Typography Status Log (Bottom) */}
+        {/* Kinetic Text Transitions (Bottom) */}
         <div className="h-10 flex items-center justify-center overflow-hidden w-full relative">
-           <p key={phase} className="text-[10.5px] font-mono text-slate-500 leading-normal text-center tracking-normal px-2 animate-in fade-in duration-300 absolute">
+           <p key={phase} className="text-[10.5px] font-mono font-medium text-slate-600 text-center leading-relaxed px-1 max-w-[200px] animate-in fade-in slide-in-from-bottom-2 duration-500 absolute">
              {current.text}
              {phase === 2 && (
                <span className="inline-flex tracking-widest animate-pulse ml-0.5">...</span>
