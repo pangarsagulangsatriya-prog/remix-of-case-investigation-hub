@@ -58,17 +58,41 @@ function AdaptiveProcessingStatus({ type }: { type: 'audio' | 'video' | 'image' 
   const Icon = current.Icon;
 
   return (
-    <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/40 backdrop-blur-[2px] transition-all duration-500 ease-in-out">
-      <div className="flex flex-col items-center justify-center gap-4">
-        {/* Agentic Orb Core */}
-        <div className="w-12 h-12 rounded-full bg-slate-50 border border-slate-100/80 flex items-center justify-center relative shadow-sm">
-          <div className="absolute inset-0 rounded-full bg-emerald-500/10 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite]" />
-          <Icon className={cn("h-5 w-5 text-emerald-600/90 relative z-10", current.animation)} />
+    <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/40 backdrop-blur-[2px] transition-opacity duration-200">
+      {/* Ambient Radial Glow */}
+      <div className="absolute pointer-events-none w-[300px] h-[300px] bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.08)_0%,transparent_65%)]" />
+      
+      {/* Unified Floating HUD Card */}
+      <div className="flex flex-col items-center justify-center p-6 bg-white/80 border border-slate-100/60 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.02)] backdrop-blur-md max-w-[280px] w-full transition-all duration-500 relative z-10">
+        
+        {/* The High-Fidelity Glowing Orb (Top) */}
+        <div className="w-14 h-14 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center relative">
+          {/* Dual-Pulse Ripple Rings */}
+          <div className="absolute inset-0 rounded-full bg-emerald-500/10 animate-[ping_2.5s_cubic-bezier(0,0,0.2,1)_infinite]" />
+          <div className="absolute inset-0 rounded-full bg-emerald-500/5 animate-[ping_2.5s_cubic-bezier(0,0,0.2,1)_infinite]" style={{ animationDelay: '1000ms' }} />
+          {/* Spinning Gear Accent */}
+          <div className="absolute inset-1 rounded-full border-t-2 border-r-2 border-transparent border-t-emerald-500/30 border-r-emerald-500/30 animate-[spin_3s_linear_infinite]" />
+          {/* Active Icon */}
+          <Icon className={cn("h-5 w-5 text-emerald-600 drop-shadow-[0_0_4px_rgba(16,185,129,0.2)] relative z-10", current.animation)} />
         </div>
         
-        {/* Typography & Terminal Status */}
-        <div className="h-6 flex items-center justify-center overflow-hidden">
-           <p key={phase} className="text-xs font-mono font-medium text-slate-700 text-center tracking-wide animate-in fade-in duration-300">
+        {/* Sophisticated Micro-Steps Progress Indicators (Middle) */}
+        <div className="flex gap-1.5 items-center justify-center mt-5 mb-4">
+          {[0, 1, 2].map((idx) => (
+            <div
+              key={idx}
+              className={cn(
+                "h-1.5 rounded-full transition-all duration-300 ease-out",
+                phase === idx ? "w-5 bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]" : "w-1.5 bg-slate-200",
+                (phase === 2 && idx === 2) ? "animate-pulse" : ""
+              )}
+            />
+          ))}
+        </div>
+
+        {/* Micro-Typography Status Log (Bottom) */}
+        <div className="h-10 flex items-center justify-center overflow-hidden w-full relative">
+           <p key={phase} className="text-[11px] font-mono font-medium text-slate-600 text-center leading-relaxed max-w-[220px] animate-in fade-in slide-in-from-bottom-2 duration-500 ease-in-out absolute">
              {current.text}
              {phase === 2 && (
                <span className="inline-flex tracking-widest animate-pulse ml-0.5">...</span>
@@ -76,19 +100,6 @@ function AdaptiveProcessingStatus({ type }: { type: 'audio' | 'video' | 'image' 
            </p>
         </div>
 
-        {/* Micro Progress Dots */}
-        <div className="flex gap-1.5 items-center justify-center">
-          {[0, 1, 2].map((idx) => (
-            <div
-              key={idx}
-              className={cn(
-                "rounded-full transition-all duration-300",
-                phase === idx ? "w-3 h-1 bg-emerald-500" : "w-1 h-1 bg-slate-200",
-                (phase === 2 && idx === 2) ? "animate-pulse" : ""
-              )}
-            />
-          ))}
-        </div>
       </div>
     </div>
   );
