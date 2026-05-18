@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { 
   Pencil, Trash2, MoreVertical, Folder, FileText, 
   Image as ImageIcon, Mic as AudioIcon, Video as VideoIcon, 
-  FileCode, Box, RefreshCw, Loader2, Check, AlertCircle, X
+  FileCode, Box, RefreshCw, Loader2, Check, AlertCircle, X, Clock
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -75,7 +75,7 @@ const getProcessedDuration = (file: any) => {
   return `${s}s`;
 };
 
-export function FileRow({ file, isSelected, onSelect, onMove, onDelete, onRename, onRerun, batches, isIndented }: any) {
+export function FileRow({ file, isSelected, onSelect, onMove, onDelete, onRename, onRerun, onOpenHistory, batches, isIndented }: any) {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [isFailedHovered, setIsFailedHovered] = useState(false);
 
@@ -156,6 +156,9 @@ export function FileRow({ file, isSelected, onSelect, onMove, onDelete, onRename
                    <DropdownMenuSeparator />
                    <DropdownMenuItem onClick={() => onRerun(file)} className="text-[11px] font-bold py-2 rounded-[4px]">
                       <RefreshCw className="h-3.5 w-3.5 mr-2 text-slate-400" /> Proses Ulang
+                   </DropdownMenuItem>
+                   <DropdownMenuItem onClick={() => onOpenHistory(file)} className="text-[11px] font-bold py-2 rounded-[4px]">
+                      <Clock className="h-3.5 w-3.5 mr-2 text-slate-400" /> Lihat Riwayat Proses
                    </DropdownMenuItem>
                    {/* List all available custom folders */}
                    {batches && batches.filter((b: any) => b.type === "Folder" && b.id !== file.batch_id).length > 0 && (
