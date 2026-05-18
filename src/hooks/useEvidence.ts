@@ -405,8 +405,8 @@ export function useRerunExtraction() {
       if (procError) throw procError;
       queryClient.invalidateQueries({ queryKey: ["evidence"] });
 
-      // Simulate 12 seconds in processing stage
-      await new Promise(resolve => setTimeout(resolve, 12000));
+      // Simulate 30 seconds in processing stage
+      await new Promise(resolve => setTimeout(resolve, 30000));
       
       if (isChatGPT || isWhatsApp) {
         // Fail at processing stage
