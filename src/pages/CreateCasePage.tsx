@@ -1,81 +1,91 @@
-import { useState, useEffect } from "react";
+// BUILD_VERSION: 2026-05-19 — Evidence-First WYSIWYG Case Workspace Initializer
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { 
-  CheckCircle2, Upload, Plus, Brain, Loader2, 
-  Calendar, MapPin, ChevronRight, FileVideo, FileImage, 
-  FileAudio, FileText, ArrowRight, Trash2, ToggleLeft, 
-  ToggleRight, Sparkles, Check, Database, Clock, 
-  ShieldCheck, AlertCircle, PlayCircle, Eye, Info, HelpCircle
+  ArrowLeft, Search, Plus, Trash2, Loader2, FileVideo, 
+  FileImage, FileAudio, FileText, CheckCircle2, Clock, 
+  Play, Pause, Info, Folder, AlertCircle, Calendar, 
+  MapPin, Shield, Brain, Sparkles, ChevronRight, ChevronLeft, Check, 
+  Volume2, Eye, Database
 } from "lucide-react";
 import { useCreateCase } from "@/hooks/useCases";
 import { useUploadEvidence } from "@/hooks/useEvidence";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-type InitialEvidenceFile = {
+type StagedFile = {
   id: string;
-  fileName: string;
-  fileType: "video" | "image" | "audio" | "document" | "unknown";
+  name: string;
+  type: "video" | "image" | "audio" | "document" | "unknown";
   sizeLabel: string;
-  status: "queued" | "uploaded" | "failed";
-  expectedOutputs: string[];
+  sizeBytes: number;
+  status: "READY" | "UPLOADING" | "FAILED";
   rawFile?: File;
+  uploadedAt: string;
 };
-
-type WorkspaceInitializerState = {
-  title: string;
-  eventOccurrence: string;
-  siteNode: string;
-  severity: "Critical" | "High" | "Medium";
-  executiveSummary: string;
-  uploadedEvidence: InitialEvidenceFile[];
-  autoStartExtraction: boolean;
-};
-
-function getFallbackMimeType(fileName: string): string {
-  const ext = fileName.split('.').pop()?.toLowerCase();
-  switch (ext) {
-    case 'png': return 'image/png';
-    case 'jpg':
-    case 'jpeg': return 'image/jpeg';
-    case 'mp4': return 'video/mp4';
-    case 'mp3': return 'audio/mpeg';
-    case 'wav': return 'audio/wav';
-    case 'pdf': return 'application/pdf';
-    case 'txt': return 'text/plain';
-    default: return 'application/octet-stream';
-  }
-}
 
 export default function CreateCasePage() {
   const navigate = useNavigate();
   const createCaseMutation = useCreateCase();
   const uploadEvidenceMutation = useUploadEvidence();
 
-  // Unified Blueprint state
-  const [state, setState] = useState<WorkspaceInitializerState>({
-    title: "",
-    eventOccurrence: "",
-    siteNode: "Site Alpha - Northern Link",
+  // Staged Files & Case configuration state
+  const [stagedFiles, setStagedFiles] = useState<StagedFile[]>([]);
+  const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
+  const [caseName, setCaseName] = useState("");
+  const [isTitleManuallyEdited, setIsTitleManuallyEdited] = useState(false);
+
+  // Optional case metadata (collapsed by default)
+  const [showOptionalDetails, setShowOptionalDetails] = useState(false);
+  const [optionalDetails, setOptionalDetails] = useState({
+    site: "Site Alpha - Northern Link",
+    date: "",
     severity: "Critical",
-    executiveSummary: "",
-    uploadedEvidence: [],
-    autoStartExtraction: true,
+    description: ""
   });
 
-  const [isInitializing, setIsInitializing] = useState(false);
-  const [initStep, setInitStep] = useState(0);
-  const [initProgress, setInitProgress] = useState(0);
+  // Creation loading state
+  const [isCreating, setIsCreating] = useState(false);
+  const [createProgress, setCreateProgress] = useState(0);
+  const [activeStep, setActiveStep] = useState(0);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
-  // Timer for initialization progress
+  // Mock player states for the workspace draft preview
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Auto-suggest Case Title based on staged files
+  useEffect(() => {
+    if (isTitleManuallyEdited) return;
+
+    if (stagedFiles.length === 0) {
+      setCaseName("");
+    } else if (stagedFiles.length === 1) {
+      // Suggest title from first file name without extension
+      const fileName = stagedFiles[0].name;
+      const baseName = fileName.substring(0, fileName.lastIndexOf('.')) || fileName;
+      // Sanitize underscores/dashes to spaces for a clean title
+      const cleanName = baseName.replace(/[_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+      setCaseName(`Investigasi: ${cleanName}`);
+    } else {
+      const today = new Date().toLocaleDateString("id-ID", {
+        day: "numeric",
+        month: "short",
+        year: "numeric"
+      });
+      setCaseName(`Kasus Multi-Bukti – ${today}`);
+    }
+  }, [stagedFiles, isTitleManuallyEdited]);
+
+  // Handle initialization elapsed timer
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    if (isInitializing) {
+    if (isCreating) {
       const start = Date.now();
       interval = setInterval(() => {
         setElapsedSeconds(Math.floor((Date.now() - start) / 1000));
@@ -84,21 +94,18 @@ export default function CreateCasePage() {
       setElapsedSeconds(0);
     }
     return () => clearInterval(interval);
-  }, [isInitializing]);
+  }, [isCreating]);
 
-  // Visual checklist validations
-  const checks = {
-    caseIdentity: state.title.trim().length > 5 && state.eventOccurrence !== "",
-    incidentParameters: state.severity !== undefined,
-    siteClassification: state.siteNode !== "",
-    executiveSummary: state.executiveSummary.trim().length >= 20,
-    evidenceAttachment: state.uploadedEvidence.length > 0,
-    extractionPlan: state.uploadedEvidence.length > 0 && state.autoStartExtraction
-  };
+  // Set first file as selected if none selected
+  useEffect(() => {
+    if (stagedFiles.length > 0 && !selectedFileId) {
+      setSelectedFileId(stagedFiles[0].id);
+    }
+  }, [stagedFiles, selectedFileId]);
 
-  const isReady = checks.caseIdentity && checks.siteClassification && checks.executiveSummary;
+  const activeStagedFile = stagedFiles.find(f => f.id === selectedFileId);
 
-  // Expected Outputs mappings
+  // Output mappings for expected output highlights
   const outputMappings = {
     video: ["Sequence Blocks", "Key Moments", "Timeline Notes", "Metadata"],
     image: ["Visual Observations", "Marked Areas", "Quality Check", "Metadata"],
@@ -107,115 +114,103 @@ export default function CreateCasePage() {
     unknown: ["Evidence Notes", "Source Details", "Metadata"]
   };
 
-  // Add sample mock files presets
+  // Add 1-click sandbox testing presets
   const presets = [
-    {
-      fileName: "CCTV_ZoneB_0512.mp4",
-      fileType: "video" as const,
-      sizeLabel: "42.4 MB"
-    },
-    {
-      fileName: "dispatch_voice_log.mp3",
-      fileType: "audio" as const,
-      sizeLabel: "12.8 MB"
-    },
-    {
-      fileName: "site_failure_photo.png",
-      fileType: "image" as const,
-      sizeLabel: "4.1 MB"
-    },
-    {
-      fileName: "maintenance_log_report.pdf",
-      fileType: "document" as const,
-      sizeLabel: "1.2 MB"
-    }
+    { name: "CCTV_ZoneB_0512.mp4", type: "video" as const, sizeLabel: "42.4 MB", sizeBytes: 44458905 },
+    { name: "dispatch_voice_log.mp3", type: "audio" as const, sizeLabel: "12.8 MB", sizeBytes: 13421772 },
+    { name: "site_failure_photo.png", type: "image" as const, sizeLabel: "4.1 MB", sizeBytes: 4299161 },
+    { name: "maintenance_log_report.pdf", type: "document" as const, sizeLabel: "1.2 MB", sizeBytes: 1258291 }
   ];
 
   const handleAddPreset = (preset: typeof presets[number]) => {
-    if (state.uploadedEvidence.find(f => f.fileName === preset.fileName)) {
-      toast.error("File already added to queue");
+    if (stagedFiles.some(f => f.name === preset.name)) {
+      toast.error("File already added to intake list");
       return;
     }
-    
-    const newFile: InitialEvidenceFile = {
+
+    const newFile: StagedFile = {
       id: Math.random().toString(36).substring(7),
-      fileName: preset.fileName,
-      fileType: preset.fileType,
+      name: preset.name,
+      type: preset.type,
       sizeLabel: preset.sizeLabel,
-      status: "queued",
-      expectedOutputs: outputMappings[preset.fileType]
+      sizeBytes: preset.sizeBytes,
+      status: "READY",
+      uploadedAt: new Date().toLocaleTimeString("id-ID", { hour: '2-digit', minute: '2-digit' })
     };
 
-    setState(prev => ({
-      ...prev,
-      uploadedEvidence: [...prev.uploadedEvidence, newFile]
-    }));
-    toast.success(`Attached sample ${preset.fileType}: ${preset.fileName}`);
+    setStagedFiles(prev => [...prev, newFile]);
+    setSelectedFileId(newFile.id);
+    toast.success(`Attached preset ${preset.type}: ${preset.name}`);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
     const files = Array.from(e.target.files);
-    
-    const newFiles: InitialEvidenceFile[] = files.map(file => {
-      let fileType: "video" | "image" | "audio" | "document" | "unknown" = "unknown";
+
+    const newFiles: StagedFile[] = files.map(file => {
+      let type: "video" | "image" | "audio" | "document" | "unknown" = "unknown";
       const name = file.name.toLowerCase();
-      if (name.match(/\.(mp4|webm|ogg|mov|avi)$/)) fileType = "video";
-      else if (name.match(/\.(jpg|jpeg|png|gif|webp)$/)) fileType = "image";
-      else if (name.match(/\.(mp3|wav|ogg|m4a|aac)$/)) fileType = "audio";
-      else if (name.match(/\.(pdf|doc|docx|txt|xls|xlsx)$/)) fileType = "document";
+      if (name.match(/\.(mp4|webm|ogg|mov|avi)$/)) type = "video";
+      else if (name.match(/\.(jpg|jpeg|png|gif|webp)$/)) type = "image";
+      else if (name.match(/\.(mp3|wav|ogg|m4a|aac)$/)) type = "audio";
+      else if (name.match(/\.(pdf|doc|docx|txt|xls|xlsx)$/)) type = "document";
 
       const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
 
       return {
         id: Math.random().toString(36).substring(7),
-        fileName: file.name,
-        fileType,
+        name: file.name,
+        type,
         sizeLabel: `${sizeMB} MB`,
-        status: "queued",
-        expectedOutputs: outputMappings[fileType],
-        rawFile: file
+        sizeBytes: file.size,
+        status: "READY",
+        rawFile: file,
+        uploadedAt: new Date().toLocaleTimeString("id-ID", { hour: '2-digit', minute: '2-digit' })
       };
     });
 
-    setState(prev => ({
-      ...prev,
-      uploadedEvidence: [...prev.uploadedEvidence, ...newFiles]
-    }));
-    toast.success(`Staged ${files.length} custom files for upload`);
+    setStagedFiles(prev => [...prev, ...newFiles]);
+    if (newFiles.length > 0) {
+      setSelectedFileId(newFiles[0].id);
+    }
+    toast.success(`Staged ${files.length} custom files`);
   };
 
-  const handleRemoveFile = (id: string) => {
-    setState(prev => ({
-      ...prev,
-      uploadedEvidence: prev.uploadedEvidence.filter(f => f.id !== id)
-    }));
+  const handleRemoveFile = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setStagedFiles(prev => {
+      const filtered = prev.filter(f => f.id !== id);
+      if (selectedFileId === id) {
+        setSelectedFileId(filtered.length > 0 ? filtered[0].id : null);
+      }
+      return filtered;
+    });
   };
 
-  const handleInitialize = async () => {
-    if (!isReady) {
-      toast.error("Please fill in all required operational metadata");
+  const handleCreateWorkspace = async () => {
+    if (stagedFiles.length === 0) {
+      toast.error("Please stage at least one evidence file");
       return;
     }
 
     try {
-      setIsInitializing(true);
-      setInitProgress(5);
-      setInitStep(0);
+      setIsCreating(true);
+      setCreateProgress(5);
+      setActiveStep(0);
 
-      // STEP 1: Create the case record in Supabase
+      // Create unique case number
       const year = new Date().getFullYear();
       const randomSuffix = Math.floor(1000 + Math.random() * 9000);
       const caseNumber = `CS-${year}-${randomSuffix}`;
 
-      // Progress animation simulation helper
+      // Progress animation simulation
       const advanceProgress = (targetVal: number, duration: number) => {
         return new Promise<void>((resolve) => {
-          let current = initProgress;
+          let current = createProgress;
           const stepTime = Math.max(10, Math.floor(duration / (targetVal - current)));
           const interval = setInterval(() => {
             current += 1;
-            setInitProgress(current);
+            setCreateProgress(current);
             if (current >= targetVal) {
               clearInterval(interval);
               resolve();
@@ -224,832 +219,738 @@ export default function CreateCasePage() {
         });
       };
 
-      await advanceProgress(20, 400);
-      setInitStep(1); // Preparing evidence repository...
+      await advanceProgress(20, 300);
+      setActiveStep(1); // Attaching evidence...
 
+      // 1. Create case
+      const finalTitle = caseName.trim() || `New Case Staging - ${new Date().toLocaleDateString()}`;
       const caseResult = await createCaseMutation.mutateAsync({
-        title: state.title,
-        description: state.executiveSummary,
-        severity: state.severity,
+        title: finalTitle,
+        description: optionalDetails.description || `Case initialized with early evidence payload.`,
+        severity: optionalDetails.severity as any,
         status: "open",
         case_number: caseNumber
       });
 
-      await advanceProgress(45, 600);
-      setInitStep(2); // Attaching staged payload files...
+      await advanceProgress(55, 400);
+      setActiveStep(2); // Preparing Evidence Review...
 
-      // STEP 2: Upload evidence files if present
-      if (state.uploadedEvidence.length > 0) {
-        const groups = [
-          {
-            name: "Intake Staging",
-            isFolder: false,
-            files: state.uploadedEvidence.map(item => {
-              const fileObj = item.rawFile || new File(
-                ["dummy content for mock forensic evidence intake blueprint"], 
-                item.fileName, 
-                { type: getFallbackMimeType(item.fileName) }
-              );
+      // 2. Upload staged files
+      const groups = [
+        {
+          name: "Intake Staging",
+          isFolder: false,
+          files: stagedFiles.map(item => {
+            const fileObj = item.rawFile || new File(
+              ["dummy content for mock forensic evidence intake blueprint"], 
+              item.name, 
+              { type: getFallbackMimeType(item.name) }
+            );
 
-              let category = "Document";
-              if (item.fileType === "video") category = "Video";
-              else if (item.fileType === "image") category = "Image";
-              else if (item.fileType === "audio") category = "Audio";
-              else if (item.fileType === "document") category = "Document";
+            let category = "Document";
+            if (item.type === "video") category = "Video";
+            else if (item.type === "image") category = "Image";
+            else if (item.type === "audio") category = "Audio";
+            else if (item.type === "document") category = "Document";
 
-              return {
-                file: fileObj,
-                category,
-                relativePath: item.fileName
-              };
-            })
-          }
-        ];
+            return {
+              file: fileObj,
+              category,
+              relativePath: item.name
+            };
+          })
+        }
+      ];
 
-        await uploadEvidenceMutation.mutateAsync({
-          caseId: caseResult.id,
-          groups
-        });
-      }
+      await uploadEvidenceMutation.mutateAsync({
+        caseId: caseResult.id,
+        groups
+      });
 
-      await advanceProgress(75, 500);
-      setInitStep(3); // Setting up auto-start extraction queues...
+      await advanceProgress(85, 300);
+      setActiveStep(3); // Opening workspace...
 
-      await advanceProgress(95, 500);
-      setInitStep(4); // Handshake complete, opening workspace...
       await advanceProgress(100, 200);
 
-      toast.success("Workspace blueprint instantiated successfully!");
+      toast.success("Workspace initialized successfully");
       navigate(`/cases/${caseResult.id}`);
     } catch (error) {
       console.error(error);
-      toast.error("Blueprint instantiation failed");
-      setIsInitializing(false);
+      toast.error("Failed to initialize workspace");
+      setIsCreating(false);
     }
   };
 
-  const fileTypeDistribution = () => {
-    const counts = { video: 0, image: 0, audio: 0, document: 0, unknown: 0 };
-    state.uploadedEvidence.forEach(f => {
-      counts[f.fileType] = (counts[f.fileType] || 0) + 1;
-    });
-    return counts;
+  // Determine what file types exist in the staging queue
+  const hasType = (type: "video" | "image" | "audio" | "document") => {
+    return stagedFiles.some(f => f.type === type);
   };
 
-  const dist = fileTypeDistribution();
-
   return (
-    <AppLayout>
-      <div className="flex flex-col h-full bg-[#f8fafc] overflow-hidden relative">
+    <AppLayout hideHeader>
+      <div className="flex flex-col h-screen overflow-hidden bg-slate-50/10">
         
-        {/* Workspace Title bar */}
-        <div className="h-14 border-b bg-white flex items-center justify-between px-6 shrink-0 shadow-sm relative z-10">
-           <div className="flex items-center gap-3">
-              <div className="h-8 w-8 bg-slate-950 rounded-lg flex items-center justify-center text-white shadow-md">
-                 <Sparkles className="h-4 w-4" />
-              </div>
-              <div>
-                <h1 className="text-xs font-black text-slate-900 uppercase tracking-widest leading-none">Case Blueprint Builder</h1>
-                <span className="text-[10px] text-slate-400 font-bold tracking-wider mt-1 block">New Investigation Workspace</span>
-              </div>
-           </div>
-           
-           <div className="flex items-center gap-3">
-              <Button variant="ghost" size="sm" className="text-xs font-bold text-slate-500 hover:bg-slate-50 rounded-lg h-9" onClick={() => navigate("/cases")}>Discard</Button>
-              <Button 
-                size="sm" 
-                className={cn(
-                  "h-9 text-xs font-black px-6 gap-2 rounded-lg uppercase tracking-wider shadow-sm transition-all",
-                  isReady 
-                    ? "bg-[#0F172A] hover:bg-[#1E293B] text-white" 
-                    : "bg-slate-200 text-slate-400 cursor-not-allowed"
-                )}
-                disabled={!isReady || isInitializing}
-                onClick={handleInitialize}
-              >
-                 {isReady ? "Initialize Workspace" : "Complete required fields"}
-              </Button>
-           </div>
-        </div>
-
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
-          <div className="max-w-7xl mx-auto space-y-6">
-
-            {/* FLOW DIAGRAM BAR */}
-            <div className="bg-white border border-slate-200/60 rounded-2xl p-5 shadow-sm">
-              <div className="flex justify-between items-center mb-3">
-                <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.25em]">Workspace Setup Blueprint</span>
-                <span className="text-[9px] font-bold text-slate-400 uppercase">Interactive Setup Map</span>
-              </div>
-              
-              <div className="flex items-center w-full justify-between px-4 py-2 relative">
-                
-                {/* Connecting Line Background */}
-                <div className="absolute top-1/2 left-0 w-full h-[2px] bg-slate-100 -translate-y-1/2 -z-0" />
-                
-                {/* Active connecting lines based on progression */}
-                <div 
-                  className="absolute top-1/2 left-0 h-[2px] bg-[#2FAE8B] -translate-y-1/2 -z-0 transition-all duration-500" 
-                  style={{ 
-                    width: checks.caseIdentity 
-                      ? checks.evidenceAttachment 
-                        ? "100%" 
-                        : "50%" 
-                      : "0%" 
-                  }} 
-                />
-
-                {/* Node 1: Identity */}
-                <div className="flex flex-col items-center z-10 bg-white px-2">
-                  <div className={cn(
-                    "h-8 w-8 rounded-full flex items-center justify-center border-2 transition-all duration-300",
-                    checks.caseIdentity ? "bg-emerald-50 border-emerald-500 text-emerald-600 shadow-sm" : "border-slate-200 bg-slate-50 text-slate-400"
-                  )}>
-                    <Check className={cn("h-4 w-4", checks.caseIdentity ? "block" : "hidden")} />
-                    <span className={cn("text-xs font-black", !checks.caseIdentity ? "block" : "hidden")}>1</span>
-                  </div>
-                  <span className="text-[10px] font-bold text-slate-700 mt-2">Case Identity</span>
-                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide">{checks.caseIdentity ? "READY" : "REQUIRED"}</span>
-                </div>
-
-                {/* Node 2: Severity */}
-                <div className="flex flex-col items-center z-10 bg-white px-2">
-                  <div className={cn(
-                    "h-8 w-8 rounded-full flex items-center justify-center border-2 transition-all duration-300",
-                    checks.incidentParameters ? "bg-emerald-50 border-emerald-500 text-emerald-600 shadow-sm" : "border-slate-200 bg-slate-50 text-slate-400"
-                  )}>
-                    <Check className={cn("h-4 w-4", checks.incidentParameters ? "block" : "hidden")} />
-                    <span className={cn("text-xs font-black", !checks.incidentParameters ? "block" : "hidden")}>2</span>
-                  </div>
-                  <span className="text-[10px] font-bold text-slate-700 mt-2">Severity</span>
-                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide">CONFIGURED</span>
-                </div>
-
-                {/* Node 3: Evidence Payload */}
-                <div className="flex flex-col items-center z-10 bg-white px-2">
-                  <div className={cn(
-                    "h-8 w-8 rounded-full flex items-center justify-center border-2 transition-all duration-300",
-                    checks.evidenceAttachment ? "bg-emerald-50 border-emerald-500 text-emerald-600 shadow-sm" : "border-slate-200 bg-slate-50 text-slate-400"
-                  )}>
-                    <Check className={cn("h-4 w-4", checks.evidenceAttachment ? "block" : "hidden")} />
-                    <span className={cn("text-xs font-black", !checks.evidenceAttachment ? "block" : "hidden")}>3</span>
-                  </div>
-                  <span className="text-[10px] font-bold text-slate-700 mt-2">Evidence Payload</span>
-                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide">{checks.evidenceAttachment ? "ATTACHED" : "OPTIONAL"}</span>
-                </div>
-
-                {/* Node 4: Extraction Plan */}
-                <div className="flex flex-col items-center z-10 bg-white px-2">
-                  <div className={cn(
-                    "h-8 w-8 rounded-full flex items-center justify-center border-2 transition-all duration-300",
-                    checks.extractionPlan ? "bg-emerald-50 border-emerald-500 text-emerald-600 shadow-sm" : "border-slate-200 bg-slate-50 text-slate-400"
-                  )}>
-                    <Check className={cn("h-4 w-4", checks.extractionPlan ? "block" : "hidden")} />
-                    <span className={cn("text-xs font-black", !checks.extractionPlan ? "block" : "hidden")}>4</span>
-                  </div>
-                  <span className="text-[10px] font-bold text-slate-700 mt-2">Extraction Plan</span>
-                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide">{checks.extractionPlan ? "ENGAGED" : "STANDBY"}</span>
-                </div>
-
-                {/* Node 5: Review Workspace */}
-                <div className="flex flex-col items-center z-10 bg-white px-2">
-                  <div className={cn(
-                    "h-8 w-8 rounded-full flex items-center justify-center border-2 transition-all duration-300",
-                    isReady ? "bg-emerald-50 border-emerald-500 text-emerald-600 shadow-sm" : "border-slate-200 bg-slate-50 text-slate-400"
-                  )}>
-                    <Check className={cn("h-4 w-4", isReady ? "block" : "hidden")} />
-                    <span className={cn("text-xs font-black", !isReady ? "block" : "hidden")}>5</span>
-                  </div>
-                  <span className="text-[10px] font-bold text-slate-700 mt-2">Review Workspace</span>
-                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide">{isReady ? "READY" : "WAITING"}</span>
-                </div>
-
-              </div>
-
-              <div className="mt-4 pt-3 border-t border-slate-100 flex justify-between items-center text-[10.5px] font-medium text-slate-500">
-                <span>💡 Your workspace will automatically follow this blueprint structure after initialization.</span>
-                <span className="text-[9px] font-bold text-[#2FAE8B] uppercase">WYSIWYG Mode Active</span>
+        {/* Workspace Top Header (Mirroring CaseWorkspacePage) */}
+        <div className="bg-white border-b px-6 py-4 flex items-center justify-between shrink-0 relative z-30">
+          <div className="flex items-center gap-4">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => navigate('/cases')}
+              className="h-9 w-9 p-0 rounded-full hover:bg-slate-100 text-slate-500 border border-slate-100"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            
+            <div>
+              <div className="flex items-center gap-2 py-1 px-1.5 -ml-1.5">
+                <h1 className="text-xl font-bold tracking-tight text-slate-900 flex items-center gap-2 leading-none">
+                  Create New Case
+                </h1>
+                <span className="text-slate-400 font-mono text-sm leading-none ml-1">#Draft-Workspace</span>
               </div>
             </div>
+          </div>
+          
+          <div className="flex items-center gap-3">
+             <Button variant="ghost" size="sm" className="text-xs font-bold text-slate-500 hover:bg-slate-50" onClick={() => navigate("/cases")}>Discard</Button>
+             <Button 
+               size="sm" 
+               className={cn(
+                 "h-9 font-bold px-6 text-xs gap-2 transition-all duration-300 uppercase tracking-wider rounded-lg shadow-sm border",
+                 stagedFiles.length > 0 
+                   ? "bg-slate-900 text-white hover:bg-slate-800" 
+                   : "bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed"
+               )}
+               disabled={stagedFiles.length === 0 || isCreating}
+               onClick={handleCreateWorkspace}
+             >
+                {stagedFiles.length === 0 ? "Upload Evidence First" : "Create Workspace"}
+             </Button>
+          </div>
+        </div>
 
-            {/* TWO COLUMN GRID */}
-            <div className="grid grid-cols-12 gap-6">
-              
-              {/* LEFT COLUMN: Setup blueprint forms */}
-              <div className="col-span-8 space-y-6">
+        {/* Tab Navigation (Mirroring CaseWorkspacePage - Ghost Mode) */}
+        <div className="bg-white border-b h-12 flex items-center justify-between px-6 shrink-0 relative z-20">
+          <div className="flex gap-1 h-full items-center">
+            {["Evidence Review", "Analysis", "Reports", "Review", "Audit Trail"].map((tab) => (
+              <div
+                key={tab}
+                className={cn(
+                  "h-full px-5 text-xs font-bold transition-all relative flex items-center select-none cursor-default",
+                  tab === "Evidence Review" ? "text-primary bg-primary/5" : "text-slate-300 opacity-60"
+                )}
+              >
+                {tab}
+                {tab === "Evidence Review" && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />}
+              </div>
+            ))}
+          </div>
+          <div className="flex items-center gap-6">
+             <div className="flex items-center gap-2 border-l pl-6 border-slate-100">
+                <Clock className="h-3.5 w-3.5 text-slate-300" />
+                <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">
+                  Drafting Case
+                </span>
+             </div>
+          </div>
+        </div>
 
-                {/* Incident Identity Card */}
-                <div className="bg-white border border-slate-200/60 rounded-2xl shadow-sm p-6 relative overflow-hidden">
-                  <div className="absolute top-0 left-0 w-full h-1 bg-[#2FAE8B]/20" />
+        {/* THREE PANEL GRID LAYOUT */}
+        <div className="flex-1 flex overflow-hidden relative">
+
+          {/* LEFT PANEL: Evidence Intake */}
+          <div className="w-[320px] border-r border-slate-200 bg-white flex flex-col shrink-0 z-10 shadow-[1px_0_10px_rgba(0,0,0,0.02)]">
+            <div className="p-4 border-b border-slate-100 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Evidence Intake</span>
+                {stagedFiles.length > 0 && (
+                  <span className="text-[9px] font-black bg-emerald-50 text-emerald-700 px-1.5 py-0.2 rounded border border-emerald-100 uppercase">
+                    {stagedFiles.length} Files
+                  </span>
+                )}
+              </div>
+              <button 
+                onClick={() => fileInputRef.current?.click()}
+                className="text-[9.5px] font-black text-slate-800 hover:text-slate-900 border border-slate-200 hover:border-slate-300 px-2.5 py-1 rounded bg-slate-50 uppercase tracking-wider flex items-center gap-1 transition-all"
+              >
+                <Plus className="h-3 w-3" /> Tambah
+              </button>
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                multiple 
+                className="hidden" 
+                onChange={handleFileChange}
+              />
+            </div>
+
+            {/* Evidence List Staging */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1.5">
+              {stagedFiles.length > 0 ? (
+                stagedFiles.map((file) => {
+                  const Icon = file.type === 'video' ? FileVideo : file.type === 'image' ? FileImage : file.type === 'audio' ? FileAudio : FileText;
+                  const isSelected = file.id === selectedFileId;
                   
-                  <div className="mb-6">
-                    <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-1">Incident Identity</h3>
-                    <p className="text-2xs text-slate-400 font-bold uppercase tracking-widest">Establish the primary investigation record</p>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div className="space-y-1.5">
-                      <div className="flex justify-between items-center">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Investigation Title</label>
-                        <span className="text-[9px] font-semibold text-slate-400">Title will become the workspace header</span>
+                  return (
+                    <div 
+                      key={file.id} 
+                      onClick={() => setSelectedFileId(file.id)}
+                      className={cn(
+                        "flex items-center justify-between p-3 rounded-lg border text-left cursor-pointer transition-all",
+                        isSelected 
+                          ? "border-emerald-600 bg-emerald-50/20 shadow-2xs" 
+                          : "border-slate-100 bg-white hover:border-slate-200 hover:bg-slate-50/50"
+                      )}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className={cn(
+                          "h-8 w-8 rounded flex items-center justify-center shrink-0 border",
+                          isSelected ? "bg-emerald-50 border-emerald-100 text-emerald-600" : "bg-slate-50 border-slate-100 text-slate-500"
+                        )}>
+                          <Icon className="h-4 w-4" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[11px] font-bold text-slate-800 truncate block max-w-[150px]">{file.name}</span>
+                            <span className={cn(
+                              "text-[7px] font-black px-1 rounded uppercase tracking-wider",
+                              file.type === 'video' ? "bg-indigo-100 text-indigo-700" : file.type === 'audio' ? "bg-amber-100 text-amber-700" : file.type === 'image' ? "bg-emerald-100 text-emerald-700" : "bg-blue-100 text-blue-700"
+                            )}>
+                              {file.type}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-[9px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">
+                            <span>{file.sizeLabel}</span>
+                            <span>·</span>
+                            <span className="text-emerald-600">{file.status}</span>
+                          </div>
+                        </div>
                       </div>
-                      <Input 
-                        className="h-10 text-xs border-slate-200 bg-slate-50/30 focus:bg-white transition-all font-medium rounded-lg" 
-                        placeholder="e.g. Conveyor Belt Failure - Zone B Site Alpha" 
-                        value={state.title}
-                        onChange={(e) => setState(prev => ({ ...prev, title: e.target.value }))}
-                      />
+                      
+                      <button 
+                        onClick={(e) => handleRemoveFile(file.id, e)}
+                        className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-all shrink-0 ml-2"
+                        title="Remove evidence"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  );
+                })
+              ) : (
+                // Hint/Empty State Rows
+                <div className="space-y-2 p-2 pt-4">
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block px-1 mb-3">Suggested Formats</span>
+                  {[
+                    { type: "Video Evidence", outputs: "Sequence Blocks · Key Moments", icon: FileVideo, color: "text-indigo-500", bg: "bg-indigo-50" },
+                    { type: "Audio Evidence", outputs: "Transcript · Speaker Turns", icon: FileAudio, color: "text-amber-500", bg: "bg-amber-50" },
+                    { type: "Image Evidence", outputs: "Observations · Quality Check", icon: FileImage, color: "text-emerald-500", bg: "bg-emerald-50" },
+                    { type: "Document Evidence", outputs: "Summary · Extracted Facts", icon: FileText, color: "text-blue-500", bg: "bg-blue-50" }
+                  ].map((hint, idx) => {
+                    const HintIcon = hint.icon;
+                    return (
+                      <div key={idx} className="flex items-center gap-3 p-3 rounded-lg border border-dashed border-slate-200 bg-slate-50/20">
+                        <div className={cn("h-8 w-8 rounded flex items-center justify-center border", hint.bg, hint.color)}>
+                          <HintIcon className="h-4 w-4" />
+                        </div>
+                        <div>
+                          <p className="text-[11px] font-bold text-slate-700 leading-none">{hint.type}</p>
+                          <span className="text-[9px] text-slate-400 font-semibold block mt-1 leading-none">{hint.outputs}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* CENTER PANEL: Evidence Upload & Staged Preview */}
+          <div className="flex-1 overflow-auto bg-[#f0f2f4] p-6 flex flex-col items-center custom-scrollbar relative" style={{ minWidth: 0 }}>
+            <div className="w-full max-w-5xl flex flex-col h-full">
+              
+              {/* Header inside the workspace */}
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Evidence Workspace Draft</span>
+                <span className="text-[9px] font-bold text-slate-400 uppercase">Interactive Preview Canvas</span>
+              </div>
+
+              {/* Dynamic Center Canvas */}
+              {stagedFiles.length > 0 && activeStagedFile ? (
+                <div className="flex-1 flex flex-col gap-6 animate-in fade-in duration-300 bg-white border border-slate-200/60 rounded-2xl p-6 shadow-sm min-h-0 overflow-y-auto custom-scrollbar">
+                  
+                  {/* File Metadata Header */}
+                  <div className="flex items-start justify-between border-b pb-4 shrink-0">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={cn(
+                          "text-[8px] font-black px-2 py-0.5 rounded uppercase tracking-wider text-white shadow-sm",
+                          activeStagedFile.type === 'video' ? "bg-indigo-600" : activeStagedFile.type === 'audio' ? "bg-amber-600" : activeStagedFile.type === 'image' ? "bg-emerald-600" : "bg-blue-600"
+                        )}>
+                          {activeStagedFile.type}
+                        </span>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{activeStagedFile.sizeLabel}</span>
+                      </div>
+                      <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider">{activeStagedFile.name}</h3>
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Event Occurence</label>
-                        <Input 
-                          type="datetime-local" 
-                          className="h-10 text-xs border-slate-200 bg-slate-50/30 rounded-lg text-slate-700" 
-                          value={state.eventOccurrence}
-                          onChange={(e) => setState(prev => ({ ...prev, eventOccurrence: e.target.value }))}
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Site / Node Location</label>
-                        <select 
-                          className="flex h-10 w-full rounded-lg border border-slate-200 bg-slate-50/30 px-3 py-2 text-xs font-bold text-slate-700 outline-none"
-                          value={state.siteNode}
-                          onChange={(e) => setState(prev => ({ ...prev, siteNode: e.target.value }))}
-                        >
-                          <option>Site Alpha - Northern Link</option>
-                          <option>Site Beta - Processing Area</option>
-                          <option>Site Gamma - Storage Facility</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Classification & Severity Card */}
-                <div className="bg-white border border-slate-200/60 rounded-2xl shadow-sm p-6 space-y-6">
-                  <div>
-                     <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-1">Classification & Severity</h3>
-                     <p className="text-2xs text-slate-400 font-bold uppercase tracking-widest">Categorize the incident impact level</p>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-4">
-                    {[
-                      { level: "Critical", label: "Level 5", color: "text-rose-600", border: "border-rose-100", bg: "bg-rose-50/30", ring: "ring-rose-500/20", desc: "Major incident or high operational impact." },
-                      { level: "High", label: "Level 4", color: "text-amber-600", border: "border-amber-100", bg: "bg-amber-50/30", ring: "ring-amber-500/20", desc: "Significant incident requiring structured review." },
-                      { level: "Medium", label: "Level 3", color: "text-emerald-700", border: "border-emerald-100", bg: "bg-emerald-50/30", ring: "ring-emerald-500/20", desc: "Moderate incident requiring documentation." }
-                    ].map((s) => (
-                      <button 
-                         key={s.level}
-                         onClick={() => setState(prev => ({ ...prev, severity: s.level as any }))}
-                         className={cn(
-                           "p-4 rounded-xl border text-left transition-all relative overflow-hidden flex flex-col justify-between h-[110px]",
-                           state.severity === s.level 
-                             ? `border-slate-900 ${s.bg} ring-1 ring-slate-900/10 shadow-sm` 
-                             : "border-slate-200/60 hover:bg-slate-50"
-                         )}
-                      >
-                         <div>
-                           <span className={cn("text-[9px] font-black uppercase tracking-[0.15em] block mb-0.5", s.color)}>{s.level}</span>
-                           <span className="text-xs font-black text-slate-800">{s.label}</span>
-                         </div>
-                         <p className="text-[10px] text-slate-400 font-medium leading-normal mt-2 leading-snug">{s.desc}</p>
-                         {state.severity === s.level && (
-                           <div className="absolute top-1.5 right-1.5 h-3.5 w-3.5 bg-slate-950 text-white rounded-full flex items-center justify-center">
-                             <Check className="h-2 w-2" />
-                           </div>
-                         )}
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="space-y-1.5">
-                     <div className="flex justify-between items-center">
-                       <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Initial Executive Summary</label>
-                       <span className="text-[9px] font-semibold text-slate-400">Min. 100 characters for optimal mapping</span>
-                     </div>
-                     <Textarea 
-                        className="min-h-[100px] text-xs border-slate-200 bg-slate-50/30 focus:bg-white transition-all font-medium leading-relaxed rounded-lg" 
-                        placeholder="Provide a high-level overview of the incident as currently understood..." 
-                        value={state.executiveSummary}
-                        onChange={(e) => setState(prev => ({ ...prev, executiveSummary: e.target.value }))}
-                     />
-                     <div className="flex justify-between items-center mt-1">
-                       <span className="text-[9px] text-slate-400 font-bold uppercase">Executive summary will outline early walking timeline parameters</span>
-                       <span className={cn(
-                         "text-[9px] font-bold",
-                         state.executiveSummary.length >= 20 ? "text-emerald-600" : "text-amber-500"
-                       )}>
-                         {state.executiveSummary.length} / 100 chars
-                       </span>
-                     </div>
-                  </div>
-                </div>
-
-                {/* Evidence Payload Intake Card */}
-                <div className="bg-white border border-slate-200/60 rounded-2xl shadow-sm p-6 space-y-6">
-                  <div className="flex justify-between items-start">
-                    <div>
-                       <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-1">Evidence Payload</h3>
-                       <p className="text-2xs text-slate-400 font-bold uppercase tracking-widest">Attach early files for immediate extraction after workspace creation.</p>
-                    </div>
-                    <span className="text-[8px] font-black bg-slate-100 text-slate-500 px-2 py-0.5 rounded tracking-widest uppercase">Intake Portal</span>
-                  </div>
-
-                  {/* Upload Dropzone */}
-                  <div className="border-2 border-dashed border-slate-200 rounded-xl p-8 text-center hover:border-slate-400 transition-all cursor-pointer bg-slate-50/30 relative group">
-                     <input 
-                       type="file" 
-                       multiple 
-                       onChange={handleFileChange}
-                       className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                     />
-                     <div className="h-10 w-10 bg-white rounded-xl shadow-sm border border-slate-100 flex items-center justify-center mx-auto mb-3 group-hover:scale-105 transition-transform">
-                        <Upload className="h-4 w-4 text-slate-500" />
-                     </div>
-                     <p className="text-xs font-black text-slate-900">
-                        Drop investigation assets here or{" "}
-                        <span className="text-slate-900 underline decoration-2 underline-offset-4">browse corporate storage</span>
-                     </p>
-                     <p className="text-[9px] text-slate-400 font-bold uppercase tracking-[0.15em] mt-2">VIDEO, IMAGE, AUDIO, DOCUMENT • MAX 250MB / FILE</p>
-                  </div>
-
-                  {/* Interactive Mock Presets */}
-                  <div className="bg-slate-50/50 p-4 rounded-xl border border-slate-100">
-                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.15em] block mb-3">Instant Preset Sandbox (Click to Attach)</span>
-                    <div className="grid grid-cols-4 gap-2">
-                      {presets.map((preset) => {
-                        const Icon = preset.fileType === 'video' ? FileVideo : preset.fileType === 'image' ? FileImage : preset.fileType === 'audio' ? FileAudio : FileText;
-                        const isStaged = state.uploadedEvidence.some(e => e.fileName === preset.fileName);
-                        return (
-                          <button
-                            key={preset.fileName}
-                            onClick={() => handleAddPreset(preset)}
-                            disabled={isStaged}
-                            className={cn(
-                              "flex items-center gap-2 p-2 rounded-lg border text-left transition-all",
-                              isStaged 
-                                ? "bg-slate-100 border-slate-200 opacity-60 text-slate-400 cursor-not-allowed" 
-                                : "bg-white border-slate-200 hover:border-slate-400 hover:shadow-sm"
-                            )}
-                          >
-                            <div className="h-6 w-6 rounded bg-slate-50 flex items-center justify-center shrink-0">
-                              <Icon className="h-3.5 w-3.5 text-slate-500" />
-                            </div>
-                            <div className="min-w-0">
-                              <p className="text-[10px] font-bold text-slate-700 truncate leading-none mb-0.5">{preset.fileName}</p>
-                              <span className="text-[8px] text-slate-400 font-medium uppercase">{preset.fileType}</span>
-                            </div>
-                          </button>
-                        );
-                      })}
+                    <div className="text-right">
+                      <span className="text-[9px] font-black text-emerald-600 bg-emerald-50 border border-emerald-100 rounded px-2 py-0.5 tracking-wider uppercase block">Staged Ready</span>
+                      <span className="text-[9.5px] text-slate-400 font-bold block mt-1 uppercase tracking-tighter">Intake: {activeStagedFile.uploadedAt}</span>
                     </div>
                   </div>
 
-                  {/* Evidence Staged List / Upload Queue */}
-                  {state.uploadedEvidence.length > 0 ? (
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center border-b pb-2">
-                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Staged Evidence Payload ({state.uploadedEvidence.length})</span>
-                        <button 
-                          onClick={() => setState(prev => ({ ...prev, uploadedEvidence: [] }))}
-                          className="text-[9px] font-bold text-rose-600 hover:underline uppercase"
-                        >
-                          Clear All
-                        </button>
-                      </div>
-                      <div className="space-y-2 max-h-[220px] overflow-y-auto custom-scrollbar pr-1">
-                        {state.uploadedEvidence.map((file) => {
-                          const Icon = file.fileType === 'video' ? FileVideo : file.fileType === 'image' ? FileImage : file.fileType === 'audio' ? FileAudio : FileText;
+                  {/* CUSTOM INTEGRATED STAGED PREVIEW WORKSPACES */}
+                  <div className="flex-1 min-h-[220px] bg-slate-50 rounded-xl border border-slate-200/50 flex flex-col items-center justify-center p-4 relative overflow-hidden">
+                    
+                    {/* VIDEO PREVIEW */}
+                    {activeStagedFile.type === 'video' && (
+                      <div className="w-full h-full flex flex-col justify-between">
+                        {/* Mock Video Canvas Frame */}
+                        <div className="flex-1 bg-slate-950 rounded-lg flex items-center justify-center relative group overflow-hidden">
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-80" />
                           
-                          return (
-                            <div key={file.id} className="flex items-center justify-between p-3 bg-white border border-slate-200/50 rounded-xl shadow-2xs">
-                              <div className="flex items-center gap-3 min-w-0">
-                                <div className="h-8 w-8 rounded bg-slate-50 flex items-center justify-center border border-slate-100 shrink-0">
-                                  <Icon className="h-4 w-4 text-slate-500" />
-                                </div>
-                                <div className="min-w-0">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-[11px] font-bold text-slate-800 truncate" title={file.fileName}>{file.fileName}</span>
-                                    <span className="text-[8px] font-black bg-slate-100 text-slate-400 px-1 py-0.2 rounded uppercase">{file.fileType}</span>
-                                  </div>
-                                  <div className="flex items-center gap-1.5 mt-0.5 text-[9px] text-slate-400 font-medium">
-                                    <span>{file.sizeLabel}</span>
-                                    <span>·</span>
-                                    <span className="text-emerald-600">Outputs: {file.expectedOutputs.slice(0, 3).join(" · ")}</span>
-                                  </div>
-                                </div>
-                              </div>
-                              <button 
-                                onClick={() => handleRemoveFile(file.id)}
-                                className="p-1 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded transition-all"
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </button>
+                          {/* CCTV Overlay details */}
+                          <div className="absolute top-3 left-3 font-mono text-[9px] text-emerald-400 uppercase tracking-widest flex items-center gap-1.5">
+                            <span className="h-1.5 w-1.5 rounded-full bg-rose-600 animate-ping shrink-0" />
+                            <span>REC · BLUEPRINT DRAFT VIDEO</span>
+                          </div>
+
+                          <div className="absolute bottom-3 left-3 font-mono text-[9px] text-white/80">
+                            CAM 04 B - ZONE B COAL SLIP
+                          </div>
+
+                          {/* Play circle trigger */}
+                          <button 
+                            onClick={() => setIsPlaying(!isPlaying)}
+                            className="h-12 w-12 rounded-full bg-white/20 backdrop-blur-md border border-white/40 flex items-center justify-center text-white hover:scale-105 hover:bg-white/30 transition-all shadow-lg"
+                          >
+                            {isPlaying ? <Pause className="h-5 w-5 fill-white" /> : <Play className="h-5 w-5 fill-white ml-0.5" />}
+                          </button>
+                        </div>
+                        
+                        {/* Waveform timeline placeholder */}
+                        <div className="h-10 mt-3 bg-slate-900 border border-slate-800 rounded-lg flex items-center justify-between px-3 text-[9px] font-mono text-slate-400">
+                          <span className="text-[#2FAE8B]">00:00:00</span>
+                          <div className="flex-1 mx-4 h-1 bg-slate-800 rounded relative">
+                            <div className="absolute top-1/2 left-[35%] -translate-y-1/2 h-3 w-0.5 bg-emerald-500" />
+                            <div className="absolute top-0 left-0 h-full bg-[#2FAE8B]/40 rounded w-[35%]" />
+                          </div>
+                          <span>00:04:12</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* AUDIO PREVIEW */}
+                    {activeStagedFile.type === 'audio' && (
+                      <div className="w-full h-full flex flex-col justify-between p-4">
+                        {/* Audio Waveform visualization */}
+                        <div className="flex-1 bg-slate-900 border border-slate-800 rounded-lg flex items-center justify-center gap-0.5 p-6 relative">
+                          <div className="absolute top-3 left-3 font-mono text-[9px] text-amber-500 uppercase tracking-widest">
+                            AUDIO VOICE TIMELINE
+                          </div>
+                          {/* Draw mock waveform bars */}
+                          {[15, 30, 20, 45, 60, 25, 40, 75, 90, 40, 55, 30, 20, 45, 65, 80, 50, 20, 35, 10, 45, 30, 60, 75, 40, 25, 50, 10, 15, 30].map((h, i) => (
+                            <div 
+                              key={i} 
+                              className={cn(
+                                "w-1 rounded-full transition-all duration-300",
+                                isPlaying ? "bg-amber-500" : "bg-slate-700"
+                              )} 
+                              style={{ 
+                                height: `${h}%`,
+                                animation: isPlaying ? `pulse 1.2s ease-in-out infinite alternate ${i * 0.05}s` : 'none'
+                              }} 
+                            />
+                          ))}
+                        </div>
+
+                        {/* Controls */}
+                        <div className="h-10 mt-3 bg-white border border-slate-200 rounded-lg flex items-center justify-between px-3 text-[9px] font-mono text-slate-500 shadow-2xs">
+                          <button 
+                            onClick={() => setIsPlaying(!isPlaying)}
+                            className="flex items-center gap-1.5 text-slate-800 hover:text-slate-900 font-bold"
+                          >
+                            {isPlaying ? <Pause className="h-3 w-3 fill-slate-800" /> : <Play className="h-3 w-3 fill-slate-800" />} PLAY DISPATCH LOG
+                          </button>
+                          <div className="flex items-center gap-1.5">
+                            <Volume2 className="h-3.5 w-3.5 text-slate-400" />
+                            <div className="w-16 h-1 bg-slate-200 rounded-full overflow-hidden">
+                              <div className="h-full bg-slate-500 w-[80%]" />
                             </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* IMAGE PREVIEW */}
+                    {activeStagedFile.type === 'image' && (
+                      <div className="w-full h-full flex items-center justify-center p-2 relative bg-slate-900 rounded-lg overflow-hidden border border-slate-800">
+                        <div className="absolute top-3 left-3 font-mono text-[9px] text-emerald-400 uppercase tracking-widest z-10 bg-slate-950/80 px-2 py-0.5 rounded border border-emerald-500/20">
+                          OBSERVATION INSPECTOR
+                        </div>
+                        {/* Render placeholder image bounds */}
+                        <div className="border border-emerald-500/20 p-8 rounded-xl bg-slate-950 flex flex-col items-center justify-center max-w-sm text-center relative group">
+                          <div className="absolute -top-1.5 -left-1.5 h-3 w-3 border-t-2 border-l-2 border-emerald-500" />
+                          <div className="absolute -top-1.5 -right-1.5 h-3 w-3 border-t-2 border-r-2 border-emerald-500" />
+                          <div className="absolute -bottom-1.5 -left-1.5 h-3 w-3 border-b-2 border-l-2 border-emerald-500" />
+                          <div className="absolute -bottom-1.5 -right-1.5 h-3 w-3 border-b-2 border-r-2 border-emerald-500" />
+                          
+                          <FileImage className="h-10 w-10 text-emerald-500 mb-3 animate-pulse" />
+                          <p className="text-[10.5px] font-bold text-slate-300 uppercase tracking-wide">Image Bounds Staged</p>
+                          <span className="text-[9px] text-slate-500 font-bold uppercase mt-1 leading-none">Auto Quality Analysis Queue</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* DOCUMENT PREVIEW */}
+                    {activeStagedFile.type === 'document' && (
+                      <div className="w-full h-full flex flex-col bg-white border rounded-lg shadow-2xs p-4 text-left justify-between overflow-hidden">
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between border-b pb-2">
+                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                              <FileText className="h-3 w-3" /> Page Reference Blueprint
+                            </span>
+                            <span className="text-[8px] font-mono text-slate-400">PAGE 1 OF 3</span>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <div className="h-2 w-32 bg-slate-200 rounded" />
+                            <div className="h-1.5 w-full bg-slate-100 rounded" />
+                            <div className="h-1.5 w-5/6 bg-slate-100 rounded" />
+                            <div className="h-1.5 w-full bg-slate-100 rounded" />
+                          </div>
+
+                          <div className="border border-blue-100 bg-blue-50/20 p-2.5 rounded-lg space-y-1.5">
+                            <span className="text-[8px] font-black text-blue-700 uppercase tracking-widest block leading-none">Auto Fact Decomposition Target</span>
+                            <div className="h-1.5 w-3/4 bg-blue-200/30 rounded" />
+                            <div className="h-1.5 w-1/2 bg-blue-200/30 rounded" />
+                          </div>
+                        </div>
+
+                        <span className="text-[8px] text-slate-400 uppercase tracking-wider block border-t pt-2 mt-2 leading-none text-center">Decompilation model staged successfully</span>
+                      </div>
+                    )}
+
+                  </div>
+
+                  {/* Extraction Pipeline Queue placeholder */}
+                  <div className="bg-slate-50 border border-slate-100 p-4 rounded-xl flex items-center justify-between shrink-0">
+                    <div className="flex items-center gap-3">
+                      <div className="h-8 w-8 bg-emerald-50 rounded-lg flex items-center justify-center text-emerald-600 border border-emerald-100">
+                        <Brain className="h-4.5 w-4.5" />
+                      </div>
+                      <div>
+                        <p className="text-[11.5px] font-bold text-slate-800 leading-none">Extraction queued for initialization</p>
+                        <span className="text-[9.5px] text-[#2FAE8B] font-bold block mt-1 uppercase tracking-wide">
+                          ⚙️ Pipeline starts automatically upon workspace creation
+                        </span>
+                      </div>
+                    </div>
+                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider italic">Engine Standby</span>
+                  </div>
+
+                  {/* Small Case Title inline setup */}
+                  <div className="border-t border-slate-100 pt-5 mt-2 flex flex-col gap-4">
+                    <div className="grid grid-cols-2 gap-4 items-start">
+                      
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">Case Name</label>
+                        <Input 
+                          className="h-9 text-xs border-slate-200 bg-slate-50/50 focus:bg-white transition-all font-bold text-slate-800 rounded-lg" 
+                          placeholder="Auto-generated from uploaded evidence" 
+                          value={caseName}
+                          onChange={(e) => {
+                            setCaseName(e.target.value);
+                            setIsTitleManuallyEdited(true);
+                          }}
+                        />
+                        <span className="text-[9px] text-slate-400 font-semibold mt-1 block">You can rename this case catalog entry later inside the workspace.</span>
+                      </div>
+
+                      {/* Collapsed Options Drawer */}
+                      <div className="space-y-1.5 flex flex-col">
+                        <button
+                          onClick={() => setShowOptionalDetails(!showOptionalDetails)}
+                          className="text-[10px] font-black text-slate-500 hover:text-slate-800 uppercase tracking-wider flex items-center gap-1 mt-6 transition-all"
+                        >
+                          {showOptionalDetails ? "▼ Hide optional case details" : "▶ Add optional case details"}
+                        </button>
+                        <span className="text-[9px] text-slate-400 font-semibold leading-none">These details can be completed later.</span>
+                      </div>
+
+                    </div>
+
+                    {showOptionalDetails && (
+                      <div className="bg-slate-50/50 p-4 border rounded-xl space-y-4 animate-in slide-in-from-top-2 duration-200">
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block border-b pb-2">Staged Incident Parameters</span>
+                        
+                        <div className="grid grid-cols-3 gap-4">
+                          <div className="space-y-1.5">
+                            <label className="text-[9.5px] font-black text-slate-500 uppercase tracking-widest">Site Location</label>
+                            <select 
+                              className="flex h-9 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold text-slate-700 outline-none"
+                              value={optionalDetails.site}
+                              onChange={(e) => setOptionalDetails(prev => ({ ...prev, site: e.target.value }))}
+                            >
+                              <option>Site Alpha - Northern Link</option>
+                              <option>Site Beta - Processing Area</option>
+                              <option>Site Gamma - Storage Facility</option>
+                            </select>
+                          </div>
+
+                          <div className="space-y-1.5">
+                            <label className="text-[9.5px] font-black text-slate-500 uppercase tracking-widest">Event Occurred</label>
+                            <Input 
+                              type="datetime-local" 
+                              className="h-9 text-xs border-slate-200 bg-white rounded-lg text-slate-700" 
+                              value={optionalDetails.date}
+                              onChange={(e) => setOptionalDetails(prev => ({ ...prev, date: e.target.value }))}
+                            />
+                          </div>
+
+                          <div className="space-y-1.5">
+                            <label className="text-[9.5px] font-black text-slate-500 uppercase tracking-widest">Severity Priority</label>
+                            <select 
+                              className="flex h-9 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold text-slate-750 outline-none"
+                              value={optionalDetails.severity}
+                              onChange={(e) => setOptionalDetails(prev => ({ ...prev, severity: e.target.value }))}
+                            >
+                              <option>Critical</option>
+                              <option>High</option>
+                              <option>Medium</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-[9.5px] font-black text-slate-500 uppercase tracking-widest">Initial Context Summary</label>
+                          <Textarea 
+                            className="min-h-[60px] text-xs border-slate-200 bg-white focus:bg-white transition-all font-medium leading-relaxed rounded-lg" 
+                            placeholder="Add brief details about the event context if available..."
+                            value={optionalDetails.description}
+                            onChange={(e) => setOptionalDetails(prev => ({ ...prev, description: e.target.value }))}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                </div>
+              ) : (
+                // Center Empty State Upload Card (Structured like future preview)
+                <div className="flex-1 bg-white border border-slate-200/60 rounded-2xl p-8 flex flex-col justify-between shadow-sm min-h-[360px] overflow-hidden relative">
+                  
+                  <div className="border-b pb-4 flex justify-between items-center">
+                    <div>
+                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.25em] block">Setup Guidance</span>
+                      <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Workspace Initialization Intake</h4>
+                    </div>
+                    <span className="text-[8px] font-black bg-slate-100 text-slate-500 px-2 py-0.5 rounded tracking-widest uppercase">Draft Standby</span>
+                  </div>
+
+                  {/* Intake Upload Core Area */}
+                  <div className="flex-1 flex flex-col items-center justify-center p-8 text-center my-6">
+                    <div className="h-16 w-16 rounded-[2rem] bg-slate-50 flex items-center justify-center mb-6 border border-slate-200/50 shadow-2xs relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+                       <Upload className="h-7 w-7 text-slate-400 group-hover:scale-105 transition-transform" />
+                       <div className="absolute inset-0 rounded-full border border-emerald-500/20 animate-ping opacity-30" />
+                    </div>
+                    
+                    <h3 className="text-sm font-black text-slate-800 uppercase tracking-[0.2em] mb-2">Upload evidence to create workspace</h3>
+                    <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest max-w-[420px] leading-relaxed mb-6">
+                      Drop video, image, audio, or document files. The review workspace will be prepared automatically from your staged evidence.
+                    </p>
+
+                    {/* Presets Intake bar */}
+                    <div className="bg-slate-50/80 border border-slate-100 p-4 rounded-xl max-w-xl w-full">
+                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-3">1-Click Mock Intake Presets (Select to test)</span>
+                      <div className="grid grid-cols-4 gap-2">
+                        {presets.map((preset) => {
+                          const Icon = preset.type === 'video' ? FileVideo : preset.type === 'image' ? FileImage : preset.type === 'audio' ? FileAudio : FileText;
+                          return (
+                            <button
+                              key={preset.name}
+                              onClick={() => handleAddPreset(preset)}
+                              className="flex items-center gap-2 p-2 rounded-lg bg-white border border-slate-200/80 hover:border-slate-400 hover:shadow-2xs text-left transition-all"
+                            >
+                              <div className="h-6 w-6 rounded bg-slate-50 flex items-center justify-center shrink-0 border border-slate-100 text-slate-500">
+                                <Icon className="h-3.5 w-3.5" />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-[9.5px] font-black text-slate-700 truncate leading-none mb-0.5">{preset.name}</p>
+                                <span className="text-[7.5px] text-slate-400 font-bold uppercase">{preset.type}</span>
+                              </div>
+                            </button>
                           );
                         })}
                       </div>
                     </div>
-                  ) : (
-                    // Staged Empty Guidance Preview Cards
-                    <div className="grid grid-cols-4 gap-3 pt-2">
-                      {[
-                        { type: 'Video', desc: 'Sequence blocks, key moments, and timeline notes.', color: 'text-indigo-500', bg: 'bg-indigo-50/20', border: 'border-indigo-100', icon: FileVideo },
-                        { type: 'Image', desc: 'Visual observations, marked areas, and quality checks.', color: 'text-emerald-500', bg: 'bg-emerald-50/20', border: 'border-emerald-100', icon: FileImage },
-                        { type: 'Audio', desc: 'Transcript segments, speaker turns, speaker logs.', color: 'text-amber-500', bg: 'bg-amber-50/20', border: 'border-amber-100', icon: FileAudio },
-                        { type: 'Document', desc: 'Fact extractions, key sections, document references.', color: 'text-blue-500', bg: 'bg-blue-50/20', border: 'border-blue-100', icon: FileText }
-                      ].map((item) => {
-                        const ItemIcon = item.icon;
-                        return (
-                          <div key={item.type} className={cn("p-3 rounded-xl border flex flex-col gap-2 bg-white border-slate-200/60 shadow-2xs hover:shadow-sm transition-all")}>
-                            <div className={cn("h-7 w-7 rounded flex items-center justify-center border shrink-0", item.bg, item.border, item.color)}>
-                              <ItemIcon className="h-3.5 w-3.5" />
-                            </div>
-                            <h4 className="text-[10px] font-black text-slate-800 uppercase tracking-wide leading-none">{item.type}</h4>
-                            <p className="text-[9px] font-medium text-slate-400 leading-normal leading-snug">{item.desc}</p>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-
-                {/* Extraction Plan Preview Card */}
-                <div className="bg-white border border-slate-200/60 rounded-2xl shadow-sm p-6 space-y-4">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Extraction Queue & Plan</h4>
-                      <p className="text-2xs text-slate-400 font-bold uppercase tracking-widest mt-0.5">Simulate post-creation workflow pipeline</p>
-                    </div>
-                    
-                    <button
-                      onClick={() => setState(prev => ({ ...prev, autoStartExtraction: !prev.autoStartExtraction }))}
-                      className="flex items-center gap-1.5"
-                    >
-                      <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Auto-start on creation</span>
-                      {state.autoStartExtraction ? (
-                        <ToggleRight className="h-6 w-6 text-[#2FAE8B]" />
-                      ) : (
-                        <ToggleLeft className="h-6 w-6 text-slate-300" />
-                      )}
-                    </button>
                   </div>
 
-                  {state.uploadedEvidence.length > 0 ? (
-                    <div className="bg-slate-50/50 border border-slate-100 rounded-xl p-4 flex flex-col gap-3 animate-in fade-in duration-300">
-                      <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 bg-[#2FAE8B]/10 rounded-lg flex items-center justify-center text-[#2FAE8B] border border-[#2FAE8B]/20">
-                          <Brain className="h-4 w-4" />
-                        </div>
-                        <div>
-                          <p className="text-[11.5px] font-bold text-slate-800 leading-none">Extraction plan ready for immediate initialization</p>
-                          <span className="text-[9px] text-slate-400 font-semibold block mt-0.5">
-                            {state.uploadedEvidence.length} files queued · {dist.video} video · {dist.audio} audio · {dist.image} image · {dist.document} doc
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-2 mt-1">
-                        {dist.video > 0 && (
-                          <div className="flex items-center gap-2 text-[10px] font-medium text-slate-500 bg-white border border-slate-100 p-2 rounded-lg">
-                            <div className="h-2 w-2 rounded-full bg-indigo-500" />
-                            <span>Prepare {dist.video} video timeline keys</span>
-                          </div>
-                        )}
-                        {dist.audio > 0 && (
-                          <div className="flex items-center gap-2 text-[10px] font-medium text-slate-500 bg-white border border-slate-100 p-2 rounded-lg">
-                            <div className="h-2 w-2 rounded-full bg-amber-500" />
-                            <span>Transcribe {dist.audio} audio channels</span>
-                          </div>
-                        )}
-                        {dist.image > 0 && (
-                          <div className="flex items-center gap-2 text-[10px] font-medium text-slate-500 bg-white border border-slate-100 p-2 rounded-lg">
-                            <div className="h-2 w-2 rounded-full bg-emerald-500" />
-                            <span>Index {dist.image} image observations</span>
-                          </div>
-                        )}
-                        {dist.document > 0 && (
-                          <div className="flex items-center gap-2 text-[10px] font-medium text-slate-500 bg-white border border-slate-100 p-2 rounded-lg">
-                            <div className="h-2 w-2 rounded-full bg-blue-500" />
-                            <span>Decompose {dist.document} documents</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-center py-6 border border-dashed rounded-xl text-slate-400 bg-slate-50/20">
-                      <HelpCircle className="h-6 w-6 text-slate-300 mx-auto mb-2" />
-                      <p className="text-[11px] font-bold uppercase tracking-wider">Upload evidence to preview the extraction plan.</p>
-                      <span className="text-[9.5px] text-slate-400 mt-1 block">Staged assets will display active pipeline sequences here.</span>
-                    </div>
-                  )}
-                </div>
-
-              </div>
-
-              {/* RIGHT COLUMN: Readiness checklists and WYSIWYG Live Previews */}
-              <div className="col-span-4 space-y-6">
-
-                {/* Readiness Protocol Checklist */}
-                <div className="bg-white border border-slate-200/60 rounded-2xl shadow-sm p-6 sticky top-6 space-y-6">
-                  
-                  <div>
-                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Readiness Protocol</h4>
-                    <p className="text-[11px] font-medium text-slate-400 leading-none">Validate investigation setup integrity</p>
-                  </div>
-
-                  <div className="space-y-3.5">
-                    {[
-                      { 
-                        key: 'caseIdentity', 
-                        label: 'Case Identity', 
-                        req: 'Required', 
-                        done: checks.caseIdentity, 
-                        desc: state.title.trim().length <= 5 ? 'Investigation operational title is required' : 'Title and event date entered'
-                      },
-                      { 
-                        key: 'incidentParameters', 
-                        label: 'Severity Level', 
-                        req: 'Required', 
-                        done: checks.incidentParameters, 
-                        desc: 'Level categorizes operational priority' 
-                      },
-                      { 
-                        key: 'siteClassification', 
-                        label: 'Site Classification', 
-                        req: 'Required', 
-                        done: checks.siteClassification, 
-                        desc: 'Operational sector node target' 
-                      },
-                      { 
-                        key: 'executiveSummary', 
-                        label: 'Executive Summary', 
-                        req: 'Recommended', 
-                        done: checks.executiveSummary, 
-                        desc: state.executiveSummary.trim().length < 20 ? 'Min. 20 characters recommended' : 'High quality summary staging'
-                      },
-                      { 
-                        key: 'evidenceAttachment', 
-                        label: 'Evidence Attachment', 
-                        req: 'Optional', 
-                        done: checks.evidenceAttachment, 
-                        desc: state.uploadedEvidence.length === 0 ? 'No immediate payload staging' : `${state.uploadedEvidence.length} assets ready`
-                      }
-                    ].map((step) => (
-                      <div key={step.key} className="flex items-start gap-3 group">
-                        <div className={cn(
-                          "mt-0.5 h-4.5 w-4.5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all",
-                          step.done 
-                            ? "bg-emerald-500 border-emerald-500 text-white shadow-sm" 
-                            : step.req === 'Recommended' 
-                              ? "border-amber-200 bg-amber-50/20 text-amber-500" 
-                              : step.req === 'Optional' 
-                                ? "border-slate-200 bg-slate-50 text-slate-400" 
-                                : "border-slate-200 bg-slate-50 text-slate-300"
-                        )}>
-                          {step.done ? (
-                            <Check className="h-2.5 w-2.5" />
-                          ) : step.req === 'Recommended' ? (
-                            <AlertCircle className="h-2.5 w-2.5 text-amber-500" />
-                          ) : null}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between">
-                            <p className={cn("text-[11px] font-bold leading-none", step.done ? "text-slate-800" : "text-slate-400")}>{step.label}</p>
-                            <span className={cn(
-                              "text-[8px] font-black uppercase tracking-wider px-1.5 py-0.2 rounded shrink-0",
-                              step.req === 'Required' 
-                                ? step.done ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-400"
-                                : step.req === 'Recommended'
-                                  ? step.done ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
-                                  : "bg-slate-100 text-slate-400"
-                            )}>{step.req}</span>
-                          </div>
-                          <span className="text-[9.5px] text-slate-400 leading-snug mt-1 block leading-none">{step.desc}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* AI Status / Blueprint priming */}
-                  <div className="pt-4 border-t border-slate-100">
-                    <div className="p-3.5 bg-emerald-50/50 rounded-xl border border-emerald-100 flex gap-3">
-                       <div className="h-7 w-7 bg-emerald-600 rounded flex items-center justify-center text-white shrink-0 border border-emerald-500/20">
-                          <Brain className="h-3.5 w-3.5" />
-                       </div>
-                       <div>
-                          <p className="text-[11px] font-bold text-emerald-900 leading-tight">AI Priming Configured</p>
-                          <p className="text-[9.5px] text-emerald-700 font-medium leading-relaxed mt-1">
-                            Workspace blueprint will spin up automatic analysis nodes upon database initialization.
-                          </p>
-                       </div>
-                    </div>
+                  {/* Ghost Preview Footer */}
+                  <div className="border-t border-slate-100 pt-4 flex justify-between items-center text-[10.5px] font-medium text-slate-500">
+                    <span className="flex items-center gap-1.5">
+                      <Info className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                      <span>Staging files automatically configures your extraction pipelines. You can customize details later.</span>
+                    </span>
+                    <span className="text-[9px] font-black text-[#2FAE8B] uppercase tracking-wider">WYSIWYG INTENT ACTIVE</span>
                   </div>
 
                 </div>
-
-                {/* Live Workspace Preview Panel (WYSIWYG Concept) */}
-                <div className="bg-white border border-slate-200/60 rounded-2xl shadow-sm p-5 space-y-4">
-                  <div className="flex justify-between items-center border-b pb-3">
-                    <div>
-                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Live Preview</span>
-                      <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Future Workspace Preview</h4>
-                    </div>
-                    <span className="text-[8px] font-black bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded tracking-widest uppercase">Live Sync</span>
-                  </div>
-
-                  {/* Mini Blueprint Workspace Frame */}
-                  <div className="border border-slate-200/50 rounded-xl p-4 bg-slate-50/50 shadow-2xs space-y-4 relative overflow-hidden text-left">
-                    <div className="absolute top-0 left-0 w-full h-[3px] bg-[#2FAE8B]" />
-
-                    {/* MOCK WORKSPACE HEADER */}
-                    <div className="border-b border-slate-200 pb-3">
-                      <div className="flex items-center gap-1.5 mb-1.5">
-                        <span className="text-[8px] font-black px-1.5 py-0.2 rounded bg-slate-950 text-white uppercase tracking-wider shadow-sm">
-                          {state.severity.toUpperCase()}
-                        </span>
-                        {state.siteNode && (
-                          <span className="text-[8px] font-bold px-1.5 py-0.2 rounded bg-slate-200 text-slate-700 uppercase tracking-wide truncate max-w-[120px]">
-                            {state.siteNode.split(' - ')[0]}
-                          </span>
-                        )}
-                        {state.uploadedEvidence.length > 0 && (
-                          <span className="text-[8px] font-black bg-emerald-50 text-emerald-700 px-1.5 py-0.2 border border-emerald-100 rounded shrink-0">
-                            {state.uploadedEvidence.length} FILE(S)
-                          </span>
-                        )}
-                      </div>
-                      <h5 className="text-[13px] font-black text-slate-800 truncate">
-                        {state.title.trim() || <span className="text-slate-400 font-medium italic">e.g. Incident Workspace Title...</span>}
-                      </h5>
-                      <span className="text-[9px] font-medium text-slate-400 block mt-0.5 uppercase tracking-tighter">
-                        Created: Just Now {state.eventOccurrence && `· Event Occurred: ${new Date(state.eventOccurrence).toLocaleDateString()}`}
-                      </span>
-                    </div>
-
-                    {/* TAB LIST */}
-                    <div className="flex gap-2.5 border-b border-slate-200 pb-2 text-[9px] font-black text-slate-400 uppercase tracking-widest shrink-0">
-                      <span className="text-slate-900 border-b border-slate-900 pb-2">Evidence Review</span>
-                      <span>Analysis</span>
-                      <span>Reports</span>
-                      <span>Audit Trail</span>
-                    </div>
-
-                    {/* MINI PANELS GRID */}
-                    <div className="grid grid-cols-12 gap-2 text-[8px] font-bold text-slate-400">
-                      
-                      {/* Left Side Repository Preview */}
-                      <div className="col-span-3 border border-slate-200 bg-white p-1 rounded min-h-[70px] space-y-1">
-                        <span className="text-[7px] font-bold text-slate-400 uppercase block tracking-wider border-b pb-0.5">Sidebar</span>
-                        {state.uploadedEvidence.length > 0 ? (
-                          <div className="space-y-0.5">
-                            {state.uploadedEvidence.slice(0, 3).map(file => (
-                              <div key={file.id} className="flex items-center gap-1 bg-slate-50 p-0.5 rounded border border-slate-200/30 truncate">
-                                <CheckCircle2 className="h-1.5 w-1.5 text-emerald-500 shrink-0" />
-                                <span className="text-[7.5px] truncate text-slate-600 leading-none">{file.fileName}</span>
-                              </div>
-                            ))}
-                            {state.uploadedEvidence.length > 3 && (
-                              <span className="text-[6.5px] font-bold text-[#2FAE8B] block mt-0.5 text-center">+{state.uploadedEvidence.length - 3} MORE</span>
-                            )}
-                          </div>
-                        ) : (
-                          <div className="flex flex-col items-center justify-center h-[50px] opacity-40">
-                            <Database className="h-2.5 w-2.5 mb-1" />
-                            <span className="text-[6.5px] uppercase">Empty Repo</span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Middle Canvas Preview */}
-                      <div className="col-span-5 border border-slate-200 bg-white p-1 rounded min-h-[70px] flex flex-col justify-between">
-                        <span className="text-[7px] font-bold text-slate-400 uppercase block tracking-wider border-b pb-0.5">Preparation Preview</span>
-                        
-                        {state.uploadedEvidence.length > 0 ? (
-                          <div className="space-y-1 py-1">
-                            <div className="flex justify-between items-center text-[7px] text-slate-600">
-                              <span className="font-bold">Intake Extraction</span>
-                              <span>65%</span>
-                            </div>
-                            <div className="h-1 bg-slate-100 rounded-full overflow-hidden">
-                              <div className="h-full bg-emerald-500 w-[65%]" />
-                            </div>
-                            <div className="h-1.5 w-12 bg-slate-100 rounded mt-1" />
-                          </div>
-                        ) : (
-                          <div className="flex flex-col items-center justify-center h-[50px] opacity-40">
-                            <PlayCircle className="h-2.5 w-2.5 mb-1" />
-                            <span className="text-[6.5px] uppercase">Review Standby</span>
-                          </div>
-                        )}
-                        <span className="text-[6px] text-slate-300 uppercase block border-t pt-0.5">Workspace center console</span>
-                      </div>
-
-                      {/* Right expected card preview */}
-                      <div className="col-span-4 border border-slate-200 bg-white p-1 rounded min-h-[70px] space-y-1">
-                        <span className="text-[7px] font-bold text-slate-400 uppercase block tracking-wider border-b pb-0.5">Expected Output</span>
-                        {state.uploadedEvidence.length > 0 ? (
-                          <div className="space-y-1">
-                            {Array.from(new Set(state.uploadedEvidence.map(f => f.fileType))).slice(0, 2).map(type => (
-                              <div key={type} className="bg-emerald-50/50 border border-emerald-100 rounded p-1 flex flex-col gap-0.5 scale-95">
-                                <span className="text-[7px] font-black text-emerald-700 uppercase leading-none">{type} Output</span>
-                                <div className="h-[2px] w-full bg-emerald-200/50 rounded" />
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="flex flex-col items-center justify-center h-[50px] opacity-40">
-                            <Eye className="h-2.5 w-2.5 mb-1" />
-                            <span className="text-[6.5px] uppercase">Engine standby</span>
-                          </div>
-                        )}
-                      </div>
-
-                    </div>
-                  </div>
-
-                  <div className="bg-slate-50 border border-slate-100 p-3.5 rounded-xl">
-                    <p className="text-[10px] font-semibold text-slate-500 leading-snug flex items-start gap-1.5">
-                      <Sparkles className="h-3.5 w-3.5 text-[#2FAE8B] shrink-0 mt-0.5" />
-                      <span>This blueprint live updates as you configure the forms. Changes persist directly upon initialization.</span>
-                    </p>
-                  </div>
-                </div>
-
-              </div>
+              )}
 
             </div>
-
           </div>
+
+          {/* RIGHT PANEL: Expected Review Output */}
+          <div className="w-[460px] border-l border-slate-200 bg-white flex flex-col shrink-0 z-20 shadow-[-2px_0_10px_rgba(0,0,0,0.03)] overflow-hidden">
+            <div className="p-4 border-b border-slate-100 flex items-center justify-between shrink-0">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Expected Review Output</span>
+              <span className="text-[9px] font-bold text-slate-400 uppercase">Analysis Target Schema</span>
+            </div>
+
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-4">
+              
+              {stagedFiles.length === 0 ? (
+                <div className="h-[240px] border border-dashed rounded-xl flex flex-col items-center justify-center p-6 text-center text-slate-400 bg-slate-50/20">
+                  <Cpu className="h-8 w-8 text-slate-300 mb-3 animate-pulse" />
+                  <p className="text-[11.5px] font-black uppercase tracking-wider">Ready when evidence is added</p>
+                  <span className="text-[10px] text-slate-400 mt-1 max-w-[200px] leading-relaxed">
+                    Review outputs will adapt to your uploaded file type distribution automatically.
+                  </span>
+                </div>
+              ) : (
+                <div className="bg-emerald-50/30 border border-emerald-100 rounded-xl p-4 flex gap-3 mb-2 animate-in fade-in duration-300">
+                  <Brain className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="text-[11.5px] font-black text-emerald-950 block leading-tight">Workspace Blueprint Matched</span>
+                    <span className="text-[9.5px] text-emerald-800 font-semibold block mt-1">
+                      Matched {Array.from(new Set(stagedFiles.map(f => f.type))).length} format schema(s). Active review console modules are highlighted below.
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Granular Expected output cards */}
+              {[
+                {
+                  type: "video",
+                  label: "Video Evidence Outputs",
+                  active: hasType("video"),
+                  desc: "Sequence blocks, key moments, and timeline notes.",
+                  bullets: ["Frame-accurate Timeline Indexes", "Visual Event Keyframes", "Action Sequence Markers", "Incident Chronology Notes"],
+                  color: "border-indigo-100 bg-indigo-50/10 text-indigo-700 hover:border-indigo-300 shadow-2xs"
+                },
+                {
+                  type: "audio",
+                  label: "Audio Evidence Outputs",
+                  active: hasType("audio"),
+                  desc: "Transcript segments, speaker turns, and time references.",
+                  bullets: ["Synchronized Voice Transcripts", "Speaker Identification & Logs", "Acoustic Event Timestamps", "Communication Derivations"],
+                  color: "border-amber-100 bg-amber-50/10 text-amber-700 hover:border-amber-300 shadow-2xs"
+                },
+                {
+                  type: "image",
+                  label: "Image Evidence Outputs",
+                  active: hasType("image"),
+                  desc: "Visual observations, marked areas, and quality check.",
+                  bullets: ["Target Focus Observations", "Incident Region Markups", "Visual Quality Warnings", "Image Metadata Extraction"],
+                  color: "border-emerald-100 bg-emerald-50/10 text-emerald-700 hover:border-emerald-300 shadow-2xs"
+                },
+                {
+                  type: "document",
+                  label: "Document Evidence Outputs",
+                  active: hasType("document"),
+                  desc: "Summary, key sections, facts, and page references.",
+                  bullets: ["Decomposed Fact Inventories", "Page & Section References", "Executive Structural Summaries", "Extracted Name-Entity Registers"],
+                  color: "border-blue-100 bg-blue-50/10 text-blue-700 hover:border-blue-300 shadow-2xs"
+                }
+              ].map((card) => {
+                const isActive = card.active;
+                
+                return (
+                  <div 
+                    key={card.type}
+                    className={cn(
+                      "p-4 rounded-xl border text-left transition-all duration-300 relative",
+                      isActive 
+                        ? card.color 
+                        : "border-slate-100 bg-white opacity-40 grayscale"
+                    )}
+                  >
+                    {isActive && (
+                      <div className="absolute top-3.5 right-3.5 h-4 w-4 bg-[#2FAE8B] text-white rounded-full flex items-center justify-center shadow-sm">
+                        <Check className="h-2.5 w-2.5" />
+                      </div>
+                    )}
+                    
+                    <h5 className="text-[11.5px] font-black uppercase tracking-wider mb-0.5">{card.label}</h5>
+                    <p className="text-[10px] text-slate-500 font-bold mb-3 leading-snug">{card.desc}</p>
+                    
+                    <div className="space-y-1.5 border-t border-slate-200/50 pt-3">
+                      {card.bullets.map((b, idx) => (
+                        <div key={idx} className="flex items-center gap-2 text-[9.5px] font-medium text-slate-600">
+                          <CheckCircle2 className={cn("h-3 w-3 shrink-0", isActive ? "text-emerald-500" : "text-slate-350")} />
+                          <span>{b}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+
+            </div>
+          </div>
+
         </div>
 
-        {/* STEP-BY-STEP INITIALIZATION LOADING DIALOG */}
-        {isInitializing && (
-          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-6 animate-in fade-in duration-300">
-            <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8 border border-slate-200/80 animate-in zoom-in-95 duration-200 flex flex-col items-center text-center">
+        {/* INLINE CENTER TRANSITION LOADING STATE */}
+        {isCreating && (
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-2xs z-50 flex items-center justify-center p-6 animate-in fade-in duration-300">
+            <div className="w-full max-w-sm bg-white rounded-2xl shadow-xl p-8 border border-slate-200 animate-in zoom-in-95 duration-200 flex flex-col items-center text-center">
               
-              {/* Spinner/Rings */}
-              <div className="relative h-20 w-20 flex items-center justify-center mb-6">
-                {/* Outermost Pulsing Ring */}
-                <div className="absolute inset-0 rounded-full border border-emerald-100 animate-ping opacity-40" />
-                {/* Secondary Rotating Ring */}
-                <div className="absolute inset-2 rounded-full border-2 border-[#2FAE8B]/10 border-t-[#2FAE8B] animate-spin" />
-                {/* Core Icon */}
-                <ShieldCheck className="h-8 w-8 text-[#2FAE8B]" />
+              {/* Spinning Ring */}
+              <div className="relative h-16 w-16 flex items-center justify-center mb-6">
+                <div className="absolute inset-0 rounded-full border-2 border-slate-100 animate-pulse" />
+                <div className="absolute inset-0 rounded-full border-2 border-t-emerald-600 animate-spin" />
+                <Database className="h-6 w-6 text-slate-900" />
               </div>
 
-              <span className="text-[9px] font-black text-[#2FAE8B] uppercase tracking-[0.25em] mb-2 block">Case blueprint builder</span>
-              <h3 className="text-lg font-bold text-slate-900 mb-1">Creating investigation workspace</h3>
-              <p className="text-xs text-slate-500 max-w-xs mb-8">
-                Instantiating the case schema and staging evidence extraction queue.
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 block">Intake handshaking</span>
+              <h3 className="text-base font-black text-slate-800 uppercase tracking-wider mb-1">Creating workspace</h3>
+              <p className="text-2xs text-slate-400 uppercase tracking-widest mb-6">
+                {createProgress}% · 00:{elapsedSeconds.toString().padStart(2, '0')} elapsed
               </p>
 
-              {/* Progress and Timer Block */}
-              <div className="w-full space-y-2 mb-8">
-                <div className="flex justify-between items-center text-[10.5px] font-bold text-slate-500">
-                  <span>Progress ({initProgress}%)</span>
-                  <span>{elapsedSeconds.toString().padStart(2, '0')}:{state.uploadedEvidence.length > 0 ? "24" : "08"}s elapsed</span>
-                </div>
-                <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden border">
-                  <div 
-                    className="h-full bg-emerald-500 transition-all duration-300 rounded-full" 
-                    style={{ width: `${initProgress}%` }} 
-                  />
-                </div>
+              {/* Progress Bar */}
+              <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden mb-6 border">
+                <div 
+                  className="h-full bg-emerald-500 transition-all duration-300 rounded-full" 
+                  style={{ width: `${createProgress}%` }} 
+                />
               </div>
 
-              {/* Step Validation Logs */}
-              <div className="w-full text-left space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-100">
+              {/* Small validation checks checklist */}
+              <div className="w-full text-left space-y-2 bg-slate-50 p-3 rounded-lg border border-slate-100 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
                 {[
-                  { id: 0, label: "Creating primary case record" },
-                  { id: 1, label: "Preparing evidence catalog batches" },
-                  { id: 2, label: "Attaching uploaded evidence payloads" },
-                  { id: 3, label: "Preparing extraction queue targets" },
-                  { id: 4, label: "Instantiating review dashboard panels" }
+                  { id: 0, label: "Creating Case Index" },
+                  { id: 1, label: "Attaching Evidence Staging" },
+                  { id: 2, label: "Preparing Evidence Review" },
+                  { id: 3, label: "Opening Workspace dashboard" }
                 ].map((step) => {
-                  const isDone = initStep > step.id;
-                  const isActive = initStep === step.id;
+                  const isDone = activeStep > step.id;
+                  const isActive = activeStep === step.id;
                   return (
-                    <div key={step.id} className="flex items-center gap-3">
+                    <div key={step.id} className="flex items-center gap-2.5">
                       <div className={cn(
-                        "h-4 w-4 rounded-full flex items-center justify-center shrink-0 border",
-                        isDone 
-                          ? "bg-emerald-500 border-emerald-500 text-white shadow-sm" 
-                          : isActive 
-                            ? "border-emerald-500 bg-white" 
-                            : "border-slate-200 bg-white text-slate-300"
+                        "h-3.5 w-3.5 rounded-full flex items-center justify-center border shrink-0",
+                        isDone ? "bg-emerald-500 border-emerald-500 text-white" : isActive ? "border-emerald-600 bg-white" : "border-slate-200"
                       )}>
-                        {isDone ? (
-                          <Check className="h-2 w-2" />
-                        ) : isActive ? (
-                          <Loader2 className="h-2 w-2 text-emerald-600 animate-spin" />
-                        ) : null}
+                        {isDone ? <Check className="h-2 w-2" /> : isActive ? <Loader2 className="h-2 w-2 text-emerald-600 animate-spin" /> : null}
                       </div>
                       <span className={cn(
-                        "text-[11px] font-bold tracking-tight",
-                        isDone ? "text-slate-700" : isActive ? "text-slate-900" : "text-slate-400"
+                        isDone ? "text-slate-700" : isActive ? "text-slate-900" : "text-slate-350"
                       )}>{step.label}</span>
                     </div>
                   );
