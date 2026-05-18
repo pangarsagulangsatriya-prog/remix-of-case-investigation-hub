@@ -12,114 +12,50 @@ interface EvidencePreparationExperienceProps {
   isSuccess?: boolean;
 }
 
-// ... (keep TYPE_CONFIGS as is)
-const TYPE_CONFIGS = {
-  video: {
-    icon: FileVideo,
-    title: "Preparing sequence blocks from the video.",
-    steps: [
-      "Reading video file",
-      "Checking playback quality",
-      "Finding key moments",
-      "Preparing sequence blocks",
-      "Preparing analysis workspace"
-    ],
-    outputs: [
-      { icon: Layers, label: "Sequence Blocks", desc: "Video broken into scene segments." },
-      { icon: Target, label: "Key Moments", desc: "Important events automatically flagged." },
-      { icon: Scan, label: "Visual Observations", desc: "Objects and entities identified." },
-      { icon: Clock, label: "Timeline Notes", desc: "Chronological event mapping." },
-      { icon: Database, label: "Metadata", desc: "Source, codec, and device info." }
-    ],
-    warning: "Video has dark or unclear frames. Key moments may need manual review."
-  },
-  image: {
-    icon: FileImage,
-    title: "Reading the image and marking visible observations.",
-    steps: [
-      "Reading image file",
-      "Checking image clarity",
-      "Marking visible details",
-      "Preparing observation notes",
-      "Preparing analysis workspace"
-    ],
-    outputs: [
-      { icon: Scan, label: "Visual Observations", desc: "Detected entities and context." },
-      { icon: Target, label: "Detected Areas", desc: "Bounding boxes of interest." },
-      { icon: FileText, label: "Image Notes", desc: "AI-generated image descriptions." },
-      { icon: CheckCircle2, label: "Quality Check", desc: "Resolution and clarity score." },
-      { icon: Database, label: "Metadata", desc: "EXIF, location, and device data." }
-    ],
-    warning: "Image looks blurry. Results may need manual review."
-  },
-  document: {
-    icon: FileText,
-    title: "Reading the document and preparing key notes.",
-    steps: [
-      "Reading document pages",
-      "Checking readable text",
-      "Finding key sections",
-      "Preparing document notes",
-      "Preparing analysis workspace"
-    ],
-    outputs: [
-      { icon: FileSearch, label: "Document Summary", desc: "High-level overview of contents." },
-      { icon: Layers, label: "Key Sections", desc: "Important paragraphs highlighted." },
-      { icon: Target, label: "Extracted Facts", desc: "Names, dates, and locations." },
-      { icon: List, label: "Page References", desc: "Indexed pages for quick lookup." },
-      { icon: Database, label: "Metadata", desc: "Author, creation date, and format." }
-    ],
-    warning: "Some text may be difficult to read. Please review the highlighted sections."
-  },
-  audio: {
-    icon: FileAudio,
-    title: "Listening to the audio and preparing transcript segments.",
-    steps: [
-      "Reading audio file",
-      "Checking sound quality",
-      "Preparing transcript",
-      "Separating speaker turns",
-      "Preparing analysis workspace"
-    ],
-    outputs: [
-      { icon: FileText, label: "Transcript Segments", desc: "Conversation in time-based sections." },
-      { icon: User, label: "Speaker Turns", desc: "Identified distinct voices." },
-      { icon: Target, label: "Important Mentions", desc: "Flagged keywords and phrases." },
-      { icon: Clock, label: "Time References", desc: "Chronological mapping of speech." },
-      { icon: Database, label: "Metadata", desc: "Duration, format, and quality." }
-    ],
-    warning: "Audio has low volume or background noise. Transcript may need checking."
-  },
-  mixed: {
-    icon: Files,
-    title: "Preparing all evidence files for review.",
-    steps: [
-      "Reading evidence files",
-      "Checking file quality",
-      "Preparing file-specific outputs",
-      "Connecting related evidence",
-      "Preparing review workspace"
-    ],
-    outputs: [
-      { icon: List, label: "Evidence List", desc: "Inventory of processed files." },
-      { icon: Layers, label: "Cross-file Notes", desc: "Connections between evidence." },
-      { icon: Clock, label: "Timeline Candidates", desc: "Multi-source event mapping." },
-      { icon: FileSearch, label: "Source References", desc: "Traceability back to origin files." },
-      { icon: Database, label: "Metadata", desc: "Aggregated collection data." }
-    ],
-    warning: "Some files need manual review before final analysis."
-  }
-};
+import { getEvidenceType, evidenceOutputContractConfig } from './evidenceContract';
 
 export default function EvidencePreparationExperience({ file, isSuccess }: EvidencePreparationExperienceProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [showWarning, setShowWarning] = useState(false);
   const [outputsUnlocked, setOutputsUnlocked] = useState(0);
 
-  const fileType = file?.type?.toLowerCase() || 'document';
-  const typeKey = Object.keys(TYPE_CONFIGS).find(k => fileType.includes(k)) || 'document';
-  const config = TYPE_CONFIGS[typeKey as keyof typeof TYPE_CONFIGS];
+  const evType = getEvidenceType(file);
+  const config = evidenceOutputContractConfig[evType];
   const Icon = config.icon;
+  const typeKey = evType;
+
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  useEffect(() => {
+    if (file?.extraction_status === "pending" || file?.extraction_status === "processing") {
+      const start = new Date(file.updated_at || file.created_at || new Date()).getTime();
+      const updateTimer = () => {
+        const diff = Math.max(0, Math.floor((Date.now() - start) / 1000));
+        setElapsedSeconds(diff);
+      };
+      updateTimer();
+      const interval = setInterval(updateTimer, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [file?.extraction_status, file?.created_at, file?.updated_at]);
+
+  const formatCompactTime = (seconds: number) => {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = seconds % 60;
+    if (h > 0) return `${h}h ${m.toString().padStart(2, '0')}m`;
+    if (m > 0) return `${m}m ${s.toString().padStart(2, '0')}s`;
+    return `${s}s`;
+  };
+
+  const uploadProgress = Math.min(99, Math.max(1, Math.floor((elapsedSeconds / 20) * 100)));
+  const processingProgress = Math.min(99, Math.max(1, Math.floor(((Math.max(0, elapsedSeconds - 20)) / 30) * 100)));
+
+  const progressPercent = file?.currentRunProgress || 
+    (file?.extraction_status === 'pending' ? uploadProgress : 
+     file?.extraction_status === 'processing' ? processingProgress : 
+     file?.extraction_status === 'completed' ? 100 : 
+     file?.extraction_status === 'failed' ? processingProgress : 12);
 
   useEffect(() => {
     // Simulate step progression
@@ -288,28 +224,58 @@ export default function EvidencePreparationExperience({ file, isSuccess }: Evide
       {/* 2. CENTER PANEL - Preparation Console */}
       <div className="flex-1 flex flex-col p-10 max-w-3xl border-r border-slate-200 bg-white">
         
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-12">
-          <div className="h-12 w-12 bg-emerald-50 border border-emerald-100 rounded-xl flex items-center justify-center shrink-0">
-            <Loader2 className="h-5 w-5 text-emerald-600 animate-spin" />
-          </div>
-          <div>
-            <div className="flex items-center gap-3 mb-1">
-              <h1 className="text-xl font-bold text-slate-900 tracking-tight">Preparing Evidence</h1>
-              <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 border border-emerald-200 text-[10px] font-black uppercase tracking-widest text-emerald-700 flex items-center gap-1.5">
-                <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                Running
-              </span>
+        {/* Header Strip */}
+        <div className="mb-8 border-b border-slate-100 pb-6">
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Selected Evidence</p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-bold text-slate-800 tracking-wide uppercase">{config.badge}</span>
+              <span className="text-slate-300">·</span>
+              <span className="text-[13px] font-semibold text-slate-900">{file?.name}</span>
             </div>
-            <p className="text-[13px] font-medium text-slate-500">{config.title}</p>
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">
+                {file?.extraction_status === "completed" ? "DONE" : file?.extraction_status === "failed" ? "NEEDS ATTENTION" : "RUNNING"}
+              </span>
+              <span className="text-slate-300">·</span>
+              <span className="text-[11px] font-bold text-slate-500">{formatCompactTime(elapsedSeconds)}</span>
+              <span className="text-slate-300">·</span>
+              <span className="text-[11px] font-black text-emerald-600">{progressPercent}%</span>
+            </div>
           </div>
         </div>
 
-        {/* Primary Message */}
-        <div className="mb-10">
-          <p className="text-sm text-slate-600 leading-relaxed max-w-lg">
-            Please wait while the system checks file quality, extracts important information, and prepares the review workspace.
-          </p>
+        {/* Title & Description */}
+        <div className="flex items-start gap-4 mb-10">
+          <div className="h-12 w-12 bg-emerald-50 border border-emerald-100 rounded-xl flex items-center justify-center shrink-0">
+            {file?.extraction_status === "completed" ? (
+              <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+            ) : file?.extraction_status === "failed" ? (
+              <AlertCircle className="h-5 w-5 text-rose-600" />
+            ) : (
+              <Loader2 className="h-5 w-5 text-emerald-600 animate-spin" />
+            )}
+          </div>
+          <div className="flex-1">
+            <h1 className="text-xl font-bold text-slate-900 tracking-tight mb-2">{config.title}</h1>
+            <p className="text-sm text-slate-600 leading-relaxed max-w-lg">{config.subtitle}</p>
+            
+            {(file?.extraction_status === "pending" || file?.extraction_status === "processing") && (
+              <div className="mt-4 max-w-md">
+                <div className="flex justify-between text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+                  <span>Progress</span>
+                  <span className="text-emerald-600">{progressPercent}%</span>
+                </div>
+                <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-emerald-500 rounded-full transition-all duration-1000 ease-in-out"
+                    style={{ width: `${progressPercent}%` }}
+                  />
+                </div>
+                <p className="text-[10px] text-slate-400 mt-2">Running for {formatCompactTime(elapsedSeconds)}</p>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Progress Steps */}
@@ -347,7 +313,7 @@ export default function EvidencePreparationExperience({ file, isSuccess }: Evide
                   <p className={cn("text-[13px] font-bold tracking-wide", 
                     isActive ? "text-emerald-700" : isCompleted ? "text-slate-700" : "text-slate-400"
                   )}>
-                    {step}
+                    {step.label}
                   </p>
                   {isActive && (
                     <div className="h-1 w-full max-w-[200px] bg-slate-100 rounded-full mt-2 overflow-hidden">

@@ -19,6 +19,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { getEvidenceType, evidenceOutputContractConfig } from "./evidenceContract";
 
 export const getFileIcon = (type: string, name: string = "") => {
   const lowerType = type?.toLowerCase();
@@ -75,6 +76,15 @@ const getProcessedDuration = (file: any) => {
   return `${s}s`;
 };
 
+const formatCompactTime = (seconds: number) => {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  if (h > 0) return `${h}h ${m.toString().padStart(2, '0')}m`;
+  if (m > 0) return `${m}m ${s.toString().padStart(2, '0')}s`;
+  return `${s}s`;
+};
+
 export function FileRow({ file, isSelected, onSelect, onMove, onDelete, onRename, onRerun, onOpenHistory, batches, isIndented }: any) {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [isFailedHovered, setIsFailedHovered] = useState(false);
@@ -104,7 +114,16 @@ export function FileRow({ file, isSelected, onSelect, onMove, onDelete, onRename
   const uploadProgress = Math.min(99, Math.max(1, Math.floor((elapsedSeconds / 20) * 100)));
   
   // Processing progress simulation (processing status lasts 30 seconds after the first 20 seconds)
-  const processingProgress = Math.min(99, Math.max(1, Math.floor(((elapsedSeconds - 20) / 30) * 100)));
+  const processingProgress = Math.min(99, Math.max(1, Math.floor(((Math.max(0, elapsedSeconds - 20)) / 30) * 100)));
+
+  const progressPercent = file.currentRunProgress || 
+    (file.extraction_status === 'pending' ? uploadProgress : 
+     file.extraction_status === 'processing' ? processingProgress : 
+     file.extraction_status === 'completed' ? 100 : 
+     file.extraction_status === 'failed' ? processingProgress : 12);
+
+  const evType = getEvidenceType(file);
+  const config = evidenceOutputContractConfig[evType];
 
   return (
     <div 
@@ -187,109 +206,27 @@ export function FileRow({ file, isSelected, onSelect, onMove, onDelete, onRename
           </div>
         </div>
 
-        {/* Row 2: Metadata and Status Badge */}
-        <div className="flex items-center justify-between w-full mt-1">
-          {/* Left Side: Plain Text Metadata */}
-          <div className="flex items-center gap-1.5 leading-none text-slate-500">
-             <span className="text-[10px] font-medium tracking-tight">{formatSize(file.size)}</span>
-             <span className="text-slate-300">·</span>
-             <span className="text-[10px] font-medium tracking-tight">{formatDate(file.created_at)}</span>
-          </div>
-
-          {/* Right Side: Status Badge */}
-          <div className="shrink-0 z-10 -mr-0.5">
-             <TooltipProvider delayDuration={0}>
-               <Tooltip>
-                 <TooltipTrigger asChild>
-                    <div className="cursor-help transition-all duration-200 hover:scale-105 active:scale-95">
-                      {file.extraction_status === "pending" ? (
-                        <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-[3px] text-[8px] font-semibold uppercase tracking-wider bg-blue-50 text-blue-600 border border-blue-100 shadow-sm leading-none transition-all duration-200">
-                          <Loader2 className="h-2 w-2 text-blue-600 animate-spin shrink-0" />
-                          <span>Uploading</span>
-                        </div>
-                      ) : file.extraction_status === "processing" ? (
-                        <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-[3px] text-[8px] font-semibold uppercase tracking-wider bg-purple-50 text-purple-700 border border-purple-200 shadow-sm leading-none transition-all duration-200">
-                          <Loader2 className="h-2 w-2 text-purple-700 animate-spin shrink-0" />
-                          <span>Processing</span>
-                        </div>
-                      ) : file.extraction_status === "completed" ? (
-                        <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-[3px] text-[8px] font-semibold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-100 shadow-sm leading-none transition-all duration-200 hover:opacity-85 hover:-translate-y-[0.5px]">
-                          <Check className="h-2 w-2 text-emerald-600 shrink-0" />
-                          <span>Done</span>
-                        </div>
-                      ) : file.extraction_status === "failed" ? (
-                        <div 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onRerun(file);
-                          }}
-                          onMouseEnter={() => setIsFailedHovered(true)}
-                          onMouseLeave={() => setIsFailedHovered(false)}
-                          className={cn(
-                            "flex items-center gap-1 px-1.5 py-0.5 rounded-[3px] text-[8px] font-semibold uppercase tracking-wider shadow-sm leading-none transition-all duration-200 cursor-pointer border",
-                            isFailedHovered 
-                              ? "bg-rose-100 text-rose-700 border-rose-200 hover:opacity-90 active:scale-95 animate-in fade-in duration-200" 
-                              : "bg-rose-50 text-rose-700 border-rose-100"
-                          )}
-                        >
-                          {isFailedHovered ? (
-                            <>
-                              <RefreshCw className="h-2 w-2 text-rose-600 animate-spin-once shrink-0" />
-                              <span>Retry</span>
-                            </>
-                          ) : (
-                            <>
-                              <X className="h-2 w-2 text-rose-600 shrink-0" />
-                              <span>Failed</span>
-                            </>
-                          )}
-                        </div>
-                      ) : null}
-                    </div>
-                  </TooltipTrigger>
-                 <TooltipContent side="top" className="bg-white border border-slate-100 shadow-md rounded-[6px] px-3 py-2 text-[10px] text-slate-700 transition-all duration-200 ease-in-out animate-in fade-in zoom-in-95">
-                    {file.extraction_status === "pending" ? (
-                      <div className="flex flex-col gap-0.5 text-left min-w-[120px]">
-                        <span className="font-semibold text-blue-600 text-[11px]">{uploadProgress}% uploaded</span>
-                        <span className="text-[9px] text-slate-400 font-normal">Running for {formatElapsedTime(elapsedSeconds)}</span>
-                      </div>
-                    ) : file.extraction_status === "processing" ? (
-                      <div className="flex flex-col gap-0.5 text-left min-w-[120px]">
-                        <span className="font-semibold text-purple-600 text-[11px]">{processingProgress}% processed</span>
-                        <span className="text-[9px] text-slate-400 font-normal">Processing for {formatElapsedTime(elapsedSeconds)}</span>
-                      </div>
-                    ) : file.extraction_status === "completed" ? (
-                      <div className="flex flex-col gap-0.5 text-left min-w-[120px]">
-                        <span className="font-semibold text-emerald-600 text-[11px] flex items-center gap-1">
-                          ✓ Extraction Completed
-                        </span>
-                        <span className="text-[10px] text-slate-700 font-medium">
-                          Processed in {getProcessedDuration(file)}
-                        </span>
-                        <span className="text-[9px] text-slate-400 mt-0.5 font-normal">
-                          Finished at: {formatFinishedAt(file.updated_at || file.created_at)}
-                        </span>
-                      </div>
-                    ) : file.extraction_status === "failed" ? (
-                      <div className="flex flex-col gap-0.5 text-left min-w-[150px]">
-                        <span className="font-semibold text-rose-600 text-[11px] flex items-center gap-1">
-                          ✕ Processing Failed
-                        </span>
-                        <span className="text-[10px] text-slate-700 font-medium max-w-[180px] break-words">
-                          Reason: {file.metadata?.error_message || "Analysis engine timeout"}
-                        </span>
-                        <span className="text-[9px] text-slate-400 mt-0.5 font-normal">
-                          Finished at: {formatFinishedAt(file.updated_at || file.created_at)}
-                        </span>
-                        <div className="my-1.5 border-t border-slate-100" />
-                        <span className="text-[9.5px] text-slate-500 font-medium flex items-center gap-1 leading-normal">
-                          <span>💡</span> Click this badge to retry processing.
-                        </span>
-                      </div>
-                    ) : null}</TooltipContent>
-               </Tooltip>
-             </TooltipProvider>
-          </div>
+        {/* Row 2: Status Strip */}
+        <div className="flex items-center justify-between w-full mt-1 pr-2">
+           <div className="flex items-center gap-1.5 leading-none text-slate-500 truncate">
+             {file.extraction_status === "completed" ? (
+               <span className="text-[10px] font-bold text-emerald-600 tracking-tight uppercase">{config.badge} · DONE · {getProcessedDuration(file)}</span>
+             ) : file.extraction_status === "failed" ? (
+               <span className="text-[10px] font-bold text-rose-600 tracking-tight uppercase">{config.badge} · NEEDS ATTENTION · stopped at {progressPercent}%</span>
+             ) : file.extraction_status === "queued" ? (
+               <span className="text-[10px] font-bold text-slate-400 tracking-tight uppercase">{config.badge} · QUEUED · waiting</span>
+             ) : (file.extraction_status === "pending" || file.extraction_status === "processing") ? (
+               <span className="text-[10px] font-bold text-indigo-600 tracking-tight uppercase">{config.badge} · RUNNING · {formatCompactTime(elapsedSeconds)} · {progressPercent}%</span>
+             ) : (
+               <>
+                 <span className="text-[10px] font-bold tracking-tight uppercase">{config.badge}</span>
+                 <span className="text-slate-300">·</span>
+                 <span className="text-[10px] font-medium tracking-tight">{formatSize(file.size)}</span>
+                 <span className="text-slate-300">·</span>
+                 <span className="text-[10px] font-medium tracking-tight">{formatDate(file.created_at)}</span>
+               </>
+             )}
+           </div>
         </div>
       </div>
     </div>
