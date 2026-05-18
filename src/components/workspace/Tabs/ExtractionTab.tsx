@@ -527,6 +527,11 @@ export default function ExtractionTab() {
     }
   };
 
+  const activeFile = useMemo(() => {
+    if (!selectedFile) return null;
+    return filteredFiles.find((f: any) => f.id === selectedFile.id) || selectedFile;
+  }, [selectedFile, filteredFiles]);
+
   if (isLoading) return <div className="p-8 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Loading Evidence...</div>;
 
   return (
@@ -748,9 +753,10 @@ export default function ExtractionTab() {
         </div>
       </div>
 
+
       <div className="flex-1 flex flex-col relative z-0 bg-white">
         <div className="h-12 border-b flex items-center justify-between px-6 shrink-0 bg-white">
-           {selectedFile ? (
+           {activeFile ? (
              <div className="flex items-center gap-4">
                  <div className="flex items-center gap-1 border-r pr-4 border-slate-100">
                     <button onClick={goToPrev} className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-900 transition-all disabled:opacity-30"><ChevronLeft className="h-4 w-4" /></button>
@@ -758,9 +764,9 @@ export default function ExtractionTab() {
                  </div>
                  <div className="flex items-center gap-2">
                     <div className="h-7 w-7 bg-slate-100 rounded flex items-center justify-center border shadow-inner">
-                       {getFileIcon(selectedFile.type)}
+                       {getFileIcon(activeFile.type)}
                     </div>
-                    <h2 className="text-sm font-medium text-slate-900 tracking-tight">{selectedFile.name}</h2>
+                    <h2 className="text-sm font-medium text-slate-900 tracking-tight">{activeFile.name}</h2>
                  </div>
               </div>
            ) : (
@@ -769,10 +775,10 @@ export default function ExtractionTab() {
         </div>
 
         <div className="flex-1 overflow-auto bg-[#f0f2f4] p-6 flex flex-col items-center custom-scrollbar" style={{ minWidth: 0 }}>
-             <div className={`w-full flex ${(selectedFile?.type === "Image" || selectedFile?.type === "Document") ? "max-w-5xl h-full items-center justify-center" : "max-w-5xl items-start justify-center pt-4"}`}>
-               {selectedFile ? (
+             <div className={`w-full flex ${(activeFile?.type === "Image" || activeFile?.type === "Document") ? "max-w-5xl h-full items-center justify-center" : "max-w-5xl items-start justify-center pt-4"}`}>
+               {activeFile ? (
                  <AdaptiveSourcePreview 
-                    file={selectedFile} 
+                    file={activeFile} 
                     videoCurrentTime={videoCurrentTime}
                     setVideoCurrentTime={setVideoCurrentTime}
                     videoIsPlaying={videoIsPlaying}
@@ -802,9 +808,9 @@ export default function ExtractionTab() {
       </div>
 
       <div className="w-[460px] border-l border-slate-200 bg-white flex flex-col shrink-0 z-20 shadow-[-2px_0_10px_rgba(0,0,0,0.03)] overflow-hidden">
-        {selectedFile ? (() => {
-            const lowerType = selectedFile.type?.toLowerCase();
-            const lowerName = selectedFile.name?.toLowerCase() || "";
+        {activeFile ? (() => {
+            const lowerType = activeFile.type?.toLowerCase();
+            const lowerName = activeFile.name?.toLowerCase() || "";
             const isImage = lowerType === "image" || lowerName.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/);
             const isAudio = lowerType === "audio" || lowerName.match(/\.(mp3|wav|ogg|m4a|aac)$/);
             const isVideo = lowerType === "video" || lowerName.match(/\.(mp4|webm|ogg|mov|m4v|avi|wmv)$/);
@@ -813,13 +819,13 @@ export default function ExtractionTab() {
             return (
               <div className="flex-1 overflow-y-auto custom-scrollbar">
                   {isVideo ? (
-                    <VideoAnalysisPanel file={selectedFile} currentTime={videoCurrentTime || 0} onJump={jumpToVideoTime} />
+                    <VideoAnalysisPanel file={activeFile} currentTime={videoCurrentTime || 0} onJump={jumpToVideoTime} />
                   ) : isAudio ? (
-                    <AudioExtractionConsole file={selectedFile} onJump={jumpToAudioTime} currentTime={audioCurrentTime} />
+                    <AudioExtractionConsole file={activeFile} onJump={jumpToAudioTime} currentTime={audioCurrentTime} />
                   ) : isImage ? (
-                    <ImageExtractionConsole file={selectedFile} />
+                    <ImageExtractionConsole file={activeFile} />
                   ) : isDocument ? (
-                    <DocumentExtractionConsole file={selectedFile} />
+                    <DocumentExtractionConsole file={activeFile} />
                   ) : null}
               </div>
             );

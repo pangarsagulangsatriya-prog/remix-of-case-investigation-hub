@@ -17,6 +17,152 @@ import { SECTION_DESCRIPTIONS, videoExtractionRefined, documentDerivationMock, i
 import { supabase } from "@/lib/supabase";
 import { normalizeAudioTimestamp } from "@/lib/normalizeAudioTimestamp";
 
+function SpinnerOverlay({ text }: { text: string }) {
+  return (
+    <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/50 backdrop-blur-[1px]">
+      <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4 shadow-sm" />
+      <p className="text-[11px] font-bold text-slate-700 tracking-wider uppercase bg-white/80 px-4 py-1.5 rounded-full shadow-xs border border-slate-100">
+        {text}
+      </p>
+    </div>
+  );
+}
+
+function ImageProcessingSkeleton() {
+  return (
+    <div className="relative p-6 space-y-6 h-full overflow-hidden">
+      <SpinnerOverlay text="Extracting forensic markers & structural metadata..." />
+      <div className="flex items-center justify-between mb-4 animate-pulse">
+        <div className="h-4 w-40 bg-slate-200 rounded" />
+        <div className="h-4 w-20 bg-slate-200 rounded" />
+      </div>
+      <div className="space-y-4">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="flex flex-col border border-slate-100 rounded-sm bg-white shadow-sm overflow-hidden animate-pulse">
+            <div className="p-3 bg-white border-b border-slate-50 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="h-4 w-12 bg-slate-200 rounded-sm" />
+                <div className="h-4 w-24 bg-slate-200 rounded-sm" />
+              </div>
+            </div>
+            <div className="p-4">
+              <div className="space-y-2 mb-4">
+                <div className="h-3 w-full bg-slate-200 rounded" />
+                <div className="h-3 w-5/6 bg-slate-200 rounded" />
+              </div>
+              <div className="mt-2 pt-3 border-t border-slate-100">
+                <div className="bg-slate-50/50 p-3 rounded-sm border border-slate-100">
+                   <div className="h-2 w-24 bg-slate-200 rounded mb-2" />
+                   <div className="h-3 w-3/4 bg-slate-200 rounded" />
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function AudioProcessingSkeleton() {
+  return (
+    <div className="relative p-6 space-y-6 h-full overflow-hidden">
+      <SpinnerOverlay text="Extracting forensic markers & structural metadata..." />
+      <div className="flex items-center justify-between mb-4 animate-pulse">
+        <div className="h-4 w-48 bg-slate-200 rounded" />
+        <div className="flex gap-2">
+          <div className="h-6 w-32 bg-slate-200 rounded" />
+          <div className="h-6 w-20 bg-slate-200 rounded" />
+        </div>
+      </div>
+      <div className="space-y-4">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="flex flex-col border border-slate-100 rounded-sm bg-white shadow-sm overflow-hidden animate-pulse">
+            <div className="p-3 bg-slate-50/50 border-b border-slate-100 flex items-center gap-3">
+              <div className="h-4 w-16 bg-slate-200 rounded-sm" />
+              <div className="h-4 w-24 bg-slate-200 rounded-full" />
+            </div>
+            <div className="p-4">
+              <div className="space-y-2 mb-4">
+                <div className="h-3 w-full bg-slate-200 rounded" />
+                <div className="h-3 w-4/5 bg-slate-200 rounded" />
+              </div>
+              <div className="mt-2 pt-3 border-t border-slate-100">
+                <div className="bg-slate-50 p-3 rounded-sm border border-slate-100">
+                   <div className="h-2 w-32 bg-slate-200 rounded mb-2" />
+                   <div className="h-3 w-2/3 bg-slate-200 rounded" />
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function VideoProcessingSkeleton() {
+  return (
+    <div className="relative p-6 space-y-6 h-full overflow-hidden">
+      <SpinnerOverlay text="Extracting forensic markers & structural metadata..." />
+      <div className="flex items-center justify-between mb-4 animate-pulse">
+        <div className="h-4 w-48 bg-slate-200 rounded" />
+        <div className="h-6 w-32 bg-slate-200 rounded-sm" />
+      </div>
+      <div className="space-y-4">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="flex flex-col border border-slate-100 rounded-sm bg-white shadow-sm overflow-hidden animate-pulse">
+            <div className="p-3 bg-slate-50/50 border-b border-slate-100 flex items-center gap-3">
+              <div className="h-4 w-20 bg-slate-200 rounded-sm" />
+              <div className="h-4 w-12 bg-slate-200 rounded-sm" />
+            </div>
+            <div className="p-4">
+              <div className="space-y-2">
+                <div className="h-3 w-full bg-slate-200 rounded" />
+                <div className="h-3 w-5/6 bg-slate-200 rounded" />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function DocumentProcessingSkeleton() {
+  return (
+    <div className="relative p-6 space-y-6 h-full overflow-hidden">
+      <SpinnerOverlay text="Extracting forensic markers & structural metadata..." />
+      <div className="mb-4 animate-pulse">
+        <div className="h-4 w-48 bg-slate-200 rounded" />
+      </div>
+      <div className="space-y-6">
+        {[1, 2].map((i) => (
+          <div key={i} className="flex flex-col border border-slate-100 rounded-sm bg-white shadow-sm overflow-hidden animate-pulse">
+            <div className="p-3 bg-white border-b border-slate-50">
+              <div className="h-4 w-24 bg-slate-200 rounded-sm" />
+            </div>
+            <div className="p-4">
+              <div className="space-y-2 mb-4">
+                <div className="h-3 w-full bg-slate-200 rounded" />
+                <div className="h-3 w-full bg-slate-200 rounded" />
+                <div className="h-3 w-full bg-slate-200 rounded" />
+                <div className="h-3 w-4/5 bg-slate-200 rounded" />
+              </div>
+              <div className="mt-2 pt-3 border-t border-slate-100">
+                <div className="bg-slate-50 p-3 rounded-sm border border-slate-100">
+                   <div className="h-2 w-32 bg-slate-200 rounded mb-2" />
+                   <div className="h-3 w-3/4 bg-slate-200 rounded" />
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function ImageExtractionConsole({ file }: { file: any }) {
   const [activeTab, setActiveTab] = useState<"Visual Markers" | "Forensic Analysis" | "Metadata">("Visual Markers");
   const [derivationData, setDerivationData] = useState<any>(null);
@@ -78,10 +224,16 @@ export function ImageExtractionConsole({ file }: { file: any }) {
           </div>
       </div>
 
-      <div className="flex-1 overflow-auto custom-scrollbar">
-         {activeTab === "Visual Markers" && <ImageMarkersView chunks={data.lossless_chunks} />}
-         {activeTab === "Forensic Analysis" && <ImageForensicView data={data} />}
-         {activeTab === "Metadata" && <ImageMetadataView file={file} data={data} />}
+      <div className="flex-1 overflow-auto custom-scrollbar relative">
+         {file.extraction_status === 'processing' ? (
+           <ImageProcessingSkeleton />
+         ) : (
+           <>
+             {activeTab === "Visual Markers" && <ImageMarkersView chunks={data.lossless_chunks} />}
+             {activeTab === "Forensic Analysis" && <ImageForensicView data={data} />}
+             {activeTab === "Metadata" && <ImageMetadataView file={file} data={data} />}
+           </>
+         )}
       </div>
     </div>
   );
@@ -320,10 +472,16 @@ export function DocumentExtractionConsole({ file }: { file: any }) {
           </div>
       </div>
 
-      <div className="flex-1 overflow-auto custom-scrollbar">
-         {activeTab === "Sequence Chunks" && <DocumentChunksView chunks={data.lossless_chunks} />}
-         {activeTab === "Forensic Analysis" && <DocumentForensicView data={data} />}
-         {activeTab === "Metadata" && <DocumentMetadataView file={file} data={data} />}
+      <div className="flex-1 overflow-auto custom-scrollbar relative">
+         {file.extraction_status === 'processing' ? (
+           <DocumentProcessingSkeleton />
+         ) : (
+           <>
+             {activeTab === "Sequence Chunks" && <DocumentChunksView chunks={data.lossless_chunks} />}
+             {activeTab === "Forensic Analysis" && <DocumentForensicView data={data} />}
+             {activeTab === "Metadata" && <DocumentMetadataView file={file} data={data} />}
+           </>
+         )}
       </div>
     </div>
   );
@@ -751,14 +909,16 @@ export function AudioExtractionConsole({ file, onJump, currentTime }: { file: an
 
       </div>
 
-      <div className="flex-1 overflow-auto custom-scrollbar">
+      <div className="flex-1 overflow-auto custom-scrollbar relative">
+         {file.extraction_status === 'processing' ? (
+           <AudioProcessingSkeleton />
+         ) : (
+           <>
+             {activeTab === "Audio Derivation" && (
+               <AudioSceneSession data={normalizedScene} currentTime={currentTime} onJump={onJump} isDemo={isDemo} />
+             )}
 
-
-         {activeTab === "Audio Derivation" && (
-           <AudioSceneSession data={normalizedScene} currentTime={currentTime} onJump={onJump} isDemo={isDemo} />
-         )}
-
-         {activeTab === "Metadata" && (
+             {activeTab === "Metadata" && (
            <div className="p-6 space-y-8 animate-in fade-in duration-500">
              {derivationData && (
                 <div className="space-y-4">
@@ -823,6 +983,8 @@ export function AudioExtractionConsole({ file, onJump, currentTime }: { file: an
                 </div>
              </div>
            </div>
+         )}
+           </>
          )}
       </div>
     </div>
@@ -1341,11 +1503,17 @@ export function VideoAnalysisPanel({ file, currentTime, onJump }: { file: any, c
           </div>
       </div>
 
-      <div className="flex-1 overflow-auto custom-scrollbar">
-         {activeTab === "Sequence Blocks" && <VideoBlocksView blocks={data.video_blocks} onJump={onJump} currentTime={currentTime} />}
-         {activeTab === "Forensic Analysis" && <VideoForensicView data={data} />}
-         {activeTab === "Ontology Map" && <VideoOntologyView ontology={data.ontology_mapping} />}
-         {activeTab === "Metadata" && <VideoMetadataView file={file} data={data} />}
+      <div className="flex-1 overflow-auto custom-scrollbar relative">
+         {file.extraction_status === 'processing' ? (
+           <VideoProcessingSkeleton />
+         ) : (
+           <>
+             {activeTab === "Sequence Blocks" && <VideoBlocksView blocks={data.video_blocks} onJump={onJump} currentTime={currentTime} />}
+             {activeTab === "Forensic Analysis" && <VideoForensicView data={data} />}
+             {activeTab === "Ontology Map" && <VideoOntologyView ontology={data.ontology_mapping} />}
+             {activeTab === "Metadata" && <VideoMetadataView file={file} data={data} />}
+           </>
+         )}
       </div>
     </div>
   );
