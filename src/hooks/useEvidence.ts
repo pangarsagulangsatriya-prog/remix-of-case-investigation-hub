@@ -393,39 +393,7 @@ export function useRerunExtraction() {
       const isWhatsApp = fileData?.name?.includes("WhatsApp Image");
       const isChatGPT = fileData?.name?.includes("ChatGPT Image");
 
-      // 1. Set to pending (uploading) first
-      const { error: pendingError } = await supabase
-        .from("evidence_files")
-        .update({ 
-          extraction_status: "pending",
-          updated_at: new Date().toISOString() // Force timestamp update for timer reset
-        })
-        .eq("id", id);
-
-      if (pendingError) throw pendingError;
-      queryClient.invalidateQueries({ queryKey: ["evidence"] });
-
-      // Simulate 20 seconds in pending (uploading) stage
-      await new Promise(resolve => setTimeout(resolve, 20000));
-      
-      if (isWhatsApp) {
-        // Fail at uploading stage
-        await supabase
-          .from("evidence_files")
-          .update({ 
-            extraction_status: "failed",
-            updated_at: new Date().toISOString(),
-            metadata: {
-              ...(fileData?.metadata || {}),
-              error_message: "Failed to upload evidence payload. Connection lost during chunk upload (408)."
-            }
-          })
-          .eq("id", id);
-        queryClient.invalidateQueries({ queryKey: ["evidence"] });
-        return true;
-      }
-
-      // 2. Set to processing
+      // 1. Immediately set to processing since it's already uploaded
       const { error: procError } = await supabase
         .from("evidence_files")
         .update({ 
@@ -437,10 +405,10 @@ export function useRerunExtraction() {
       if (procError) throw procError;
       queryClient.invalidateQueries({ queryKey: ["evidence"] });
 
-      // Simulate 30 seconds in processing stage
-      await new Promise(resolve => setTimeout(resolve, 30000));
+      // Simulate 12 seconds in processing stage
+      await new Promise(resolve => setTimeout(resolve, 12000));
       
-      if (isChatGPT) {
+      if (isChatGPT || isWhatsApp) {
         // Fail at processing stage
         await supabase
           .from("evidence_files")
