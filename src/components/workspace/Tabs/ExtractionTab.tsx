@@ -71,22 +71,7 @@ export default function ExtractionTab() {
   const [expandedBatches, setExpandedBatches] = useState<string[]>(["DOKUMEN", "GAMBAR", "AUDIO"]);
   const [hasInitializedExpansion, setHasInitializedExpansion] = useState(false);
 
-  // Transition Tracking for Success State (800ms)
-  const prevStatusMap = useRef<Record<string, string>>({});
-  const [successFileId, setSuccessFileId] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!activeFile) return;
-    const prevStatus = prevStatusMap.current[activeFile.id];
-    const currStatus = activeFile.extraction_status;
-    
-    if ((prevStatus === "processing" || prevStatus === "pending") && currStatus === "completed") {
-      setSuccessFileId(activeFile.id);
-      setTimeout(() => setSuccessFileId(null), 800);
-    }
-    
-    prevStatusMap.current[activeFile.id] = currStatus;
-  }, [activeFile]);
 
   // Auto-expand first folder on load
   useEffect(() => {
@@ -549,6 +534,23 @@ export default function ExtractionTab() {
     if (!selectedFile) return null;
     return filteredFiles.find((f: any) => f.id === selectedFile.id) || selectedFile;
   }, [selectedFile, filteredFiles]);
+
+  // Transition Tracking for Success State (800ms)
+  const prevStatusMap = useRef<Record<string, string>>({});
+  const [successFileId, setSuccessFileId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!activeFile) return;
+    const prevStatus = prevStatusMap.current[activeFile.id];
+    const currStatus = activeFile.extraction_status;
+    
+    if ((prevStatus === "processing" || prevStatus === "pending") && currStatus === "completed") {
+      setSuccessFileId(activeFile.id);
+      setTimeout(() => setSuccessFileId(null), 800);
+    }
+    
+    prevStatusMap.current[activeFile.id] = currStatus;
+  }, [activeFile]);
 
   if (isLoading) return <div className="p-8 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Loading Evidence...</div>;
 
