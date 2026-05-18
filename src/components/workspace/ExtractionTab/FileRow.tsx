@@ -223,20 +223,20 @@ export function FileRow({ file, isSelected, onSelect, onMove, onDelete, onRename
                           onMouseEnter={() => setIsFailedHovered(true)}
                           onMouseLeave={() => setIsFailedHovered(false)}
                           className={cn(
-                            "flex items-center gap-1 transition-all duration-200 leading-none font-semibold text-xs",
+                            "flex items-center gap-1 px-1.5 py-0.5 rounded-[3px] text-[8px] font-semibold uppercase tracking-wider shadow-sm leading-none transition-all duration-200 cursor-pointer border",
                             isFailedHovered 
-                              ? "px-2 py-0.5 rounded bg-rose-50/60 text-rose-700 cursor-pointer border border-rose-100 shadow-sm animate-in fade-in duration-200" 
-                              : "p-0 bg-transparent text-rose-500 cursor-default"
+                              ? "bg-rose-100 text-rose-700 border-rose-200 hover:opacity-90 active:scale-95 animate-in fade-in duration-200" 
+                              : "bg-rose-50 text-rose-700 border-rose-100"
                           )}
                         >
                           {isFailedHovered ? (
                             <>
-                              <RefreshCw className="h-3 w-3 text-rose-600 animate-spin-once shrink-0" />
+                              <RefreshCw className="h-2 w-2 text-rose-600 animate-spin-once shrink-0" />
                               <span>Retry</span>
                             </>
                           ) : (
                             <>
-                              <X className="h-3 w-3 text-rose-500 shrink-0" />
+                              <X className="h-2 w-2 text-rose-600 shrink-0" />
                               <span>Failed</span>
                             </>
                           )}
