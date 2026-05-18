@@ -179,30 +179,30 @@ export function FileRow({ file, isSelected, onSelect, onMove, onDelete, onRename
              <TooltipProvider delayDuration={0}>
                <Tooltip>
                  <TooltipTrigger asChild>
-                   <div className="cursor-help transition-all duration-200 hover:scale-105 active:scale-95">
-                     {file.extraction_status === "pending" ? (
-                       <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-[3px] text-[8px] font-semibold uppercase tracking-wider bg-blue-50 text-blue-600 border border-blue-100 shadow-sm leading-none transition-all duration-200">
-                         <Loader2 className="h-2 w-2 text-blue-600 animate-spin shrink-0" />
-                         <span>Uploading</span>
-                       </div>
-                     ) : file.extraction_status === "processing" ? (
-                       <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-[3px] text-[8px] font-semibold uppercase tracking-wider bg-purple-50 text-purple-700 border border-purple-200 shadow-sm leading-none transition-all duration-200">
-                         <Loader2 className="h-2 w-2 text-purple-700 animate-spin shrink-0" />
-                         <span>Processing</span>
-                       </div>
-                     ) : file.extraction_status === "completed" ? (
-                        <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-[3px] text-[8px] font-bold bg-emerald-50/80 text-emerald-700 leading-none transition-all duration-200 hover:opacity-85 hover:-translate-y-[0.5px]">
+                    <div className="cursor-help transition-all duration-200 hover:scale-105 active:scale-95">
+                      {file.extraction_status === "pending" ? (
+                        <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-[3px] text-[8px] font-semibold uppercase tracking-wider bg-blue-50 text-blue-600 border border-blue-100 shadow-sm leading-none transition-all duration-200">
+                          <Loader2 className="h-2 w-2 text-blue-600 animate-spin shrink-0" />
+                          <span>Uploading</span>
+                        </div>
+                      ) : file.extraction_status === "processing" ? (
+                        <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-[3px] text-[8px] font-semibold uppercase tracking-wider bg-purple-50 text-purple-700 border border-purple-200 shadow-sm leading-none transition-all duration-200">
+                          <Loader2 className="h-2 w-2 text-purple-700 animate-spin shrink-0" />
+                          <span>Processing</span>
+                        </div>
+                      ) : file.extraction_status === "completed" ? (
+                        <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-[3px] text-[8px] font-semibold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-100 shadow-sm leading-none transition-all duration-200 hover:opacity-85 hover:-translate-y-[0.5px]">
                           <Check className="h-2 w-2 text-emerald-600 shrink-0" />
                           <span>Done</span>
                         </div>
-                     ) : file.extraction_status === "failed" ? (
-                        <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-[3px] text-[8px] font-bold bg-rose-50/80 text-rose-700 leading-none transition-all duration-200 hover:opacity-85 hover:-translate-y-[0.5px]">
+                      ) : file.extraction_status === "failed" ? (
+                        <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-[3px] text-[8px] font-semibold uppercase tracking-wider bg-rose-50 text-rose-700 border border-rose-100 shadow-sm leading-none transition-all duration-200 hover:bg-rose-100">
                           <X className="h-2 w-2 text-rose-600 shrink-0" />
                           <span>Failed</span>
                         </div>
-                     ) : null}
-                   </div>
-                 </TooltipTrigger>
+                      ) : null}
+                    </div>
+                  </TooltipTrigger>
                  <TooltipContent side="top" className="bg-slate-900 text-[10px] text-white px-3 py-2 border-none shadow-xl rounded-[6px] transition-all duration-200 animate-in fade-in zoom-in-95">
                    {file.extraction_status === "pending" ? (
                      <div className="flex flex-col gap-0.5">
