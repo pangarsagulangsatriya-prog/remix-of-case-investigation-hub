@@ -932,6 +932,7 @@ export default function ExtractionTab() {
                     const successfulRuns = runs.filter((r: any) => r.status === "completed");
                     const versionHistoryPool = successfulRuns.slice(0, 3);
                     const activeRunId = getActiveRunId(historyFile);
+                    const totalVersions = successfulRuns.length;
 
                     if (versionHistoryPool.length === 0) {
                       return (
@@ -941,8 +942,9 @@ export default function ExtractionTab() {
                       );
                     }
 
-                    return versionHistoryPool.map((run: any) => {
+                    return versionHistoryPool.map((run: any, idx: number) => {
                       const isActive = run.id === activeRunId;
+                      const versionNum = totalVersions - idx;
                       return (
                         <div 
                           key={run.id} 
@@ -953,10 +955,10 @@ export default function ExtractionTab() {
                               : "bg-white border-slate-100 hover:border-slate-200 hover:shadow-xs"
                           )}
                         >
-                          <div className="flex items-center justify-between gap-2 flex-wrap mb-2">
+                          <div className="flex items-center justify-between gap-2 flex-wrap">
                             <div className="flex items-center gap-2">
                               <span className="text-[11px] font-black text-slate-800 uppercase tracking-wider">
-                                Run #{run.runIndex}
+                                V{versionNum}
                               </span>
                               <span className="text-[8px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-[3px] border shadow-xs leading-none bg-emerald-50 text-emerald-700 border-emerald-100">
                                 Done
@@ -970,12 +972,8 @@ export default function ExtractionTab() {
                             )}
                           </div>
 
-                          <p className="text-[9px] text-slate-400 font-bold mb-2">
+                          <p className={cn("text-[9px] text-slate-400 font-bold", !isActive && "mb-2", isActive && "mt-1.5")}>
                             Eksekusi: {run.timestamp}
-                          </p>
-
-                          <p className="text-[10.5px] text-slate-600 font-medium italic bg-slate-50/50 border border-slate-100/50 rounded-[4px] p-2 leading-relaxed mb-1">
-                            {run.data?.extractedText}
                           </p>
 
                           {/* Revert button is ONLY shown for older, non-active versions */}
@@ -1052,14 +1050,10 @@ export default function ExtractionTab() {
                               Eksekusi: {run.timestamp}
                             </p>
 
-                            {/* Error reason or success summary (Slightly smaller and more muted) */}
-                            {!isCompleted ? (
+                            {/* Error reason (Slightly smaller and more muted). No text description for completed runs. */}
+                            {!isCompleted && (
                               <div className="bg-rose-50/20 border border-rose-100/30 rounded-[4px] p-2 mt-1 text-[9px] text-rose-600/80 leading-normal font-mono break-words">
                                 {run.error}
-                              </div>
-                            ) : (
-                              <div className="bg-slate-50/30 border border-slate-100/30 rounded-[4px] p-2 mt-1 text-[9px] text-slate-500/90 italic leading-relaxed">
-                                {run.data?.extractedText}
                               </div>
                             )}
                           </div>
