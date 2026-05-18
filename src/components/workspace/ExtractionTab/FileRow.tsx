@@ -191,10 +191,10 @@ export function FileRow({ file, isSelected, onSelect, onMove, onDelete, onRename
                          <span>Processing</span>
                        </div>
                      ) : file.extraction_status === "completed" ? (
-                       <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-[3px] text-[8px] font-semibold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-100 shadow-sm leading-none transition-all duration-200 hover:opacity-85 hover:-translate-y-[0.5px]">
-                         <Check className="h-2 w-2 text-emerald-600 shrink-0" />
-                         <span>Selesai</span>
-                       </div>
+                        <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-[3px] text-[8px] font-bold bg-emerald-50/80 text-emerald-700 leading-none transition-all duration-200 hover:opacity-85 hover:-translate-y-[0.5px]">
+                          <Check className="h-2 w-2 text-emerald-600 shrink-0" />
+                          <span>Done</span>
+                        </div>
                      ) : file.extraction_status === "failed" ? (
                        <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-[3px] text-[8px] font-semibold uppercase tracking-wider bg-rose-50 text-rose-700 border border-rose-100 shadow-sm leading-none transition-all duration-200 hover:bg-rose-100">
                          <AlertCircle className="h-2 w-2 text-rose-600 shrink-0" />
