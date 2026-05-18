@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { 
   Pencil, Trash2, MoreVertical, Folder, FileText, 
   Image as ImageIcon, Mic as AudioIcon, Video as VideoIcon, 
-  FileCode, Box, RefreshCw, Loader2
+  FileCode, Box, RefreshCw, Loader2, Check, AlertCircle
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -126,47 +126,59 @@ export function FileRow({ file, isSelected, onSelect, onMove, onDelete, onRename
            <span className="text-[10px] font-medium text-slate-500 tracking-tight">{formatSize(file.size)}</span>
            <span className="text-slate-300">·</span>
            <span className="text-[10px] font-medium text-slate-500 tracking-tight">{formatDate(file.created_at)}</span>
-           
-           {/* Status Label */}
-           <div className="flex items-center ml-2">
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="cursor-help py-0.5">
-                      {file.extraction_status === "pending" ? (
-                        <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-[4px] text-[8px] font-black uppercase tracking-wider bg-blue-50 text-blue-600 border border-blue-100 leading-none">
-                          <Loader2 className="h-2.5 w-2.5 text-blue-600 animate-spin shrink-0" />
-                          <span>Uploading...</span>
-                        </div>
-                      ) : file.extraction_status === "processing" ? (
-                        <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-[4px] text-[8px] font-black uppercase tracking-wider bg-purple-50 text-purple-700 border border-purple-200 leading-none">
-                          <Loader2 className="h-2.5 w-2.5 text-purple-700 animate-spin shrink-0" />
-                          <span>Processing...</span>
-                        </div>
-                      ) : file.extraction_status === "completed" ? (
-                        <div className="h-2 w-2 rounded-[4px] bg-[#24a148] shadow-[0_0_8px_rgba(36,161,72,0.4)]" />
-                      ) : null}
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent side="top" className="bg-slate-900 text-[10px] text-white px-3 py-2 font-bold border-none shadow-lg rounded-[4px]">
-                    {file.extraction_status === "pending" ? (
-                      <div className="flex flex-col gap-0.5">
-                        <span className="font-extrabold text-blue-400 text-[11px]">{uploadProgress}% uploaded</span>
-                        <span className="text-[9px] opacity-80 font-normal">Running for {formatElapsedTime(elapsedSeconds)}</span>
-                      </div>
-                    ) : file.extraction_status === "processing" ? (
-                      <div className="flex flex-col gap-0.5">
-                        <span className="font-extrabold text-purple-300 text-[11px]">{processingProgress}% processed</span>
-                        <span className="text-[9px] opacity-80 font-normal">Processing for {formatElapsedTime(elapsedSeconds)}</span>
-                      </div>
-                    ) : (
-                      <span>Extraction Completed</span>
-                    )}
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-           </div>
         </div>
+      </div>
+      
+      {/* Right-Aligned Status Container */}
+      <div className="flex items-center shrink-0 ml-auto mr-2 z-10">
+         <TooltipProvider delayDuration={0}>
+           <Tooltip>
+             <TooltipTrigger asChild>
+               <div className="cursor-help transition-all duration-200 hover:scale-105 active:scale-95">
+                 {file.extraction_status === "pending" ? (
+                   <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-[4px] text-[10px] font-semibold uppercase tracking-wider bg-blue-50 text-blue-600 border border-blue-100 shadow-sm leading-none transition-all duration-200">
+                     <Loader2 className="h-2.5 w-2.5 text-blue-600 animate-spin shrink-0" />
+                     <span>Uploading</span>
+                   </div>
+                 ) : file.extraction_status === "processing" ? (
+                   <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-[4px] text-[10px] font-semibold uppercase tracking-wider bg-purple-50 text-purple-700 border border-purple-200 shadow-sm leading-none transition-all duration-200">
+                     <Loader2 className="h-2.5 w-2.5 text-purple-700 animate-spin shrink-0" />
+                     <span>Processing</span>
+                   </div>
+                 ) : file.extraction_status === "completed" ? (
+                   <div className="flex items-center gap-1 px-2 py-0.5 rounded-[4px] text-[10px] font-semibold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-100 shadow-sm leading-none transition-all duration-200 hover:opacity-85 hover:-translate-y-[1px]">
+                     <Check className="h-2.5 w-2.5 text-emerald-600 shrink-0" />
+                     <span>Selesai</span>
+                   </div>
+                 ) : file.extraction_status === "failed" ? (
+                   <div className="flex items-center gap-1 px-2 py-0.5 rounded-[4px] text-[10px] font-semibold uppercase tracking-wider bg-rose-50 text-rose-700 border border-rose-100 shadow-sm leading-none transition-all duration-200 hover:bg-rose-100">
+                     <AlertCircle className="h-2.5 w-2.5 text-rose-600 shrink-0" />
+                     <span>Gagal</span>
+                   </div>
+                 ) : null}
+               </div>
+             </TooltipTrigger>
+             <TooltipContent side="top" className="bg-slate-900 text-[10px] text-white px-3 py-2 border-none shadow-xl rounded-[6px] transition-all duration-200 animate-in fade-in zoom-in-95">
+               {file.extraction_status === "pending" ? (
+                 <div className="flex flex-col gap-0.5">
+                   <span className="font-bold text-blue-400 text-[11px]">{uploadProgress}% uploaded</span>
+                   <span className="text-[9px] opacity-80 font-normal">Running for {formatElapsedTime(elapsedSeconds)}</span>
+                 </div>
+               ) : file.extraction_status === "processing" ? (
+                 <div className="flex flex-col gap-0.5">
+                   <span className="font-bold text-purple-300 text-[11px]">{processingProgress}% processed</span>
+                   <span className="text-[9px] opacity-80 font-normal">Processing for {formatElapsedTime(elapsedSeconds)}</span>
+                 </div>
+               ) : file.extraction_status === "failed" ? (
+                 <span className="font-bold text-rose-300 text-[11px]">
+                   Error: {file.metadata?.error_message || "Analysis engine timeout"}
+                 </span>
+               ) : (
+                 <span className="font-bold text-emerald-400 text-[11px]">Extraction Completed</span>
+               )}
+             </TooltipContent>
+           </Tooltip>
+         </TooltipProvider>
       </div>
       
       {/* Right Side: Actions Only */}
