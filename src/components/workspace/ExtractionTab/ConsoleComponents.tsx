@@ -2,7 +2,8 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { 
   Database, Info, ChevronDown, Shield, FileText, Plus, Users, 
   MessageSquare, Clock, Brain, AlertTriangle, Activity, Search,
-  Video as VideoIcon, Mic as AudioIcon, LayoutGrid, Play, Wind, Cpu, Footprints 
+  Video as VideoIcon, Mic as AudioIcon, LayoutGrid, Play, Wind, Cpu, Footprints,
+  FileAudio, AudioLines, FileVideo, ScanFace, Layers, Image as ImageIcon, Compass, MapPin, Fingerprint, FileSearch
 } from 'lucide-react';
 import {
   Tooltip,
@@ -19,24 +20,24 @@ import { normalizeAudioTimestamp } from "@/lib/normalizeAudioTimestamp";
 
 const PROCESSING_PHASES = {
   audio: [
-    "📄 Reading file structure and verifying audio quality...",
-    "🎙️ Identifying speakers and mapping conversation timelines...",
-    "🔍 Analyzing conversation context and organizing data findings"
+    { text: "Reading file structure and verifying audio quality...", Icon: FileAudio, animation: "animate-pulse duration-1000" },
+    { text: "Identifying speakers and mapping conversation timelines...", Icon: AudioLines, animation: "animate-[bounce_2s_infinite]" },
+    { text: "Analyzing conversation context and organizing data findings", Icon: Search, animation: "animate-[spin_4s_linear_infinite]" }
   ],
   video: [
-    "📄 Loading video stream and verifying file track integrity...",
-    "👁️ Scanning frames and indexing visual timeline changes...",
-    "🔍 Analyzing timeline sequence and compiling incident markers"
+    { text: "Loading video stream and verifying file track integrity...", Icon: FileVideo, animation: "animate-pulse" },
+    { text: "Scanning frames and indexing visual timeline changes...", Icon: ScanFace, animation: "animate-pulse" },
+    { text: "Analyzing timeline sequence and compiling incident markers", Icon: Layers, animation: "animate-[pulse_3s_infinite]" }
   ],
   image: [
-    "📄 Processing image resolution and reading metadata layout...",
-    "📐 Detecting environmental layout and structural boundaries...",
-    "🔍 Framing spatial reference elements for the investigation review"
+    { text: "Processing image resolution and reading metadata layout...", Icon: ImageIcon, animation: "animate-pulse" },
+    { text: "Detecting environmental layout and structural boundaries...", Icon: Compass, animation: "animate-[spin_6s_linear_infinite]" },
+    { text: "Framing spatial reference elements for the investigation review", Icon: MapPin, animation: "animate-bounce" }
   ],
   document: [
-    "📄 Reading file format and initializing text alignment...",
-    "📝 Processing text content and indexing document chapters...",
-    "🔍 Reviewing text context against operational information logs"
+    { text: "Reading file format and initializing text alignment...", Icon: FileText, animation: "animate-pulse" },
+    { text: "Processing text content and indexing document chapters...", Icon: Fingerprint, animation: "animate-pulse" },
+    { text: "Reviewing text context against operational information logs", Icon: FileSearch, animation: "animate-[spin_6s_linear_infinite]" }
   ]
 };
 
@@ -53,14 +54,15 @@ function AdaptiveProcessingStatus({ type }: { type: 'audio' | 'video' | 'image' 
   }, []);
 
   const phrases = PROCESSING_PHASES[type] || PROCESSING_PHASES.document;
-  const currentText = phrases[phase];
+  const current = phrases[phase];
+  const Icon = current.Icon;
 
   return (
-    <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/60 backdrop-blur-[2px]">
-      <div className="w-8 h-8 border-[3px] border-slate-200 border-t-slate-600 rounded-full animate-spin mb-5 shadow-sm" />
-      <div className="bg-white/95 px-5 py-2.5 rounded shadow-sm border border-slate-100 flex items-center justify-center text-center max-w-sm">
-        <p className="text-xs text-slate-500 font-medium">
-          {currentText}
+    <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/40 backdrop-blur-[1px]">
+      <div className="flex items-center gap-3 justify-center">
+        <Icon className={cn("h-4 w-4 text-emerald-600/80", current.animation)} />
+        <p className="text-xs text-slate-600 font-medium tracking-wide">
+          {current.text}
           {phase === 2 && (
             <span className="inline-flex tracking-widest animate-pulse ml-0.5">...</span>
           )}
