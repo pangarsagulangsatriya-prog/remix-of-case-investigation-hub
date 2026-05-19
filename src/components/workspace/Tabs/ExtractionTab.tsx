@@ -311,14 +311,34 @@ export default function ExtractionTab() {
   // Derived
   const filteredFiles = useMemo(() => {
     if (!files || !Array.isArray(files)) return [];
-    return files.filter((f: any) => 
+    
+    // Filter matching files first
+    const matched = files.filter((f: any) => 
       f && f.name && f.type && (
         f.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         f.type.toLowerCase().includes(searchQuery.toLowerCase())
       )
-    ).map((f: any) => {
-      // Hardcode demo simulation: always fail these two files unless currently retrying
+    );
+
+    // Identify mandiri files to find the last one
+    const mandiriIds = matched
+      .filter((f: any) => !batches.find(b => b.id === f.batch_id && b.type === "Folder"))
+      .map((f: any) => f.id);
+    const lastMandiriId = mandiriIds[mandiriIds.length - 1];
+
+    return matched.map((f: any) => {
+      // Hardcode demo simulation: always fail these files unless currently retrying/processing
       if (f.extraction_status !== "pending" && f.extraction_status !== "processing") {
+        if (f.id === lastMandiriId && f.extraction_status === "completed") {
+          return {
+            ...f,
+            extraction_status: "failed",
+            metadata: {
+              ...(f.metadata || {}),
+              error_message: "Analysis engine timeout (504)"
+            }
+          };
+        }
         if (f.name.includes("WhatsApp Image")) {
           return {
             ...f,
@@ -342,7 +362,7 @@ export default function ExtractionTab() {
       }
       return f;
     });
-  }, [files, searchQuery]);
+  }, [files, searchQuery, batches]);
 
   // Handlers
   const toggleBatch = (id: string) => {
@@ -831,26 +851,18 @@ export default function ExtractionTab() {
                   {filteredFiles.filter((f: any) => !batches.find(b => b.id === f.batch_id && b.type === "Folder")).length}
                 </span>
               </div>
-              <div className="bg-white">
+               <div className="bg-white">
                 {(() => {
                   const mandiriFiles = filteredFiles.filter((f: any) => !batches.find(b => b.id === f.batch_id && b.type === "Folder"));
-                  return mandiriFiles.map((file: any, index: number) => {
-                    const isLast = index === mandiriFiles.length - 1;
-                    const finalFile = isLast && file.extraction_status === "completed"
-                      ? {
-                          ...file,
-                          extraction_status: "failed",
-                          metadata: { ...file.metadata, error_message: "Analysis engine timeout (504)" }
-                        }
-                      : file;
+                  return mandiriFiles.map((file: any) => {
                     return (
                       <FileRow 
-                        key={finalFile.id} 
-                        file={finalFile} 
-                        isSelected={selectedFile?.id === finalFile.id}
-                        onSelect={() => setSelectedFile(finalFile)}
+                        key={file.id} 
+                        file={file} 
+                        isSelected={selectedFile?.id === file.id}
+                        onSelect={() => setSelectedFile(file)}
                         onMove={handleMoveFile}
-                        onDelete={() => { setSelectedFile(finalFile); setIsDeleteModalOpen(true); }}
+                        onDelete={() => { setSelectedFile(file); setIsDeleteModalOpen(true); }}
                         onRerun={(f: any) => {
                           setFileToRerun(f);
                           setIsRerunModalOpen(true);
