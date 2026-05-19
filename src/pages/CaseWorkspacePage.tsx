@@ -2,12 +2,12 @@
 import React, { useState, useEffect, useMemo, Suspense } from "react"; 
 import { useParams, useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/AppLayout";
-import { useCase, useCases, useUpdateCase } from "@/hooks/useCases";
+import { useCase, useCases, useUpdateCase, useDeleteCase } from "@/hooks/useCases";
 import { useEvidence, useUploadEvidence } from "@/hooks/useEvidence";
 import { useInsertAuditLog } from "@/hooks/useAuditLogs";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Loader2, ArrowLeft, ChevronLeft, ChevronRight, Clock, AlertTriangle, Pencil, Check, X } from "lucide-react";
+import { Loader2, ArrowLeft, ChevronLeft, ChevronRight, Clock, AlertTriangle, Pencil, Check, X, Trash2, ShieldAlert, Lock, Cpu } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 // Modular Tab Components (Lazy Loaded)
@@ -65,7 +65,50 @@ export default function CaseWorkspacePage() {
   // Real Data Hooks
   const { data: cases } = useCases();
   const { data: caseData, isLoading: caseLoading, isError: caseError } = useCase(caseId || "");
-  const { isLoading: evidenceLoading, isError: evidenceError } = useEvidence(caseId || "");
+  const { data: evidenceData, isLoading: evidenceLoading, isError: evidenceError } = useEvidence(caseId || "");
+
+  // Delete Case Workflow States
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deleteCaptchaInput, setDeleteCaptchaInput] = useState("");
+  const [isConsentChecked, setIsConsentChecked] = useState(false);
+  const deleteCaseMutation = useDeleteCase();
+
+  // Active Process Interlock / Validation
+  const evidenceFiles = evidenceData?.files || [];
+  const runningFiles = evidenceFiles.filter(f => f.extraction_status === "pending" || f.extraction_status === "processing");
+  const isProcessingActive = runningFiles.length > 0;
+
+  const handleDeleteCase = async () => {
+    if (isProcessingActive) {
+      toast.error("Proses ekstraksi/analisis masih berjalan pada berkas bukti. Silakan tunggu hingga selesai.");
+      return;
+    }
+    if (deleteCaptchaInput.trim() !== (caseData?.case_number || "")) {
+      toast.error("Kode verifikasi captcha tidak cocok.");
+      return;
+    }
+    if (!isConsentChecked) {
+      toast.error("Anda harus menyetujui pernyataan kesediaan.");
+      return;
+    }
+
+    try {
+      await deleteCaseMutation.mutateAsync(caseId || "");
+      toast.success("Kasus berhasil dihapus secara permanen.");
+      
+      // Audit log
+      insertAuditLogMutation.mutate({
+        case_id: caseId || "",
+        action: `Permanently deleted case "${caseData?.title}"`,
+        entity_type: "case",
+        entity_name: caseData?.title || ""
+      });
+
+      navigate("/cases");
+    } catch (err: any) {
+      toast.error(`Gagal menghapus kasus: ${err.message || 'Error tidak dikenal'}`);
+    }
+  };
 
   useEffect(() => {
     if (caseData?.title) {
@@ -265,13 +308,25 @@ export default function CaseWorkspacePage() {
                    Next <ChevronRight className="h-3.5 w-3.5" />
                  </Button>
               </div>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
                 {hasDemoDerivation && (
-                   <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-sm animate-pulse">
+                   <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-sm animate-pulse mr-2">
                       <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />
                       <span className="text-[10px] font-black text-amber-700 uppercase tracking-tight">Demo Derivation Active</span>
                    </div>
                 )}
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setDeleteCaptchaInput("");
+                    setIsConsentChecked(false);
+                    setIsDeleteModalOpen(true);
+                  }}
+                  className="h-9 font-bold px-3 border-rose-200 hover:border-rose-400 hover:bg-rose-50/50 text-rose-600 transition-all flex items-center gap-1.5"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Hapus Kasus
+                </Button>
                 <Button className="h-9 font-bold px-4 bg-slate-900 text-white ">Submit Case</Button>
               </div>
             </div>
@@ -317,6 +372,141 @@ export default function CaseWorkspacePage() {
               {activeTab === "Audit Trail" && <AuditTrailTab />}
             </Suspense>
           </div>
+
+          {/* Delete Case Confirmation Modal */}
+          {isDeleteModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-350">
+              <div className="bg-white border border-slate-200 w-full max-w-lg rounded-sm shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
+                {/* Header Banner */}
+                <div className={`p-5 flex items-center gap-3 border-b ${isProcessingActive ? 'bg-rose-50 border-rose-100' : 'bg-slate-900 text-white border-slate-900'}`}>
+                  <div className={`h-9 w-9 rounded-full flex items-center justify-center shrink-0 ${isProcessingActive ? 'bg-rose-100 text-rose-700' : 'bg-white/10 text-rose-400'}`}>
+                    <ShieldAlert className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className={`text-sm font-black uppercase tracking-wider ${isProcessingActive ? 'text-rose-950' : 'text-white'}`}>
+                      {isProcessingActive ? 'Penghapusan Ditangguhkan (Interlock Proteksi)' : 'Hapus Kasus Forensik Permanen'}
+                    </h3>
+                    <p className={`text-[10px] font-medium leading-none mt-1 ${isProcessingActive ? 'text-rose-600/80' : 'text-slate-400'}`}>
+                      Tindakan Kritis • Bersifat Permanen & Irreversible
+                    </p>
+                  </div>
+                </div>
+
+                {/* Content Body */}
+                <div className="p-6 space-y-5 flex-1 overflow-y-auto">
+                  {isProcessingActive ? (
+                    /* CASE A: Active Extraction / Analysis Running */
+                    <div className="space-y-4">
+                      <div className="bg-rose-50/50 border border-rose-100 p-4 rounded-sm space-y-3">
+                        <span className="text-[10px] font-black text-rose-700 uppercase tracking-widest block flex items-center gap-1.5">
+                          <Cpu className="h-3.5 w-3.5 animate-spin" />
+                          Berkas Bukti Sedang Berjalan ({runningFiles.length})
+                        </span>
+                        <p className="text-xs font-medium text-rose-950/80 leading-relaxed">
+                          Ada proses ekstraksi data bukti forensik yang sedang berlangsung pada kasus ini. Demi menjaga integritas data dan kestabilan sistem, tindakan penghapusan diblokir hingga seluruh proses berikut selesai secara tuntas.
+                        </p>
+                        
+                        <div className="max-h-40 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+                          {runningFiles.map(f => (
+                            <div key={f.id} className="flex items-center justify-between p-2.5 bg-white border border-rose-100/50 rounded-sm">
+                              <div className="flex items-center gap-2">
+                                <Cpu className="h-3.5 w-3.5 text-rose-500 animate-spin" />
+                                <span className="text-xs font-bold text-slate-700 truncate max-w-[240px]">{f.name}</span>
+                              </div>
+                              <span className="text-[9px] font-black text-rose-600 uppercase tracking-wider bg-rose-50 px-2 py-0.5 rounded border border-rose-100">
+                                {f.extraction_status}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    /* CASE B: Safe to Delete (Idle) */
+                    <div className="space-y-5">
+                      {/* Authorized Initiator Info */}
+                      <div className="bg-slate-50 border border-slate-200 p-4 rounded-sm space-y-1.5">
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Authorized Initiator</span>
+                        <div className="flex items-center gap-3">
+                          <div className="h-9 w-9 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-xs uppercase border border-slate-700">
+                            AD
+                          </div>
+                          <div>
+                            <div className="text-xs font-black text-slate-900 uppercase">Administrator (admin)</div>
+                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Senior Lead Investigator — Forensic Ops</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Captcha Verification */}
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">
+                          Masukkan Kode Konfirmasi Kasus
+                        </label>
+                        <p className="text-xs text-slate-500 leading-normal">
+                          Silakan ketik nomor kasus <strong className="font-mono bg-slate-100 text-slate-800 px-1 rounded">#{caseData?.case_number}</strong> di bawah ini untuk mengonfirmasi penghapusan permanen.
+                        </p>
+                        <input
+                          type="text"
+                          value={deleteCaptchaInput}
+                          onChange={(e) => setDeleteCaptchaInput(e.target.value)}
+                          placeholder="Ketik nomor kasus di sini..."
+                          className="w-full text-xs font-mono tracking-wider border border-slate-200 rounded p-2.5 bg-slate-50 focus:outline-none focus:bg-white focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all uppercase h-9"
+                        />
+                      </div>
+
+                      {/* Consent Checkbox */}
+                      <label className="flex gap-3 items-start cursor-pointer group select-none">
+                        <input
+                          type="checkbox"
+                          checked={isConsentChecked}
+                          onChange={(e) => setIsConsentChecked(e.target.checked)}
+                          className="mt-0.5 h-4 w-4 rounded border-slate-300 text-rose-600 focus:ring-rose-500 cursor-pointer"
+                        />
+                        <span className="text-xs font-medium text-slate-600 group-hover:text-slate-900 transition-colors leading-relaxed">
+                          Saya menyatakan secara sadar bersedia menanggung segala konsekuensi penghapusan berkas kasus ini secara permanen dari server. Tindakan ini tidak dapat dibatalkan.
+                        </span>
+                      </label>
+                    </div>
+                  )}
+                </div>
+
+                {/* Footer Action Bar */}
+                <div className="bg-slate-50 px-6 py-4 border-t border-slate-100 flex items-center justify-end gap-2.5">
+                  {isProcessingActive ? (
+                    <Button 
+                      onClick={() => setIsDeleteModalOpen(false)}
+                      className="bg-slate-900 text-white font-bold text-[10px] uppercase tracking-wider px-5 h-9"
+                    >
+                      Kembali ke Workspace
+                    </Button>
+                  ) : (
+                    <>
+                      <Button 
+                        variant="ghost"
+                        onClick={() => setIsDeleteModalOpen(false)}
+                        className="text-slate-500 hover:text-slate-900 font-bold text-[10px] uppercase tracking-wider h-9"
+                      >
+                        Batal
+                      </Button>
+                      <Button 
+                        onClick={handleDeleteCase}
+                        disabled={deleteCaptchaInput.trim() !== (caseData?.case_number || "") || !isConsentChecked || deleteCaseMutation.isPending}
+                        className="bg-rose-600 hover:bg-rose-700 text-white font-bold text-[10px] uppercase tracking-wider px-5 h-9 gap-1.5 shadow-sm transition-all animate-none"
+                      >
+                        {deleteCaseMutation.isPending ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-3.5 w-3.5" />
+                        )}
+                        {deleteCaseMutation.isPending ? 'Menghapus...' : 'Hapus Kasus Permanen'}
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </AppLayout>
     </WorkspaceErrorBoundary>
