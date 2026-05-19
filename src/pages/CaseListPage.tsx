@@ -47,6 +47,12 @@ import {
 // Mock types for legacy compatibility if needed, but we'll use Case from hook
 import type { Case } from "@/hooks/useCases";
 
+const getSiteFromDescription = (desc?: string) => {
+  if (!desc) return "Site Alpha";
+  const match = desc.match(/\[Site:\s*([^\]]+)\]/);
+  return match ? match[1] : "Site Alpha";
+};
+
 type ViewMode = "table" | "grid-compact" | "grid-expanded";
 
 export default function CaseListPage() {
@@ -287,7 +293,7 @@ export default function CaseListPage() {
                   <div className="grid grid-cols-1 gap-1 border-y border-slate-100 py-4">
                     {[
                       { label: "Case ID", value: selectedCase.case_number, icon: FileText },
-                      { label: "Site", value: "Site Alpha", icon: Globe },
+                      { label: "Site", value: getSiteFromDescription(selectedCase.description), icon: Globe },
                       { label: "Created", value: new Date(selectedCase.created_at).toLocaleDateString(), icon: Clock },
                       { label: "Updated", value: new Date(selectedCase.updated_at).toLocaleDateString(), icon: History },
                       { label: "Status", value: (selectedCase.status || "draft").toUpperCase(), icon: List },
@@ -470,7 +476,7 @@ function CaseGridCard({
         <div className="flex flex-col">
           <span className="font-mono text-[10px] text-primary font-bold tracking-widest">{caseData.case_number || caseData.id.slice(0, 8)}</span>
           <div className="flex items-center gap-1.5 mt-0.5">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Site Alpha</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{getSiteFromDescription(caseData.description)}</span>
           </div>
         </div>
         <StatusChip status={caseData.status as any} />

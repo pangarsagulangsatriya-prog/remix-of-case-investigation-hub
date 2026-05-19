@@ -5,7 +5,7 @@ import {
   Play, Pause, ChevronLeft, ChevronRight, User, 
   Layout, BookText, Search, ExternalLink, Download, 
   Maximize2, Minimize2, Activity, FileText, Folders, Volume2, VolumeX,
-  SkipBack, SkipForward, Repeat, Gauge
+  SkipBack, SkipForward, Repeat, Gauge, AlertTriangle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

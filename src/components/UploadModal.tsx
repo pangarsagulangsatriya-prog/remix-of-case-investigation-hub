@@ -71,7 +71,9 @@ export interface CompletedGroup {
 interface UploadModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onUploadComplete: (groups: CompletedGroup[]) => Promise<void> | void;
+  onUploadComplete: (groups: CompletedGroup[], caseMetadata?: { title: string; site: string }) => Promise<void> | void;
+  submitButtonLabel?: string;
+  isCreateCaseMode?: boolean;
 }
 
 // ---- Constants ----
@@ -205,8 +207,14 @@ export function UploadModal({
   isOpen,
   onClose,
   onUploadComplete,
+  submitButtonLabel = "MULAI PROSES",
+  isCreateCaseMode = false,
 }: UploadModalProps) {
   const [groups, setGroups] = useState<UploadGroup[]>([]);
+  const [caseTitle, setCaseTitle] = useState("");
+  const [selectedSite, setSelectedSite] = useState("Site Alpha");
+  const [isConfirmed, setIsConfirmed] = useState(false);
+
   const [fileItems, setFileItems] = useState<UploadFileItem[]>([]);
   const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
   const [isDragActive, setIsDragActive] = useState(false);
@@ -218,6 +226,15 @@ export function UploadModal({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isCreateCaseMode && fileItems.length > 0 && !caseTitle) {
+      const firstFile = fileItems[0].file.name;
+      const baseName = firstFile.substring(0, firstFile.lastIndexOf('.')) || firstFile;
+      const cleanName = baseName.replace(/[_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+      setCaseTitle(`Investigasi: ${cleanName}`);
+    }
+  }, [fileItems, isCreateCaseMode, caseTitle]);
 
   // ---- DOCX Preview Logic ----
   useEffect(() => {
@@ -569,7 +586,7 @@ export function UploadModal({
 
     try {
       // 1. Await the actual persistence mutation
-      await onUploadComplete(completed);
+      await onUploadComplete(completed, isCreateCaseMode ? { title: caseTitle, site: selectedSite } : undefined);
       
       setFileItems((prev) => prev.map((f) => !f.error ? { ...f, status: "success", progress: 100 } : f));
       
@@ -592,7 +609,9 @@ export function UploadModal({
 
   // ---- Derived values ----
 
+  const isTitleInvalid = !caseTitle.trim() || caseTitle.trim().toLowerCase() === "create new case" || caseTitle.trim().toLowerCase() === "create workspace";
   const totalValid = fileItems.filter((f) => !f.error).length;
+  const isSubmitDisabled = isUploading || totalValid === 0 || (isCreateCaseMode && (!isConfirmed || isTitleInvalid));
   const totalBytes = fileItems
     .filter((f) => !f.error)
     .reduce((s, f) => s + f.file.size, 0);
@@ -980,6 +999,102 @@ export function UploadModal({
                 </div>
               )}
             </div>
+
+            {/* ---- Far Right: Case Metadata (Only visible if isCreateCaseMode) ---- */}
+            {isCreateCaseMode && (
+              <div className="w-[300px] border-l bg-slate-50/50 flex flex-col overflow-hidden shrink-0">
+                <div className="p-4 border-b bg-white shrink-0">
+                  <span className="text-[10px] font-black text-slate-700 block leading-tight uppercase tracking-wider mb-1">
+                    CASE CONFIGURATION
+                  </span>
+                  <span className="text-[9px] text-slate-450 font-bold block leading-normal">
+                    Specify metadata for the new forensic workspace.
+                  </span>
+                </div>
+                
+                <div className="flex-1 overflow-auto p-4 space-y-5 custom-scrollbar">
+                  {/* Case Title Input */}
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block">
+                      Case Title
+                    </label>
+                    <input
+                      type="text"
+                      className={cn(
+                        "w-full h-8 text-xs border rounded-[4px] px-2.5 font-bold text-slate-800 transition-all focus:outline-hidden focus:ring-0",
+                        isTitleInvalid ? "border-rose-300 bg-rose-50/20 focus:border-rose-400" : "border-slate-200 bg-white focus:border-slate-400"
+                      )}
+                      placeholder="e.g. Investigasi Kecelakaan Belawan"
+                      value={caseTitle}
+                      onChange={(e) => setCaseTitle(e.target.value)}
+                    />
+                    {isTitleInvalid && (
+                      <span className="text-[8px] font-bold text-rose-500 block leading-normal uppercase tracking-wider">
+                        {!caseTitle.trim() ? "Judul tidak boleh kosong" : "Judul tidak boleh default"}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Site Dropdown */}
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block">
+                      Operational Site / Location
+                    </label>
+                    <select
+                      className="w-full h-8 text-xs border border-slate-200 rounded-[4px] px-2.5 bg-white font-bold text-slate-800 focus:outline-hidden focus:border-slate-400 cursor-pointer"
+                      value={selectedSite}
+                      onChange={(e) => setSelectedSite(e.target.value)}
+                    >
+                      <option value="Site Alpha">Site Alpha</option>
+                      <option value="Site Beta">Site Beta</option>
+                      <option value="Site Gamma">Site Gamma</option>
+                    </select>
+                  </div>
+
+                  {/* Initiator Card (Creator info) */}
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block">
+                      Initiated By
+                    </label>
+                    <div className="bg-white border border-slate-200/60 rounded-[4px] p-3 shadow-3xs flex items-start gap-3">
+                      <div className="h-8 w-8 rounded-full bg-slate-50 border border-slate-200/80 flex items-center justify-center text-slate-600 shrink-0">
+                        <Cpu className="h-4 w-4 text-slate-500" />
+                      </div>
+                      <div className="space-y-0.5">
+                        <span className="text-[10px] font-black text-slate-800 block">
+                          Administrator (admin)
+                        </span>
+                        <span className="text-[8px] font-bold text-slate-400 block uppercase tracking-wider leading-none">
+                          Senior Lead Investigator
+                        </span>
+                        <span className="text-[8.5px] font-bold text-slate-500 block uppercase tracking-wide leading-normal">
+                          Forensic Ops Team
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bottom checklist and confirmation */}
+                <div className="p-4 border-t bg-white shrink-0 space-y-3 shadow-xs">
+                  <div className="flex items-start gap-2.5">
+                    <input
+                      type="checkbox"
+                      id="confirm-metadata"
+                      className="h-3.5 w-3.5 rounded-sm border-slate-350 text-slate-900 focus:ring-slate-900 mt-0.5 cursor-pointer"
+                      checked={isConfirmed}
+                      onChange={(e) => setIsConfirmed(e.target.checked)}
+                    />
+                    <label
+                      htmlFor="confirm-metadata"
+                      className="text-[9.5px] text-slate-500 font-bold uppercase tracking-tight leading-normal cursor-pointer select-none"
+                    >
+                      Saya menyatakan data bukti & lokasi kasus sudah diverifikasi.
+                    </label>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -1025,7 +1140,7 @@ export function UploadModal({
                   isUploading ? "opacity-80" : ""
                 )}
                 onClick={handleUpload}
-                disabled={isUploading || totalValid === 0}
+                disabled={isSubmitDisabled}
               >
                 {isUploading ? (
                   <>
@@ -1035,7 +1150,7 @@ export function UploadModal({
                 ) : (
                   <>
                     <Upload className="h-3.5 w-3.5" />
-                    MULAI PROSES
+                    {submitButtonLabel}
                   </>
                 )}
               </Button>
