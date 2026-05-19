@@ -76,11 +76,15 @@ export default function CaseWorkspacePage() {
   // Active Process Interlock / Validation
   const evidenceFiles = evidenceData?.files || [];
   const runningFiles = evidenceFiles.filter(f => f.extraction_status === "pending" || f.extraction_status === "processing");
-  const isProcessingActive = runningFiles.length > 0;
+  const isAnalysisActive = localStorage.getItem(`analysis_running_${caseId}`) === "true";
+  const isProcessingActive = runningFiles.length > 0 || isAnalysisActive;
 
   const handleDeleteCase = async () => {
     if (isProcessingActive) {
-      toast.error("Proses ekstraksi/analisis masih berjalan pada berkas bukti. Silakan tunggu hingga selesai.");
+      toast.error(isAnalysisActive 
+        ? "Proses analisis AI sedang berjalan menggunakan sumber daya dari repositori bukti. Silakan tunggu hingga selesai."
+        : "Proses ekstraksi/analisis masih berjalan pada berkas bukti. Silakan tunggu hingga selesai."
+      );
       return;
     }
     if (deleteCaptchaInput.trim() !== (caseData?.case_number || "")) {
@@ -403,25 +407,29 @@ export default function CaseWorkspacePage() {
                       <div className="bg-rose-50/30 border border-rose-100 p-4 rounded-sm space-y-3">
                         <span className="text-[10px] font-black text-rose-700 uppercase tracking-widest block flex items-center gap-1.5 leading-none">
                           <Cpu className="h-3.5 w-3.5 animate-spin" />
-                          Berkas Bukti Aktif ({runningFiles.length})
+                          {isAnalysisActive ? "Analisis AI Sedang Berjalan" : `Berkas Bukti Aktif (${runningFiles.length})`}
                         </span>
                         <p className="text-xs font-semibold text-rose-950/80 leading-relaxed">
-                          Ada proses ekstraksi data bukti forensik yang sedang berlangsung pada kasus ini. Demi menjaga integritas data dan kestabilan sistem, tindakan penghapusan diblokir hingga seluruh proses berikut selesai secara tuntas.
+                          {isAnalysisActive 
+                            ? "Ada proses analisis AI (Fact & Chronology, dll.) yang sedang berjalan menggunakan sumber daya dari repositori bukti pada kasus ini. Demi menjaga integritas data dan kestabilan sistem, tindakan penghapusan diblokir hingga proses analisis selesai secara tuntas."
+                            : "Ada proses ekstraksi data bukti forensik yang sedang berlangsung pada kasus ini. Demi menjaga integritas data dan kestabilan sistem, tindakan penghapusan diblokir hingga seluruh proses berikut selesai secara tuntas."}
                         </p>
                         
-                        <div className="max-h-40 overflow-y-auto space-y-1.5 pr-1 custom-scrollbar">
-                          {runningFiles.map(f => (
-                            <div key={f.id} className="flex items-center justify-between p-2.5 bg-white border border-rose-100/50 rounded-sm shadow-sm">
-                              <div className="flex items-center gap-2">
-                                <Loader2 className="h-3.5 w-3.5 text-rose-500 animate-spin" />
-                                <span className="text-xs font-bold text-slate-700 truncate max-w-[200px]">{f.name}</span>
+                        {!isAnalysisActive && (
+                          <div className="max-h-40 overflow-y-auto space-y-1.5 pr-1 custom-scrollbar">
+                            {runningFiles.map(f => (
+                              <div key={f.id} className="flex items-center justify-between p-2.5 bg-white border border-rose-100/50 rounded-sm shadow-sm">
+                                <div className="flex items-center gap-2">
+                                  <Loader2 className="h-3.5 w-3.5 text-rose-500 animate-spin" />
+                                  <span className="text-xs font-bold text-slate-700 truncate max-w-[200px]">{f.name}</span>
+                                </div>
+                                <span className="text-[9px] font-black text-rose-600 uppercase tracking-wider bg-rose-50 px-2 py-0.5 rounded border border-rose-100">
+                                  {f.extraction_status}
+                                </span>
                               </div>
-                              <span className="text-[9px] font-black text-rose-600 uppercase tracking-wider bg-rose-50 px-2 py-0.5 rounded border border-rose-100">
-                                {f.extraction_status}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
                   ) : (

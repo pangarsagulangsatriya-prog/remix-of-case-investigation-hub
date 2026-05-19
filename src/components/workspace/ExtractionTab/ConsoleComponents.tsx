@@ -241,7 +241,7 @@ function DocumentProcessingSkeleton() {
 }
 
 export function ImageExtractionConsole({ file }: { file: any }) {
-  const [activeTab, setActiveTab] = useState<"Visual Markers" | "Forensic Analysis" | "Metadata">("Visual Markers");
+  const [activeTab, setActiveTab] = useState<"Visual Markers" | "Analysis" | "Metadata">("Visual Markers");
   const [derivationData, setDerivationData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -281,7 +281,7 @@ export function ImageExtractionConsole({ file }: { file: any }) {
       {/* Tab Header - Premium Enterprise Style */}
       <div className="sticky top-0 z-40 bg-[#f8fafc] border-b border-slate-200 px-6 pt-3 flex flex-col shrink-0">
           <div className="flex items-center border-b border-slate-200 relative">
-             {(["Visual Markers", "Forensic Analysis", "Metadata"] as const).map((tab, idx) => (
+             {(["Visual Markers", "Analysis", "Metadata"] as const).map((tab, idx) => (
                <button 
                  key={tab}
                  onClick={() => setActiveTab(tab)} 
@@ -307,7 +307,7 @@ export function ImageExtractionConsole({ file }: { file: any }) {
          ) : (
            <>
              {activeTab === "Visual Markers" && <ImageMarkersView chunks={data.lossless_chunks} />}
-             {activeTab === "Forensic Analysis" && <ImageForensicView data={data} />}
+             {activeTab === "Analysis" && <ImageForensicView data={data} />}
              {activeTab === "Metadata" && <ImageMetadataView file={file} data={data} />}
            </>
          )}
@@ -489,7 +489,7 @@ function ImageMetadataView({ file, data }: { file: any, data: typeof imageDeriva
 
 
 export function DocumentExtractionConsole({ file }: { file: any }) {
-  const [activeTab, setActiveTab] = useState<"Sequence Chunks" | "Forensic Analysis" | "Metadata">("Sequence Chunks");
+  const [activeTab, setActiveTab] = useState<"Sequence Chunks" | "Analysis" | "Metadata">("Sequence Chunks");
   const [derivationData, setDerivationData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -529,7 +529,7 @@ export function DocumentExtractionConsole({ file }: { file: any }) {
       {/* Tab Header - Premium Enterprise Style */}
       <div className="sticky top-0 z-40 bg-[#f8fafc] border-b border-slate-200 px-6 pt-3 flex flex-col shrink-0">
           <div className="flex items-center border-b border-slate-200 relative">
-             {(["Sequence Chunks", "Forensic Analysis", "Metadata"] as const).map((tab, idx) => (
+             {(["Sequence Chunks", "Analysis", "Metadata"] as const).map((tab, idx) => (
                <button 
                  key={tab}
                  onClick={() => setActiveTab(tab)} 
@@ -555,7 +555,7 @@ export function DocumentExtractionConsole({ file }: { file: any }) {
          ) : (
            <>
              {activeTab === "Sequence Chunks" && <DocumentChunksView chunks={data.lossless_chunks} />}
-             {activeTab === "Forensic Analysis" && <DocumentForensicView data={data} />}
+             {activeTab === "Analysis" && <DocumentForensicView data={data} />}
              {activeTab === "Metadata" && <DocumentMetadataView file={file} data={data} />}
            </>
          )}
@@ -1035,7 +1035,7 @@ export function AudioExtractionConsole({ file, onJump, currentTime }: { file: an
              </div>
 
              <div className="space-y-4">
-                <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em] border-b pb-2">Forensic Integrity</h4>
+                <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em] border-b pb-2">Data Integrity</h4>
                 <div className="p-4 bg-slate-50 rounded-sm border border-dashed border-slate-200">
                    <div className="flex flex-col gap-2">
                       <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">SHA-256 Fingerprint</span>
@@ -1508,7 +1508,7 @@ function DiarizationSegment({ seg, active, isNext, onJump }: { seg: any, active:
 }
 
 export function VideoAnalysisPanel({ file, currentTime, onJump }: { file: any, currentTime: number, onJump: (s: number) => void }) {
-  const [activeTab, setActiveTab] = useState<"Sequence Blocks" | "Forensic Analysis" | "Ontology Map" | "Metadata">("Sequence Blocks");
+  const [activeTab, setActiveTab] = useState<"Sequence Blocks" | "Analysis" | "Metadata">("Sequence Blocks");
   const [derivationData, setDerivationData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -1560,7 +1560,7 @@ export function VideoAnalysisPanel({ file, currentTime, onJump }: { file: any, c
       {/* Tab Header - Premium Enterprise Style */}
       <div className="sticky top-0 z-40 bg-[#f8fafc] border-b border-slate-200 px-6 pt-3 flex flex-col shrink-0">
           <div className="flex items-center border-b border-slate-200 relative">
-             {(["Sequence Blocks", "Forensic Analysis", "Ontology Map", "Metadata"] as const).map((tab, idx) => (
+             {(["Sequence Blocks", "Analysis", "Metadata"] as const).map((tab, idx) => (
                <button 
                  key={tab}
                  onClick={() => setActiveTab(tab)} 
@@ -1586,8 +1586,12 @@ export function VideoAnalysisPanel({ file, currentTime, onJump }: { file: any, c
          ) : (
            <>
              {activeTab === "Sequence Blocks" && <VideoBlocksView blocks={data.video_blocks} onJump={onJump} currentTime={currentTime} />}
-             {activeTab === "Forensic Analysis" && <VideoForensicView data={data} />}
-             {activeTab === "Ontology Map" && <VideoOntologyView ontology={data.ontology_mapping} />}
+             {activeTab === "Analysis" && (
+               <div className="flex flex-col divide-y divide-slate-100">
+                 <VideoForensicView data={data} />
+                 <VideoOntologyView ontology={data.ontology_mapping} />
+               </div>
+             )}
              {activeTab === "Metadata" && <VideoMetadataView file={file} data={data} />}
            </>
          )}
@@ -1920,7 +1924,7 @@ function VideoMetadataView({ file, data }: { file: any, data: typeof videoDeriva
   return (
     <div className="p-6 space-y-8 animate-in fade-in duration-500">
        <div className="space-y-4">
-          <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em] border-b pb-2">Forensic Session Metadata</h4>
+          <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em] border-b pb-2">Session Metadata</h4>
           <div className="grid grid-cols-1 gap-4">
              <div className="flex justify-between items-center py-1 border-b border-slate-50">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Modality Source</span>

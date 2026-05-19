@@ -95,6 +95,8 @@ export default function ExtractionTab() {
   const [isRenameFolderModalOpen, setIsRenameFolderModalOpen] = useState(false);
   const [isRenameFileModalOpen, setIsRenameFileModalOpen] = useState(false);
   const [isRerunModalOpen, setIsRerunModalOpen] = useState(false);
+  const [isRevertModalOpen, setIsRevertModalOpen] = useState(false);
+  const [revertTargetRunId, setRevertTargetRunId] = useState<string | null>(null);
   
   // Form State
   const [newFolderName, setNewFolderName] = useState("");
@@ -228,22 +230,61 @@ export default function ExtractionTab() {
 
   const handleRestoreVersion = (runId: string) => {
     if (!historyFile) return;
-    localStorage.setItem(`file_active_run_${historyFile.id}`, runId);
     
     const key = `file_history_${historyFile.id}`;
     const history = getFileHistory(historyFile);
+    
+    // Find the target run that we are reverting to so we can mention it in the log
+    const completedRuns = history.filter((r: any) => r.status === "completed").reverse(); // order so oldest first
+    const totalVersions = completedRuns.length;
+    const targetIdx = completedRuns.findIndex((r: any) => r.id === runId);
+    const versionNum = targetIdx !== -1 ? targetIdx + 1 : 1;
+
+    // Create the revert event log item
+    const now = new Date();
+    const formatDateFull = (date: Date) => {
+      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}, ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:${date.getSeconds().toString().padStart(2, '0')}`;
+    };
+
+    const targetRun = history.find((r: any) => r.id === runId);
+    const targetTime = targetRun ? targetRun.timestamp : formatDateFull(now);
+
+    const revertEventId = `${historyFile.id}_revert_${Date.now()}`;
+    const revertEvent = {
+      id: revertEventId,
+      runIndex: history.length + 1,
+      status: "reverted",
+      timestamp: formatDateFull(now),
+      description: `Ekstraksi forensik dipulihkan ke versi V${versionNum} (Eksekusi: ${targetTime}).`
+    };
+
+    // Update active status for runs
     const updated = history.map((run: any) => ({
       ...run,
       isActive: run.id === runId
     }));
-    localStorage.setItem(key, JSON.stringify(updated));
+
+    // Prepend the revert event to history
+    const finalHistory = [revertEvent, ...updated];
     
-    setHistoryFile({
+    localStorage.setItem(`file_active_run_${historyFile.id}`, runId);
+    localStorage.setItem(key, JSON.stringify(finalHistory));
+    
+    const updatedFile = {
       ...historyFile,
       activeRunId: runId
-    });
+    };
+    setHistoryFile(updatedFile);
 
-    toast.success("AI extraction data successfully restored to this version.");
+    // Also update selectedFile if it's the active one
+    if (selectedFile && selectedFile.id === historyFile.id) {
+      setSelectedFile(updatedFile);
+    }
+
+    setIsRevertModalOpen(false);
+    setRevertTargetRunId(null);
+    toast.success(`Data berhasil dipulihkan ke versi V${versionNum}.`);
     queryClient.invalidateQueries({ queryKey: ["evidence"] });
   };
 
@@ -332,6 +373,20 @@ export default function ExtractionTab() {
 
   const handleDelete = async () => {
     if (!selectedFile) return;
+
+    // Check if AI Analysis is running
+    const isAnalysisActive = localStorage.getItem(`analysis_running_${caseId}`) === "true";
+    if (isAnalysisActive) {
+      toast.error("File tidak dapat dihapus karena analisis AI sedang berjalan menggunakan sumber daya dari repositori bukti.");
+      setIsDeleteModalOpen(false);
+      return;
+    }
+
+    if (selectedFile.extraction_status === "pending" || selectedFile.extraction_status === "processing") {
+      toast.error(`File "${selectedFile.name}" sedang dalam proses ${selectedFile.extraction_status === "pending" ? "upload" : "analisis/ekstraksi"} dan tidak dapat dihapus.`);
+      setIsDeleteModalOpen(false);
+      return;
+    }
     try {
       await deleteFileMutation.mutateAsync({ id: selectedFile.id, url: selectedFile.url });
       setSelectedFile(null);
@@ -344,6 +399,28 @@ export default function ExtractionTab() {
 
   const handleDeleteFolder = async () => {
     if (!deleteFolderTarget) return;
+
+    // Check if AI Analysis is running
+    const isAnalysisActive = localStorage.getItem(`analysis_running_${caseId}`) === "true";
+    if (isAnalysisActive) {
+      toast.error("Folder tidak dapat dihapus karena analisis AI sedang berjalan menggunakan sumber daya dari repositori bukti.");
+      setDeleteFolderTarget(null);
+      return;
+    }
+
+    // Get files in this folder (virtual or real)
+    const folderFiles = deleteFolderTarget.isVirtual 
+      ? (deleteFolderTarget.files || []) 
+      : files.filter((f: any) => f.batch_id === deleteFolderTarget.id);
+
+    // Check if any file inside the folder is uploading or processing
+    const hasRunningFiles = folderFiles.some((f: any) => f.extraction_status === "pending" || f.extraction_status === "processing");
+    if (hasRunningFiles) {
+      toast.error("Folder tidak dapat dihapus karena terdapat file di dalamnya yang sedang dalam proses upload atau ekstraksi.");
+      setDeleteFolderTarget(null);
+      return;
+    }
+
     try {
       if (deleteFolderTarget.isVirtual) {
         // Delete all files in this virtual section
@@ -492,11 +569,30 @@ export default function ExtractionTab() {
 
   const handleDissolveFolder = async () => {
     if (!deleteFolderTarget) return;
+
+    // Check if AI Analysis is running
+    const isAnalysisActive = localStorage.getItem(`analysis_running_${caseId}`) === "true";
+    if (isAnalysisActive) {
+      toast.error("Folder tidak dapat dibubarkan karena analisis AI sedang berjalan menggunakan sumber daya dari repositori bukti.");
+      setDeleteFolderTarget(null);
+      return;
+    }
+
+    // Get files in this folder
+    const folderFiles = files.filter((f: any) => f.batch_id === deleteFolderTarget.id);
+
+    // Check if any file inside the folder is uploading or processing
+    const hasRunningFiles = folderFiles.some((f: any) => f.extraction_status === "pending" || f.extraction_status === "processing");
+    if (hasRunningFiles) {
+      toast.error("Folder tidak dapat dibubarkan karena terdapat file di dalamnya yang sedang dalam proses upload atau ekstraksi.");
+      setDeleteFolderTarget(null);
+      return;
+    }
+
     try {
       const looseBatch = batches.find(b => b.type === "Loose Files");
       const targetBatchId = looseBatch?.id || null;
       
-      const folderFiles = files.filter((f: any) => f.batch_id === deleteFolderTarget.id);
       for (const f of folderFiles) {
         await moveFileMutation.mutateAsync({ fileId: f.id, batchId: targetBatchId });
       }
@@ -670,7 +766,24 @@ export default function ExtractionTab() {
                            <FileUp className="h-3.5 w-3.5 mr-2 text-slate-400" /> Upload ke Folder
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => setDeleteFolderTarget(batch)} className="text-rose-600 focus:text-rose-600 text-[11px] font-bold py-2 rounded-[4px]">
+                        <DropdownMenuItem onClick={() => {
+                           const isAnalysisActive = localStorage.getItem(`analysis_running_${caseId}`) === "true";
+                           if (isAnalysisActive) {
+                             toast.warning("Folder tidak dapat dihapus karena analisis AI sedang berjalan menggunakan sumber daya dari repositori bukti.");
+                             return;
+                           }
+                           const folderFiles = files.filter((f: any) => f.batch_id === batch.id);
+                           const hasRunningFiles = folderFiles.some((f: any) => f.extraction_status === "pending" || f.extraction_status === "processing");
+                           if (hasRunningFiles) {
+                             toast.warning("Folder tidak dapat dihapus karena terdapat file di dalamnya yang sedang dalam proses upload atau ekstraksi.");
+                             return;
+                           }
+                           setDeleteFolderTarget(batch);
+                        }} 
+                        className={cn(
+                           "text-rose-600 focus:text-rose-600 text-[11px] font-bold py-2 rounded-[4px]",
+                           (files.filter((f: any) => f.batch_id === batch.id).some((f: any) => f.extraction_status === "pending" || f.extraction_status === "processing") || (localStorage.getItem(`analysis_running_${caseId}`) === "true")) && "text-slate-400 focus:text-slate-400 opacity-60"
+                        )}>
                            <Trash2 className="h-3.5 w-3.5 mr-2" /> Hapus Folder
                         </DropdownMenuItem>
                       </DropdownMenuContent>
@@ -879,6 +992,32 @@ export default function ExtractionTab() {
         fileName={selectedFile?.name || ""}
       />
 
+      <Modal 
+        isOpen={isRevertModalOpen} 
+        onClose={() => { setIsRevertModalOpen(false); setRevertTargetRunId(null); }} 
+        title="Konfirmasi Pemulihan Versi"
+        showCloseButton
+      >
+        <div className="p-6 space-y-6">
+          <div className="flex gap-4 p-4 bg-amber-50/40 border border-amber-100 rounded-[6px] items-start">
+            <RotateCcw className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <p className="text-[11px] font-black text-amber-800 uppercase tracking-widest">Peringatan Revert Data</p>
+              <p className="text-[10px] font-bold text-amber-600/90 leading-normal uppercase">
+                Aksi ini akan menimpa data ekstraksi forensik aktif saat ini.
+              </p>
+            </div>
+          </div>
+          <p className="text-[11px] font-bold text-slate-500 leading-relaxed">
+            Apakah Anda yakin ingin memulihkan hasil ekstraksi forensik berkas ini ke versi cadangan yang dipilih? Tindakan ini akan dicatat dalam Log Audit Eksekusi berkas.
+          </p>
+          <div className="flex gap-3 pt-2">
+            <Button variant="outline" className="flex-1 h-11 text-[10px] font-black uppercase tracking-widest" onClick={() => { setIsRevertModalOpen(false); setRevertTargetRunId(null); }}>Batal</Button>
+            <Button className="flex-1 h-11 bg-slate-900 text-[10px] font-black uppercase tracking-widest text-white hover:bg-slate-800" onClick={() => revertTargetRunId && handleRestoreVersion(revertTargetRunId)}>Ya, Revert</Button>
+          </div>
+        </div>
+      </Modal>
+
       <UploadModal
         isOpen={isUploadModalOpen}
         onClose={() => setIsUploadModalOpen(false)}
@@ -1045,7 +1184,10 @@ export default function ExtractionTab() {
                           {!isActive && (
                             <div className="mt-2.5 flex justify-end">
                               <button
-                                onClick={() => handleRestoreVersion(run.id)}
+                                onClick={() => {
+                                  setRevertTargetRunId(run.id);
+                                  setIsRevertModalOpen(true);
+                                }}
                                 className="flex items-center gap-1 text-[9.5px] font-bold text-slate-600 border border-slate-200 bg-white hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 hover:cursor-pointer px-3 py-1 rounded-[4px] shadow-xs transition-all duration-150 active:scale-95 leading-none"
                               >
                                 <RotateCcw className="h-3 w-3" /> Revert to This Version
@@ -1078,6 +1220,7 @@ export default function ExtractionTab() {
 
                     return runs.map((run: any) => {
                       const isCompleted = run.status === "completed";
+                      const isReverted = run.status === "reverted";
                       
                       return (
                         <div key={run.id} className="relative">
@@ -1086,10 +1229,14 @@ export default function ExtractionTab() {
                             "absolute -left-[35px] top-0 w-5 h-5 rounded-full border flex items-center justify-center shadow-xs z-10",
                             isCompleted 
                               ? "bg-emerald-50/50 border-emerald-100 text-emerald-500" 
-                              : "bg-rose-50/50 border-rose-100 text-rose-500"
+                              : isReverted 
+                                ? "bg-amber-50/50 border-amber-100 text-amber-500"
+                                : "bg-rose-50/50 border-rose-100 text-rose-500"
                           )}>
                             {isCompleted ? (
                               <Check className="h-2.5 w-2.5" />
+                            ) : isReverted ? (
+                              <RotateCcw className="h-2.5 w-2.5" />
                             ) : (
                               <X className="h-2.5 w-2.5" />
                             )}
@@ -1099,15 +1246,17 @@ export default function ExtractionTab() {
                           <div className="space-y-1 text-left">
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="text-[10px] font-black text-slate-600 uppercase tracking-wider">
-                                Run #{run.runIndex}
+                                {isReverted ? "Revert Event" : `Run #${run.runIndex}`}
                               </span>
                               <span className={cn(
                                 "text-[7.5px] font-semibold uppercase tracking-wider px-1 py-0.5 rounded-[3px] border shadow-xs leading-none",
                                 isCompleted 
                                   ? "bg-emerald-50/50 text-emerald-600/90 border-emerald-100/50" 
-                                  : "bg-rose-50/50 text-rose-600/90 border-rose-100/50"
+                                  : isReverted 
+                                    ? "bg-amber-50/50 text-amber-600/90 border-amber-100/50"
+                                    : "bg-rose-50/50 text-rose-600/90 border-rose-100/50"
                               )}>
-                                {run.status === "completed" ? "Done" : "Failed"}
+                                {isCompleted ? "Done" : isReverted ? "Reverted" : "Failed"}
                               </span>
                             </div>
 
@@ -1115,8 +1264,15 @@ export default function ExtractionTab() {
                               Eksekusi: {run.timestamp}
                             </p>
 
-                            {/* Error reason (Slightly smaller and more muted). No text description for completed runs. */}
-                            {!isCompleted && (
+                            {/* Revert Description */}
+                            {isReverted && (
+                              <div className="bg-amber-50/20 border border-amber-100/30 rounded-[4px] p-2 mt-1 text-[9px] text-amber-700/80 leading-normal break-words">
+                                {run.description}
+                              </div>
+                            )}
+
+                            {/* Error reason */}
+                            {!isCompleted && !isReverted && (
                               <div className="bg-rose-50/20 border border-rose-100/30 rounded-[4px] p-2 mt-1 text-[9px] text-rose-600/80 leading-normal font-mono break-words">
                                 {run.error}
                               </div>

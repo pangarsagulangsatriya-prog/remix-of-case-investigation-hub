@@ -30,7 +30,6 @@ type StagedFile = {
   folderPath?: string; // Optional folder directory grouping
 };
 
-// ---- Helper Functions for Google Drive Tutorial Link Conversion ----
 function getGoogleDriveFileId(input: string): string | null {
   if (!input) return null;
 
@@ -50,6 +49,29 @@ function toGoogleDrivePreviewUrl(input: string): string | null {
   if (!fileId) return null;
 
   return `https://drive.google.com/file/d/${fileId}/preview`;
+}
+
+function getTutorialEmbedUrl(input: string): string {
+  if (!input) {
+    // Default high-quality public OSINT/investigation tutorial video
+    return "https://www.youtube.com/embed/9GbVAMf-t-I";
+  }
+
+  const fileId = getGoogleDriveFileId(input);
+  if (fileId) {
+    return `https://drive.google.com/file/d/${fileId}/preview`;
+  }
+
+  // If it's already a YouTube URL, convert it to embed format if needed
+  if (input.includes("youtube.com/watch?v=")) {
+    const videoId = input.split("v=")[1]?.split("&")[0];
+    if (videoId) return `https://www.youtube.com/embed/${videoId}`;
+  } else if (input.includes("youtu.be/")) {
+    const videoId = input.split("youtu.be/")[1]?.split("?")[0];
+    if (videoId) return `https://www.youtube.com/embed/${videoId}`;
+  }
+
+  return input;
 }
 
 // Helper to recursively read all files from dropped entry (lifted to page scope)
@@ -695,7 +717,6 @@ export default function CreateCasePage() {
                 {/* Reusable Tutorial Video Button */}
                 <TutorialVideoButton 
                   onClick={() => setIsTutorialModalOpen(true)} 
-                  isVisible={isAdminOrDev || !!tutorialUrl} 
                 />
               </div>
 
@@ -1154,14 +1175,12 @@ export default function CreateCasePage() {
 // ---- TUTORIAL VIDEO BUTTON COMPONENT ----
 interface TutorialButtonProps {
   onClick: () => void;
-  isVisible: boolean;
 }
 
-function TutorialVideoButton({ onClick, isVisible }: TutorialButtonProps) {
-  if (!isVisible) return null;
-
+function TutorialVideoButton({ onClick }: TutorialButtonProps) {
   return (
     <button
+      id="tutorial-video-button"
       onClick={(e) => {
         e.stopPropagation();
         onClick();
@@ -1185,10 +1204,10 @@ interface TutorialVideoModalProps {
 function TutorialVideoModal({ isOpen, onClose, tutorialUrl }: TutorialVideoModalProps) {
   if (!isOpen) return null;
 
-  const previewUrl = toGoogleDrivePreviewUrl(tutorialUrl);
+  const previewUrl = getTutorialEmbedUrl(tutorialUrl);
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/65 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+    <div id="tutorial-video-modal" className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/65 backdrop-blur-xs p-4 animate-in fade-in duration-200">
       <div className="bg-white rounded-[18px] shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col border border-slate-200 animate-in zoom-in-98 duration-200">
         
         {/* Modal Header */}
@@ -1202,6 +1221,7 @@ function TutorialVideoModal({ isOpen, onClose, tutorialUrl }: TutorialVideoModal
             </h3>
           </div>
           <button
+            id="tutorial-video-close-button"
             onClick={onClose}
             className="p-1.5 hover:bg-slate-200 rounded-full text-slate-400 hover:text-slate-600 transition-colors"
           >
@@ -1213,6 +1233,7 @@ function TutorialVideoModal({ isOpen, onClose, tutorialUrl }: TutorialVideoModal
         <div className="p-6 bg-slate-100 flex items-center justify-center">
           {previewUrl ? (
             <iframe
+              id="tutorial-video-iframe"
               src={previewUrl}
               className="w-full aspect-video rounded-xl border border-slate-200 bg-slate-950 shadow-md"
               allow="autoplay; fullscreen"

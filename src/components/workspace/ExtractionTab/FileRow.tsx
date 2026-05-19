@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
 import { 
   Pencil, Trash2, MoreVertical, Folder, FileText, 
   Image as ImageIcon, Mic as AudioIcon, Video as VideoIcon, 
@@ -19,6 +20,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+
 
 export const getFileIcon = (type: string, name: string = "") => {
   const lowerType = type?.toLowerCase();
@@ -76,6 +79,8 @@ const getProcessedDuration = (file: any) => {
 };
 
 export function FileRow({ file, isSelected, onSelect, onMove, onDelete, onRename, onRerun, onOpenHistory, batches, isIndented, onHoverChange }: any) {
+  const { caseId } = useParams<{ caseId: string }>();
+  const isAnalysisActive = localStorage.getItem(`analysis_running_${caseId}`) === "true";
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [isFailedHovered, setIsFailedHovered] = useState(false);
 
@@ -181,9 +186,28 @@ export function FileRow({ file, isSelected, onSelect, onMove, onDelete, onRename
                       <Box className="h-3.5 w-3.5 mr-2 text-slate-400" /> Pindah ke File Mandiri
                    </DropdownMenuItem>
                    <DropdownMenuSeparator />
-                   <DropdownMenuItem onClick={onDelete} className="text-rose-600 focus:text-rose-600 text-[11px] font-bold py-2 rounded-[4px]">
-                      <Trash2 className="h-3.5 w-3.5 mr-2" /> Hapus Bukti
-                   </DropdownMenuItem>
+                   <DropdownMenuItem onClick={(e) => {
+                         const isAnalysisActive = localStorage.getItem(`analysis_running_${caseId}`) === "true";
+                         if (isAnalysisActive) {
+                           e.preventDefault();
+                           e.stopPropagation();
+                           toast.warning("File tidak dapat dihapus karena analisis AI sedang berjalan menggunakan sumber daya dari repositori bukti.");
+                           return;
+                         }
+                         if (file.extraction_status === "pending" || file.extraction_status === "processing") {
+                           e.preventDefault();
+                           e.stopPropagation();
+                           toast.warning(`File "${file.name}" sedang dalam proses ${file.extraction_status === "pending" ? "upload" : "analisis/ekstraksi"} dan tidak dapat dihapus.`);
+                           return;
+                         }
+                         onDelete();
+                       }} 
+                       className={cn(
+                         "text-rose-600 focus:text-rose-600 text-[11px] font-bold py-2 rounded-[4px]",
+                         (file.extraction_status === "pending" || file.extraction_status === "processing" || isAnalysisActive) && "text-slate-400 focus:text-slate-400 opacity-60"
+                       )}>
+                       <Trash2 className="h-3.5 w-3.5 mr-2" /> Hapus Bukti
+                    </DropdownMenuItem>
                 </DropdownMenuContent>
              </DropdownMenu>
           </div>

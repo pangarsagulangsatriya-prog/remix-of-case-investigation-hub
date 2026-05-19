@@ -454,6 +454,21 @@ export default function AnalysisTab() {
     }
   }, [evidenceFiles.length, agents.length]);
 
+  const isAnyAgentRunning = useMemo(() => {
+    return globalStatus === "running" || agents.some(a => a.status === "running");
+  }, [globalStatus, agents]);
+
+  useEffect(() => {
+    if (isAnyAgentRunning) {
+      localStorage.setItem(`analysis_running_${caseId}`, "true");
+    } else {
+      localStorage.removeItem(`analysis_running_${caseId}`);
+    }
+    return () => {
+      localStorage.removeItem(`analysis_running_${caseId}`);
+    };
+  }, [isAnyAgentRunning, caseId]);
+
   const handleSaveKnowledge = (agentId: string) => {
     const selection = localKnowledgeSelection[agentId];
     if (selection) {
