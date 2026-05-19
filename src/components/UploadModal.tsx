@@ -211,7 +211,7 @@ export function UploadModal({
   isCreateCaseMode = false,
 }: UploadModalProps) {
   const [groups, setGroups] = useState<UploadGroup[]>([]);
-  const [caseTitle, setCaseTitle] = useState("");
+  const [caseTitle, setCaseTitle] = useState("New Case");
   const [selectedSite, setSelectedSite] = useState("Site Alpha");
   const [isConfirmed, setIsConfirmed] = useState(false);
 
@@ -226,15 +226,6 @@ export function UploadModal({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (isCreateCaseMode && fileItems.length > 0 && !caseTitle) {
-      const firstFile = fileItems[0].file.name;
-      const baseName = firstFile.substring(0, firstFile.lastIndexOf('.')) || firstFile;
-      const cleanName = baseName.replace(/[_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-      setCaseTitle(`Investigasi: ${cleanName}`);
-    }
-  }, [fileItems, isCreateCaseMode, caseTitle]);
 
   // ---- DOCX Preview Logic ----
   useEffect(() => {
@@ -609,7 +600,7 @@ export function UploadModal({
 
   // ---- Derived values ----
 
-  const isTitleInvalid = !caseTitle.trim() || caseTitle.trim().toLowerCase() === "create new case" || caseTitle.trim().toLowerCase() === "create workspace";
+  const isTitleInvalid = !caseTitle.trim() || caseTitle.trim().toLowerCase() === "new case" || caseTitle.trim().toLowerCase() === "create new case" || caseTitle.trim().toLowerCase() === "create workspace";
   const totalValid = fileItems.filter((f) => !f.error).length;
   const isSubmitDisabled = isUploading || totalValid === 0 || (isCreateCaseMode && (!isConfirmed || isTitleInvalid));
   const totalBytes = fileItems
@@ -753,8 +744,9 @@ export function UploadModal({
             </div>
           </div>
         ) : (
-          /* Split pane: file list + preview */
-          <div className="flex-1 flex overflow-hidden">
+          /* Vertical Stack: Split pane (top) + Case config (bottom) */
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="flex-1 flex overflow-hidden">
             {/* ---- Left: grouped file list ---- */}
             <div className="w-[320px] min-w-[240px] flex flex-col border-r bg-white overflow-hidden shrink-0">
               <div className="flex-1 overflow-auto custom-scrollbar">
@@ -1000,99 +992,85 @@ export function UploadModal({
               )}
             </div>
 
-            {/* ---- Far Right: Case Metadata (Only visible if isCreateCaseMode) ---- */}
+            </div>
+
+            {/* ---- Bottom: Case Metadata (Only visible if isCreateCaseMode) ---- */}
             {isCreateCaseMode && (
-              <div className="w-[300px] border-l bg-slate-50/50 flex flex-col overflow-hidden shrink-0">
-                <div className="p-4 border-b bg-white shrink-0">
-                  <span className="text-[10px] font-black text-slate-700 block leading-tight uppercase tracking-wider mb-1">
+              <div className="border-t border-slate-200 bg-slate-50 flex items-center shrink-0 p-4 gap-6 overflow-x-auto custom-scrollbar">
+                
+                {/* 1. Header Area */}
+                <div className="flex-shrink-0 w-44">
+                  <span className="text-[10px] font-black text-slate-700 block leading-tight uppercase tracking-wider mb-0.5">
                     CASE CONFIGURATION
                   </span>
                   <span className="text-[9px] text-slate-450 font-bold block leading-normal">
-                    Specify metadata for the new forensic workspace.
+                    Workspace Metadata
                   </span>
                 </div>
-                
-                <div className="flex-1 overflow-auto p-4 space-y-5 custom-scrollbar">
-                  {/* Case Title Input */}
-                  <div className="space-y-1.5">
-                    <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block">
-                      Case Title
-                    </label>
-                    <input
-                      type="text"
-                      className={cn(
-                        "w-full h-8 text-xs border rounded-[4px] px-2.5 font-bold text-slate-800 transition-all focus:outline-hidden focus:ring-0",
-                        isTitleInvalid ? "border-rose-300 bg-rose-50/20 focus:border-rose-400" : "border-slate-200 bg-white focus:border-slate-400"
-                      )}
-                      placeholder="e.g. Investigasi Kecelakaan Belawan"
-                      value={caseTitle}
-                      onChange={(e) => setCaseTitle(e.target.value)}
-                    />
-                    {isTitleInvalid && (
-                      <span className="text-[8px] font-bold text-rose-500 block leading-normal uppercase tracking-wider">
-                        {!caseTitle.trim() ? "Judul tidak boleh kosong" : "Judul tidak boleh default"}
-                      </span>
+
+                {/* 2. Case Title Input */}
+                <div className="flex-1 min-w-[200px] relative">
+                  <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-1.5">
+                    Case Title
+                  </label>
+                  <input
+                    type="text"
+                    className={cn(
+                      "w-full h-8 text-xs border rounded-[4px] px-2.5 font-bold transition-all focus:outline-hidden focus:ring-0",
+                      isTitleInvalid ? "border-rose-400 bg-rose-50/30 text-rose-700 focus:border-rose-500" : "border-slate-200 bg-white text-slate-800 focus:border-slate-400"
                     )}
-                  </div>
-
-                  {/* Site Dropdown */}
-                  <div className="space-y-1.5">
-                    <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block">
-                      Operational Site / Location
-                    </label>
-                    <select
-                      className="w-full h-8 text-xs border border-slate-200 rounded-[4px] px-2.5 bg-white font-bold text-slate-800 focus:outline-hidden focus:border-slate-400 cursor-pointer"
-                      value={selectedSite}
-                      onChange={(e) => setSelectedSite(e.target.value)}
-                    >
-                      <option value="Site Alpha">Site Alpha</option>
-                      <option value="Site Beta">Site Beta</option>
-                      <option value="Site Gamma">Site Gamma</option>
-                    </select>
-                  </div>
-
-                  {/* Initiator Card (Creator info) */}
-                  <div className="space-y-1.5">
-                    <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block">
-                      Initiated By
-                    </label>
-                    <div className="bg-white border border-slate-200/60 rounded-[4px] p-3 shadow-3xs flex items-start gap-3">
-                      <div className="h-8 w-8 rounded-full bg-slate-50 border border-slate-200/80 flex items-center justify-center text-slate-600 shrink-0">
-                        <Cpu className="h-4 w-4 text-slate-500" />
-                      </div>
-                      <div className="space-y-0.5">
-                        <span className="text-[10px] font-black text-slate-800 block">
-                          Administrator (admin)
-                        </span>
-                        <span className="text-[8px] font-bold text-slate-400 block uppercase tracking-wider leading-none">
-                          Senior Lead Investigator
-                        </span>
-                        <span className="text-[8.5px] font-bold text-slate-500 block uppercase tracking-wide leading-normal">
-                          Forensic Ops Team
-                        </span>
-                      </div>
-                    </div>
-                  </div>
+                    placeholder="e.g. Investigasi Kecelakaan Belawan"
+                    value={caseTitle}
+                    onChange={(e) => setCaseTitle(e.target.value)}
+                  />
+                  {isTitleInvalid && (
+                    <span className="text-[8px] font-bold text-rose-500 absolute -bottom-3.5 left-0 block leading-normal uppercase tracking-wider">
+                      {!caseTitle.trim() ? "Judul tidak boleh kosong" : "Judul tidak boleh default"}
+                    </span>
+                  )}
                 </div>
 
-                {/* Bottom checklist and confirmation */}
-                <div className="p-4 border-t bg-white shrink-0 space-y-3 shadow-xs">
-                  <div className="flex items-start gap-2.5">
+                {/* 3. Site Dropdown */}
+                <div className="w-40 flex-shrink-0">
+                  <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-1.5">
+                    Operational Site
+                  </label>
+                  <select
+                    className="w-full h-8 text-xs border border-slate-200 rounded-[4px] px-2.5 bg-white font-bold text-slate-800 focus:outline-hidden focus:border-slate-400 cursor-pointer"
+                    value={selectedSite}
+                    onChange={(e) => setSelectedSite(e.target.value)}
+                  >
+                    <option value="Site Alpha">Site Alpha</option>
+                    <option value="Site Beta">Site Beta</option>
+                    <option value="Site Gamma">Site Gamma</option>
+                  </select>
+                </div>
+
+                {/* 4. Initiator & Validation Checkbox */}
+                <div className="flex-shrink-0 w-56 flex flex-col justify-center border-l border-slate-200 pl-6 space-y-2">
+                  <div className="flex items-center gap-1.5">
+                    <Cpu className="h-3 w-3 text-slate-400" />
+                    <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">
+                      Admin (Forensic Ops)
+                    </span>
+                  </div>
+                  <div className="flex items-start gap-2">
                     <input
                       type="checkbox"
                       id="confirm-metadata"
-                      className="h-3.5 w-3.5 rounded-sm border-slate-350 text-slate-900 focus:ring-slate-900 mt-0.5 cursor-pointer"
+                      className="h-3.5 w-3.5 rounded-sm border-slate-350 text-slate-900 focus:ring-slate-900 mt-0.5 cursor-pointer shrink-0"
                       checked={isConfirmed}
                       onChange={(e) => setIsConfirmed(e.target.checked)}
                     />
                     <label
                       htmlFor="confirm-metadata"
-                      className="text-[9.5px] text-slate-500 font-bold uppercase tracking-tight leading-normal cursor-pointer select-none"
+                      className="text-[8.5px] text-slate-600 font-bold uppercase tracking-tight leading-normal cursor-pointer select-none"
                     >
-                      Saya menyatakan data bukti & lokasi kasus sudah diverifikasi.
+                      Data bukti & lokasi kasus sudah diverifikasi.
                     </label>
                   </div>
                 </div>
+
               </div>
             )}
           </div>
