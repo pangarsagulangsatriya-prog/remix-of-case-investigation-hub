@@ -375,19 +375,22 @@ export default function CaseWorkspacePage() {
 
           {/* Delete Case Confirmation Modal */}
           {isDeleteModalOpen && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-350">
-              <div className="bg-white border border-slate-200 w-full max-w-lg rounded-sm shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
-                {/* Header Banner */}
-                <div className={`p-5 flex items-center gap-3 border-b ${isProcessingActive ? 'bg-rose-50 border-rose-100' : 'bg-slate-900 text-white border-slate-900'}`}>
-                  <div className={`h-9 w-9 rounded-full flex items-center justify-center shrink-0 ${isProcessingActive ? 'bg-rose-100 text-rose-700' : 'bg-white/10 text-rose-400'}`}>
-                    <ShieldAlert className="h-5 w-5" />
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-[6px] transition-all duration-300">
+              <div className="bg-white border border-slate-200/80 w-full max-w-md rounded-md shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-[0.98] duration-200 border-t-4 border-t-rose-600">
+                {/* Header Banner - Clinical, precise layout */}
+                <div className="px-6 py-5 flex items-start gap-4 border-b border-slate-100 bg-slate-50/50">
+                  <div className={`h-10 w-10 rounded flex items-center justify-center shrink-0 shadow-sm border ${isProcessingActive ? 'bg-rose-50 border-rose-200 text-rose-600' : 'bg-rose-50 border-rose-200 text-rose-600'}`}>
+                    <ShieldAlert className="h-5 w-5 stroke-[2]" />
                   </div>
-                  <div>
-                    <h3 className={`text-sm font-black uppercase tracking-wider ${isProcessingActive ? 'text-rose-950' : 'text-white'}`}>
-                      {isProcessingActive ? 'Penghapusan Ditangguhkan (Interlock Proteksi)' : 'Hapus Kasus Forensik Permanen'}
+                  <div className="space-y-1">
+                    <span className="text-[9px] font-black text-rose-600 uppercase tracking-[0.25em] block leading-none">
+                      {isProcessingActive ? 'SYSTEM PURGE LOCKED' : 'DESTRUCTION PROTOCOL'}
+                    </span>
+                    <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-tight leading-tight">
+                      {isProcessingActive ? 'Penghapusan Ditangguhkan' : 'Hapus Kasus Forensik'}
                     </h3>
-                    <p className={`text-[10px] font-medium leading-none mt-1 ${isProcessingActive ? 'text-rose-600/80' : 'text-slate-400'}`}>
-                      Tindakan Kritis • Bersifat Permanen & Irreversible
+                    <p className="text-[10px] text-slate-400 font-semibold tracking-tight">
+                      {isProcessingActive ? 'Interlock proteksi berkas aktif' : 'Tindakan kritis • Bersifat permanen & irreversible'}
                     </p>
                   </div>
                 </div>
@@ -397,21 +400,21 @@ export default function CaseWorkspacePage() {
                   {isProcessingActive ? (
                     /* CASE A: Active Extraction / Analysis Running */
                     <div className="space-y-4">
-                      <div className="bg-rose-50/50 border border-rose-100 p-4 rounded-sm space-y-3">
-                        <span className="text-[10px] font-black text-rose-700 uppercase tracking-widest block flex items-center gap-1.5">
+                      <div className="bg-rose-50/30 border border-rose-100 p-4 rounded-sm space-y-3">
+                        <span className="text-[10px] font-black text-rose-700 uppercase tracking-widest block flex items-center gap-1.5 leading-none">
                           <Cpu className="h-3.5 w-3.5 animate-spin" />
-                          Berkas Bukti Sedang Berjalan ({runningFiles.length})
+                          Berkas Bukti Aktif ({runningFiles.length})
                         </span>
-                        <p className="text-xs font-medium text-rose-950/80 leading-relaxed">
+                        <p className="text-xs font-semibold text-rose-950/80 leading-relaxed">
                           Ada proses ekstraksi data bukti forensik yang sedang berlangsung pada kasus ini. Demi menjaga integritas data dan kestabilan sistem, tindakan penghapusan diblokir hingga seluruh proses berikut selesai secara tuntas.
                         </p>
                         
-                        <div className="max-h-40 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+                        <div className="max-h-40 overflow-y-auto space-y-1.5 pr-1 custom-scrollbar">
                           {runningFiles.map(f => (
-                            <div key={f.id} className="flex items-center justify-between p-2.5 bg-white border border-rose-100/50 rounded-sm">
+                            <div key={f.id} className="flex items-center justify-between p-2.5 bg-white border border-rose-100/50 rounded-sm shadow-sm">
                               <div className="flex items-center gap-2">
-                                <Cpu className="h-3.5 w-3.5 text-rose-500 animate-spin" />
-                                <span className="text-xs font-bold text-slate-700 truncate max-w-[240px]">{f.name}</span>
+                                <Loader2 className="h-3.5 w-3.5 text-rose-500 animate-spin" />
+                                <span className="text-xs font-bold text-slate-700 truncate max-w-[200px]">{f.name}</span>
                               </div>
                               <span className="text-[9px] font-black text-rose-600 uppercase tracking-wider bg-rose-50 px-2 py-0.5 rounded border border-rose-100">
                                 {f.extraction_status}
@@ -424,11 +427,18 @@ export default function CaseWorkspacePage() {
                   ) : (
                     /* CASE B: Safe to Delete (Idle) */
                     <div className="space-y-5">
-                      {/* Authorized Initiator Info */}
-                      <div className="bg-slate-50 border border-slate-200 p-4 rounded-sm space-y-1.5">
-                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Authorized Initiator</span>
-                        <div className="flex items-center gap-3">
-                          <div className="h-9 w-9 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-xs uppercase border border-slate-700">
+                      {/* Authorized Initiator Info - Dossier / Badge Style */}
+                      <div className="bg-slate-50 border border-slate-100 p-4 rounded-sm relative overflow-hidden space-y-3 shadow-inner">
+                        <div className="absolute top-0 right-0 bg-slate-200/50 border-l border-b border-slate-200/80 text-[7px] font-black text-slate-500 uppercase tracking-widest px-2.5 py-1 rounded-bl-sm">
+                          AUTHENTICATED OPERATOR
+                        </div>
+                        
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block leading-none">
+                          Initiating Officer
+                        </span>
+                        
+                        <div className="flex items-center gap-3 pt-1">
+                          <div className="h-9 w-9 rounded-sm bg-slate-900 text-white flex items-center justify-center font-bold text-xs uppercase border border-slate-800">
                             AD
                           </div>
                           <div>
@@ -438,33 +448,38 @@ export default function CaseWorkspacePage() {
                         </div>
                       </div>
 
-                      {/* Captcha Verification */}
-                      <div className="space-y-2">
+                      {/* Captcha Verification - Precise typography */}
+                      <div className="space-y-2.5">
                         <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">
                           Masukkan Kode Konfirmasi Kasus
                         </label>
                         <p className="text-xs text-slate-500 leading-normal">
-                          Silakan ketik nomor kasus <strong className="font-mono bg-slate-100 text-slate-800 px-1 rounded">#{caseData?.case_number}</strong> di bawah ini untuk mengonfirmasi penghapusan permanen.
+                          Ketik kode kasus unik <span className="font-mono font-bold bg-rose-50 text-rose-700 px-1.5 py-0.5 rounded border border-rose-100/50">#{caseData?.case_number}</span> di bawah untuk membypass proteksi.
                         </p>
-                        <input
-                          type="text"
-                          value={deleteCaptchaInput}
-                          onChange={(e) => setDeleteCaptchaInput(e.target.value)}
-                          placeholder="Ketik nomor kasus di sini..."
-                          className="w-full text-xs font-mono tracking-wider border border-slate-200 rounded p-2.5 bg-slate-50 focus:outline-none focus:bg-white focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all uppercase h-9"
-                        />
+                        <div className="relative">
+                          <input
+                            type="text"
+                            value={deleteCaptchaInput}
+                            onChange={(e) => setDeleteCaptchaInput(e.target.value)}
+                            placeholder="Ketik nomor kasus di sini..."
+                            className="w-full text-xs font-mono tracking-widest border border-slate-200 rounded p-2.5 bg-slate-50 focus:outline-none focus:bg-white focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all uppercase h-10 pr-10 shadow-sm"
+                          />
+                          <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
+                            <Lock className="h-4 w-4" />
+                          </div>
+                        </div>
                       </div>
 
-                      {/* Consent Checkbox */}
-                      <label className="flex gap-3 items-start cursor-pointer group select-none">
+                      {/* Consent Checkbox - Formally Wrapped */}
+                      <label className="flex gap-3 items-start cursor-pointer group select-none bg-rose-50/20 hover:bg-rose-50/30 border border-rose-100/40 p-3.5 rounded-sm transition-all">
                         <input
                           type="checkbox"
                           checked={isConsentChecked}
                           onChange={(e) => setIsConsentChecked(e.target.checked)}
-                          className="mt-0.5 h-4 w-4 rounded border-slate-300 text-rose-600 focus:ring-rose-500 cursor-pointer"
+                          className="mt-0.5 h-4 w-4 rounded border-slate-300 text-rose-600 focus:ring-rose-500 cursor-pointer shadow-sm"
                         />
-                        <span className="text-xs font-medium text-slate-600 group-hover:text-slate-900 transition-colors leading-relaxed">
-                          Saya menyatakan secara sadar bersedia menanggung segala konsekuensi penghapusan berkas kasus ini secara permanen dari server. Tindakan ini tidak dapat dibatalkan.
+                        <span className="text-xs font-bold text-slate-600 group-hover:text-slate-900 transition-colors leading-relaxed">
+                          Saya menyatakan secara sadar bertanggung jawab penuh atas segala konsekuensi penghapusan berkas kasus ini secara permanen dari basis data sistem.
                         </span>
                       </label>
                     </div>
@@ -476,7 +491,7 @@ export default function CaseWorkspacePage() {
                   {isProcessingActive ? (
                     <Button 
                       onClick={() => setIsDeleteModalOpen(false)}
-                      className="bg-slate-900 text-white font-bold text-[10px] uppercase tracking-wider px-5 h-9"
+                      className="bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-[10px] uppercase tracking-wider px-5 h-9 rounded-sm shadow-sm transition-all"
                     >
                       Kembali ke Workspace
                     </Button>
@@ -485,21 +500,21 @@ export default function CaseWorkspacePage() {
                       <Button 
                         variant="ghost"
                         onClick={() => setIsDeleteModalOpen(false)}
-                        className="text-slate-500 hover:text-slate-900 font-bold text-[10px] uppercase tracking-wider h-9"
+                        className="text-slate-400 hover:text-slate-800 font-extrabold text-[10px] uppercase tracking-wider h-9 px-4 rounded-sm border border-slate-200/80 bg-white hover:bg-slate-50 transition-all"
                       >
                         Batal
                       </Button>
                       <Button 
                         onClick={handleDeleteCase}
                         disabled={deleteCaptchaInput.trim() !== (caseData?.case_number || "") || !isConsentChecked || deleteCaseMutation.isPending}
-                        className="bg-rose-600 hover:bg-rose-700 text-white font-bold text-[10px] uppercase tracking-wider px-5 h-9 gap-1.5 shadow-sm transition-all animate-none"
+                        className="bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white font-extrabold text-[10px] uppercase tracking-wider px-5 h-9 gap-1.5 rounded-sm shadow-sm transition-all flex items-center justify-center"
                       >
                         {deleteCaseMutation.isPending ? (
                           <Loader2 className="h-3.5 w-3.5 animate-spin" />
                         ) : (
                           <Trash2 className="h-3.5 w-3.5" />
                         )}
-                        {deleteCaseMutation.isPending ? 'Menghapus...' : 'Hapus Kasus Permanen'}
+                        {deleteCaseMutation.isPending ? 'Purging...' : 'PURGE CASE PERMANENTLY'}
                       </Button>
                     </>
                   )}
