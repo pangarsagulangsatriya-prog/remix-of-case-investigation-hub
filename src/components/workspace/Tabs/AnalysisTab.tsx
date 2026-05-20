@@ -435,6 +435,7 @@ export default function AnalysisTab() {
   const [validationError, setValidationError] = useState<string | null>(null);
   const [isEvidenceExpanded, setIsEvidenceExpanded] = useState(false);
   const [expandedEntityRows, setExpandedEntityRows] = useState<string[]>([]);
+  const [payloadDrawer, setPayloadDrawer] = useState<any | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -510,6 +511,11 @@ export default function AnalysisTab() {
   }, [selectedAgentId]);
 
   const selectedAgent = agents.find(a => a.id === selectedAgentId);
+  const selectedFactItem = useMemo(() => {
+    if (!selectedRowId) return null;
+    const factAgent = agents.find(a => a.id === 'fact');
+    return factAgent?.results?.chronology_items?.find((i: any) => i.id === selectedRowId) || null;
+  }, [selectedRowId, agents]);
   
   const slides = React.useMemo(() => {
     const agent = agents.find(a => a.id === selectedAgentId);
@@ -1355,6 +1361,37 @@ export default function AnalysisTab() {
 
                                  <div className="flex-1 overflow-y-auto custom-scrollbar">
                                     <div className="p-5 space-y-8">
+                                       <div className="space-y-3">
+                                          <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Evidence Stack</span>
+                                            <span className="text-[9px] font-black text-slate-400 uppercase">{item.phase?.replace("_", " ")} · {item.time_label}</span>
+                                          </div>
+                                          <div className="grid gap-2">
+                                            {(["subject","action","object","source_system","condition"] as const).flatMap((key) => {
+                                              const entity = (item.breakdown?.[key] as any);
+                                              const citations = entity?.citations || (entity?.evidence ? [{ type: "audio", content: entity.evidence, source: "Derived audio note", time: "n/a" }] : []);
+                                              return citations.map((citation: any, idx: number) => {
+                                                const isPrimary = citation.type === "audio" || citation.type === "document" || citation.type === "doc";
+                                                const isVisual = citation.type === "video" || citation.type === "image";
+                                                return (
+                                                  <div key={`${key}-${idx}`} className="border border-slate-200 bg-white p-3">
+                                                    <div className="flex items-center justify-between mb-1">
+                                                      <div className="flex items-center gap-1.5">
+                                                        <span className={cn("text-[8px] px-1.5 py-0.5 font-black uppercase tracking-wider border", isPrimary ? "bg-indigo-50 text-indigo-700 border-indigo-100" : isVisual ? "bg-violet-50 text-violet-700 border-violet-100" : "bg-emerald-50 text-emerald-700 border-emerald-100")}>
+                                                          {isPrimary ? "PRIMARY" : isVisual ? "VISUAL VALIDATOR" : "OPERATIONAL VALIDATOR"}
+                                                        </span>
+                                                        <span className="text-[8px] px-1.5 py-0.5 bg-slate-50 text-slate-500 border border-slate-200 font-black uppercase">{key}</span>
+                                                      </div>
+                                                      <button className="text-[8px] font-black uppercase text-slate-500 hover:text-slate-900" onClick={() => setPayloadDrawer({ key, citation })}>Open Native Payload</button>
+                                                    </div>
+                                                    <p className="text-[10px] font-bold text-slate-800 leading-relaxed">{citation.content || citation.context || "No excerpt available."}</p>
+                                                    <p className="text-[9px] text-slate-500 mt-1">native_ref: {citation.type || "unknown"} / {citation.source || "N/A"}</p>
+                                                  </div>
+                                                );
+                                              });
+                                            })}
+                                          </div>
+                                       </div>
                                        {/* Fact Context - Interactive Decomposition */}
                                        <div className="space-y-3">
                                           <div className="flex items-center justify-between border-b border-slate-100 pb-2">
@@ -1546,6 +1583,25 @@ export default function AnalysisTab() {
                                        </div>
                                     </div>
                                  </div>
+                                 {payloadDrawer && (
+                                   <div className="absolute inset-0 bg-black/20 flex justify-end z-50">
+                                     <div className="h-full w-[420px] bg-white border-l border-slate-200 p-4 overflow-y-auto">
+                                       <div className="flex items-center justify-between mb-3">
+                                         <h4 className="text-[11px] font-black uppercase tracking-widest text-slate-800">Native Payload</h4>
+                                         <button onClick={() => setPayloadDrawer(null)} className="text-[9px] font-black uppercase text-slate-500">Close</button>
+                                       </div>
+                                       <div className="space-y-2 text-[11px]">
+                                         <p><span className="font-black">Element:</span> {payloadDrawer.key}</p>
+                                         <p><span className="font-black">Type:</span> {payloadDrawer.citation?.type || "n/a"}</p>
+                                         <p><span className="font-black">Source:</span> {payloadDrawer.citation?.source || "n/a"}</p>
+                                         <p><span className="font-black">Time/Page:</span> {payloadDrawer.citation?.time || payloadDrawer.citation?.page || "n/a"}</p>
+                                         <div className="border border-slate-200 bg-slate-50 p-3 mt-2">
+                                           <p className="text-[11px] font-medium leading-relaxed">{payloadDrawer.citation?.content || payloadDrawer.citation?.context || "No payload text."}</p>
+                                         </div>
+                                       </div>
+                                     </div>
+                                   </div>
+                                 )}
                               </div>
                            );
                         }
