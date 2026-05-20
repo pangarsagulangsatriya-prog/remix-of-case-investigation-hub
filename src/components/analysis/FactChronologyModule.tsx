@@ -99,6 +99,28 @@ export interface ChronologyItem {
   };
 }
 
+const getEvidenceStackSummary = (item: ChronologyItem) => {
+  const fields = ["subject", "action", "object", "source_system", "condition"] as const;
+  let primary = 0;
+  let operational = 0;
+  let visual = 0;
+  let gaps = 0;
+
+  fields.forEach((field) => {
+    const raw = (item.breakdown?.[field] as any)?.citations || [];
+    if (!raw.length && !(item.breakdown?.[field] as any)?.evidence) gaps += 1;
+    raw.forEach((citation: any) => {
+      const type = citation?.type;
+      if (type === "audio" || type === "document" || type === "doc") primary += 1;
+      else if (type === "video" || type === "image") visual += 1;
+      else operational += 1;
+    });
+  });
+
+  const status = gaps > 1 ? "Unvalidated" : "Corroborated";
+  return { primary, operational, visual, gaps, status };
+};
+
 export interface FactMetadata {
   incidentDate: string;
   incidentTime: string;
@@ -719,6 +741,18 @@ const FactDefaultView: React.FC<{
                                 )}>
                                   {item.chronology_text}
                                 </p>
+                                {(() => {
+                                  const stack = getEvidenceStackSummary(item);
+                                  return (
+                                    <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                                      <span className="text-[8px] px-2 py-0.5 bg-indigo-50 text-indigo-700 border border-indigo-100 font-black uppercase tracking-wider">P1 {stack.primary}</span>
+                                      <span className="text-[8px] px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-100 font-black uppercase tracking-wider">T2 {stack.operational}</span>
+                                      <span className="text-[8px] px-2 py-0.5 bg-violet-50 text-violet-700 border border-violet-100 font-black uppercase tracking-wider">T3/T4 {stack.visual}</span>
+                                      {stack.gaps > 0 && <span className="text-[8px] px-2 py-0.5 bg-amber-50 text-amber-700 border border-amber-100 font-black uppercase tracking-wider">Gap {stack.gaps}</span>}
+                                      <span className="text-[8px] px-2 py-0.5 bg-slate-100 text-slate-700 border border-slate-200 font-black uppercase tracking-wider">{stack.status}</span>
+                                    </div>
+                                  );
+                                })()}
                               </div>
                             </td>
                           </tr>
