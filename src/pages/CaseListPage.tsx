@@ -1667,26 +1667,29 @@ Rekomendasi Tindakan:
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].id !== "dummy-primary-1") {
-          items = parsed.map((p: any) => {
-            let category = "Document";
-            let groupId = "__loose__";
-            if (p.type === 'video') category = "Video";
-            else if (p.type === 'audio') { category = "Audio"; groupId = "data_audio"; }
-            else if (p.type === 'image') category = "Image";
-            
-            return {
-              id: p.id,
-              file: null,
-              name: p.name,
-              category,
-              size: p.size,
-              relativePath: p.name,
-              groupId: groupId,
-              groupName: groupId === "data_audio" ? "DATA AUDIO" : "Individual Files",
-              previewUrl: p.url || ""
-            };
-          });
+        if (Array.isArray(parsed)) {
+          const validEvidences = parsed.filter(p => p.id !== "dummy-primary-1");
+          if (validEvidences.length > 0) {
+            items = validEvidences.map((p: any) => {
+              let category = "Document";
+              let groupId = "__loose__";
+              if (p.type === 'video') category = "Video";
+              else if (p.type === 'audio') { category = "Audio"; groupId = "data_audio"; }
+              else if (p.type === 'image') category = "Image";
+              
+              return {
+                id: p.id,
+                file: null,
+                name: p.name,
+                category,
+                size: p.size,
+                relativePath: p.name,
+                groupId: groupId,
+                groupName: groupId === "data_audio" ? "DATA AUDIO" : "Individual Files",
+                previewUrl: p.url || ""
+              };
+            });
+          }
         }
       } catch (e) {}
     }
