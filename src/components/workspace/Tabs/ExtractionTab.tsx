@@ -69,7 +69,7 @@ export default function ExtractionTab() {
 
   // State
   const [primaryEvidences, setPrimaryEvidences] = useState<any[]>(() => {
-    const saved = localStorage.getItem(`primary_evidences_${caseId}`);
+    const saved = localStorage.getItem(`primary_evidences_demo_global`);
     if (saved) {
       try { return JSON.parse(saved); } catch (e) {}
     }
@@ -88,7 +88,7 @@ export default function ExtractionTab() {
   const savePrimaryEvidences = (newEvidences: any[]) => {
     setPrimaryEvidences(newEvidences);
     const toSave = newEvidences.map(({ url, ...rest }) => rest);
-    localStorage.setItem(`primary_evidences_${caseId}`, JSON.stringify(toSave));
+    localStorage.setItem(`primary_evidences_demo_global`, JSON.stringify(toSave));
   };
 
   const handleDeletePrimaryEvidence = (id: string) => {

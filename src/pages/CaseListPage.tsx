@@ -1662,7 +1662,7 @@ Rekomendasi Tindakan:
     const f4 = createImageFile("Foto_TKP_Loading_Dock.png", "BUKTI AREA LOADING DOCK", "Kamera CCTV-West Wing #02");
 
     let items: any[] = [];
-    const saved = localStorage.getItem(`primary_evidences_${caseData.id}`);
+    const saved = localStorage.getItem(`primary_evidences_demo_global`);
     
     if (saved) {
       try {
