@@ -13,6 +13,10 @@ const statusConfig: Record<string, { label: string; className: string }> = {
   closed: { label: "Closed", className: "bg-muted text-muted-foreground" },
   pending: { label: "Pending", className: "bg-status-review/10 text-status-review" },
   archived: { label: "Archived", className: "bg-slate-100 text-slate-500" },
+  belum_mulai: { label: "Belum Mulai", className: "bg-slate-100 text-slate-600 border border-slate-200" },
+  ekstraksi_bukti: { label: "Ekstraksi Bukti", className: "bg-amber-500/10 text-amber-600 border border-amber-500/20" },
+  analisis_bukti: { label: "Analisis Bukti", className: "bg-blue-500/10 text-blue-600 border border-blue-500/20" },
+  tersubmit: { label: "Tersubmit", className: "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20" },
 };
 
 export function StatusChip({ status }: { status: string }) {

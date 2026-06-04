@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/AppLayout";
 import { StatusChip, SeverityChip } from "@/components/StatusChip";
+import { cn } from "@/lib/utils";
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -21,6 +22,12 @@ import { useCases, useDeleteCase } from "@/hooks/useCases";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { Calendar as CalendarIcon } from "lucide-react";
+import type { DateRange } from "react-day-picker";
 import { 
   Loader2, 
   AlertCircle, 
@@ -36,12 +43,27 @@ import {
   ExternalLink,
   Search,
   Grid,
+  Filter,
   LayoutGrid,
   Plus,
   ChevronRight,
+  ChevronDown,
   MessageSquare,
   Paperclip,
-  X
+  X,
+  RefreshCw,
+  CheckCircle2,
+  XCircle,
+  Eye,
+  Upload,
+  Folder,
+  Folders,
+  Cpu,
+  Check,
+  Mic as AudioIcon,
+  Video as VideoIcon,
+  Image as ImageIcon,
+  Database
 } from "lucide-react";
 
 // Mock types for legacy compatibility if needed, but we'll use Case from hook
@@ -60,10 +82,171 @@ export default function CaseListPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("table");
   const [selectedCase, setSelectedCase] = useState<Case | null>(null);
   const [caseToDelete, setCaseToDelete] = useState<Case | null>(null);
+  const [caseToCreate, setCaseToCreate] = useState<Case | null>(null);
+  const [createdCaseIds, setCreatedCaseIds] = useState<Set<string>>(new Set());
+  const [incidentDateRange, setIncidentDateRange] = useState<DateRange | undefined>();
+  const [reportDateRange, setReportDateRange] = useState<DateRange | undefined>();
+  const [showFilters, setShowFilters] = useState(false);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
+  const [selectedSites, setSelectedSites] = useState<string[]>([]);
+  const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
+  const [selectedDetailLocations, setSelectedDetailLocations] = useState<string[]>([]);
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [isStepperExpanded, setIsStepperExpanded] = useState(false);
+  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({
+    noInsiden: true,
+    kategori: true,
+    waktuInsiden: true,
+    waktuPelaporan: true,
+    perusahaan: true,
+    site: true,
+    lokasi: true,
+    detailLokasi: true,
+    statusInvestigasi: true,
+    statusAi: true,
+  });
+
+  // Reset page to 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [
+    selectedCategories,
+    selectedCompanies,
+    selectedSites,
+    selectedLocations,
+    selectedDetailLocations,
+    selectedStatuses,
+    incidentDateRange,
+    reportDateRange
+  ]);  // Cascading lists helper
+  const availableLocations = selectedSites.flatMap(site => {
+    if (site === "GMO") return ["Pit J", "Pit A"];
+    if (site === "Site Alpha") return ["Pit B"];
+    if (site === "Site Beta") return ["Pit C", "Pit D"];
+    return [];
+  });
+
+  const availableDetailLocations = selectedLocations.flatMap(loc => {
+    if (loc === "Pit J") return ["Area Loading", "Workshop"];
+    if (loc === "Pit A") return ["Hauling Road"];
+    if (loc === "Pit B") return ["Workshop B"];
+    if (loc === "Pit C") return ["Pit C Area"];
+    if (loc === "Pit D") return ["Pit D Area"];
+    return [];
+  });
+
+  // Reset Lokasi & Detail Lokasi if parent changes
+  useEffect(() => {
+    if (selectedSites.length === 0) {
+      setSelectedLocations([]);
+      setSelectedDetailLocations([]);
+    } else {
+      setSelectedLocations(prev => prev.filter(loc => availableLocations.includes(loc)));
+    }
+  }, [selectedSites]);
+
+  useEffect(() => {
+    if (selectedLocations.length === 0) {
+      setSelectedDetailLocations([]);
+    } else {
+      setSelectedDetailLocations(prev => prev.filter(dt => availableDetailLocations.includes(dt)));
+    }
+  }, [selectedLocations]);
+
+  // Database Sync State
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [lastSyncTime, setLastSyncTime] = useState<Date>(new Date());
+  const [isLogsModalOpen, setIsLogsModalOpen] = useState(false);
+  const [syncLogs, setSyncLogs] = useState([
+    { id: 1, time: new Date(Date.now() - 3600000 * 2), status: "success", type: "auto", detail: "Updated 12 rows, 0 failed. Synced Evidence documents." },
+    { id: 2, time: new Date(Date.now() - 3600000 * 24), status: "failed", type: "auto", detail: "Failed to sync 2 rows due to network timeout." },
+  ]);
+
+  const handleClearAllFilters = () => {
+    setSelectedCategories([]);
+    setSelectedCompanies([]);
+    setIncidentDateRange(undefined);
+    setReportDateRange(undefined);
+    setSelectedSites([]);
+    setSelectedLocations([]);
+    setSelectedDetailLocations([]);
+    setSelectedStatuses([]);
+  };
+
+  const activeFiltersCount = 
+    selectedCategories.length + 
+    selectedCompanies.length + 
+    (incidentDateRange?.from ? 1 : 0) + 
+    (reportDateRange?.from ? 1 : 0) + 
+    selectedSites.length + 
+    selectedLocations.length + 
+    selectedDetailLocations.length +
+    selectedStatuses.length;
+
+  const handleSyncData = () => {
+    setIsSyncing(true);
+    setTimeout(() => {
+      setIsSyncing(false);
+      setLastSyncTime(new Date());
+      setSyncLogs(prev => [
+        { id: Date.now(), time: new Date(), status: "success", type: "manual", detail: "Updated 5 incidents, synced 3 new evidence files." },
+        ...prev
+      ]);
+      toast.success("Database synced successfully");
+    }, 2500);
+  };
 
   const { data: casesData, isLoading, error } = useCases();
   const deleteCaseMutation = useDeleteCase();
   const cases = casesData || [];
+
+  const filteredCases = cases.filter((c, i) => {
+    if (selectedCategories.length > 0) {
+      const category = ["Near Miss", "Medical Treatment Injury", "Property Damage", "First Aid", "Fatality"][i % 5];
+      if (!selectedCategories.includes(category)) return false;
+    }
+    if (selectedCompanies.length > 0) {
+      const company = "PT Fusi Solusi Transformasi";
+      if (!selectedCompanies.includes(company)) return false;
+    }
+    if (selectedSites.length > 0) {
+      const site = "GMO";
+      if (!selectedSites.includes(site)) return false;
+    }
+    if (selectedLocations.length > 0) {
+      const location = "Pit J";
+      if (!selectedLocations.includes(location)) return false;
+    }
+    if (selectedDetailLocations.length > 0) {
+      const detail = "Area Loading";
+      if (!selectedDetailLocations.includes(detail)) return false;
+    }
+    if (selectedStatuses.length > 0) {
+      const statusAI = ["belum_mulai", "ekstraksi_bukti", "analisis_bukti", "tersubmit"][i % 4];
+      if (!selectedStatuses.includes(statusAI)) return false;
+    }
+    if (incidentDateRange?.from) {
+      const incidentDateObj = new Date("2026-04-05");
+      if (incidentDateObj < incidentDateRange.from) return false;
+      if (incidentDateRange.to && incidentDateObj > incidentDateRange.to) return false;
+    }
+    if (reportDateRange?.from) {
+      const reportDateObj = new Date("2026-04-08");
+      if (reportDateObj < reportDateRange.from) return false;
+      if (reportDateRange.to && reportDateObj > reportDateRange.to) return false;
+    }
+    return true;
+  });
+
+  const itemsPerPage = 12;
+  const totalItems = filteredCases.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+  const activePage = currentPage > totalPages ? 1 : currentPage;
+  
+  const startIndex = (activePage - 1) * itemsPerPage;
+  const paginatedCases = filteredCases.slice(startIndex, startIndex + itemsPerPage);
 
   return (
     <AppLayout>
@@ -72,7 +255,7 @@ export default function CaseListPage() {
         <div className="filter-bar border-b-0 h-10 px-4">
           <div className="flex items-center gap-3">
             <h1 className="text-xs font-bold text-foreground">Investigation Cases</h1>
-            <span className="text-2xs font-medium text-muted-foreground px-1.5 py-0.5 bg-muted rounded-full">{cases.length}</span>
+            <span className="text-2xs font-medium text-muted-foreground px-1.5 py-0.5 bg-muted rounded-full">{filteredCases.length}</span>
           </div>
           <div className="flex-1" />
           <div className="flex items-center gap-2">
@@ -111,38 +294,642 @@ export default function CaseListPage() {
         </div>
 
         {/* Filter Selection Panel */}
-        <div className="flex items-center gap-3 px-4 py-2 border-y bg-slate-50/50">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-            <Input 
-              placeholder="Search cases..." 
-              className="h-8 w-60 pl-8 text-xs bg-white border-slate-200 focus-visible:ring-primary/20"
-            />
-          </div>
-          <div className="h-4 w-[1px] bg-slate-200 mx-1" />
-          <select className="text-xs border rounded-md px-2 py-1 bg-white border-slate-200 text-slate-700 min-w-[120px] focus:outline-none focus:ring-1 focus:ring-primary/20">
-            <option>All Sites</option>
-            <option>Site Alpha</option>
-            <option>Site Beta</option>
-            <option>Site Gamma</option>
-          </select>
+        <div className="flex flex-col border-y bg-slate-50/50">
+          {/* Main Top Bar */}
+          <div className="flex items-center justify-between px-4 py-2">
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                <Input 
+                  placeholder="Search ID Investigasi..." 
+                  className="h-8 w-60 pl-8 text-xs bg-white border-slate-200 focus-visible:ring-primary/20"
+                />
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className={`h-8 gap-1.5 font-semibold text-xs transition-all ${showFilters ? "bg-slate-100 border-slate-300 text-slate-900 shadow-inner" : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"} ${activeFiltersCount > 0 ? "border-primary bg-primary/5 text-primary hover:bg-primary/10" : ""}`}
+                onClick={() => setShowFilters(!showFilters)}
+              >
+                <Filter className={`h-3.5 w-3.5 ${activeFiltersCount > 0 ? "text-primary" : "text-slate-500"}`} />
+                Filters
+                {activeFiltersCount > 0 && (
+                  <span className="ml-1 bg-primary text-primary-foreground text-[10px] font-bold rounded-full h-4 min-w-[16px] px-1 flex items-center justify-center">
+                    {activeFiltersCount}
+                  </span>
+                )}
+              </Button>
 
-          <select className="text-xs border rounded-md px-2 py-1 bg-white border-slate-200 text-slate-700 min-w-[120px] focus:outline-none focus:ring-1 focus:ring-primary/20">
-            <option>All Statuses</option>
-            <option>Draft</option>
-            <option>In Progress</option>
-            <option>In Review</option>
-            <option>Approved</option>
-            <option>Closed</option>
-          </select>
-          <select className="text-xs border rounded-md px-2 py-1 bg-white border-slate-200 text-slate-700 min-w-[120px] focus:outline-none focus:ring-1 focus:ring-primary/20">
-            <option>All Owners</option>
-            <option>Sarah Chen</option>
-            <option>John Doe</option>
-            <option>Maria Santos</option>
-            <option>Ahmed Khan</option>
-            <option>Lisa Park</option>
-          </select>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 gap-1.5 font-semibold text-xs bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                  >
+                    <Eye className="h-3.5 w-3.5 text-slate-500" />
+                    Kolom
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-56 p-2 bg-white border shadow-lg rounded-md z-30">
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2 py-1.5 border-b mb-1">Tampilkan Kolom</div>
+                  {[
+                    { key: "noInsiden", label: "No Insiden" },
+                    { key: "kategori", label: "Kategori Insiden" },
+                    { key: "waktuInsiden", label: "Waktu Insiden" },
+                    { key: "waktuPelaporan", label: "Waktu Pelaporan" },
+                    { key: "perusahaan", label: "Perusahaan Pelapor" },
+                    { key: "site", label: "Site" },
+                    { key: "lokasi", label: "Lokasi" },
+                    { key: "detailLokasi", label: "Detail Lokasi" },
+                    { key: "statusInvestigasi", label: "Status Investigasi" },
+                    { key: "statusAi", label: "Status AI" },
+                  ].map((col) => {
+                    const isChecked = visibleColumns[col.key];
+                    return (
+                      <div
+                        key={col.key}
+                        className="flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer hover:bg-slate-50 text-xs font-semibold text-slate-700"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setVisibleColumns(prev => ({
+                            ...prev,
+                            [col.key]: !prev[col.key]
+                          }));
+                        }}
+                      >
+                        <Checkbox checked={isChecked} />
+                        <span>{col.label}</span>
+                      </div>
+                    );
+                  })}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className="flex flex-col items-end">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Last Sync</span>
+                <span className="text-xs font-semibold text-slate-700">{lastSyncTime.toLocaleDateString('en-GB', {day: '2-digit', month: 'short', year: 'numeric'})} {lastSyncTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+              </div>
+              <Button 
+                size="icon"
+                variant="ghost" 
+                className="h-8 w-8 text-slate-400 hover:text-primary hover:bg-primary/10 rounded-full"
+                onClick={() => setIsLogsModalOpen(true)}
+                title="View Sync Logs"
+              >
+                <History className="h-4 w-4" />
+              </Button>
+              <div className="h-6 w-[1px] bg-slate-200 mx-1" />
+              <Button 
+                size="sm" 
+                variant="outline"
+                disabled={isSyncing}
+                className="h-8 px-3 text-xs font-bold gap-2 bg-white hover:bg-slate-50 transition-all border-slate-200"
+                onClick={handleSyncData}
+              >
+                {isSyncing ? <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" /> : <RefreshCw className="h-3.5 w-3.5 text-primary" />}
+                {isSyncing ? "Syncing..." : "Sync Data"}
+              </Button>
+            </div>
+          </div>
+
+          {/* Collapsible Expanded Filters */}
+          {showFilters && (
+            <div className="px-4 py-3 border-t bg-slate-100/30 flex flex-col gap-3 animate-in fade-in slide-in-from-top-2 duration-200">
+              <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 gap-3 items-end w-full">
+                {/* Kategori Insiden */}
+                <div className="flex flex-col gap-1.5 w-full">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Kategori Insiden</label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className={`h-8 pl-3 pr-2 text-xs font-normal w-full justify-between shadow-none cursor-pointer border transition-colors ${selectedCategories.length > 0 ? "border-primary bg-primary/5 text-primary hover:bg-primary/10" : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"}`}
+                      >
+                        <span className="truncate">
+                          {selectedCategories.length > 0 ? `Kategori (${selectedCategories.length})` : "Kategori Insiden"}
+                        </span>
+                        <ChevronDown className="h-3.5 w-3.5 opacity-50 ml-1.5" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-56 p-3 bg-white shadow-lg border rounded-md" align="start">
+                      <div className="flex items-center justify-between border-b pb-2 mb-2">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Kategori</span>
+                        {selectedCategories.length > 0 && (
+                          <button onClick={() => setSelectedCategories([])} className="text-[10px] font-bold text-rose-500 hover:text-rose-600">Clear</button>
+                        )}
+                      </div>
+                      <div className="flex flex-col gap-1.5 max-h-40 overflow-y-auto">
+                        {["Near Miss", "Medical Treatment Injury", "Property Damage", "First Aid", "Fatality"].map((cat) => {
+                          const isChecked = selectedCategories.includes(cat);
+                          return (
+                            <div 
+                              key={cat}
+                              className="flex items-center gap-2 px-1.5 py-1 rounded cursor-pointer hover:bg-slate-50"
+                              onClick={() => {
+                                if (isChecked) {
+                                  setSelectedCategories(selectedCategories.filter(c => c !== cat));
+                                } else {
+                                  setSelectedCategories([...selectedCategories, cat]);
+                                }
+                              }}
+                            >
+                              <Checkbox checked={isChecked} />
+                              <span className="text-xs text-slate-700 font-medium">{cat}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                {/* Perusahaan Pelapor */}
+                <div className="flex flex-col gap-1.5 w-full">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Perusahaan Pelapor</label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className={`h-8 pl-3 pr-2 text-xs font-normal w-full justify-between shadow-none cursor-pointer border transition-colors ${selectedCompanies.length > 0 ? "border-primary bg-primary/5 text-primary hover:bg-primary/10" : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"}`}
+                      >
+                        <span className="truncate">
+                          {selectedCompanies.length > 0 ? `Perusahaan (${selectedCompanies.length})` : "Perusahaan Pelapor"}
+                        </span>
+                        <ChevronDown className="h-3.5 w-3.5 opacity-50 ml-1.5" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-64 p-3 bg-white shadow-lg border rounded-md" align="start">
+                      <div className="flex items-center justify-between border-b pb-2 mb-2">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Perusahaan</span>
+                        {selectedCompanies.length > 0 && (
+                          <button onClick={() => setSelectedCompanies([])} className="text-[10px] font-bold text-rose-500 hover:text-rose-600">Clear</button>
+                        )}
+                      </div>
+                      <div className="flex flex-col gap-1.5 max-h-40 overflow-y-auto">
+                        {["PT Fusi Solusi Transformasi", "PT Tambang Makmur", "PT Energy Jaya"].map((comp) => {
+                          const isChecked = selectedCompanies.includes(comp);
+                          return (
+                            <div 
+                              key={comp}
+                              className="flex items-center gap-2 px-1.5 py-1 rounded cursor-pointer hover:bg-slate-50"
+                              onClick={() => {
+                                if (isChecked) {
+                                  setSelectedCompanies(selectedCompanies.filter(c => c !== comp));
+                                } else {
+                                  setSelectedCompanies([...selectedCompanies, comp]);
+                                }
+                              }}
+                            >
+                              <Checkbox checked={isChecked} />
+                              <span className="text-xs text-slate-700 font-medium truncate">{comp}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                {/* Waktu Insiden */}
+                <div className="flex flex-col gap-1.5 w-full">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Waktu Insiden</label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <div className="relative inline-flex items-center w-full">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className={`h-8 pl-3 pr-8 text-xs font-normal w-full justify-between shadow-none cursor-pointer border transition-colors ${incidentDateRange?.from ? "border-primary bg-primary/5 text-primary hover:bg-primary/10" : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"}`}
+                        >
+                          <div className="flex items-center gap-1.5 truncate">
+                            <span className="truncate">
+                              {incidentDateRange?.from ? (
+                                incidentDateRange.to ? (
+                                  `${format(incidentDateRange.from, "dd MMM yyyy")} - ${format(incidentDateRange.to, "dd MMM yyyy")}`
+                                ) : (
+                                  format(incidentDateRange.from, "dd MMM yyyy")
+                                )
+                              ) : (
+                                "Waktu Insiden"
+                              )}
+                            </span>
+                          </div>
+                          {!incidentDateRange?.from && <CalendarIcon className="h-3.5 w-3.5 opacity-50" />}
+                        </Button>
+                        {incidentDateRange?.from && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              e.preventDefault();
+                              setIncidentDateRange(undefined);
+                            }}
+                            className="absolute right-2.5 p-0.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
+                            title="Hapus filter"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        )}
+                      </div>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0 bg-white shadow-md border rounded-md" align="start">
+                      <Calendar
+                        mode="range"
+                        selected={incidentDateRange}
+                        onSelect={setIncidentDateRange}
+                        initialFocus
+                      />
+                      <div className="flex items-center justify-between px-3 py-2 border-t bg-slate-50 text-xs">
+                        <span className="text-slate-500 font-medium truncate max-w-[180px]">
+                          {incidentDateRange?.from ? (
+                            incidentDateRange.to ? (
+                              `${format(incidentDateRange.from, "dd MMM yyyy")} - ${format(incidentDateRange.to, "dd MMM yyyy")}`
+                            ) : (
+                              format(incidentDateRange.from, "dd MMM yyyy")
+                            )
+                          ) : (
+                            "Belum ada rentang"
+                          )}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 px-2 text-xs font-semibold text-slate-500 hover:text-rose-600 hover:bg-rose-50"
+                          onClick={() => setIncidentDateRange(undefined)}
+                        >
+                          Clear
+                        </Button>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                {/* Waktu Pelaporan */}
+                <div className="flex flex-col gap-1.5 w-full">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Waktu Pelaporan</label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <div className="relative inline-flex items-center w-full">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className={`h-8 pl-3 pr-8 text-xs font-normal w-full justify-between shadow-none cursor-pointer border transition-colors ${reportDateRange?.from ? "border-primary bg-primary/5 text-primary hover:bg-primary/10" : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"}`}
+                        >
+                          <div className="flex items-center gap-1.5 truncate">
+                            <span className="truncate">
+                              {reportDateRange?.from ? (
+                                reportDateRange.to ? (
+                                  `${format(reportDateRange.from, "dd MMM yyyy")} - ${format(reportDateRange.to, "dd MMM yyyy")}`
+                                ) : (
+                                  format(reportDateRange.from, "dd MMM yyyy")
+                                )
+                              ) : (
+                                "Waktu Pelaporan"
+                              )}
+                            </span>
+                          </div>
+                          {!reportDateRange?.from && <CalendarIcon className="h-3.5 w-3.5 opacity-50" />}
+                        </Button>
+                        {reportDateRange?.from && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              e.preventDefault();
+                              setReportDateRange(undefined);
+                            }}
+                            className="absolute right-2.5 p-0.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
+                            title="Hapus filter"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        )}
+                      </div>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0 bg-white shadow-md border rounded-md" align="start">
+                      <Calendar
+                        mode="range"
+                        selected={reportDateRange}
+                        onSelect={setReportDateRange}
+                        initialFocus
+                      />
+                      <div className="flex items-center justify-between px-3 py-2 border-t bg-slate-50 text-xs">
+                        <span className="text-slate-500 font-medium truncate max-w-[180px]">
+                          {reportDateRange?.from ? (
+                            reportDateRange.to ? (
+                              `${format(reportDateRange.from, "dd MMM yyyy")} - ${format(reportDateRange.to, "dd MMM yyyy")}`
+                            ) : (
+                              format(reportDateRange.from, "dd MMM yyyy")
+                            )
+                          ) : (
+                            "Belum ada rentang"
+                          )}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 px-2 text-xs font-semibold text-slate-500 hover:text-rose-600 hover:bg-rose-50"
+                          onClick={() => setReportDateRange(undefined)}
+                        >
+                          Clear
+                        </Button>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                {/* Site */}
+                <div className="flex flex-col gap-1.5 w-full">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Site</label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className={`h-8 pl-3 pr-2 text-xs font-normal w-full justify-between shadow-none cursor-pointer border transition-colors ${selectedSites.length > 0 ? "border-primary bg-primary/5 text-primary hover:bg-primary/10" : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"}`}
+                      >
+                        <span className="truncate">
+                          {selectedSites.length > 0 ? `Site (${selectedSites.length})` : "Site"}
+                        </span>
+                        <ChevronDown className="h-3.5 w-3.5 opacity-50 ml-1.5" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-48 p-3 bg-white shadow-lg border rounded-md" align="start">
+                      <div className="flex items-center justify-between border-b pb-2 mb-2">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Site</span>
+                        {selectedSites.length > 0 && (
+                          <button onClick={() => setSelectedSites([])} className="text-[10px] font-bold text-rose-500 hover:text-rose-600">Clear</button>
+                        )}
+                      </div>
+                      <div className="flex flex-col gap-1.5 max-h-40 overflow-y-auto">
+                        {["GMO", "Site Alpha", "Site Beta"].map((st) => {
+                          const isChecked = selectedSites.includes(st);
+                          return (
+                            <div 
+                              key={st}
+                              className="flex items-center gap-2 px-1.5 py-1 rounded cursor-pointer hover:bg-slate-50"
+                              onClick={() => {
+                                if (isChecked) {
+                                  setSelectedSites(selectedSites.filter(s => s !== st));
+                                } else {
+                                  setSelectedSites([...selectedSites, st]);
+                                }
+                              }}
+                            >
+                              <Checkbox checked={isChecked} />
+                              <span className="text-xs text-slate-700 font-medium">{st}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                {/* Lokasi */}
+                <div className="flex flex-col gap-1.5 w-full">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Lokasi</label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={selectedSites.length === 0}
+                        className={`h-8 pl-3 pr-2 text-xs font-normal w-full justify-between shadow-none cursor-pointer border transition-colors ${selectedSites.length === 0 ? "opacity-60 bg-slate-50 text-slate-400" : selectedLocations.length > 0 ? "border-primary bg-primary/5 text-primary hover:bg-primary/10" : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"}`}
+                      >
+                        <span className="truncate">
+                          {selectedSites.length > 0 ? (selectedLocations.length > 0 ? `Lokasi (${selectedLocations.length})` : "Lokasi") : "Pilih Site"}
+                        </span>
+                        <ChevronDown className="h-3.5 w-3.5 opacity-50 ml-1.5" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-48 p-3 bg-white shadow-lg border rounded-md" align="start">
+                      <div className="flex items-center justify-between border-b pb-2 mb-2">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Lokasi</span>
+                        {selectedLocations.length > 0 && (
+                          <button onClick={() => setSelectedLocations([])} className="text-[10px] font-bold text-rose-500 hover:text-rose-600">Clear</button>
+                        )}
+                      </div>
+                      <div className="flex flex-col gap-1.5 max-h-40 overflow-y-auto">
+                        {availableLocations.map((lk) => {
+                          const isChecked = selectedLocations.includes(lk);
+                          return (
+                            <div 
+                              key={lk}
+                              className="flex items-center gap-2 px-1.5 py-1 rounded cursor-pointer hover:bg-slate-50"
+                              onClick={() => {
+                                if (isChecked) {
+                                  setSelectedLocations(selectedLocations.filter(l => l !== lk));
+                                } else {
+                                  setSelectedLocations([...selectedLocations, lk]);
+                                }
+                              }}
+                            >
+                              <Checkbox checked={isChecked} />
+                              <span className="text-xs text-slate-700 font-medium">{lk}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                {/* Detail Lokasi */}
+                <div className="flex flex-col gap-1.5 w-full">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Detail Lokasi</label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={selectedLocations.length === 0}
+                        className={`h-8 pl-3 pr-2 text-xs font-normal w-full justify-between shadow-none cursor-pointer border transition-colors ${selectedLocations.length === 0 ? "opacity-60 bg-slate-50 text-slate-400" : selectedDetailLocations.length > 0 ? "border-primary bg-primary/5 text-primary hover:bg-primary/10" : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"}`}
+                      >
+                        <span className="truncate">
+                          {selectedLocations.length > 0 ? (selectedDetailLocations.length > 0 ? `Detail (${selectedDetailLocations.length})` : "Detail Lokasi") : "Pilih Lokasi"}
+                        </span>
+                        <ChevronDown className="h-3.5 w-3.5 opacity-50 ml-1.5" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-56 p-3 bg-white shadow-lg border rounded-md" align="start">
+                      <div className="flex items-center justify-between border-b pb-2 mb-2">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Detail Lokasi</span>
+                        {selectedDetailLocations.length > 0 && (
+                          <button onClick={() => setSelectedDetailLocations([])} className="text-[10px] font-bold text-rose-500 hover:text-rose-600">Clear</button>
+                        )}
+                      </div>
+                      <div className="flex flex-col gap-1.5 max-h-40 overflow-y-auto">
+                        {availableDetailLocations.map((dt) => {
+                          const isChecked = selectedDetailLocations.includes(dt);
+                          return (
+                            <div 
+                              key={dt}
+                              className="flex items-center gap-2 px-1.5 py-1 rounded cursor-pointer hover:bg-slate-50"
+                              onClick={() => {
+                                if (isChecked) {
+                                  setSelectedDetailLocations(selectedDetailLocations.filter(d => d !== dt));
+                                } else {
+                                  setSelectedDetailLocations([...selectedDetailLocations, dt]);
+                                }
+                              }}
+                            >
+                              <Checkbox checked={isChecked} />
+                              <span className="text-xs text-slate-700 font-medium">{dt}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                {/* Status AI */}
+                <div className="flex flex-col gap-1.5 w-full">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Status AI</label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className={`h-8 pl-3 pr-2 text-xs font-normal w-full justify-between shadow-none cursor-pointer border transition-colors ${selectedStatuses.length > 0 ? "border-primary bg-primary/5 text-primary hover:bg-primary/10" : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"}`}
+                      >
+                        <span className="truncate">
+                          {selectedStatuses.length > 0 ? `Status AI (${selectedStatuses.length})` : "Status AI"}
+                        </span>
+                        <ChevronDown className="h-3.5 w-3.5 opacity-50 ml-1.5" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-48 p-3 bg-white shadow-lg border rounded-md" align="start">
+                      <div className="flex items-center justify-between border-b pb-2 mb-2">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Status AI</span>
+                        {selectedStatuses.length > 0 && (
+                          <button onClick={() => setSelectedStatuses([])} className="text-[10px] font-bold text-rose-500 hover:text-rose-600">Clear</button>
+                        )}
+                      </div>
+                      <div className="flex flex-col gap-1.5 max-h-40 overflow-y-auto">
+                        {["belum_mulai", "ekstraksi_bukti", "analisis_bukti", "tersubmit"].map((st) => {
+                          const isChecked = selectedStatuses.includes(st);
+                          const labels: Record<string, string> = {
+                            belum_mulai: "Belum Mulai",
+                            ekstraksi_bukti: "Ekstraksi Bukti",
+                            analisis_bukti: "Analisis Bukti",
+                            tersubmit: "Tersubmit"
+                          };
+                          const displayLabel = labels[st] || st;
+                          return (
+                            <div 
+                              key={st}
+                              className="flex items-center gap-2 px-1.5 py-1 rounded cursor-pointer hover:bg-slate-50"
+                              onClick={() => {
+                                if (isChecked) {
+                                  setSelectedStatuses(selectedStatuses.filter(s => s !== st));
+                                } else {
+                                  setSelectedStatuses([...selectedStatuses, st]);
+                                }
+                              }}
+                            >
+                              <Checkbox checked={isChecked} />
+                              <span className="text-xs text-slate-700 font-medium">{displayLabel}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                {/* Reset All */}
+                {activeFiltersCount > 0 && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-8 text-xs font-bold gap-1 text-rose-500 hover:text-rose-600 hover:bg-rose-50/50 border border-dashed border-rose-200 px-2"
+                    onClick={handleClearAllFilters}
+                  >
+                    <X className="h-3.5 w-3.5" /> Clear All
+                  </Button>
+                )}
+              </div>
+
+              {/* Selected Filter Chips Area */}
+              {activeFiltersCount > 0 && (
+                <div className="flex flex-col gap-1.5 pt-2 border-t border-slate-200/50">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                    <Filter className="h-3 w-3" /> Selected Filters
+                  </span>
+                  <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
+                    {/* Categories */}
+                    {selectedCategories.map(cat => (
+                      <span key={cat} className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary border border-primary/20 transition-all hover:bg-primary/20">
+                        {cat}
+                        <X className="h-3 w-3 cursor-pointer p-0.5 rounded-full hover:bg-primary/30 text-primary/70" onClick={() => setSelectedCategories(selectedCategories.filter(c => c !== cat))} />
+                      </span>
+                    ))}
+                    {/* Companies */}
+                    {selectedCompanies.map(comp => (
+                      <span key={comp} className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary border border-primary/20 transition-all hover:bg-primary/20">
+                        {comp}
+                        <X className="h-3 w-3 cursor-pointer p-0.5 rounded-full hover:bg-primary/30 text-primary/70" onClick={() => setSelectedCompanies(selectedCompanies.filter(c => c !== comp))} />
+                      </span>
+                    ))}
+                    {/* Sites */}
+                    {selectedSites.map(st => (
+                      <span key={st} className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary border border-primary/20 transition-all hover:bg-primary/20">
+                        {st}
+                        <X className="h-3 w-3 cursor-pointer p-0.5 rounded-full hover:bg-primary/30 text-primary/70" onClick={() => setSelectedSites(selectedSites.filter(s => s !== st))} />
+                      </span>
+                    ))}
+                    {/* Locations */}
+                    {selectedLocations.map(lk => (
+                      <span key={lk} className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary border border-primary/20 transition-all hover:bg-primary/20">
+                        {lk}
+                        <X className="h-3 w-3 cursor-pointer p-0.5 rounded-full hover:bg-primary/30 text-primary/70" onClick={() => setSelectedLocations(selectedLocations.filter(l => l !== lk))} />
+                      </span>
+                    ))}
+                    {/* Detail Locations */}
+                    {selectedDetailLocations.map(dt => (
+                      <span key={dt} className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary border border-primary/20 transition-all hover:bg-primary/20">
+                        {dt}
+                        <X className="h-3 w-3 cursor-pointer p-0.5 rounded-full hover:bg-primary/30 text-primary/70" onClick={() => setSelectedDetailLocations(selectedDetailLocations.filter(d => d !== dt))} />
+                      </span>
+                    ))}
+                    {/* Statuses */}
+                    {selectedStatuses.map(st => {
+                      const labels: Record<string, string> = {
+                        belum_mulai: "Belum Mulai",
+                        ekstraksi_bukti: "Ekstraksi Bukti",
+                        analisis_bukti: "Analisis Bukti",
+                        tersubmit: "Tersubmit"
+                      };
+                      return (
+                        <span key={st} className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary border border-primary/20 transition-all hover:bg-primary/20">
+                          {labels[st] || st}
+                          <X className="h-3 w-3 cursor-pointer p-0.5 rounded-full hover:bg-primary/30 text-primary/70" onClick={() => setSelectedStatuses(selectedStatuses.filter(s => s !== st))} />
+                        </span>
+                      );
+                    })}
+                    {/* Date Ranges */}
+                    {incidentDateRange?.from && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary border border-primary/20 transition-all hover:bg-primary/20">
+                        Insiden: {format(incidentDateRange.from, "dd MMM yyyy")}{incidentDateRange.to && ` - ${format(incidentDateRange.to, "dd MMM yyyy")}`}
+                        <X className="h-3 w-3 cursor-pointer p-0.5 rounded-full hover:bg-primary/30 text-primary/70" onClick={() => setIncidentDateRange(undefined)} />
+                      </span>
+                    )}
+                    {reportDateRange?.from && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary border border-primary/20 transition-all hover:bg-primary/20">
+                        Laporan: {format(reportDateRange.from, "dd MMM yyyy")}{reportDateRange.to && ` - ${format(reportDateRange.to, "dd MMM yyyy")}`}
+                        <X className="h-3 w-3 cursor-pointer p-0.5 rounded-full hover:bg-primary/30 text-primary/70" onClick={() => setReportDateRange(undefined)} />
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Main Workspace Area */}
@@ -175,172 +962,343 @@ export default function CaseListPage() {
                 </Button>
               </div>
             ) : viewMode === "table" ? (
-              <div className="bg-white border rounded-lg shadow-sm overflow-hidden">
-                <table className="w-full enterprise-table border-none">
+              <div className="bg-white border rounded-lg shadow-sm overflow-x-auto">
+                <table className="w-full min-w-[1200px] enterprise-table border-none">
                   <thead>
                     <tr className="bg-slate-50 border-b">
-                      <th className="pl-4">Case ID</th>
-                      <th>Kategori Insiden</th>
-                      <th>Waktu Insiden</th>
-                      <th>Waktu Pelaporan</th>
-                      <th>Perusahaan Pelapor</th>
-                      <th>Site</th>
-                      <th>Lokasi</th>
-                      <th>Detail Lokasi</th>
-                      <th>Status</th>
-                      <th className="text-right pr-4">Action</th>
+                      {visibleColumns.noInsiden && <th className="pl-4">No Insiden</th>}
+                      {visibleColumns.kategori && <th>Kategori Insiden</th>}
+                      {visibleColumns.waktuInsiden && <th>Waktu Insiden</th>}
+                      {visibleColumns.waktuPelaporan && <th>Waktu Pelaporan</th>}
+                      {visibleColumns.perusahaan && <th>Perusahaan Pelapor</th>}
+                      {visibleColumns.site && <th>Site</th>}
+                      {visibleColumns.lokasi && <th>Lokasi</th>}
+                      {visibleColumns.detailLokasi && <th>Detail Lokasi</th>}
+                      {visibleColumns.statusInvestigasi && <th>Status Investigasi</th>}
+                      {visibleColumns.statusAi && <th>Status AI</th>}
                     </tr>
                   </thead>
                   <tbody>
-                    {cases.map((c, i) => (
-                      <tr
-                        key={c.id}
-                        className={`cursor-pointer transition-colors ${selectedCase?.id === c.id ? "active" : "hover:bg-slate-50/70"}`}
-                        onClick={() => setSelectedCase(c)}
-                        onDoubleClick={() => navigate(`/cases/${c.id}`)}
-                      >
-                        <td className="pl-4 font-mono text-xs text-primary font-semibold">{c.case_number || c.id.slice(0, 8)}</td>
-                        <td className="text-xs font-medium text-slate-900 truncate max-w-[150px]">{["Near Miss", "Medical Treatment Injury", "Property Damage", "First Aid", "Fatality", "-"][i % 6]}</td>
-                        <td className="text-xs text-slate-600 font-medium">05 April 2026</td>
-                        <td className="text-xs text-slate-500 font-medium">08 April 2026</td>
-                        <td className="text-xs text-slate-700 font-medium">PT Fusi Solusi Transformasi</td>
-                        <td className="text-xs text-slate-700 font-medium">GMO</td>
-                        <td className="text-xs text-slate-700 font-medium">Pit J</td>
-                        <td className="text-xs text-slate-700 font-medium">Area Loading</td>
-                        <td className="py-2.5"><StatusChip status={c.status as any} /></td>
-
-                        <td className="pr-4 py-2.5">
-                          <div className="flex items-center justify-end gap-2">
-                            <span className="text-xs text-slate-500 font-medium">{new Date(c.updated_at).toLocaleDateString()}</span>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                                <Button variant="ghost" size="sm" className="h-7 w-7 p-0 hover:bg-slate-200">
-                                  <MoreVertical className="h-3.5 w-3.5" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-40">
-                                <DropdownMenuItem onClick={() => navigate(`/cases/${c.id}`)}>
-                                  <ExternalLink className="mr-2 h-3.5 w-3.5" /> Open Workspace
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem 
-                                  className="text-rose-600 focus:text-rose-600 focus:bg-rose-50"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setCaseToDelete(c);
-                                  }}
-                                >
-                                  <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete Case
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                    {paginatedCases.map((c) => {
+                      const idx = cases.indexOf(c);
+                      return (
+                        <tr
+                          key={c.id}
+                          className={`cursor-pointer transition-colors ${selectedCase?.id === c.id ? "active" : "hover:bg-slate-50/70"}`}
+                          onClick={() => setSelectedCase(c)}
+                          onDoubleClick={() => navigate(`/cases/${c.id}`)}
+                        >
+                          {visibleColumns.noInsiden && <td className="pl-4 font-mono text-xs text-primary font-semibold">{323 + idx}</td>}
+                          {visibleColumns.kategori && <td className="text-xs font-medium text-slate-900 truncate max-w-[150px]">{["Near Miss", "Medical Treatment Injury", "Property Damage", "First Aid", "Fatality"][idx % 5]}</td>}
+                          {visibleColumns.waktuInsiden && <td className="text-xs text-slate-600 font-medium">05 April 2026</td>}
+                          {visibleColumns.waktuPelaporan && <td className="text-xs text-slate-500 font-medium">08 April 2026</td>}
+                          {visibleColumns.perusahaan && <td className="text-xs text-slate-700 font-medium">PT Fusi Solusi Transformasi</td>}
+                          {visibleColumns.site && <td className="text-xs text-slate-700 font-medium">GMO</td>}
+                          {visibleColumns.lokasi && <td className="text-xs text-slate-700 font-medium">Pit J</td>}
+                          {visibleColumns.detailLokasi && <td className="text-xs text-slate-700 font-medium">Area Loading</td>}
+                          {visibleColumns.statusInvestigasi && <td className="text-xs font-semibold text-slate-700">INVESTIGASI</td>}
+                          {visibleColumns.statusAi && <td className="py-2.5"><StatusChip status={createdCaseIds.has(c.id) ? "ekstraksi_bukti" : ["belum_mulai", "ekstraksi_bukti", "analisis_bukti", "tersubmit"][idx % 4]} /></td>}
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
+
+                {/* Table View Pagination Controls */}
+                <div className="flex items-center justify-between px-4 py-3 border-t bg-slate-50 text-xs">
+                  <div className="text-slate-500 font-medium">
+                    Showing <span className="font-semibold text-slate-800">{totalItems > 0 ? startIndex + 1 : 0}</span> to{" "}
+                    <span className="font-semibold text-slate-800">
+                      {Math.min(startIndex + itemsPerPage, totalItems)}
+                    </span>{" "}
+                    of <span className="font-semibold text-slate-800">{totalItems}</span> cases
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 px-2 text-2xs font-semibold"
+                      disabled={activePage === 1}
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    >
+                      Previous
+                    </Button>
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: totalPages }).map((_, pageIdx) => {
+                        const pageNum = pageIdx + 1;
+                        return (
+                          <Button
+                            key={pageNum}
+                            variant={activePage === pageNum ? "default" : "ghost"}
+                            size="sm"
+                            className={`h-8 w-8 text-2xs font-bold ${activePage === pageNum ? "bg-primary text-white hover:bg-primary/95" : ""}`}
+                            onClick={() => setCurrentPage(pageNum)}
+                          >
+                            {pageNum}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 px-2 text-2xs font-semibold"
+                      disabled={activePage === totalPages}
+                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                {cases.map((c) => (
-                  <CaseGridCard 
-                    key={c.id} 
-                    caseData={c} 
-                    mode={viewMode as "grid-compact" | "grid-expanded"}
-                    isSelected={selectedCase?.id === c.id}
-                    onClick={() => setSelectedCase(c)}
-                    onOpen={() => navigate(`/cases/${c.id}`)}
-                  />
-                ))}
+              <div className="flex flex-col gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {paginatedCases.map((c) => {
+                    const idx = cases.indexOf(c);
+                    return (
+                      <CaseGridCard 
+                        key={c.id} 
+                        caseData={c} 
+                        idx={idx}
+                        mode={viewMode as "grid-compact" | "grid-expanded"}
+                        isSelected={selectedCase?.id === c.id}
+                        onClick={() => setSelectedCase(c)}
+                        onOpen={() => navigate(`/cases/${c.id}`)}
+                      />
+                    );
+                  })}
+                </div>
+
+                {/* Grid View Pagination Controls */}
+                <div className="flex items-center justify-between px-4 py-3 bg-white border rounded-lg shadow-sm text-xs">
+                  <div className="text-slate-500 font-medium">
+                    Showing <span className="font-semibold text-slate-800">{totalItems > 0 ? startIndex + 1 : 0}</span> to{" "}
+                    <span className="font-semibold text-slate-800">
+                      {Math.min(startIndex + itemsPerPage, totalItems)}
+                    </span>{" "}
+                    of <span className="font-semibold text-slate-800">{totalItems}</span> cases
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 px-2 text-2xs font-semibold"
+                      disabled={activePage === 1}
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    >
+                      Previous
+                    </Button>
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: totalPages }).map((_, pageIdx) => {
+                        const pageNum = pageIdx + 1;
+                        return (
+                          <Button
+                            key={pageNum}
+                            variant={activePage === pageNum ? "default" : "ghost"}
+                            size="sm"
+                            className={`h-8 w-8 text-2xs font-bold ${activePage === pageNum ? "bg-primary text-white hover:bg-primary/95" : ""}`}
+                            onClick={() => setCurrentPage(pageNum)}
+                          >
+                            {pageNum}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 px-2 text-2xs font-semibold"
+                      disabled={activePage === totalPages}
+                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
               </div>
             )}
           </div>
 
           {/* Right Side Preview Panel */}
-          {selectedCase && (
-            <div className="side-panel w-[340px] border-l bg-white shadow-xl z-20 shrink-0 transform transition-transform animate-in slide-in-from-right duration-200">
-              <div className="flex items-center justify-between px-4 h-12 border-b bg-slate-50/80 backdrop-blur-sm">
-                <div className="flex items-center gap-2">
-                  <div className="h-5 w-5 bg-primary/10 rounded flex items-center justify-center">
-                    <History className="h-3 w-3 text-primary" />
-                  </div>
-                  <span className="text-xs font-bold text-slate-800 tracking-tight uppercase">Case Preview</span>
-                </div>
-                <button 
-                  onClick={() => setSelectedCase(null)} 
-                  className="p-1 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-200/50 transition-all"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
+          {selectedCase && (() => {
+            const steps = [
+              { step: "Ekstraksi Data Bukti", done: true },
+              { step: "Analisis Fact & Cronology", done: selectedCase.status !== "draft" },
+              { step: "Analisis Aktor", done: selectedCase.status !== "draft" },
+              { step: "Analisis PEEPO", done: selectedCase.status !== "draft" && selectedCase.status !== "in_progress" },
+              { step: "Analisis IPLS", done: selectedCase.status !== "draft" && selectedCase.status !== "in_progress" },
+              { step: "Analisis Prevention", done: selectedCase.reportsCount > 0 || selectedCase.status === "approved" || selectedCase.status === "closed" },
+              { step: "Submit AI value", done: selectedCase.status === "approved" || selectedCase.status === "closed" },
+            ];
+            const completedCount = steps.filter(s => s.done).length;
+            const progressPercent = Math.round((completedCount / steps.length) * 100);
 
-              <div className="flex-1 overflow-auto">
-                <div className="p-5 space-y-6">
-                  {/* Panel Header */}
-                    <div className="flex items-center justify-between items-start">
-                      <div className="flex-1 min-w-0 pr-4">
-                        <h3 className="text-[17px] font-bold text-slate-900 leading-tight truncate">{selectedCase.title}</h3>
-                        <p className="text-[10px] font-medium text-slate-400 mt-1 uppercase tracking-wider">{selectedCase.case_number || selectedCase.id.slice(0, 8)}</p>
-                      </div>
-                      <Button 
-                        size="sm"
-                        className="h-8 px-4 text-xs font-bold bg-primary hover:bg-primary/90 shadow-sm transition-all"
-                        onClick={() => navigate(`/cases/${selectedCase.id}`)}
-                      >
-                        Open Workspace
-                      </Button>
+            return (
+              <div className="side-panel w-[340px] border-l bg-white shadow-xl z-20 shrink-0 transform transition-transform animate-in slide-in-from-right duration-200 relative flex flex-col h-[calc(100vh-100px)] overflow-hidden">
+                <div className="flex items-center justify-between px-4 h-14 border-b bg-slate-50/80 backdrop-blur-sm gap-2">
+                  <div className="flex items-center gap-2">
+                    {(() => {
+                      const idx = cases.indexOf(selectedCase);
+                      const mockStatus = ["belum_mulai", "ekstraksi_bukti", "analisis_bukti", "tersubmit"][idx % 4];
+                      const isCaseCreated = createdCaseIds.has(selectedCase.id) || mockStatus !== "belum_mulai";
+                      
+                      return !isCaseCreated ? (
+                        <Button 
+                          size="sm"
+                          className="h-8 px-3 text-xs font-bold bg-amber-500 hover:bg-amber-600 shadow-sm transition-all text-white uppercase tracking-wider"
+                          onClick={() => setCaseToCreate(selectedCase)}
+                        >
+                          Create Case
+                        </Button>
+                      ) : (
+                        <Button 
+                          size="sm"
+                          className="h-8 px-3 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 shadow-sm transition-all text-white uppercase tracking-wider"
+                          onClick={() => navigate(`/cases/${selectedCase.id}`)}
+                        >
+                          Open Case
+                        </Button>
+                      );
+                    })()}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Button 
+                      size="sm"
+                      variant="outline"
+                      className="h-8 w-8 p-0 border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700 transition-all flex items-center justify-center bg-white"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setCaseToDelete(selectedCase);
+                      }}
+                      title="Delete Case"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                    <button 
+                      onClick={() => setSelectedCase(null)} 
+                      className="p-1.5 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-200/50 transition-all border bg-white"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex-1 overflow-auto no-scrollbar">
+                  <div className="p-5 space-y-6">
+                    {/* Panel Title */}
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Incident ID</span>
+                      <h2 className="text-xl font-extrabold text-slate-800 tracking-tight">
+                        Insiden - {323 + cases.indexOf(selectedCase)}
+                      </h2>
                     </div>
 
-                  {/* Operational Data */}
-                  <div className="grid grid-cols-1 gap-1 border-y border-slate-100 py-4">
-                    {[
-                      { label: "Case ID", value: selectedCase.case_number, icon: FileText },
-                      { label: "Site", value: getSiteFromDescription(selectedCase.description), icon: Globe },
-                      { label: "Created", value: new Date(selectedCase.created_at).toLocaleDateString(), icon: Clock },
-                      { label: "Updated", value: new Date(selectedCase.updated_at).toLocaleDateString(), icon: History },
-                      { label: "Status", value: (selectedCase.status || "draft").toUpperCase(), icon: List },
-                    ].map((item) => (
-                      <div key={item.label} className="flex items-center justify-between py-1.5 px-1 rounded-md hover:bg-slate-50 transition-colors">
-                        <div className="flex items-center gap-2">
-                          <item.icon className="h-3 w-3 text-slate-400" />
-                          <span className="text-xs text-slate-500 font-medium">{item.label}</span>
-                        </div>
-                        <span className="text-xs font-bold text-slate-800">{item.value}</span>
-                      </div>
-                    ))}
-                  </div>
-
-
-
-                  {/* Progress Matrix */}
-                  <div className="space-y-3">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Investigation Matrix</span>
-                    <div className="space-y-2.5 bg-slate-50 p-3 rounded-lg border border-slate-100">
+                    {/* Operational Data */}
+                    <div className="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-sm">
                       {[
-                        { step: "Evidence Extraction", done: true },
-                        { step: "PEEPO Reasoning", done: selectedCase.status !== "draft" },
-                        { step: "IPLS Classification", done: selectedCase.status === "in_review" || selectedCase.status === "approved" || selectedCase.status === "closed" },
-                        { step: "Final Report Generation", done: selectedCase.reportsCount > 0 },
-                        { step: "Management Approval", done: selectedCase.status === "approved" || selectedCase.status === "closed" },
-                      ].map((s) => (
-                        <div key={s.step} className="flex items-center gap-3">
-                          <div className={`h-1.5 w-1.5 rounded-full ${s.done ? "bg-status-approved shadow-[0_0_5px_rgba(22,163,74,0.4)]" : "bg-slate-200"}`} />
-                          <span className={`text-[11px] font-bold tracking-tight ${s.done ? "text-slate-700" : "text-slate-400"}`}>{s.step}</span>
-                          {s.done && <div className="h-[0.5px] flex-1 bg-slate-200/50" />}
+                        { label: "Kategori Insiden", value: ["Near Miss", "Medical Treatment Injury", "Property Damage", "First Aid", "Fatality"][cases.indexOf(selectedCase) % 5], icon: FileText },
+                        { label: "Waktu Insiden", value: "05 April 2026", icon: Clock },
+                        { label: "Waktu Pelaporan", value: "08 April 2026", icon: Clock },
+                        { label: "Perusahaan Pelapor", value: "PT Fusi Solusi Transformasi", icon: Globe },
+                        { label: "Site", value: "GMO", icon: Globe },
+                        { label: "Lokasi", value: "Pit J", icon: Globe },
+                        { label: "Detail Lokasi", value: "Area Loading", icon: Globe },
+                        { label: "Status AI", value: {
+                          belum_mulai: "Belum Mulai",
+                          ekstraksi_bukti: "Ekstraksi Bukti",
+                          analisis_bukti: "Analisis Bukti",
+                          tersubmit: "Tersubmit"
+                        }[createdCaseIds.has(selectedCase.id) ? "ekstraksi_bukti" : ["belum_mulai", "ekstraksi_bukti", "analisis_bukti", "tersubmit"][cases.indexOf(selectedCase) % 4]] || "Belum Mulai", icon: List },
+                      ].map((item) => (
+                        <div key={item.label} className="grid grid-cols-12 border-b border-slate-200 last:border-0 hover:bg-slate-50/50 transition-colors">
+                          <div className="col-span-5 bg-slate-50/80 px-3 py-2.5 flex items-center border-r border-slate-200">
+                            <span className="text-[11px] text-slate-600 font-semibold leading-tight">{item.label}</span>
+                          </div>
+                          <div className="col-span-7 px-3 py-2.5 text-xs font-bold text-slate-900 flex items-center min-h-[38px] bg-white">
+                            {item.value}
+                          </div>
                         </div>
                       ))}
                     </div>
+                    {/* Progress Matrix */}
+                    <div className="space-y-3 pt-3">
+                      <div className="flex items-center justify-between text-[11px] font-mono tracking-wider">
+                        <span className="font-bold text-[#161616]">
+                          PROGRESS AI INVESTIGASI
+                        </span>
+                        <span className="font-bold text-[#24a148]">{completedCount}/{steps.length} SELESAI ({progressPercent}%)</span>
+                      </div>
+                      
+                      {/* Carbon Progress Bar (flat, 4px) */}
+                      <div className="h-1.5 w-full bg-[#e0e0e0]">
+                        <div 
+                          className="h-full bg-[#24a148] transition-all duration-300 ease-out"
+                          style={{ width: `${progressPercent}%` }}
+                        />
+                      </div>
+
+                      {/* Carbon Stepper Container (flat, light grey, sharp borders, always displayed inline) */}
+                      <div className="relative space-y-4 bg-[#f4f4f4] p-4 border border-[#e0e0e0] rounded-none">
+                        {/* Vertical Connector Line */}
+                        <div className="absolute left-[26px] top-6 bottom-8 w-[1px] bg-[#e0e0e0]" />
+
+                        {steps.map((s, idx) => {
+                          const isCurrent = !s.done && (idx === 0 || steps[idx - 1].done);
+                          return (
+                            <div key={s.step} className="flex items-center gap-3 relative z-10">
+                              {/* Step Indicator Node */}
+                              <div className={`flex items-center justify-center h-4 w-4 rounded-full border text-[8px] font-bold transition-all duration-200 ${
+                                s.done 
+                                  ? "bg-[#24a148] border-[#24a148] text-white" 
+                                  : isCurrent
+                                  ? "bg-white border-[#0f62fe] text-[#0f62fe]"
+                                  : "bg-white border-[#c6c6c6] text-[#8d8d8d]"
+                              }`}>
+                                {s.done ? "✓" : idx + 1}
+                              </div>
+                              <span className={`text-[11px] font-semibold transition-colors duration-200 ${
+                                s.done 
+                                  ? "text-[#161616]" 
+                                  : isCurrent
+                                  ? "text-[#0f62fe]"
+                                  : "text-[#8d8d8d]"
+                              }`}>
+                                {s.step}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
-
-
-            </div>
-          )}
+            );
+          })()}
         </div>
       </div>
 
+      <CreateCaseConfirmDialog
+        caseData={caseToCreate}
+        isOpen={!!caseToCreate}
+        onClose={() => setCaseToCreate(null)}
+        onConfirm={() => {
+          if (caseToCreate) {
+            setCreatedCaseIds(prev => {
+              const newSet = new Set(prev);
+              newSet.add(caseToCreate.id);
+              return newSet;
+            });
+            toast.success("Case created successfully");
+            const caseId = caseToCreate.id;
+            setCaseToCreate(null);
+            navigate(`/cases/${caseId}`);
+          }
+        }}
+      />
+      
       <DeleteCaseDialog 
         caseData={caseToDelete}
         isOpen={!!caseToDelete}
@@ -359,7 +1317,690 @@ export default function CaseListPage() {
         }}
         isDeleting={deleteCaseMutation.isPending}
       />
+
+      <SyncLogsDialog
+        isOpen={isLogsModalOpen}
+        onClose={() => setIsLogsModalOpen(false)}
+        logs={syncLogs}
+      />
     </AppLayout>
+  );
+}
+
+function SyncLogsDialog({
+  isOpen,
+  onClose,
+  logs
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  logs: any[];
+}) {
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden border-none shadow-2xl">
+        <div className="bg-slate-800 px-6 py-6 text-white relative">
+          <History className="h-12 w-12 text-slate-700 absolute top-4 right-4" />
+          <h2 className="text-lg font-black uppercase tracking-widest mb-1">Database Sync Logs</h2>
+          <p className="text-slate-400 text-xs font-bold uppercase tracking-wider opacity-80">Historical Synchronization Records</p>
+        </div>
+        
+        <div className="p-0 bg-slate-50 max-h-[60vh] overflow-y-auto">
+          {logs.length === 0 ? (
+            <div className="p-12 text-center text-slate-400">
+              <span className="text-sm font-semibold">No sync logs found.</span>
+            </div>
+          ) : (
+            <div className="divide-y divide-slate-100">
+              {logs.map((log) => (
+                <div key={log.id} className="p-4 bg-white hover:bg-slate-50/50 transition-colors flex gap-4">
+                  <div className="mt-0.5 shrink-0">
+                    {log.status === "success" ? (
+                      <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                    ) : (
+                      <XCircle className="h-5 w-5 text-rose-500" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-2">
+                        <span className={`text-xs font-black uppercase tracking-wider ${log.status === "success" ? "text-emerald-600" : "text-rose-600"}`}>
+                          {log.status === "success" ? "Sync Successful" : "Sync Failed"}
+                        </span>
+                        <span className="text-[9px] px-1.5 py-0.5 rounded-sm bg-slate-100 text-slate-500 font-bold uppercase tracking-wider">
+                          {log.type === "manual" ? "Manual" : "Auto"}
+                        </span>
+                      </div>
+                      <span className="text-[10px] font-bold text-slate-400">
+                        {new Date(log.time).toLocaleString()}
+                      </span>
+                    </div>
+                    <p className="text-xs font-medium text-slate-600 leading-relaxed">
+                      {log.detail}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <DialogFooter className="p-4 bg-white border-t">
+          <Button variant="ghost" onClick={onClose} className="text-xs font-bold uppercase tracking-widest w-full">Close</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function CreateCaseConfirmDialog({
+  caseData,
+  isOpen,
+  onClose,
+  onConfirm
+}: {
+  caseData: Case | null;
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+}) {
+  const [fileItems, setFileItems] = useState<any[]>([]);
+  const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
+  const [caseTitle, setCaseTitle] = useState("New Case");
+  const [selectedSite, setSelectedSite] = useState("Site Alpha");
+  const [isConfirmed, setIsConfirmed] = useState(false);
+  const [isFolderExpanded, setIsFolderExpanded] = useState(true);
+
+  // Loading State for full-screen overlay matching CreateCasePage
+  const [isCreating, setIsCreating] = useState(false);
+  const [createProgress, setCreateProgress] = useState(0);
+  const [activeStep, setActiveStep] = useState(0);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  // Elapsed timer during creation
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isCreating) {
+      const start = Date.now();
+      interval = setInterval(() => {
+        setElapsedSeconds(Math.floor((Date.now() - start) / 1000));
+      }, 1000);
+    } else {
+      setElapsedSeconds(0);
+    }
+    return () => clearInterval(interval);
+  }, [isCreating]);
+
+  const handleCreateCase = async () => {
+    setIsCreating(true);
+    setCreateProgress(5);
+    setActiveStep(0);
+
+    const advanceProgress = (targetVal: number, duration: number) => {
+      return new Promise<void>((resolve) => {
+        const stepTime = Math.max(10, Math.floor(duration / 10));
+        const interval = setInterval(() => {
+          setCreateProgress(prev => {
+            const next = prev + 5;
+            if (next >= targetVal) {
+              clearInterval(interval);
+              resolve();
+              return targetVal;
+            }
+            return next;
+          });
+        }, stepTime);
+      });
+    };
+
+    await advanceProgress(20, 200);
+    setActiveStep(1); // Attaching evidence...
+
+    if (caseData) {
+      caseData.title = caseTitle;
+      caseData.description = `[Site: ${selectedSite}] Case verified and synchronized with evidence payload.`;
+    }
+
+    await advanceProgress(60, 300);
+    setActiveStep(2); // Preparing Evidence Review...
+    await advanceProgress(90, 200);
+    setActiveStep(3); // Opening workspace...
+    await advanceProgress(100, 100);
+
+    onConfirm();
+    setIsCreating(false);
+  };
+
+  // Load and generate dummy files when dialog opens
+  useEffect(() => {
+    if (!isOpen || !caseData) {
+      setFileItems([]);
+      setSelectedFileId(null);
+      return;
+    }
+
+    setCaseTitle(caseData.title || "New Case");
+    setSelectedSite(getSiteFromDescription(caseData.description));
+    setIsConfirmed(false);
+
+    // 1. Generate Dummy WAV Beep Audio
+    const createWavFile = (filename: string, frequency: number, durationSeconds: number) => {
+      const sampleRate = 8000;
+      const numSamples = sampleRate * durationSeconds;
+      const buffer = new ArrayBuffer(44 + numSamples * 2);
+      const view = new DataView(buffer);
+      
+      view.setUint32(0, 0x52494646, false); // "RIFF"
+      view.setUint32(4, 36 + numSamples * 2, true);
+      view.setUint32(8, 0x57415645, false); // "WAVE"
+      view.setUint32(12, 0x666d7420, false); // "fmt "
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true);
+      view.setUint16(22, 1, true);
+      view.setUint32(24, sampleRate, true);
+      view.setUint32(28, sampleRate * 2, true);
+      view.setUint16(32, 2, true);
+      view.setUint16(34, 16, true);
+      view.setUint32(36, 0x64617461, false); // "data"
+      view.setUint32(40, numSamples * 2, true);
+      
+      for (let i = 0; i < numSamples; i++) {
+        const t = i / sampleRate;
+        const sample = Math.sin(2 * Math.PI * frequency * t) * 32767;
+        view.setInt16(44 + i * 2, sample, true);
+      }
+      const blob = new Blob([buffer], { type: "audio/wav" });
+      return new File([blob], filename, { type: "audio/wav" });
+    };
+
+    // 2. Generate Dummy Image PNG with canvas
+    const createImageFile = (filename: string, titleText: string, descText: string): File => {
+      const canvas = document.createElement("canvas");
+      canvas.width = 400;
+      canvas.height = 300;
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        ctx.fillStyle = "#0c121e";
+        ctx.fillRect(0, 0, 400, 300);
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.05)";
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 400; i += 20) {
+          ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, 300); ctx.stroke();
+        }
+        for (let j = 0; j < 300; j += 20) {
+          ctx.beginPath(); ctx.moveTo(0, j); ctx.lineTo(400, j); ctx.stroke();
+        }
+        ctx.fillStyle = "#3b82f6";
+        ctx.fillRect(20, 20, 360, 6);
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 18px sans-serif";
+        ctx.fillText(titleText, 30, 60);
+        ctx.fillStyle = "#94a3b8";
+        ctx.font = "12px monospace";
+        ctx.fillText(descText, 30, 120);
+        ctx.fillText(`TIMESTAMP: ${new Date().toLocaleString("id-ID")}`, 30, 160);
+        ctx.fillText("STATUS: VERIFIED SECURE", 30, 200);
+      }
+      
+      // Convert to synchronous dummy raw file via base64 fallback or custom array
+      const dataUrl = canvas.toDataURL("image/png");
+      const byteString = atob(dataUrl.split(",")[1]);
+      const ab = new ArrayBuffer(byteString.length);
+      const ia = new Uint8Array(ab);
+      for (let i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
+      }
+      const blob = new Blob([ab], { type: "image/png" });
+      return new File([blob], filename, { type: "image/png" });
+    };
+
+    // 3. Generate Text Report file
+    const reportText = `LAPORAN FORENSIK KEJADIAN - ${caseData.title}
+==================================================
+Nomor Kasus: ${caseData.case_number || "CS-AUTO-MOCK"}
+Tanggal: ${new Date().toLocaleDateString("id-ID")}
+Lokasi: ${selectedSite}
+
+Detil Kejadian:
+Telah teridentifikasi bukti audio dan aktivitas tidak biasa di sekitar operasional dermaga Belawan. 
+Tim pengawas telah mengekstrak bukti pendukung berupa log percakapan saksi dan rekaman audio berikut.
+
+Rekomendasi Tindakan:
+1. Segera lakukan transkripsi audio percakapan.
+2. Cocokkan aktivitas dengan manifes kedatangan kapal.
+3. Koordinasikan dengan Otoritas Pelabuhan setempat.`;
+    const docFile = new File([reportText], "Laporan_Awal_Forensik.txt", { type: "text/plain" });
+
+    const f1 = createWavFile("24 Nov, 14.08_ (2).m4a", 440, 2.5);
+    const f2 = createWavFile("24 Nov, 16.23_.m4a", 580, 1.8);
+    const f3 = docFile;
+    const f4 = createImageFile("Foto_TKP_Loading_Dock.png", "BUKTI AREA LOADING DOCK", "Kamera CCTV-West Wing #02");
+
+    const items = [
+      {
+        id: "d1",
+        file: f1,
+        name: f1.name,
+        category: "Audio" as const,
+        size: f1.size,
+        relativePath: `DATA AUDIO/${f1.name}`,
+        groupId: "data_audio",
+        groupName: "DATA AUDIO",
+        previewUrl: URL.createObjectURL(f1)
+      },
+      {
+        id: "d2",
+        file: f2,
+        name: f2.name,
+        category: "Audio" as const,
+        size: f2.size,
+        relativePath: `DATA AUDIO/${f2.name}`,
+        groupId: "data_audio",
+        groupName: "DATA AUDIO",
+        previewUrl: URL.createObjectURL(f2)
+      },
+      {
+        id: "d3",
+        file: f3,
+        name: f3.name,
+        category: "Document" as const,
+        size: f3.size,
+        relativePath: f3.name,
+        groupId: "__loose__",
+        groupName: "Individual Files",
+        previewUrl: URL.createObjectURL(f3)
+      },
+      {
+        id: "d4",
+        file: f4,
+        name: f4.name,
+        category: "Image" as const,
+        size: f4.size,
+        relativePath: f4.name,
+        groupId: "__loose__",
+        groupName: "Individual Files",
+        previewUrl: URL.createObjectURL(f4)
+      }
+    ];
+
+    setFileItems(items);
+    setSelectedFileId(items[0].id);
+
+    return () => {
+      items.forEach(it => URL.revokeObjectURL(it.previewUrl));
+    };
+  }, [isOpen, caseData]);
+
+  if (!caseData || !isOpen) return null;
+
+  const selectedFile = fileItems.find(f => f.id === selectedFileId);
+  const totalBytes = fileItems.reduce((acc, f) => acc + f.size, 0);
+
+  const formatBytes = (bytes: number): string => {
+    if (bytes === 0) return "0 B";
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+  };
+
+  const isTitleInvalid = !caseTitle.trim() || caseTitle.trim().toLowerCase() === "new case" || caseTitle.trim().toLowerCase() === "create new case";
+  const isSubmitDisabled = isTitleInvalid || !isConfirmed;
+
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-5xl p-0 overflow-hidden border-none shadow-2xl h-[680px] flex flex-col bg-white rounded-none">
+        
+        {/* Header */}
+        <div className="px-6 py-4 border-b flex items-center justify-between bg-slate-50/50 shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 bg-slate-900 rounded-none flex items-center justify-center shadow-sm">
+              <Upload className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <h2 className="text-base font-black text-slate-900 uppercase tracking-widest">
+                UPLOAD BUKTI
+              </h2>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-slate-200 rounded-none transition-colors"
+          >
+            <X className="h-5 w-5 text-slate-400" />
+          </button>
+        </div>
+
+
+        {/* Split pane body */}
+        <div className="flex-1 flex overflow-hidden">
+          
+          {/* Left panel: files tree list */}
+          <div className="w-[320px] min-w-[240px] flex flex-col border-r bg-white overflow-hidden shrink-0">
+            <div className="flex-1 overflow-auto custom-scrollbar">
+              
+              {/* Folder: DATA AUDIO */}
+              <div className="border-b bg-white">
+                <div className="flex items-center gap-2 px-3 py-2 bg-slate-50/50 border-b border-slate-100 group/ghdr">
+                  <button
+                    onClick={() => setIsFolderExpanded(!isFolderExpanded)}
+                    className="p-0.5 hover:bg-slate-200 rounded-sm transition-colors shrink-0"
+                  >
+                    {isFolderExpanded ? <ChevronDown className="h-3 w-3 text-slate-400" /> : <ChevronRight className="h-3 w-3 text-slate-400" />}
+                  </button>
+                  <Folders className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                  <span className="text-[10px] font-black text-slate-600 uppercase tracking-tight flex-1 truncate">DATA AUDIO</span>
+                  <span className="text-[9px] font-bold text-slate-450 mr-2">
+                    {fileItems.filter(f => f.groupId === "data_audio").length}
+                  </span>
+                </div>
+
+                {isFolderExpanded && fileItems.filter(f => f.groupId === "data_audio").map((fileObj) => (
+                  <div
+                    key={fileObj.id}
+                    onClick={() => setSelectedFileId(fileObj.id)}
+                    className={cn(
+                      "flex items-center gap-2.5 px-3 py-1.5 pl-8 border-b border-slate-50 transition-all group/frow cursor-pointer",
+                      selectedFileId === fileObj.id ? "bg-slate-50 border-l-[3px] border-l-slate-400" : "border-l-[3px] border-l-transparent hover:bg-slate-50/50"
+                    )}
+                  >
+                    <div className="h-6 w-6 rounded-none bg-slate-50 border flex items-center justify-center shrink-0 overflow-hidden">
+                      <AudioIcon className="h-3.5 w-3.5 text-amber-500" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] font-medium text-slate-700 truncate leading-tight">{fileObj.name}</p>
+                      <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">{formatBytes(fileObj.size)}</span>
+                    </div>
+                    <button className="p-1 hover:bg-rose-50 rounded-none opacity-0 group-hover/frow:opacity-100 text-slate-300 hover:text-rose-500 transition-all shrink-0 ml-2">
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              {/* Other Loose Files flat list */}
+              {fileItems.filter(f => f.groupId !== "data_audio").map((fileObj) => (
+                <div
+                  key={fileObj.id}
+                  onClick={() => setSelectedFileId(fileObj.id)}
+                  className={cn(
+                    "flex items-center gap-2.5 px-4 py-2 border-b border-slate-50 transition-all group/frow relative cursor-pointer",
+                    selectedFileId === fileObj.id ? "bg-slate-100 border-l-[3px] border-l-slate-900" : "border-l-[3px] border-l-transparent hover:bg-slate-50"
+                  )}
+                >
+                  <div className="h-7 w-7 rounded-none bg-slate-50 border flex items-center justify-center shrink-0 overflow-hidden">
+                    {fileObj.category === "Image" ? (
+                      <ImageIcon className="h-3.5 w-3.5 text-emerald-500" />
+                    ) : (
+                      <FileText className="h-3.5 w-3.5 text-blue-500" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[11px] font-bold text-slate-800 truncate leading-tight">{fileObj.name}</p>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{fileObj.category}</span>
+                      <span className="text-[9px] text-slate-300">·</span>
+                      <span className="text-[9px] text-slate-400 font-medium">{formatBytes(fileObj.size)}</span>
+                    </div>
+                  </div>
+                  <button className="p-1 hover:bg-rose-50 rounded-none opacity-0 group-hover/frow:opacity-100 transition-all text-slate-300 hover:text-rose-500 shrink-0 ml-2">
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {/* Sidebar Buttons */}
+            <div className="p-2 border-t bg-slate-50 flex gap-2 shrink-0">
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1 h-8 text-[10px] font-bold bg-white border-slate-200 hover:bg-slate-50 gap-1.5 rounded-none transition-all shadow-sm"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Add Files
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1 h-8 text-[10px] font-bold bg-white border-slate-200 hover:bg-slate-50 gap-1.5 rounded-none transition-all shadow-sm"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Add Folder
+              </Button>
+            </div>
+          </div>
+
+          {/* Right panel: preview viewport */}
+          <div className="flex-1 flex flex-col bg-white overflow-hidden">
+            {selectedFile ? (
+              <>
+                {/* Preview Header tab label */}
+                <div className="h-10 border-b flex items-center gap-2 px-4 bg-slate-50/50 shrink-0">
+                  {selectedFile.category === "Audio" ? (
+                    <AudioIcon className="h-3.5 w-3.5 text-amber-500" />
+                  ) : selectedFile.category === "Image" ? (
+                    <ImageIcon className="h-3.5 w-3.5 text-emerald-500" />
+                  ) : (
+                    <FileText className="h-3.5 w-3.5 text-blue-500" />
+                  )}
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest truncate flex-1">
+                    {selectedFile.name}
+                  </span>
+                  <span className="text-[9px] font-medium text-slate-300 shrink-0">
+                    {formatBytes(selectedFile.size)}
+                  </span>
+                </div>
+
+                <div className="flex-1 overflow-auto p-6 flex flex-col gap-6 bg-slate-50/20 custom-scrollbar">
+                  {/* Playback or View Area */}
+                  <div className="aspect-video bg-[#0c121e] rounded-none overflow-hidden border border-slate-800 shadow-xl flex items-center justify-center relative group/prev">
+                    
+                    {/* Audio Player Screen */}
+                    {selectedFile.category === "Audio" && (
+                      <div className="flex flex-col items-center gap-5 text-white w-full px-8 py-4">
+                        <div className="h-14 w-14 bg-white/10 rounded-full flex items-center justify-center border border-white/20">
+                          <AudioIcon className="h-7 w-7 text-amber-400" />
+                        </div>
+                        <audio controls src={selectedFile.previewUrl} className="w-full max-w-sm" />
+                      </div>
+                    )}
+
+                    {/* Image Viewer */}
+                    {selectedFile.category === "Image" && (
+                      <img src={selectedFile.previewUrl} className="h-full w-full object-contain bg-slate-900" alt="" />
+                    )}
+
+                    {/* Document View Frame */}
+                    {selectedFile.category === "Document" && (
+                      <iframe src={selectedFile.previewUrl} className="h-full w-full border-none bg-white font-mono text-[10px] p-6 text-slate-800" title="Text Preview" />
+                    )}
+                  </div>
+
+                  {/* Selected Object Metadata Grid */}
+                  <div className="grid grid-cols-2 gap-6 bg-white p-4 rounded-none border border-slate-100 shadow-sm shrink-0">
+                    {[
+                      { label: "NAMA FILE", value: selectedFile.name },
+                      { label: "MODALITAS", value: selectedFile.category },
+                      { label: "UKURAN", value: formatBytes(selectedFile.size) },
+                      { label: "PATH ASAL", value: selectedFile.relativePath },
+                    ].map(({ label, value }) => (
+                      <div key={label} className="space-y-1">
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] block">
+                          {label}
+                        </span>
+                        <span className="text-[11px] font-bold text-slate-800 truncate block tracking-tight">
+                          {value}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="flex-1 flex items-center justify-center text-slate-450 uppercase tracking-widest text-xs font-black">
+                SELECT A FILE TO PREVIEW
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Bottom Config Panel */}
+        <div className="border-t border-slate-200 bg-slate-50 flex items-center shrink-0 p-4 gap-6 overflow-x-auto custom-scrollbar">
+          
+          <div className="flex-shrink-0 w-44">
+            <span className="text-[10px] font-black text-slate-700 block leading-tight uppercase tracking-wider mb-0.5">
+              CASE CONFIGURATION
+            </span>
+            <span className="text-[9px] text-slate-450 font-bold block leading-normal">
+              Workspace Metadata
+            </span>
+          </div>
+
+          {/* Title input with validations */}
+          <div className="flex-1 min-w-[200px] relative">
+            <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-1.5">
+              Case Title
+            </label>
+            <input
+              type="text"
+              className={cn(
+                "w-full h-8 text-xs border rounded-none px-2.5 font-bold transition-all focus:outline-hidden focus:ring-0",
+                isTitleInvalid ? "border-rose-400 bg-rose-50/30 text-rose-700 focus:border-rose-500" : "border-slate-200 bg-white text-slate-800 focus:border-slate-400"
+              )}
+              placeholder="e.g. Investigasi Kecelakaan Belawan"
+              value={caseTitle}
+              onChange={(e) => setCaseTitle(e.target.value)}
+            />
+            {isTitleInvalid && (
+              <span className="text-[8px] font-bold text-rose-500 absolute -bottom-3.5 left-0 block leading-normal uppercase tracking-wider">
+                {!caseTitle.trim() ? "JUDUL TIDAK BOLEH KOSONG" : "JUDUL TIDAK BOLEH DEFAULT"}
+              </span>
+            )}
+          </div>
+
+          {/* Site selection */}
+          <div className="w-40 flex-shrink-0">
+            <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-1.5">
+              Operational Site
+            </label>
+            <select
+              className="w-full h-8 text-xs border border-slate-200 rounded-none px-2.5 bg-white font-bold text-slate-800 focus:outline-hidden focus:border-slate-400 cursor-pointer"
+              value={selectedSite}
+              onChange={(e) => setSelectedSite(e.target.value)}
+            >
+              <option value="Site Alpha">Site Alpha</option>
+              <option value="Site Beta">Site Beta</option>
+              <option value="Site Gamma">Site Gamma</option>
+            </select>
+          </div>
+
+          {/* Verification check */}
+          <div className="flex-shrink-0 w-56 flex flex-col justify-center border-l border-slate-200 pl-6 space-y-2">
+            <div className="flex items-center gap-1.5">
+              <Cpu className="h-3 w-3 text-slate-400" />
+              <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">
+                Admin (Forensic Ops)
+              </span>
+            </div>
+            <div className="flex items-start gap-2">
+              <input
+                type="checkbox"
+                id="confirm-metadata-confirm"
+                className="h-3.5 w-3.5 rounded-none border-slate-350 text-slate-900 focus:ring-slate-900 mt-0.5 cursor-pointer shrink-0"
+                checked={isConfirmed}
+                onChange={(e) => setIsConfirmed(e.target.checked)}
+              />
+              <label
+                htmlFor="confirm-metadata-confirm"
+                className="text-[8.5px] text-slate-600 font-bold uppercase tracking-tight leading-normal cursor-pointer select-none"
+              >
+                DATA BUKTI & LOKASI KASUS SUDAH DIVERIFIKASI.
+              </label>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-4 border-t bg-white flex items-center justify-between shrink-0">
+          <div className="flex flex-col">
+            <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest">{fileItems.length} BUKTI</span>
+            <span className="text-[9px] font-bold text-slate-450 uppercase tracking-tighter mt-0.5">{formatBytes(totalBytes)} PAYLOAD</span>
+          </div>
+
+          <div className="flex items-center gap-3 shrink-0">
+            <Button
+              variant="ghost"
+              className="h-9 px-6 text-[11px] font-bold text-slate-550 hover:bg-slate-100 rounded-none uppercase tracking-wider"
+              onClick={onClose}
+            >
+              Discard
+            </Button>
+            <Button
+              className={cn(
+                "h-10 px-8 text-[11px] font-black rounded-none transition-all active:scale-[0.98] gap-2 uppercase tracking-[0.15em] text-white",
+                isSubmitDisabled || isCreating
+                  ? "bg-slate-450 cursor-not-allowed opacity-80"
+                  : "bg-slate-900 hover:bg-slate-800 shadow-lg shadow-slate-200"
+              )}
+              disabled={isSubmitDisabled || isCreating}
+              onClick={handleCreateCase}
+            >
+              <Upload className="h-3.5 w-3.5" />
+              {isCreating ? "CREATING..." : "CREATE CASE"}
+            </Button>
+          </div>
+        </div>
+
+        {/* INLINE CENTER LOADING TRANSITION STATE */}
+        {isCreating && (
+          <div className="absolute inset-0 bg-slate-900/15 backdrop-blur-2xs z-50 flex items-center justify-center p-6 animate-in fade-in duration-300">
+            <div className="w-full max-w-sm bg-white rounded-[4px] shadow-lg p-8 border border-slate-250 animate-in zoom-in-95 duration-200 flex flex-col items-center text-center">
+              
+              <div className="relative h-12 w-12 flex items-center justify-center mb-4">
+                <div className="absolute inset-0 rounded-full border-2 border-slate-100 animate-pulse" />
+                <div className="absolute inset-0 rounded-full border-2 border-t-slate-900 animate-spin" />
+                <Database className="h-5 w-5 text-slate-900" />
+              </div>
+
+              <h3 className="text-sm font-black text-slate-850 uppercase tracking-wider mb-1">Creating workspace</h3>
+              <p className="text-[10px] text-slate-400 font-mono tracking-widest mb-6">
+                {createProgress}% · 00:{elapsedSeconds.toString().padStart(2, '0')}
+              </p>
+
+              <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden mb-6 border">
+                <div className="h-full bg-slate-800 transition-all duration-300 rounded-full" style={{ width: `${createProgress}%` }} />
+              </div>
+
+              {/* Checklist of steps */}
+              <div className="w-full text-left space-y-2 bg-slate-50 p-3 rounded-[2px] border border-slate-150 text-[9px] font-black text-slate-455 uppercase tracking-wider">
+                {[
+                  { id: 0, label: "Creating case" },
+                  { id: 1, label: "Attaching evidence" },
+                  { id: 2, label: "Opening Evidence Review" }
+                ].map((step) => {
+                  const isDone = activeStep > step.id;
+                  const isActive = activeStep === step.id;
+                  return (
+                    <div key={step.id} className="flex items-center gap-2.5">
+                      <div className={cn(
+                        "h-3.5 w-3.5 rounded-full flex items-center justify-center border shrink-0",
+                        isDone ? "bg-slate-900 border-slate-900 text-white" : isActive ? "border-slate-800 bg-white" : "border-slate-200"
+                      )}>
+                        {isDone ? <Check className="h-1.5 w-1.5 text-white" /> : isActive ? <Loader2 className="h-1.5 w-1.5 text-slate-800 animate-spin" /> : null}
+                      </div>
+                      <span className={cn(
+                        isDone ? "text-slate-700" : isActive ? "text-slate-900" : "text-slate-355"
+                      )}>{step.label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -449,12 +2090,14 @@ function DeleteCaseDialog({
 
 function CaseGridCard({ 
   caseData, 
+  idx,
   mode, 
   isSelected, 
   onClick,
   onOpen 
 }: { 
   caseData: Case; 
+  idx: number;
   mode: "grid-compact" | "grid-expanded"; 
   isSelected: boolean;
   onClick: () => void;
@@ -482,7 +2125,7 @@ function CaseGridCard({
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{getSiteFromDescription(caseData.description)}</span>
           </div>
         </div>
-        <StatusChip status={caseData.status as any} />
+        <StatusChip status={["belum_mulai", "ekstraksi_bukti", "analisis_bukti", "tersubmit"][idx % 4]} />
       </div>
 
       {/* Card Body */}

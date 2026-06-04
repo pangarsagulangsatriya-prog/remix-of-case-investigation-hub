@@ -36,7 +36,8 @@ import {
   Zap,
   Quote,
   Crosshair,
-  BarChart3
+  BarChart3,
+  XCircle
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -275,11 +276,39 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
               selectedItemId={selectedItemId}
               onSelectItem={setSelectedItemId}
             />
-            {/* FactDefaultView would be rendered here */}
         </div>
 
         {/* Sync Button Removed */}
       </div>
+
+      {/* Traceability Panel */}
+      {selectedItem && (
+        <div className="w-[420px] shrink-0 border-l border-slate-200 h-full animate-in slide-in-from-right duration-300">
+          <TraceabilityPanel 
+            item={selectedItem}
+            onClose={() => setSelectedItemId(null)}
+            onUpdateStatus={(newStatus) => {
+              setItems(prev => {
+                const updated = prev.map(item => 
+                  item.id === selectedItem.id 
+                    ? { 
+                        ...item, 
+                        verification_status: newStatus,
+                        annotated_by_human: true,
+                        updated_at: new Date().toISOString(),
+                        updated_by: "Current User"
+                      } 
+                    : item
+                );
+                if (onSync) onSync(updated);
+                return updated;
+              });
+              toast.success("Verification status updated.");
+            }}
+            onEdit={() => handleEdit(selectedItem)}
+          />
+        </div>
+      )}
     </div>
   );
 };

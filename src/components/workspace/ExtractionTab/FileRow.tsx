@@ -168,7 +168,7 @@ export function FileRow({ file, isSelected, onSelect, onMove, onDelete, onRename
                       <Clock className="h-3.5 w-3.5 mr-2 text-slate-400" /> Lihat Riwayat Proses
                    </DropdownMenuItem>
                    {/* List all available custom folders */}
-                   {batches && batches.filter((b: any) => b.type === "Folder" && b.id !== file.batch_id).length > 0 && (
+                   {file.batch_id !== "UTAMA" && batches && batches.filter((b: any) => b.type === "Folder" && b.id !== file.batch_id).length > 0 && (
                       <>
                         <DropdownMenuSeparator />
                         <DropdownMenuLabel className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2 py-1.5">Pindah ke Folder</DropdownMenuLabel>
@@ -181,33 +181,37 @@ export function FileRow({ file, isSelected, onSelect, onMove, onDelete, onRename
                       </>
                    )}
                    
-                   <DropdownMenuSeparator />
-                   <DropdownMenuItem onClick={() => onMove(file.id, null)} className="text-[11px] font-bold py-2 rounded-[4px]">
-                      <Box className="h-3.5 w-3.5 mr-2 text-slate-400" /> Pindah ke File Mandiri
-                   </DropdownMenuItem>
-                   <DropdownMenuSeparator />
-                   <DropdownMenuItem onClick={(e) => {
-                         const isAnalysisActive = localStorage.getItem(`analysis_running_${caseId}`) === "true";
-                         if (isAnalysisActive) {
-                           e.preventDefault();
-                           e.stopPropagation();
-                           toast.warning("File tidak dapat dihapus karena analisis AI sedang berjalan menggunakan sumber daya dari repositori bukti.");
-                           return;
-                         }
-                         if (file.extraction_status === "pending" || file.extraction_status === "processing") {
-                           e.preventDefault();
-                           e.stopPropagation();
-                           toast.warning(`File "${file.name}" sedang dalam proses ${file.extraction_status === "pending" ? "upload" : "analisis/ekstraksi"} dan tidak dapat dihapus.`);
-                           return;
-                         }
-                         onDelete();
-                       }} 
-                       className={cn(
-                         "text-rose-600 focus:text-rose-600 text-[11px] font-bold py-2 rounded-[4px]",
-                         (file.extraction_status === "pending" || file.extraction_status === "processing" || isAnalysisActive) && "text-slate-400 focus:text-slate-400 opacity-60"
-                       )}>
-                       <Trash2 className="h-3.5 w-3.5 mr-2" /> Hapus Bukti
-                    </DropdownMenuItem>
+                   {file.batch_id !== "UTAMA" && (
+                     <>
+                       <DropdownMenuSeparator />
+                       <DropdownMenuItem onClick={() => onMove(file.id, null)} className="text-[11px] font-bold py-2 rounded-[4px]">
+                          <Box className="h-3.5 w-3.5 mr-2 text-slate-400" /> Pindah ke File Mandiri
+                       </DropdownMenuItem>
+                       <DropdownMenuSeparator />
+                       <DropdownMenuItem onClick={(e) => {
+                             const isAnalysisActive = localStorage.getItem(`analysis_running_${caseId}`) === "true";
+                             if (isAnalysisActive) {
+                               e.preventDefault();
+                               e.stopPropagation();
+                               toast.warning("File tidak dapat dihapus karena analisis AI sedang berjalan menggunakan sumber daya dari repositori bukti.");
+                               return;
+                             }
+                             if (file.extraction_status === "pending" || file.extraction_status === "processing") {
+                               e.preventDefault();
+                               e.stopPropagation();
+                               toast.warning(`File "${file.name}" sedang dalam proses ${file.extraction_status === "pending" ? "upload" : "analisis/ekstraksi"} dan tidak dapat dihapus.`);
+                               return;
+                             }
+                             onDelete();
+                           }} 
+                           className={cn(
+                             "text-rose-600 focus:text-rose-600 text-[11px] font-bold py-2 rounded-[4px]",
+                             (file.extraction_status === "pending" || file.extraction_status === "processing" || isAnalysisActive) && "text-slate-400 focus:text-slate-400 opacity-60"
+                           )}>
+                           <Trash2 className="h-3.5 w-3.5 mr-2" /> Hapus Bukti
+                        </DropdownMenuItem>
+                     </>
+                   )}
                 </DropdownMenuContent>
              </DropdownMenu>
           </div>

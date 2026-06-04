@@ -5,7 +5,7 @@ import {
   Search, Plus, FolderPlus, FileUp, FolderUp, ChevronRight, 
   Folder, Folders, MoreVertical, Pencil, Trash2, Loader2, CheckCircle2, 
   Box, Upload, ChevronLeft, ChevronRight as ChevronRightIcon, 
-  Cpu, ChevronsDown, ChevronsUp, AlertCircle, RefreshCw
+  Cpu, ChevronsDown, ChevronsUp, AlertCircle, RefreshCw, FolderOpen
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -369,14 +369,23 @@ export default function ExtractionTab() {
     setExpandedBatches(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   };
 
-  const expandAll = () => {
+  const isAllExpanded = useMemo(() => {
     const allFolderIds = batches.filter(b => b.type === "Folder").map(b => b.id);
     const virtualSections = ["DOKUMEN", "GAMBAR", "AUDIO"];
-    setExpandedBatches(Array.from(new Set([...allFolderIds, ...virtualSections])));
-  };
+    const allIds = Array.from(new Set([...allFolderIds, ...virtualSections]));
+    return allIds.length > 0 && allIds.every(id => expandedBatches.includes(id));
+  }, [batches, expandedBatches]);
 
-  const collapseAll = () => {
-    setExpandedBatches([]);
+  const toggleAll = () => {
+    const allFolderIds = batches.filter(b => b.type === "Folder").map(b => b.id);
+    const virtualSections = ["DOKUMEN", "GAMBAR", "AUDIO"];
+    const allIds = Array.from(new Set([...allFolderIds, ...virtualSections]));
+    
+    if (isAllExpanded) {
+      setExpandedBatches([]);
+    } else {
+      setExpandedBatches(allIds);
+    }
   };
 
   const handleCreateFolder = async () => {
@@ -678,28 +687,45 @@ export default function ExtractionTab() {
         <div className="p-5 border-b border-slate-100 shrink-0 bg-white">
           <div className="flex flex-col gap-4">
             {/* Header with Title and Counter */}
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Repositori Bukti</span>
+            <div className="flex items-center justify-end">
               <div className="flex items-center gap-2">
-                <div className="flex items-center bg-slate-50 border border-slate-100 rounded-[4px] p-0.5 mr-1">
-                   <button 
-                    onClick={expandAll}
-                    title="Expand All"
-                    className="p-1 hover:bg-white hover:shadow-sm rounded-[2px] text-slate-400 hover:text-slate-900 transition-all"
-                   >
-                     <ChevronsDown className="h-3 w-3" />
-                   </button>
-                   <button 
-                    onClick={collapseAll}
-                    title="Collapse All"
-                    className="p-1 hover:bg-white hover:shadow-sm rounded-[2px] text-slate-400 hover:text-slate-900 transition-all"
-                   >
-                     <ChevronsUp className="h-3 w-3" />
-                   </button>
-                </div>
-                 <span className="text-[9px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded-[4px] border border-slate-100">
-                  {filteredFiles.length} BUKTI
-                </span>
+                 <button 
+                  onClick={toggleAll}
+                  title={isAllExpanded ? "Collapse All Folders" : "Expand All Folders"}
+                  className="p-1.5 hover:bg-slate-50 hover:shadow-sm rounded-[4px] border border-slate-200 text-slate-500 hover:text-slate-900 transition-all bg-white mr-1 flex items-center justify-center"
+                 >
+                   {isAllExpanded ? (
+                     <FolderOpen className="h-3.5 w-3.5" />
+                   ) : (
+                     <Folder className="h-3.5 w-3.5" />
+                   )}
+                 </button>
+                 <div className="flex items-center bg-white border border-slate-200 rounded-[6px] divide-x divide-slate-200 shadow-sm overflow-hidden">
+                    <div className="flex flex-col items-center justify-center py-1.5 px-3 min-w-[75px] bg-white">
+                      <span className="text-[15px] font-black text-rose-600 leading-none mb-0.5">
+                        {1 + batches.filter(b => b.type === "Folder").length + filteredFiles.filter((f: any) => !batches.find(b => b.id === f.batch_id && b.type === "Folder")).length}
+                      </span>
+                      <span className="text-[8px] font-bold text-slate-400 uppercase tracking-[0.15em] leading-none">
+                        Total
+                      </span>
+                    </div>
+                    <div className="flex flex-col items-center justify-center py-1.5 px-3 min-w-[75px] bg-white">
+                      <span className="text-[15px] font-black text-slate-800 leading-none mb-0.5">
+                        1
+                      </span>
+                      <span className="text-[8px] font-bold text-slate-400 uppercase tracking-[0.15em] leading-none">
+                        Utama
+                      </span>
+                    </div>
+                    <div className="flex flex-col items-center justify-center py-1.5 px-3 min-w-[75px] bg-white">
+                      <span className="text-[15px] font-black text-[#0f62fe] leading-none mb-0.5">
+                        {batches.filter(b => b.type === "Folder").length + filteredFiles.filter((f: any) => !batches.find(b => b.id === f.batch_id && b.type === "Folder")).length}
+                      </span>
+                      <span className="text-[8px] font-bold text-slate-400 uppercase tracking-[0.15em] leading-none">
+                        Pendukung
+                      </span>
+                    </div>
+                 </div>
               </div>
             </div>
 
@@ -742,6 +768,53 @@ export default function ExtractionTab() {
           
         <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar bg-white border-t border-slate-100">
           <div className="space-y-0">
+
+            {/* BUKTI UTAMA */}
+            <div className="mt-4 border-t border-slate-100 pt-2">
+              <div className="px-4 py-2 flex items-center justify-between">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Bukti Utama</span>
+                <span className="text-[10px] font-bold text-slate-400">1</span>
+              </div>
+              <div className="bg-white">
+                <FileRow 
+                  file={{
+                    id: "dummy-primary-1",
+                    name: "primary_evidence_preview_001.mp4",
+                    type: "video",
+                    size: 25165824,
+                    created_at: "2026-05-20T14:22:00Z",
+                    extraction_status: "completed",
+                    batch_id: "UTAMA"
+                  }} 
+                  isSelected={selectedFile?.id === "dummy-primary-1"}
+                  onSelect={() => setSelectedFile({
+                    id: "dummy-primary-1",
+                    name: "primary_evidence_preview_001.mp4",
+                    type: "video",
+                    size: 25165824,
+                    created_at: "2026-05-20T14:22:00Z",
+                    extraction_status: "completed",
+                    batch_id: "UTAMA"
+                  })}
+                  onMove={handleMoveFile}
+                  onDelete={() => {}}
+                  onRerun={() => {}}
+                  onOpenHistory={() => {}}
+                  batches={batches}
+                  onHoverChange={setHoveredFile}
+                />
+              </div>
+            </div>
+
+            {/* BUKTI PENDUKUNG (formerly File Mandiri / Bukti Tambahan) */}
+            <div className="mt-4 border-t border-slate-100 pt-2">
+              <div className="px-4 py-2 flex items-center justify-between">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Bukti Pendukung</span>
+                <span className="text-[10px] font-bold text-slate-400">
+                  {batches.filter(b => b.type === "Folder").length + filteredFiles.filter((f: any) => !batches.find(b => b.id === f.batch_id && b.type === "Folder")).length}
+                </span>
+              </div>
+               <div className="bg-white">
             {/* 1. Real Folders (User Created) */}
             {batches.filter(b => b.type === "Folder").map((batch) => (
               <div key={batch.id} className="border-b border-slate-100/60">
@@ -842,16 +915,6 @@ export default function ExtractionTab() {
                 )}
               </div>
             ))}
-
-            {/* 2. Single Files Area (Flat List) */}
-            <div className="mt-4 border-t border-slate-100 pt-2">
-              <div className="px-4 py-2 flex items-center justify-between">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">File Mandiri</span>
-                <span className="text-[10px] font-bold text-slate-400">
-                  {filteredFiles.filter((f: any) => !batches.find(b => b.id === f.batch_id && b.type === "Folder")).length}
-                </span>
-              </div>
-               <div className="bg-white">
                 {(() => {
                   const mandiriFiles = filteredFiles.filter((f: any) => !batches.find(b => b.id === f.batch_id && b.type === "Folder"));
                   return mandiriFiles.map((file: any) => {
@@ -878,7 +941,7 @@ export default function ExtractionTab() {
                   });
                 })()}
                 {filteredFiles.filter((f: any) => !batches.find(b => b.id === f.batch_id && b.type === "Folder")).length === 0 && (
-                  <div className="px-8 py-4 text-[10px] font-medium text-slate-400 uppercase tracking-widest italic opacity-50">Tidak ada file mandiri</div>
+                  <div className="px-8 py-4 text-[10px] font-medium text-slate-400 uppercase tracking-widest italic opacity-50">Tidak ada bukti pendukung</div>
                 )}
               </div>
             </div>
