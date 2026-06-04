@@ -180,18 +180,19 @@ export default function CaseListPage() {
                   <thead>
                     <tr className="bg-slate-50 border-b">
                       <th className="pl-4">Case ID</th>
-                      <th>Title</th>
+                      <th>Kategori Insiden</th>
+                      <th>Waktu Insiden</th>
+                      <th>Waktu Pelaporan</th>
+                      <th>Perusahaan Pelapor</th>
                       <th>Site</th>
-                      <th>Incident Date</th>
-
+                      <th>Lokasi</th>
+                      <th>Detail Lokasi</th>
                       <th>Status</th>
-                      <th>Owner</th>
-
-                      <th className="text-right pr-4">Updated</th>
+                      <th className="text-right pr-4">Action</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {cases.map((c) => (
+                    {cases.map((c, i) => (
                       <tr
                         key={c.id}
                         className={`cursor-pointer transition-colors ${selectedCase?.id === c.id ? "active" : "hover:bg-slate-50/70"}`}
@@ -199,12 +200,14 @@ export default function CaseListPage() {
                         onDoubleClick={() => navigate(`/cases/${c.id}`)}
                       >
                         <td className="pl-4 font-mono text-xs text-primary font-semibold">{c.case_number || c.id.slice(0, 8)}</td>
-                        <td className="text-xs font-medium text-slate-900 truncate max-w-[200px]">{c.title}</td>
-                        <td className="text-xs text-slate-600 font-medium">Site Alpha</td>
-                        <td className="text-xs text-slate-500 font-medium">{new Date(c.created_at).toLocaleDateString()}</td>
-
+                        <td className="text-xs font-medium text-slate-900 truncate max-w-[150px]">{["Near Miss", "Medical Treatment Injury", "Property Damage", "First Aid", "Fatality", "-"][i % 6]}</td>
+                        <td className="text-xs text-slate-600 font-medium">05 April 2026</td>
+                        <td className="text-xs text-slate-500 font-medium">08 April 2026</td>
+                        <td className="text-xs text-slate-700 font-medium">PT Fusi Solusi Transformasi</td>
+                        <td className="text-xs text-slate-700 font-medium">GMO</td>
+                        <td className="text-xs text-slate-700 font-medium">Pit J</td>
+                        <td className="text-xs text-slate-700 font-medium">Area Loading</td>
                         <td className="py-2.5"><StatusChip status={c.status as any} /></td>
-                        <td className="text-xs text-slate-700 font-medium">Admin</td>
 
                         <td className="pr-4 py-2.5">
                           <div className="flex items-center justify-end gap-2">
