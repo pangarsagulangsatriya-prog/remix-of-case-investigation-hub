@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/AppLayout";
 import { StatusChip, SeverityChip } from "@/components/StatusChip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { 
   DropdownMenu, 
@@ -63,7 +64,11 @@ import {
   Mic as AudioIcon,
   Video as VideoIcon,
   Image as ImageIcon,
-  Database
+  Database,
+  Dices,
+  PowerOff,
+  User,
+  Activity
 } from "lucide-react";
 
 // Mock types for legacy compatibility if needed, but we'll use Case from hook
@@ -76,6 +81,33 @@ const getSiteFromDescription = (desc?: string) => {
 };
 
 type ViewMode = "table" | "grid-compact" | "grid-expanded";
+
+const HeaderTooltip = ({ label, description, sourceLabel, className = "" }: { label: string; description: string; sourceLabel?: string; className?: string }) => (
+  <th className={className}>
+    <TooltipProvider delayDuration={200}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="cursor-help hover:text-slate-800 transition-colors">
+            {label}
+          </span>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="bg-white p-3.5 max-w-[280px] border border-slate-200 shadow-xl rounded-lg font-normal normal-case">
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[12px] font-bold text-slate-800 tracking-wide">{label}</span>
+              {sourceLabel && (
+                <span className="text-[9px] font-bold bg-indigo-50 text-indigo-600 border border-indigo-200/50 px-1.5 py-0.5 rounded-sm uppercase tracking-wider whitespace-nowrap">
+                  {sourceLabel}
+                </span>
+              )}
+            </div>
+            <span className="text-xs font-medium text-slate-600 leading-relaxed text-left">{description}</span>
+          </div>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  </th>
+);
 
 export default function CaseListPage() {
   const navigate = useNavigate();
@@ -202,6 +234,38 @@ export default function CaseListPage() {
   const deleteCaseMutation = useDeleteCase();
   const cases = casesData || [];
 
+  const [demoStatuses, setDemoStatuses] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const handleReset = () => {
+      const newStatuses: Record<string, string> = {};
+      cases.forEach(c => newStatuses[c.id] = "belum_mulai");
+      setDemoStatuses(newStatuses);
+      toast.success("DEMO: Semua status AI di-reset ke Belum Mulai");
+    };
+
+    const handleRoll = () => {
+      const statuses = ["belum_mulai", "ekstraksi_bukti", "analisis_bukti", "tersubmit"];
+      const newStatuses: Record<string, string> = {};
+      cases.forEach(c => newStatuses[c.id] = statuses[Math.floor(Math.random() * statuses.length)]);
+      setDemoStatuses(newStatuses);
+      toast.success("DEMO: Status AI diacak");
+    };
+
+    window.addEventListener('demo:reset', handleReset);
+    window.addEventListener('demo:rollDice', handleRoll);
+    return () => {
+      window.removeEventListener('demo:reset', handleReset);
+      window.removeEventListener('demo:rollDice', handleRoll);
+    };
+  }, [cases]);
+
+  const getCaseStatus = (c: Case) => {
+    if (demoStatuses[c.id]) return demoStatuses[c.id];
+    if (createdCaseIds.has(c.id)) return "ekstraksi_bukti";
+    return ["belum_mulai", "ekstraksi_bukti", "analisis_bukti", "tersubmit"][cases.indexOf(c) % 4];
+  };
+
   const filteredCases = cases.filter((c, i) => {
     if (selectedCategories.length > 0) {
       const category = ["Near Miss", "Medical Treatment Injury", "Property Damage", "First Aid", "Fatality"][i % 5];
@@ -224,7 +288,7 @@ export default function CaseListPage() {
       if (!selectedDetailLocations.includes(detail)) return false;
     }
     if (selectedStatuses.length > 0) {
-      const statusAI = ["belum_mulai", "ekstraksi_bukti", "analisis_bukti", "tersubmit"][i % 4];
+      const statusAI = getCaseStatus(c);
       if (!selectedStatuses.includes(statusAI)) return false;
     }
     if (incidentDateRange?.from) {
@@ -240,7 +304,7 @@ export default function CaseListPage() {
     return true;
   });
 
-  const itemsPerPage = 12;
+  const itemsPerPage = 15;
   const totalItems = filteredCases.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
   const activePage = currentPage > totalPages ? 1 : currentPage;
@@ -259,33 +323,6 @@ export default function CaseListPage() {
           </div>
           <div className="flex-1" />
           <div className="flex items-center gap-2">
-            {/* View Toggle */}
-            <div className="flex items-center bg-muted rounded-md p-1 mr-2">
-              <button 
-                onClick={() => setViewMode("table")}
-                className={`p-1.5 rounded-sm transition-all ${viewMode === "table" ? "bg-white shadow-sm text-primary" : "text-muted-foreground hover:text-foreground"}`}
-                title="Table View"
-              >
-                <List className="h-3.5 w-3.5" />
-              </button>
-              <button 
-                onClick={() => setViewMode("grid-compact")}
-                className={`p-1.5 rounded-sm transition-all ${viewMode === "grid-compact" ? "bg-white shadow-sm text-primary" : "text-muted-foreground hover:text-foreground"}`}
-                title="Compact Grid"
-              >
-                <LayoutGrid className="h-3.5 w-3.5" />
-              </button>
-              <button 
-                onClick={() => setViewMode("grid-expanded")}
-                className={`p-1.5 rounded-sm transition-all ${viewMode === "grid-expanded" ? "bg-white shadow-sm text-primary" : "text-muted-foreground hover:text-foreground"}`}
-                title="Expanded Grid"
-              >
-                <div className="relative">
-                  <LayoutGrid className="h-3.5 w-3.5" />
-                  <div className="absolute -bottom-0.5 -right-0.5 w-1.5 h-1.5 bg-primary/20 rounded-full border-[0.5px] border-primary" />
-                </div>
-              </button>
-            </div>
 
             <Button size="sm" className="h-7 text-xs gap-1.5 font-semibold bg-primary hover:bg-primary/90" onClick={() => navigate("/cases/new")}>
               <Plus className="h-3 w-3" /> Create Case
@@ -966,16 +1003,16 @@ export default function CaseListPage() {
                 <table className="w-full min-w-[1200px] enterprise-table border-none">
                   <thead>
                     <tr className="bg-slate-50 border-b">
-                      {visibleColumns.noInsiden && <th className="pl-4">No Insiden</th>}
-                      {visibleColumns.kategori && <th>Kategori Insiden</th>}
-                      {visibleColumns.waktuInsiden && <th>Waktu Insiden</th>}
-                      {visibleColumns.waktuPelaporan && <th>Waktu Pelaporan</th>}
-                      {visibleColumns.perusahaan && <th>Perusahaan Pelapor</th>}
-                      {visibleColumns.site && <th>Site</th>}
-                      {visibleColumns.lokasi && <th>Lokasi</th>}
-                      {visibleColumns.detailLokasi && <th>Detail Lokasi</th>}
-                      {visibleColumns.statusInvestigasi && <th>Status Investigasi</th>}
-                      {visibleColumns.statusAi && <th>Status AI</th>}
+                      {visibleColumns.noInsiden && <HeaderTooltip className="pl-4" label="No Insiden" sourceLabel="Data Sync CCR" description="Nomor identifikasi unik untuk setiap insiden." />}
+                      {visibleColumns.kategori && <HeaderTooltip label="Kategori Insiden" sourceLabel="Data Sync CCR" description="Klasifikasi dari jenis insiden (misalnya: Near Miss, Fatality, dll)." />}
+                      {visibleColumns.waktuInsiden && <HeaderTooltip label="Waktu Insiden" sourceLabel="Data Sync CCR" description="Waktu kejadian aktual ketika insiden tersebut terjadi di lapangan." />}
+                      {visibleColumns.waktuPelaporan && <HeaderTooltip label="Waktu Pelaporan" sourceLabel="Data Sync CCR" description="Waktu ketika insiden ini dilaporkan dan direkam ke dalam sistem." />}
+                      {visibleColumns.perusahaan && <HeaderTooltip label="Perusahaan Pelapor" sourceLabel="Data Sync CCR" description="Perusahaan atau sub-kontraktor yang melaporkan insiden ini." />}
+                      {visibleColumns.site && <HeaderTooltip label="Site" sourceLabel="Data Sync CCR" description="Lokasi area kerja utama atau site tempat insiden terjadi." />}
+                      {visibleColumns.lokasi && <HeaderTooltip label="Lokasi" sourceLabel="Data Sync CCR" description="Area geografis spesifik di dalam site tempat insiden terjadi." />}
+                      {visibleColumns.detailLokasi && <HeaderTooltip label="Detail Lokasi" sourceLabel="Data Sync CCR" description="Titik spesifik atau area mendetail dari lokasi kejadian perkara." />}
+                      {visibleColumns.statusInvestigasi && <HeaderTooltip label="Status Investigasi" sourceLabel="Data Sync CCR" description="Status terkini dari tahapan investigasi secara keseluruhan." />}
+                      {visibleColumns.statusAi && <HeaderTooltip label="Status AI" description="Tahapan analisis dan pengolahan data otomatis yang sedang dikerjakan oleh kecerdasan buatan." />}
                     </tr>
                   </thead>
                   <tbody>
@@ -997,7 +1034,7 @@ export default function CaseListPage() {
                           {visibleColumns.lokasi && <td className="text-xs text-slate-700 font-medium">Pit J</td>}
                           {visibleColumns.detailLokasi && <td className="text-xs text-slate-700 font-medium">Area Loading</td>}
                           {visibleColumns.statusInvestigasi && <td className="text-xs font-semibold text-slate-700">INVESTIGASI</td>}
-                          {visibleColumns.statusAi && <td className="py-2.5"><StatusChip status={createdCaseIds.has(c.id) ? "ekstraksi_bukti" : ["belum_mulai", "ekstraksi_bukti", "analisis_bukti", "tersubmit"][idx % 4]} /></td>}
+                          {visibleColumns.statusAi && <td className="py-2.5"><StatusChip status={getCaseStatus(c)} /></td>}
                         </tr>
                       );
                     })}
@@ -1061,6 +1098,7 @@ export default function CaseListPage() {
                         key={c.id} 
                         caseData={c} 
                         idx={idx}
+                        statusAi={getCaseStatus(c)}
                         mode={viewMode as "grid-compact" | "grid-expanded"}
                         isSelected={selectedCase?.id === c.id}
                         onClick={() => setSelectedCase(c)}
@@ -1140,8 +1178,8 @@ export default function CaseListPage() {
                   <div className="flex items-center gap-2">
                     {(() => {
                       const idx = cases.indexOf(selectedCase);
-                      const mockStatus = ["belum_mulai", "ekstraksi_bukti", "analisis_bukti", "tersubmit"][idx % 4];
-                      const isCaseCreated = createdCaseIds.has(selectedCase.id) || mockStatus !== "belum_mulai";
+                      const mockStatus = getCaseStatus(selectedCase);
+                      const isCaseCreated = mockStatus !== "belum_mulai";
                       
                       return !isCaseCreated ? (
                         <Button 
@@ -1190,38 +1228,62 @@ export default function CaseListPage() {
                     {/* Panel Title */}
                     <div className="space-y-1">
                       <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Incident ID</span>
-                      <h2 className="text-xl font-extrabold text-slate-800 tracking-tight">
-                        Insiden - {323 + cases.indexOf(selectedCase)}
-                      </h2>
+                      <div className="flex items-center gap-3">
+                        <h2 className="text-xl font-extrabold text-slate-800 tracking-tight">
+                          Insiden - {323 + cases.indexOf(selectedCase)}
+                        </h2>
+                        {getCaseStatus(selectedCase) !== "belum_mulai" && (
+                          <div className="flex items-center gap-1.5 text-slate-500">
+                            <Clock className="h-3.5 w-3.5" />
+                            <span className="text-[11px] font-semibold">
+                              {(() => {
+                                const start = new Date("2026-04-08T09:15:00+07:00");
+                                const now = new Date();
+                                let diff = Math.max(0, now.getTime() - start.getTime());
+                                const days = Math.floor(diff / 86400000);
+                                diff -= days * 86400000;
+                                const hours = Math.floor(diff / 3600000);
+                                diff -= hours * 3600000;
+                                const mins = Math.floor(diff / 60000);
+                                const parts = [];
+                                if (days > 0) parts.push(`${days}d`);
+                                if (hours > 0) parts.push(`${hours}h`);
+                                if (mins > 0) parts.push(`${mins}m`);
+                                return parts.length > 0 ? parts.join(" ") : "Just now";
+                              })()}
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
-                    {/* Operational Data */}
-                    <div className="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-sm">
-                      {[
-                        { label: "Kategori Insiden", value: ["Near Miss", "Medical Treatment Injury", "Property Damage", "First Aid", "Fatality"][cases.indexOf(selectedCase) % 5], icon: FileText },
-                        { label: "Waktu Insiden", value: "05 April 2026", icon: Clock },
-                        { label: "Waktu Pelaporan", value: "08 April 2026", icon: Clock },
-                        { label: "Perusahaan Pelapor", value: "PT Fusi Solusi Transformasi", icon: Globe },
-                        { label: "Site", value: "GMO", icon: Globe },
-                        { label: "Lokasi", value: "Pit J", icon: Globe },
-                        { label: "Detail Lokasi", value: "Area Loading", icon: Globe },
-                        { label: "Status AI", value: {
-                          belum_mulai: "Belum Mulai",
-                          ekstraksi_bukti: "Ekstraksi Bukti",
-                          analisis_bukti: "Analisis Bukti",
-                          tersubmit: "Tersubmit"
-                        }[createdCaseIds.has(selectedCase.id) ? "ekstraksi_bukti" : ["belum_mulai", "ekstraksi_bukti", "analisis_bukti", "tersubmit"][cases.indexOf(selectedCase) % 4]] || "Belum Mulai", icon: List },
-                      ].map((item) => (
-                        <div key={item.label} className="grid grid-cols-12 border-b border-slate-200 last:border-0 hover:bg-slate-50/50 transition-colors">
-                          <div className="col-span-5 bg-slate-50/80 px-3 py-2.5 flex items-center border-r border-slate-200">
-                            <span className="text-[11px] text-slate-600 font-semibold leading-tight">{item.label}</span>
+                    {/* Status AI Badge */}
+                    <div className="flex flex-col gap-3 bg-slate-50/80 border border-slate-200 rounded-lg px-4 py-3 shadow-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-bold text-slate-600 uppercase tracking-widest">Status AI</span>
+                        <StatusChip status={getCaseStatus(selectedCase)} />
+                      </div>
+                      
+                      {getCaseStatus(selectedCase) !== "belum_mulai" && (
+                        <div className="pt-3 border-t border-slate-200/60 flex flex-col gap-2.5">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex flex-col">
+                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Started</span>
+                              <span className="text-[11px] font-semibold text-slate-700">08 Apr 2026, 09:15 AM</span>
+                            </div>
+                            <div className="flex flex-col text-right">
+                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">By</span>
+                              <span className="text-[11px] font-semibold text-slate-700">Jane Doe</span>
+                            </div>
                           </div>
-                          <div className="col-span-7 px-3 py-2.5 text-xs font-bold text-slate-900 flex items-center min-h-[38px] bg-white">
-                            {item.value}
+                          <div className="flex flex-col pt-1">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Last Updated (09 Apr 2026, 14:30 PM)</span>
+                            <span className="text-[11px] font-medium text-slate-700 leading-snug">Completed extraction of evidence 001.mp4 and generated factual chronologies.</span>
                           </div>
                         </div>
-                      ))}
+                      )}
                     </div>
+
                     {/* Progress Matrix */}
                     <div className="space-y-3 pt-3">
                       <div className="flex items-center justify-between text-[11px] font-mono tracking-wider">
@@ -1271,6 +1333,29 @@ export default function CaseListPage() {
                           );
                         })}
                       </div>
+                    </div>
+
+                    {/* Operational Data */}
+                    <div className="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-sm">
+                      {[
+                        { label: "Kategori Insiden", value: ["Near Miss", "Medical Treatment Injury", "Property Damage", "First Aid", "Fatality"][cases.indexOf(selectedCase) % 5], icon: FileText },
+                        { label: "Waktu Insiden", value: "05 April 2026", icon: Clock },
+                        { label: "Waktu Pelaporan", value: "08 April 2026", icon: Clock },
+                        { label: "Perusahaan Pelapor", value: "PT Fusi Solusi Transformasi", icon: Globe },
+                        { label: "Site", value: "GMO", icon: Globe },
+                        { label: "Lokasi", value: "Pit J", icon: Globe },
+                        { label: "Detail Lokasi", value: "Area Loading", icon: Globe },
+
+                      ].map((item) => (
+                        <div key={item.label} className="grid grid-cols-12 border-b border-slate-200 last:border-0 hover:bg-slate-50/50 transition-colors">
+                          <div className="col-span-5 bg-slate-50/80 px-3 py-2.5 flex items-center border-r border-slate-200">
+                            <span className="text-[11px] text-slate-600 font-semibold leading-tight">{item.label}</span>
+                          </div>
+                          <div className="col-span-7 px-3 py-2.5 text-xs font-bold text-slate-900 flex items-center min-h-[38px] bg-white">
+                            {item.value}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>
@@ -1576,52 +1661,84 @@ Rekomendasi Tindakan:
     const f3 = docFile;
     const f4 = createImageFile("Foto_TKP_Loading_Dock.png", "BUKTI AREA LOADING DOCK", "Kamera CCTV-West Wing #02");
 
-    const items = [
-      {
-        id: "d1",
-        file: f1,
-        name: f1.name,
-        category: "Audio" as const,
-        size: f1.size,
-        relativePath: `DATA AUDIO/${f1.name}`,
-        groupId: "data_audio",
-        groupName: "DATA AUDIO",
-        previewUrl: URL.createObjectURL(f1)
-      },
-      {
-        id: "d2",
-        file: f2,
-        name: f2.name,
-        category: "Audio" as const,
-        size: f2.size,
-        relativePath: `DATA AUDIO/${f2.name}`,
-        groupId: "data_audio",
-        groupName: "DATA AUDIO",
-        previewUrl: URL.createObjectURL(f2)
-      },
-      {
-        id: "d3",
-        file: f3,
-        name: f3.name,
-        category: "Document" as const,
-        size: f3.size,
-        relativePath: f3.name,
-        groupId: "__loose__",
-        groupName: "Individual Files",
-        previewUrl: URL.createObjectURL(f3)
-      },
-      {
-        id: "d4",
-        file: f4,
-        name: f4.name,
-        category: "Image" as const,
-        size: f4.size,
-        relativePath: f4.name,
-        groupId: "__loose__",
-        groupName: "Individual Files",
-        previewUrl: URL.createObjectURL(f4)
-      }
-    ];
+    let items: any[] = [];
+    const saved = localStorage.getItem(`primary_evidences_${caseData.id}`);
+    
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].id !== "dummy-primary-1") {
+          items = parsed.map((p: any) => {
+            let category = "Document";
+            let groupId = "__loose__";
+            if (p.type === 'video') category = "Video";
+            else if (p.type === 'audio') { category = "Audio"; groupId = "data_audio"; }
+            else if (p.type === 'image') category = "Image";
+            
+            return {
+              id: p.id,
+              file: null,
+              name: p.name,
+              category,
+              size: p.size,
+              relativePath: p.name,
+              groupId: groupId,
+              groupName: groupId === "data_audio" ? "DATA AUDIO" : "Individual Files",
+              previewUrl: p.url || ""
+            };
+          });
+        }
+      } catch (e) {}
+    }
+
+    if (items.length === 0) {
+      items = [
+        {
+          id: "d1",
+          file: f1,
+          name: f1.name,
+          category: "Audio" as const,
+          size: f1.size,
+          relativePath: `DATA AUDIO/${f1.name}`,
+          groupId: "data_audio",
+          groupName: "DATA AUDIO",
+          previewUrl: URL.createObjectURL(f1)
+        },
+        {
+          id: "d2",
+          file: f2,
+          name: f2.name,
+          category: "Audio" as const,
+          size: f2.size,
+          relativePath: `DATA AUDIO/${f2.name}`,
+          groupId: "data_audio",
+          groupName: "DATA AUDIO",
+          previewUrl: URL.createObjectURL(f2)
+        },
+        {
+          id: "d3",
+          file: f3,
+          name: f3.name,
+          category: "Document" as const,
+          size: f3.size,
+          relativePath: f3.name,
+          groupId: "__loose__",
+          groupName: "Individual Files",
+          previewUrl: URL.createObjectURL(f3)
+        },
+        {
+          id: "d4",
+          file: f4,
+          name: f4.name,
+          category: "Image" as const,
+          size: f4.size,
+          relativePath: f4.name,
+          groupId: "__loose__",
+          groupName: "Individual Files",
+          previewUrl: URL.createObjectURL(f4)
+        }
+      ];
+    }
 
     setFileItems(items);
     setSelectedFileId(items[0].id);
@@ -2091,6 +2208,7 @@ function DeleteCaseDialog({
 function CaseGridCard({ 
   caseData, 
   idx,
+  statusAi,
   mode, 
   isSelected, 
   onClick,
@@ -2098,6 +2216,7 @@ function CaseGridCard({
 }: { 
   caseData: Case; 
   idx: number;
+  statusAi: string;
   mode: "grid-compact" | "grid-expanded"; 
   isSelected: boolean;
   onClick: () => void;
@@ -2125,7 +2244,7 @@ function CaseGridCard({
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{getSiteFromDescription(caseData.description)}</span>
           </div>
         </div>
-        <StatusChip status={["belum_mulai", "ekstraksi_bukti", "analisis_bukti", "tersubmit"][idx % 4]} />
+        <StatusChip status={statusAi} />
       </div>
 
       {/* Card Body */}

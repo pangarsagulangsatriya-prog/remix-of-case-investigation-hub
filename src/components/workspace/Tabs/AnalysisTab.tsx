@@ -1276,6 +1276,58 @@ export default function AnalysisTab() {
                    )}
                </div>
 
+               {selectedRowId && selectedAgentId !== 'fact' && (
+                  <div className="w-[420px] shrink-0 border-l border-slate-200 bg-white shadow-[-10px_0_30px_-15px_rgba(0,0,0,0.1)] z-20 flex flex-col animate-in slide-in-from-right duration-300">
+                     <div className="h-12 border-b border-slate-200 flex items-center justify-between px-5 bg-slate-50/50 shrink-0">
+                        <div className="flex items-center gap-2">
+                           <Brain className="h-4 w-4 text-primary" />
+                           <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest">Evidence Console</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                           <div className="flex bg-slate-200 p-0.5 rounded-sm">
+                              <button onClick={() => setActiveEvidenceConsoleMode('trace')} className={cn("px-2 py-1 text-[8px] font-black uppercase rounded-sm transition-all", activeEvidenceConsoleMode === 'trace' ? "bg-white shadow-sm text-slate-900" : "text-slate-400")}>Trace</button>
+                              <button onClick={() => setActiveEvidenceConsoleMode('analysis')} className={cn("px-2 py-1 text-[8px] font-black uppercase rounded-sm transition-all", activeEvidenceConsoleMode === 'analysis' ? "bg-white shadow-sm text-slate-900" : "text-slate-400")}>Actor</button>
+                              <button onClick={() => setActiveEvidenceConsoleMode('diarization')} className={cn("px-2 py-1 text-[8px] font-black uppercase rounded-sm transition-all", activeEvidenceConsoleMode === 'diarization' ? "bg-white shadow-sm text-slate-900" : "text-slate-400")}>Diar</button>
+                           </div>
+                           <Button variant="ghost" size="sm" onClick={() => setSelectedRowId(null)} className="h-8 w-8 p-0 text-slate-400 hover:text-slate-600 hover:bg-slate-100">
+                              <X className="h-4 w-4" />
+                           </Button>
+                        </div>
+                     </div>
+                     <div className="flex-1 p-6 overflow-y-auto custom-scrollbar bg-slate-50/30">
+                        {activeEvidenceConsoleMode === 'trace' && (
+                           <div className="space-y-6">
+                              <div className="flex items-center gap-2">
+                                 <Activity className="h-4 w-4 text-slate-400" />
+                                 <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest">Traceability Analysis</span>
+                              </div>
+                              <div className="bg-white border border-slate-200 p-4 rounded-sm shadow-sm space-y-4">
+                                 <p className="text-[12px] font-bold text-slate-600 leading-relaxed">
+                                    Detail traceability for row <span className="font-mono text-blue-500">{selectedRowId}</span> is currently isolated from this node.
+                                 </p>
+                                 <div className="h-px bg-slate-100 w-full" />
+                                 <div className="flex gap-2 text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                                    <div className="px-2 py-1 bg-slate-100 rounded">No Direct Evidence Links</div>
+                                 </div>
+                              </div>
+                           </div>
+                        )}
+                        {activeEvidenceConsoleMode === 'analysis' && (
+                           <div className="flex flex-col items-center justify-center text-center py-20 opacity-40">
+                              <Search className="h-12 w-12 text-slate-400 mb-4" />
+                              <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Actor analysis unavailable</span>
+                           </div>
+                        )}
+                        {activeEvidenceConsoleMode === 'diarization' && (
+                           <div className="flex flex-col items-center justify-center text-center py-20 opacity-40">
+                              <Mic className="h-12 w-12 text-slate-400 mb-4" />
+                              <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest">No diarization linked</span>
+                           </div>
+                        )}
+                     </div>
+                  </div>
+               )}
+
             </div>
          </div>
 

@@ -5,7 +5,8 @@ import {
   Search, Plus, FolderPlus, FileUp, FolderUp, ChevronRight, 
   Folder, Folders, MoreVertical, Pencil, Trash2, Loader2, CheckCircle2, 
   Box, Upload, ChevronLeft, ChevronRight as ChevronRightIcon, 
-  Cpu, ChevronsDown, ChevronsUp, AlertCircle, RefreshCw, FolderOpen
+  Cpu, ChevronsDown, ChevronsUp, AlertCircle, RefreshCw, FolderOpen,
+  Dices, PowerOff
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -67,6 +68,57 @@ export default function ExtractionTab() {
   const batches = evidence?.batches || [];
 
   // State
+  const [primaryEvidences, setPrimaryEvidences] = useState<any[]>(() => {
+    const saved = localStorage.getItem(`primary_evidences_${caseId}`);
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) {}
+    }
+    return [{
+      id: "dummy-primary-1",
+      name: "primary_evidence_preview_001.mp4",
+      type: "video",
+      size: 25165824,
+      created_at: "2026-05-20T14:22:00Z",
+      extraction_status: "completed",
+      batch_id: "UTAMA"
+    }];
+  });
+  const [isPrimaryUploadModalOpen, setIsPrimaryUploadModalOpen] = useState(false);
+
+  const savePrimaryEvidences = (newEvidences: any[]) => {
+    setPrimaryEvidences(newEvidences);
+    const toSave = newEvidences.map(({ url, ...rest }) => rest);
+    localStorage.setItem(`primary_evidences_${caseId}`, JSON.stringify(toSave));
+  };
+
+  const handleDeletePrimaryEvidence = (id: string) => {
+    const updated = primaryEvidences.filter((e) => e.id !== id);
+    savePrimaryEvidences(updated);
+    if (selectedFile?.id === id) {
+      setSelectedFile(null);
+    }
+    toast.success("File bukti utama berhasil dihapus");
+  };
+
+  const handlePrimaryUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      const newFiles = Array.from(files).map((file, idx) => ({
+        id: `primary-new-${Date.now()}-${idx}`,
+        name: file.name,
+        size: file.size,
+        type: file.type.includes('video') ? 'video' : file.type.includes('audio') ? 'audio' : file.type.includes('image') ? 'image' : 'document',
+        created_at: new Date().toISOString(),
+        extraction_status: "completed",
+        batch_id: "UTAMA",
+        url: URL.createObjectURL(file)
+      }));
+      savePrimaryEvidences([...primaryEvidences, ...newFiles]);
+      setIsPrimaryUploadModalOpen(false);
+      toast.success(`${newFiles.length} file bukti utama berhasil ditambahkan`);
+    }
+  };
+
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [expandedBatches, setExpandedBatches] = useState<string[]>(["DOKUMEN", "GAMBAR", "AUDIO"]);
@@ -293,10 +345,14 @@ export default function ExtractionTab() {
   // Injector Shortcut
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+      if (e.ctrlKey && e.shiftKey && (e.key === 'D' || e.key === 'd')) {
         e.preventDefault();
         // Here we should ideally check user role, but for prototype we allow in dev/staging env
         setIsDerivationInjectorOpen(true);
+      }
+      if (e.ctrlKey && e.shiftKey && (e.key === 'U' || e.key === 'u')) {
+        e.preventDefault();
+        setIsPrimaryUploadModalOpen(true);
       }
     };
 
@@ -764,8 +820,6 @@ export default function ExtractionTab() {
               </DropdownMenu>
             </div>
           </div>
-        </div>
-          
         <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar bg-white border-t border-slate-100">
           <div className="space-y-0">
 
@@ -773,36 +827,23 @@ export default function ExtractionTab() {
             <div className="mt-4 border-t border-slate-100 pt-2">
               <div className="px-4 py-2 flex items-center justify-between">
                 <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Bukti Utama</span>
-                <span className="text-[10px] font-bold text-slate-400">1</span>
+                <span className="text-[10px] font-bold text-slate-400">{primaryEvidences.length}</span>
               </div>
               <div className="bg-white">
-                <FileRow 
-                  file={{
-                    id: "dummy-primary-1",
-                    name: "primary_evidence_preview_001.mp4",
-                    type: "video",
-                    size: 25165824,
-                    created_at: "2026-05-20T14:22:00Z",
-                    extraction_status: "completed",
-                    batch_id: "UTAMA"
-                  }} 
-                  isSelected={selectedFile?.id === "dummy-primary-1"}
-                  onSelect={() => setSelectedFile({
-                    id: "dummy-primary-1",
-                    name: "primary_evidence_preview_001.mp4",
-                    type: "video",
-                    size: 25165824,
-                    created_at: "2026-05-20T14:22:00Z",
-                    extraction_status: "completed",
-                    batch_id: "UTAMA"
-                  })}
-                  onMove={handleMoveFile}
-                  onDelete={() => {}}
-                  onRerun={() => {}}
-                  onOpenHistory={() => {}}
-                  batches={batches}
-                  onHoverChange={setHoveredFile}
-                />
+                {primaryEvidences.map((evidence) => (
+                  <FileRow 
+                    key={evidence.id}
+                    file={evidence} 
+                    isSelected={selectedFile?.id === evidence.id}
+                    onSelect={() => setSelectedFile(evidence)}
+                    onMove={handleMoveFile}
+                    onDelete={() => handleDeletePrimaryEvidence(evidence.id)}
+                    onRerun={() => {}}
+                    onOpenHistory={() => {}}
+                    batches={batches}
+                    onHoverChange={setHoveredFile}
+                  />
+                ))}
               </div>
             </div>
 
@@ -943,8 +984,9 @@ export default function ExtractionTab() {
                 {filteredFiles.filter((f: any) => !batches.find(b => b.id === f.batch_id && b.type === "Folder")).length === 0 && (
                   <div className="px-8 py-4 text-[10px] font-medium text-slate-400 uppercase tracking-widest italic opacity-50">Tidak ada bukti pendukung</div>
                 )}
-              </div>
+               </div>
             </div>
+          </div>
 
             {filteredFiles.length === 0 && (
               <div className="py-20 flex flex-col items-center justify-center text-center px-6">
@@ -1428,6 +1470,29 @@ export default function ExtractionTab() {
            queryClient.invalidateQueries({ queryKey: ["evidence", caseId] });
         }}
       />
+
+      <Modal
+        isOpen={isPrimaryUploadModalOpen}
+        onClose={() => setIsPrimaryUploadModalOpen(false)}
+        title="Upload Bukti Utama"
+        showCloseButton
+      >
+        <div className="p-6">
+          <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-slate-300 border-dashed rounded-lg cursor-pointer bg-slate-50 hover:bg-slate-100 transition-colors">
+            <div className="flex flex-col items-center justify-center pt-5 pb-6">
+              <Upload className="w-8 h-8 mb-2 text-slate-500" />
+              <p className="text-xs text-slate-500 font-bold uppercase tracking-widest"><span className="text-[#0f62fe]">Pilih file</span> atau tarik kesini</p>
+              <p className="text-[10px] text-slate-400 mt-1 uppercase tracking-widest">Multiple files didukung</p>
+            </div>
+            <input 
+              type="file" 
+              className="hidden" 
+              multiple
+              onChange={handlePrimaryUpload} 
+            />
+          </label>
+        </div>
+      </Modal>
     </div>
   );
 }

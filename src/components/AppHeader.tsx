@@ -1,4 +1,4 @@
-import { Bell, ChevronDown, Menu } from "lucide-react";
+import { Bell, ChevronDown, Menu, Dices, PowerOff } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 
 import { InvestigationIntelligenceLogo } from "./BrandLogo";
@@ -12,6 +12,20 @@ export function AppHeader() {
 
       <div className="flex items-center gap-2">
         <div className="flex items-center gap-3">
+          <button 
+            onClick={() => window.dispatchEvent(new CustomEvent('demo:reset'))}
+            className="h-8 w-8 rounded-sm bg-slate-100 flex items-center justify-center border hover:bg-slate-200 transition-colors"
+            title="Hard Reset (Demo)"
+          >
+            <PowerOff className="h-4 w-4 text-rose-500" />
+          </button>
+          <button 
+            onClick={() => window.dispatchEvent(new CustomEvent('demo:rollDice'))}
+            className="h-8 w-8 rounded-sm bg-slate-100 flex items-center justify-center border hover:bg-slate-200 transition-colors"
+            title="Roll the Dice (Demo)"
+          >
+            <Dices className="h-4 w-4 text-amber-500" />
+          </button>
           <div className="h-8 w-8 rounded-sm bg-slate-100 flex items-center justify-center relative border">
             <Bell className="h-4 w-4 text-slate-500" />
             <div className="absolute top-2 right-2 h-2 w-2 bg-rose-500 rounded-full border-2 border-white" />
