@@ -340,73 +340,70 @@ export const TraceabilityPanel: React.FC<{
   const whatCitations = [...((breakdown.action as any)?.citations || []), ...mappedTraceability];
 
   const w5h1 = [
-    { label: "WHAT", desc: "Apa yang terjadi", value: breakdown.action?.value || item.chronology_text, citations: whatCitations },
-    { label: "WHO", desc: "Siapa yang terlibat", value: breakdown.subject?.value || breakdown.actor || "-", citations: (breakdown.subject as any)?.citations },
-    { label: "WHERE", desc: "Dimana kejadiannya", value: "-", citations: [] },
-    { label: "WHEN", desc: "Kapan kejadiannya", value: breakdown.time || item.time_label, citations: [] },
-    { label: "WHY", desc: "Kenapa bisa terjadi", value: "Dalam proses investigasi", citations: [] },
-    { label: "HOW", desc: "Bagaimana kondisinya", value: breakdown.condition?.value || "-", citations: (breakdown.condition as any)?.citations }
+    { label: "WHAT", value: breakdown.action?.value || item.chronology_text, citations: whatCitations },
+    { label: "WHO", value: breakdown.subject?.value || breakdown.actor || "-", citations: (breakdown.subject as any)?.citations },
+    { label: "WHERE", value: "-", citations: [] },
+    { label: "WHEN", value: breakdown.time || item.time_label, citations: [] },
+    { label: "WHY", value: "Dalam proses investigasi", citations: [] },
+    { label: "HOW", value: breakdown.condition?.value || "-", citations: (breakdown.condition as any)?.citations }
   ];
 
   return (
     <div className="flex flex-col h-full bg-white shadow-[-8px_0_30px_-15px_rgba(0,0,0,0.1)]">
       {/* Panel Header */}
-      <div className="p-6 border-b bg-white shrink-0">
+      <div className="p-6 border-b border-slate-200 bg-white shrink-0">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-lg bg-slate-900 flex items-center justify-center text-white">
+            <div className="h-8 w-8 bg-blue-600 flex items-center justify-center text-white">
               <TableIcon className="h-4 w-4" />
             </div>
             <div>
-              <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight leading-none">Dekomposisi Fakta</h3>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">5W 1H Analysis</p>
+              <h3 className="text-[14px] font-semibold text-slate-900 uppercase tracking-wide leading-none">Dekomposisi Fakta</h3>
+              <p className="text-[11px] text-slate-500 uppercase tracking-wider mt-1">5W1H Analysis</p>
             </div>
           </div>
-          <Button variant="ghost" size="sm" onClick={onClose} className="h-8 w-8 p-0 rounded-full hover:bg-slate-100">
-            <X className="h-4 w-4 text-slate-400" />
+          <Button variant="ghost" size="sm" onClick={onClose} className="h-8 w-8 p-0 hover:bg-slate-100 rounded-none">
+            <X className="h-4 w-4 text-slate-500" />
           </Button>
         </div>
 
-        <div className="bg-slate-50/80 rounded-xl p-4 border border-slate-100 space-y-4">
-          <p className="text-[13px] font-bold text-slate-800 leading-relaxed pr-2">
+        <div className="bg-slate-50 p-4 border-l-4 border-slate-300">
+          <p className="text-[13px] text-slate-800 leading-relaxed pr-2 font-serif italic">
             "{item.chronology_text}"
           </p>
         </div>
       </div>
 
       {/* Main Content Area: 5W1H Table */}
-      <div className="flex-1 overflow-auto p-6 scrollbar-thin bg-slate-50/20">
-        <div className="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-sm">
+      <div className="flex-1 overflow-auto p-6 scrollbar-thin bg-white">
+        <div className="border border-slate-300 bg-white">
           <table className="w-full text-left border-collapse">
             <tbody>
               {w5h1.map((row, idx) => (
                 <React.Fragment key={row.label}>
                   <tr 
-                    className={cn("border-b border-slate-100 transition-colors", row.citations?.length ? "hover:bg-slate-50 cursor-pointer" : "bg-white")}
+                    className={cn("border-b border-slate-200 transition-colors", row.citations?.length ? "hover:bg-slate-50 cursor-pointer" : "bg-white")}
                     onClick={() => row.citations?.length && toggleRow(row.label)}
                   >
-                    <td className="px-6 py-5 align-top w-[160px]">
-                      <div className="flex flex-col gap-1.5">
-                        <span className="text-[11px] font-black text-slate-900 uppercase tracking-widest">{row.label}</span>
-                        <span className="text-[10px] font-bold text-slate-400 leading-tight">{row.desc}</span>
-                      </div>
+                    <td className="px-4 py-4 align-top w-[120px] bg-slate-50/50">
+                      <span className="text-[12px] font-semibold text-slate-900 tracking-wider uppercase">{row.label}</span>
                     </td>
-                    <td className="px-6 py-5 align-top">
-                      <div className="flex flex-col items-start gap-3">
-                        <p className="text-[13px] font-medium text-slate-700 leading-relaxed max-w-xl">
+                    <td className="px-4 py-4 align-top">
+                      <div className="flex flex-col items-start gap-2">
+                        <p className="text-[14px] text-slate-800 leading-relaxed">
                           {row.value}
                         </p>
                         {row.citations && row.citations.length > 0 && (
                           <Button 
                             variant="ghost" 
                             size="sm" 
-                            className={cn("h-7 px-3 text-[10px] font-black uppercase tracking-widest transition-all", expandedRows[row.label] ? "bg-indigo-50 text-indigo-700 hover:bg-indigo-100" : "bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-slate-700")}
+                            className="h-6 px-0 text-[12px] font-medium text-blue-600 hover:text-blue-800 hover:bg-transparent rounded-none"
                             onClick={(e) => {
                               e.stopPropagation();
                               toggleRow(row.label);
                             }}
                           >
-                             {expandedRows[row.label] ? <ChevronDown className="h-3.5 w-3.5 rotate-180 mr-1.5" /> : <ChevronDown className="h-3.5 w-3.5 mr-1.5" />}
+                             {expandedRows[row.label] ? <ChevronDown className="h-4 w-4 rotate-180 mr-1" /> : <ChevronDown className="h-4 w-4 mr-1" />}
                              {row.citations.length} Citations
                           </Button>
                         )}
@@ -415,44 +412,32 @@ export const TraceabilityPanel: React.FC<{
                   </tr>
                   
                   {expandedRows[row.label] && row.citations && row.citations.length > 0 && (
-                    <tr className="bg-slate-50/80 border-b border-slate-200">
-                      <td colSpan={2} className="px-6 py-6 border-l-2 border-l-indigo-400">
-                        <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
-                          <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                            <Layers className="h-3.5 w-3.5" /> Supporting Evidence for {row.label}
-                          </h4>
-                          <div className="grid grid-cols-1 gap-4">
+                    <tr className="bg-slate-100 border-b border-slate-300">
+                      <td colSpan={2} className="p-0">
+                        <div className="border-l-4 border-blue-600 bg-white m-4 ml-6 shadow-sm">
+                          <div className="border border-slate-200 border-l-0 divide-y divide-slate-100">
                             {row.citations.map((cite: any, i: number) => {
                               const Icon = cite.type === 'audio' ? Mic : cite.type === 'video' ? Video : cite.type === 'image' ? Camera : FileText;
                               return (
-                                <div key={i} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm relative group hover:border-indigo-200 transition-all hover:shadow-md">
-                                   <div className="flex items-center gap-3 mb-4">
-                                      <div className="h-9 w-9 bg-indigo-50 border border-indigo-100/50 rounded-lg flex items-center justify-center">
-                                         <Icon className="h-4 w-4 text-indigo-600" />
-                                      </div>
-                                      <div className="flex flex-col">
-                                        <span className="text-[10px] font-black uppercase text-slate-900 tracking-widest">
-                                          {cite.type} Evidence
-                                        </span>
-                                        {(cite.speaker || cite.time) && (
-                                           <span className="text-[10px] font-bold text-slate-500 mt-0.5">
-                                             {cite.speaker} {cite.time ? <span className="text-slate-400">({cite.time})</span> : ''}
-                                           </span>
-                                        )}
-                                      </div>
-                                   </div>
-                                   <div className="flex gap-5">
-                                      {(cite.type === 'image' || cite.type === 'video') && cite.thumbnail && (
-                                         <div className="h-24 w-36 shrink-0 bg-slate-900 rounded-lg overflow-hidden relative shadow-sm border border-slate-200 group-hover:border-indigo-200 transition-colors">
-                                            <img src={cite.thumbnail} className="h-full w-full object-cover opacity-90 group-hover:opacity-100 transition-opacity" />
-                                            {cite.type === 'video' && <Play className="h-6 w-6 text-white absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 fill-current drop-shadow-md" />}
-                                         </div>
+                                <div key={i} className="p-4 flex flex-col gap-2">
+                                   <div className="flex items-center gap-2">
+                                      <Icon className="h-4 w-4 text-slate-500" />
+                                      <span className="text-[12px] font-semibold text-slate-900 capitalize tracking-wide">
+                                        {cite.type} Evidence
+                                      </span>
+                                      {(cite.speaker || cite.time) && (
+                                         <>
+                                            <span className="text-slate-300">•</span>
+                                            <span className="text-[12px] text-slate-600">
+                                              {cite.speaker} {cite.time ? `(${cite.time})` : ''}
+                                            </span>
+                                         </>
                                       )}
-                                      <div className="bg-slate-50 rounded-lg p-4 border border-slate-100 flex-1">
-                                        <p className="text-[13px] font-medium text-slate-700 italic leading-relaxed">
-                                          "{cite.content || cite.text || cite.extracted_content}"
-                                        </p>
-                                      </div>
+                                   </div>
+                                   <div className="pl-6 ml-2">
+                                     <p className="text-[13px] text-slate-800 leading-relaxed font-serif">
+                                       "{cite.content || cite.text || cite.extracted_content}"
+                                     </p>
                                    </div>
                                 </div>
                               );
