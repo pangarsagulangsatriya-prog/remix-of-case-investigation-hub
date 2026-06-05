@@ -418,16 +418,11 @@ const renderHighlightedStatement = (text: string, item: ChronologyItem) => {
       <span 
         key={`match-${idx}`} 
         className={cn(
-          "inline-flex flex-col items-start px-1.5 py-0.5 border font-sans font-medium mx-1 my-0.5 rounded-none align-middle", 
+          "inline-block px-1.5 py-0.5 border font-sans font-semibold mx-1 rounded-none align-middle text-[12.5px] leading-none", 
           match.color
         )}
       >
-        <span className="text-[12.5px] leading-tight font-sans font-semibold">
-          {match.originalText}
-        </span>
-        <span className="text-[7.5px] font-bold font-mono tracking-wider opacity-70 mt-0.5 leading-none uppercase">
-          {match.label}
-        </span>
+        {match.originalText}
       </span>
     );
     currentIndex = match.end;
