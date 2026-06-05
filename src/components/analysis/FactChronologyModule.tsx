@@ -193,6 +193,10 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
   const [items, setItems] = useState<ChronologyItem[]>(initialItems);
   const [internalSelectedItemId, setInternalSelectedItemId] = useState<string | null>(null);
   
+  React.useEffect(() => {
+    setItems(initialItems);
+  }, [initialItems]);
+  
   const viewMode = 'default';
   const selectedItemId = controlledSelectedItemId || internalSelectedItemId;
   const setSelectedItemId = (id: string | null) => {

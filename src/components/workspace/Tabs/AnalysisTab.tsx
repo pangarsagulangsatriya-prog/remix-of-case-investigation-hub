@@ -87,8 +87,8 @@ const initialAgentsState: AgentState[] = [
              id: 'chrono-saiful-001', 
              phase: 'pre_contact', 
              time_label: "Minggu 10-41",
-             description: "Petugas DMS mengidentifikasi riwayat deviasi kelelahan sebanyak 41 kali pada profil Operator Saiful.", 
-             chronology_text: "Petugas DMS mengidentifikasi riwayat deviasi kelelahan sebanyak 41 kali pada profil Operator Saiful.",
+             description: "Pada Minggu 10-41, Petugas DMS (Aris) mengidentifikasi riwayat deviasi kelelahan pada profil Operator Saiful dalam proses investigasi dengan pemantauan intensif.", 
+             chronology_text: "Pada Minggu 10-41, Petugas DMS (Aris) mengidentifikasi riwayat deviasi kelelahan pada profil Operator Saiful dalam proses investigasi dengan pemantauan intensif.",
              confidence: "high",
              status: "completed",
              verification_status: "human_verified",
@@ -96,19 +96,22 @@ const initialAgentsState: AgentState[] = [
              breakdown: {
                 subject: { value: "Petugas DMS (Aris)", evidence: "tanggung jawab Pak Aris sebagai DMS control room" },
                 action: { 
-                    value: "Mengidentifikasi riwayat deviasi", 
+                    value: "mengidentifikasi riwayat deviasi kelelahan", 
                     citations: [
                        { type: 'document', content: "ada juga banyak di rekapan juga sampai dari week 10 sampai week 41 itu 41 kali", page: "04", source: "DMS_RECAP_WEEKLY.XLSX" },
                        { type: 'image', content: "Screenshot dashboard DMS menunjukkan lonjakan deviasi pada profil Saiful.", source: "DMS_ALERT_SS_01.PNG", thumbnail: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=200" }
                     ]
                  },
                 object: { 
-                    value: "Profil Operator Saiful", 
+                    value: "profil Operator Saiful", 
                     citations: [
                        { type: 'audio', content: "catatannya banyak fatigue, ah itu biasa kami sering intens... mengontrol mereka", speaker: "Aris", time: "02:16", source: "VOIP_REC_01.WAV" },
                        { type: 'video', content: "Rekaman CCTV menunjukkan operator Saiful terlihat kelelahan saat memasuki unit.", time: "22:05", source: "CCTV_GATE_A.MP4", thumbnail: "https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&q=80&w=200" }
                     ]
                  },
+                location: { value: "profil Operator Saiful" },
+                time: "Minggu 10-41",
+                why: { value: "dalam proses investigasi" },
                 source_system: { 
                     value: "Rekapitulasi Data DMS", 
                     citations: [
@@ -116,7 +119,7 @@ const initialAgentsState: AgentState[] = [
                     ]
                  },
                 condition: { 
-                    value: "Pemantauan Intensif", 
+                    value: "pemantauan intensif", 
                     citations: [
                        { type: 'audio', content: "kalau misalnya dari orang ini eh catatannya banyak fatigue, ah itu biasa kami sering intens", speaker: "Aris", time: "02:18", source: "VOIP_REC_01.WAV" }
                     ]
@@ -127,90 +130,105 @@ const initialAgentsState: AgentState[] = [
              id: 'chrono-saiful-002', 
              phase: 'pre_contact', 
              time_label: "22:15 WITA",
-             description: "Sistem DMS memicu peringatan kritis kategori Lockdown pada unit yang sedang dioperasikan oleh Operator Saiful.", 
-             chronology_text: "Sistem DMS memicu peringatan kritis kategori Lockdown pada unit yang sedang dioperasikan oleh Operator Saiful.",
+             description: "Pada 22:15 WITA, Sistem DMS memicu peringatan kritis kategori Lockdown pada unit yang sedang dioperasikan oleh Operator Saiful untuk operasional malam hari dalam proses investigasi.", 
+             chronology_text: "Pada 22:15 WITA, Sistem DMS memicu peringatan kritis kategori Lockdown pada unit yang sedang dioperasikan oleh Operator Saiful untuk operasional malam hari dalam proses investigasi.",
              confidence: "high",
              status: "completed",
              verification_status: "ai_generated",
              annotated_by_human: false,
              breakdown: {
                 subject: { value: "Sistem DMS", evidence: "kalau di klik DMS dua, kalau di Gimo satu" },
-                action: { value: "Memicu peringatan kritis", evidence: "Yang pertama itu eh Lockdown, itu di jam 22:15" },
-                object: { value: "Unit Operator Saiful", evidence: "Jam 22:15 ada alert lockdown-nya Pak Saiful ya" },
+                action: { value: "memicu peringatan kritis kategori Lockdown", evidence: "Yang pertama itu eh Lockdown, itu di jam 22:15" },
+                object: { value: "unit yang sedang dioperasikan oleh Operator Saiful", evidence: "Jam 22:15 ada alert lockdown-nya Pak Saiful ya" },
+                location: { value: "unit yang sedang dioperasikan oleh Operator Saiful" },
+                time: "22:15 WITA",
+                why: { value: "dalam proses investigasi" },
                 source_system: { value: "Dashboard Control Room", evidence: "Terus saya pantau lagi di klik DMS" },
-                condition: { value: "Operasional Malam Hari", evidence: "pengawas room yang bertugas pada malam hari itu" }
+                condition: { value: "operasional malam hari", evidence: "pengawas room yang bertugas pada malam hari itu" }
              }
            },
            { 
              id: 'chrono-saiful-003', 
              phase: 'pre_contact', 
              time_label: "Pasca 22:15",
-             description: "Pengawas Fatur mengonfirmasi kondisi operator dalam keadaan baik secara verbal melalui aplikasi WhatsApp tanpa bukti visual.", 
-             chronology_text: "Pengawas Fatur mengonfirmasi kondisi operator dalam keadaan baik secara verbal melalui aplikasi WhatsApp tanpa bukti visual.",
+             description: "Pasca 22:15, Pengawas Fatur mengonfirmasi kondisi operator dalam keadaan baik secara verbal melalui aplikasi WhatsApp tanpa bukti visual dalam proses investigasi.", 
+             chronology_text: "Pasca 22:15, Pengawas Fatur mengonfirmasi kondisi operator dalam keadaan baik secara verbal melalui aplikasi WhatsApp tanpa bukti visual dalam proses investigasi.",
              confidence: "high",
              status: "completed",
              verification_status: "human_verified",
              annotated_by_human: true,
              breakdown: {
                 subject: { value: "Pengawas Fatur", evidence: "dia lapor kondisi beliau yang kondisinya baik-baik saja" },
-                action: { value: "Mengonfirmasi status secara verbal", evidence: "Minta evidence lanjut? Enggak. Karena saya yakin chat itu sudah memastikan" },
+                action: { value: "mengonfirmasi kondisi operator dalam keadaan baik secara verbal", evidence: "Minta evidence lanjut? Enggak. Karena saya yakin chat itu sudah memastikan" },
                 object: { value: "Kondisi Operator", evidence: "Sudah diintervensi komunikasi dua arah sama Pak Saiful... beliau baik-baik saja" },
+                location: { value: "aplikasi WhatsApp", evidence: "Komunikasi japri lewat WA ke pengawas room" },
+                time: "Pasca 22:15",
+                why: { value: "dalam proses investigasi" },
                 source_system: { value: "Aplikasi WhatsApp", evidence: "Komunikasi japri lewat WA ke pengawas room" },
-                condition: { value: "Ketiadaan Bukti Foto", evidence: "Aris did not request photo evidence of the intervention, relying on the text message" }
+                condition: { value: "tanpa bukti visual", evidence: "Aris did not request photo evidence of the intervention, relying on the text message" }
              }
            },
            { 
              id: 'chrono-saiful-004', 
              phase: 'contact', 
              time_label: "01:35 WITA",
-             description: "Unit Operator Saiful mengalami kecelakaan tunggal yang teramati melalui pemantauan video real-time di Control Room.", 
-             chronology_text: "Unit Operator Saiful mengalami kecelakaan tunggal yang teramati melalui pemantauan video real-time di Control Room.",
+             description: "Pada 01:35 WITA, Unit Operator Saiful mengalami kecelakaan tunggal yang teramati melalui video surveillance DMS pada saat shift kritis dalam proses investigasi.", 
+             chronology_text: "Pada 01:35 WITA, Unit Operator Saiful mengalami kecelakaan tunggal yang teramati melalui video surveillance DMS pada saat shift kritis dalam proses investigasi.",
              confidence: "high",
              status: "completed",
              verification_status: "human_verified",
              annotated_by_human: true,
              breakdown: {
                 subject: { value: "Unit Operator Saiful", evidence: "Pak Saiful itu alertnya di mana... kecelakaan tunggal" },
-                action: { value: "Mengalami kecelakaan tunggal", evidence: "itu masuk pas di nonton pas di pertengahan video itu sudah kecelakaan tunggal" },
+                action: { value: "mengalami kecelakaan tunggal", evidence: "itu masuk pas di nonton pas di pertengahan video itu sudah kecelakaan tunggal" },
                 object: { value: "Fasilitas Operasional", evidence: "sudah kecelakaan tunggal jam 01:35" },
+                location: { value: "video surveillance DMS" },
+                time: "01:35 WITA",
+                why: { value: "dalam proses investigasi" },
                 source_system: { value: "Video Surveillance DMS", evidence: "pas di nonton pas di pertengahan video" },
-                condition: { value: "Shift Kritis", evidence: "pada saat shift kritis Pak di hari Jumat" }
+                condition: { value: "shift kritis", evidence: "pada saat shift kritis Pak di hari Jumat" }
              }
            },
            { 
              id: 'chrono-saiful-005', 
              phase: 'post_contact', 
              time_label: "Pasca 01:35",
-             description: "Infrastruktur komunikasi mengalami gangguan sinyal pada area KM 12 dan KM 7 menghambat koordinasi jalur radio.", 
-             chronology_text: "Infrastruktur komunikasi mengalami gangguan sinyal pada area KM 12 dan KM 7 menghambat koordinasi jalur radio.",
+             description: "Pasca 01:35, infrastruktur komunikasi mengalami gangguan sinyal pada KM 12 dan KM 7 yang menghambat koordinasi jalur radio karena radio tidak nyampe.", 
+             chronology_text: "Pasca 01:35, infrastruktur komunikasi mengalami gangguan sinyal pada KM 12 dan KM 7 yang menghambat koordinasi jalur radio karena radio tidak nyampe.",
              confidence: "high",
              status: "completed",
              verification_status: "human_verified",
              annotated_by_human: true,
              breakdown: {
-                subject: { value: "Sinyal Radio", evidence: "radio enggak nyampe. KM 12 ke hauling enggak nyampe radio" },
-                action: { value: "Mengalami kegagalan transmisi", evidence: "Komunikasi via radio sama pengawas di jalur safety itu... radio enggak nyampe" },
+                subject: { value: "infrastruktur komunikasi", evidence: "radio enggak nyampe. KM 12 ke hauling enggak nyampe radio" },
+                action: { value: "mengalami gangguan sinyal", evidence: "Komunikasi via radio sama pengawas di jalur safety itu... radio enggak nyampe" },
                 object: { value: "Koordinasi Jalur Radio", evidence: "jalur komunikasi sama pengawas radio" },
+                location: { value: "KM 12 dan KM 7" },
+                time: "Pasca 01:35",
+                why: { value: "radio tidak nyampe" },
                 source_system: { value: "Perangkat Radio Lapangan", evidence: "ada di KM 12 dan KM 7 itu radio enggak nyampe" },
-                condition: { value: "Zona Mati (Dead Zone)", evidence: "Radio communication dead zones are identified at KM 12 and KM 7" }
+                condition: { value: "menghambat koordinasi jalur radio", evidence: "Radio communication dead zones are identified at KM 12 and KM 7" }
              }
            },
            { 
              id: 'chrono-saiful-006', 
              phase: 'post_contact', 
              time_label: "Pasca 01:35",
-             description: "Petugas Control Room memfokuskan pemantauan pada jalur darurat dikarenakan respons pengawas lapangan terbatas.", 
-             chronology_text: "Petugas Control Room memfokuskan pemantauan pada jalur darurat dikarenakan respons pengawas lapangan terbatas.",
+             description: "Pasca 01:35, Petugas Control Room (Aris) dengan monitoring standby memfokuskan pemantauan pada jalur emergency dikarenakan respons pengawas lapangan terbatas.", 
+             chronology_text: "Pasca 01:35, Petugas Control Room (Aris) dengan monitoring standby memfokuskan pemantauan pada jalur emergency dikarenakan respons pengawas lapangan terbatas.",
              confidence: "high",
              status: "completed",
              verification_status: "human_verified",
              annotated_by_human: true,
              breakdown: {
                 subject: { value: "Petugas Control Room (Aris)", evidence: "Saya monitor stanby di jalur emergency saja fokusnya" },
-                action: { value: "Memfokuskan pemantauan darurat", evidence: "sudah enggak kepikiran lagi hubungi beliau... monitor stanby di jalur emergency" },
+                action: { value: "memfokuskan pemantauan", evidence: "sudah enggak kepikiran lagi hubungi beliau... monitor stanby di jalur emergency" },
                 object: { value: "Jalur Emergency", evidence: "TC nya sudah kecelakaan tunggal... monitor stanby di jalur emergency" },
+                location: { value: "jalur emergency" },
+                time: "Pasca 01:35",
+                why: { value: "respons pengawas lapangan terbatas" },
                 source_system: { value: "Monitoring System", evidence: "Aris focused on the emergency channel rather than further operator contact" },
-                condition: { value: "Respons Pengawas Terbatas", evidence: "Pak Fatur cuma balas Allahuakbar gitu aja di WA. Habis itu enggak ditanya lagi" }
+                condition: { value: "monitoring standby", evidence: "Pak Fatur cuma balas Allahuakbar gitu aja di WA. Habis itu enggak ditanya lagi" }
              }
            }
         ]
