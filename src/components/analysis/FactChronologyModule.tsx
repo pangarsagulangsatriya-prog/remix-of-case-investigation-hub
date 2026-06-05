@@ -410,7 +410,7 @@ const renderHighlightedStatement = (text: string, item: ChronologyItem) => {
   activeMatches.forEach((match, idx) => {
     if (match.start > currentIndex) {
       result.push(
-        <span key={`text-${currentIndex}`} className="font-sans text-slate-700 text-[12.5px] leading-relaxed">
+        <span key={`text-${currentIndex}`} className="font-sans text-slate-700 text-[12.5px]">
           {text.substring(currentIndex, match.start)}
         </span>
       );
@@ -419,7 +419,7 @@ const renderHighlightedStatement = (text: string, item: ChronologyItem) => {
       <span 
         key={`match-${idx}`} 
         className={cn(
-          "inline-block px-1.5 py-0.5 border font-sans font-semibold mx-1 rounded-none align-middle text-[12.5px] leading-none", 
+          "inline-block px-1.5 py-0.5 border font-sans font-semibold mx-1.5 rounded-none align-middle text-[12.5px] leading-none", 
           match.color
         )}
       >
@@ -431,13 +431,13 @@ const renderHighlightedStatement = (text: string, item: ChronologyItem) => {
 
   if (currentIndex < text.length) {
     result.push(
-      <span key={`text-end`} className="font-sans text-slate-700 text-[12.5px] leading-relaxed">
+      <span key={`text-end`} className="font-sans text-slate-700 text-[12.5px]">
         {text.substring(currentIndex)}
       </span>
     );
   }
 
-  return <div className="flex flex-wrap items-center gap-y-0.5 leading-relaxed">{result}</div>;
+  return <div className="leading-[2.4] text-slate-700 text-[12.5px] font-sans py-1">{result}</div>;
 };
 
 // ── Traceability Panel Component ──────────────────────────────────────────
