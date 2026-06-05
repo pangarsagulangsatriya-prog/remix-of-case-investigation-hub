@@ -97,6 +97,8 @@ export interface ChronologyItem {
     time?: string;
     phase?: string;
     actor?: string;
+    location?: SPOKField;
+    why?: SPOKField;
   };
 }
 
@@ -305,6 +307,24 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
               });
               toast.success("Verification status updated.");
             }}
+            onUpdateBreakdown={(newBreakdown) => {
+              setItems(prev => {
+                const updated = prev.map(item => 
+                  item.id === selectedItem.id 
+                    ? { 
+                        ...item, 
+                        breakdown: newBreakdown,
+                        annotated_by_human: true,
+                        updated_at: new Date().toISOString(),
+                        updated_by: "Current User"
+                      } 
+                    : item
+                );
+                if (onSync) onSync(updated);
+                return updated;
+              });
+              toast.success("Dekomposisi Fakta updated.");
+            }}
             onEdit={() => handleEdit(selectedItem)}
           />
         </div>
@@ -319,15 +339,32 @@ export const TraceabilityPanel: React.FC<{
   item: ChronologyItem, 
   onClose: () => void,
   onUpdateStatus: (status: VerificationStatus) => void,
+  onUpdateBreakdown: (newBreakdown: any) => void,
   onEdit: () => void
-}> = ({ item, onClose }) => {
+}> = ({ item, onClose, onUpdateBreakdown }) => {
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValues, setEditValues] = useState<Record<string, string>>({});
 
   const toggleRow = (label: string) => {
     setExpandedRows(prev => ({ ...prev, [label]: !prev[label] }));
   };
 
   const breakdown = item.breakdown || {};
+
+  const handleSave = () => {
+    const updatedBreakdown = {
+      ...breakdown,
+      action: { ...(breakdown.action || {}), value: editValues.WHAT },
+      subject: { ...(breakdown.subject || {}), value: editValues.WHO },
+      location: { ...((breakdown.location as any) || {}), value: editValues.WHERE },
+      time: editValues.WHEN,
+      why: { ...((breakdown.why as any) || {}), value: editValues.WHY },
+      condition: { ...(breakdown.condition || {}), value: editValues.HOW }
+    };
+    onUpdateBreakdown(updatedBreakdown);
+    setIsEditing(false);
+  };
   
   const mappedTraceability = item.traceability?.map(t => ({
     type: t.source_type,
@@ -357,9 +394,9 @@ export const TraceabilityPanel: React.FC<{
   const w5h1 = [
     { label: "WHAT", value: breakdown.action?.value || item.chronology_text, citations: whatCitations.length > 0 ? whatCitations : getDummyCitations("WHAT") },
     { label: "WHO", value: breakdown.subject?.value || breakdown.actor || "-", citations: (breakdown.subject as any)?.citations?.length ? (breakdown.subject as any)?.citations : getDummyCitations("WHO") },
-    { label: "WHERE", value: "-", citations: getDummyCitations("WHERE") },
+    { label: "WHERE", value: (breakdown.location as any)?.value || "-", citations: getDummyCitations("WHERE") },
     { label: "WHEN", value: breakdown.time || item.time_label, citations: getDummyCitations("WHEN") },
-    { label: "WHY", value: "Dalam proses investigasi", citations: getDummyCitations("WHY") },
+    { label: "WHY", value: (breakdown.why as any)?.value || "Dalam proses investigasi", citations: getDummyCitations("WHY") },
     { label: "HOW", value: breakdown.condition?.value || "-", citations: (breakdown.condition as any)?.citations?.length ? (breakdown.condition as any)?.citations : getDummyCitations("HOW") }
   ];
 
@@ -377,9 +414,50 @@ export const TraceabilityPanel: React.FC<{
               <p className="text-[10px] text-slate-500 uppercase tracking-widest mt-1">5W1H Analysis</p>
             </div>
           </div>
-          <Button variant="ghost" size="sm" onClick={onClose} className="h-7 w-7 p-0 hover:bg-slate-100 rounded-none">
-            <X className="h-4 w-4 text-slate-500" />
-          </Button>
+          <div className="flex items-center">
+            {isEditing ? (
+              <div className="flex items-center mr-2">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={handleSave} 
+                  className="h-7 px-2.5 text-[11px] font-bold uppercase tracking-wider bg-blue-600 text-white hover:bg-blue-700 mr-1.5 rounded-none flex items-center gap-1 shadow-sm"
+                >
+                  <Check className="h-3 w-3" /> Save
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setIsEditing(false)} 
+                  className="h-7 px-2.5 text-[11px] font-bold uppercase tracking-wider text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-none flex items-center gap-1 border border-slate-200"
+                >
+                  <X className="h-3 w-3" /> Discard
+                </Button>
+              </div>
+            ) : (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => {
+                  setIsEditing(true);
+                  setEditValues({
+                    WHAT: breakdown.action?.value || item.chronology_text || "",
+                    WHO: breakdown.subject?.value || breakdown.actor || "",
+                    WHERE: (breakdown.location as any)?.value || "-",
+                    WHEN: breakdown.time || item.time_label || "",
+                    WHY: (breakdown.why as any)?.value || "Dalam proses investigasi",
+                    HOW: breakdown.condition?.value || "-"
+                  });
+                }} 
+                className="h-7 px-2.5 text-[11px] font-bold uppercase tracking-wider text-blue-600 hover:text-blue-800 hover:bg-slate-50 border border-slate-200 mr-2 rounded-none flex items-center gap-1"
+              >
+                <Pencil className="h-3 w-3" /> Edit
+              </Button>
+            )}
+            <Button variant="ghost" size="sm" onClick={onClose} className="h-7 w-7 p-0 hover:bg-slate-100 rounded-none">
+              <X className="h-4 w-4 text-slate-500" />
+            </Button>
+          </div>
         </div>
 
         <div className="bg-slate-50/50 p-3 border border-slate-200 rounded-none mb-1">
@@ -419,13 +497,13 @@ export const TraceabilityPanel: React.FC<{
                   <tr 
                     className={cn(
                       "border-b border-slate-200 transition-colors duration-150 rounded-none",
-                      hasCitations ? "hover:bg-slate-50/80 cursor-pointer" : "bg-white",
+                      !isEditing && hasCitations ? "hover:bg-slate-50/80 cursor-pointer" : "bg-white",
                       isExpanded ? "bg-slate-50" : ""
                     )}
-                    onClick={() => hasCitations && toggleRow(row.label)}
+                    onClick={() => !isEditing && hasCitations && toggleRow(row.label)}
                   >
                     <td className="px-2 py-3 text-center border-r border-slate-200 align-middle">
-                      {hasCitations && (
+                      {!isEditing && hasCitations && (
                         <div className="flex items-center justify-center">
                           <ChevronDown 
                             className={cn(
@@ -440,7 +518,17 @@ export const TraceabilityPanel: React.FC<{
                       {row.label}
                     </td>
                     <td className="px-3 py-3 align-middle text-[12.5px] text-slate-800 font-normal leading-normal">
-                      {row.value}
+                      {isEditing ? (
+                        <textarea
+                          value={editValues[row.label] || ""}
+                          onChange={(e) => setEditValues(prev => ({ ...prev, [row.label]: e.target.value }))}
+                          className="w-full text-[12.5px] text-slate-800 font-normal leading-normal border border-slate-300 p-1.5 rounded-none font-sans focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-blue-600 bg-white"
+                          rows={2}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      ) : (
+                        row.value
+                      )}
                     </td>
                     <td className="px-3 py-3 align-middle text-right border-l border-slate-200/60">
                       {hasCitations ? (
@@ -453,7 +541,7 @@ export const TraceabilityPanel: React.FC<{
                     </td>
                   </tr>
                   
-                  {isExpanded && hasCitations && (
+                  {!isEditing && isExpanded && hasCitations && (
                     <tr className="bg-slate-50 border-b border-slate-200">
                       <td colSpan={4} className="p-0 border-l-4 border-l-blue-600">
                         <div className="bg-slate-50 p-4 border-b border-slate-200/60">
