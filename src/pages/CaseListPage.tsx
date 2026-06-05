@@ -1367,8 +1367,10 @@ export default function CaseListPage() {
 
       <CreateCaseConfirmDialog
         caseData={caseToCreate}
+        cases={cases}
         isOpen={!!caseToCreate}
         onClose={() => setCaseToCreate(null)}
+
         onConfirm={() => {
           if (caseToCreate) {
             setCreatedCaseIds(prev => {
@@ -1478,13 +1480,37 @@ function SyncLogsDialog({
   );
 }
 
+const getIncidentMockMetadata = (caseObj: Case | null, casesList: Case[]) => {
+  if (!caseObj) return null;
+  const idx = casesList.findIndex(c => c.id === caseObj.id);
+  const safeIdx = idx === -1 ? 0 : idx;
+  
+  return {
+    no_incident: `${323 + safeIdx}`,
+    ccr_id: `CCR-2026-0${safeIdx + 1}`,
+    incident_date: "05 April 2026",
+    reporting_date: "08 April 2026",
+    incident_type: ["Unsafe Condition", "Unsafe Act", "Property Damage", "Near Miss"][safeIdx % 4],
+    incident_category: ["Near Miss", "Medical Treatment Injury", "Property Damage", "First Aid", "Fatality"][safeIdx % 5],
+    reporter: ["Aris (DMS Officer)", "Fatur (Pengawas)", "Saiful (Operator)", "Jane Doe"][safeIdx % 4],
+    ccr_company_name: "PT Fusi Solusi Transformasi",
+    ccr_employee_name: ["Saiful", "Aris", "Fatur", "John Doe"][safeIdx % 4],
+    site_company_name: "Berau Coal",
+    site_id: `GMO-0${safeIdx + 1}`,
+    site_name: safeIdx % 2 === 0 ? "GMO" : "Site Alpha",
+    investigation_status: "INVESTIGASI"
+  };
+};
+
 function CreateCaseConfirmDialog({
   caseData,
+  cases,
   isOpen,
   onClose,
   onConfirm
 }: {
   caseData: Case | null;
+  cases: Case[];
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
@@ -1564,9 +1590,11 @@ function CreateCaseConfirmDialog({
       return;
     }
 
-    setCaseTitle(caseData.title || "New Case");
-    setSelectedSite(getSiteFromDescription(caseData.description));
+    const incMeta = getIncidentMockMetadata(caseData, cases);
+    setCaseTitle(incMeta ? `Case - ${incMeta.no_incident}` : "New Case");
+    setSelectedSite(incMeta?.site_name || "Site Alpha");
     setIsConfirmed(false);
+
 
     // 1. Generate Dummy WAV Beep Audio
     const createWavFile = (filename: string, frequency: number, durationSeconds: number) => {
@@ -1766,9 +1794,12 @@ Rekomendasi Tindakan:
   const isTitleInvalid = !caseTitle.trim() || caseTitle.trim().toLowerCase() === "new case" || caseTitle.trim().toLowerCase() === "create new case";
   const isSubmitDisabled = isTitleInvalid || !isConfirmed;
 
-  return (
+  const incMeta = getIncidentMockMetadata(caseData, cases);
+
+
+    return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-5xl p-0 overflow-hidden border-none shadow-2xl h-[680px] flex flex-col bg-white rounded-none">
+      <DialogContent className="sm:max-w-5xl p-0 overflow-hidden border-none shadow-2xl h-[800px] flex flex-col bg-white rounded-none">
         
         {/* Header */}
         <div className="px-6 py-4 border-b flex items-center justify-between bg-slate-50/50 shrink-0">
@@ -1777,9 +1808,23 @@ Rekomendasi Tindakan:
               <Upload className="h-5 w-5 text-white" />
             </div>
             <div>
-              <h2 className="text-base font-black text-slate-900 uppercase tracking-widest">
-                UPLOAD BUKTI
+              <h2 className="text-base font-black text-slate-900 uppercase tracking-widest leading-none mb-1.5">
+                INSIDEN - {incMeta?.no_incident}
               </h2>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center px-1.5 py-0.5 text-[9px] font-bold bg-slate-200 text-slate-700 border border-slate-300">
+                  CCR ID: {incMeta?.ccr_id || "-"}
+                </span>
+                <span className="inline-flex items-center px-1.5 py-0.5 text-[9px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                  Incident Type: {incMeta?.incident_type || "-"}
+                </span>
+                <span className="inline-flex items-center px-1.5 py-0.5 text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  Site: {incMeta?.site_name || "-"}
+                </span>
+                <span className="inline-flex items-center px-1.5 py-0.5 text-[9px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                  Investigation: {incMeta?.investigation_status || "-"}
+                </span>
+              </div>
             </div>
           </div>
           <button
@@ -1790,12 +1835,49 @@ Rekomendasi Tindakan:
           </button>
         </div>
 
+        {/* Incident Information Panel */}
+        <div className="px-6 py-4 border-b bg-slate-50/30 shrink-0">
+          <div className="text-[10px] font-black text-slate-450 uppercase tracking-widest mb-3">
+            INFORMASI INSIDEN
+          </div>
+          <div className="grid grid-cols-4 gap-x-6 gap-y-3.5">
+            {[
+              { label: "No. Incident", value: incMeta?.no_incident },
+              { label: "CCR ID", value: incMeta?.ccr_id },
+              { label: "Incident Date", value: incMeta?.incident_date },
+              { label: "Reporting Date", value: incMeta?.reporting_date },
+              { label: "Incident Type", value: incMeta?.incident_type },
+              { label: "Incident Category", value: incMeta?.incident_category },
+              { label: "Reporter", value: incMeta?.reporter },
+              { label: "Company", value: incMeta?.ccr_company_name },
+              { label: "Employee", value: incMeta?.ccr_employee_name },
+              { label: "Site Company", value: incMeta?.site_company_name },
+              { label: "Site ID", value: incMeta?.site_id },
+              { label: "Site Name", value: incMeta?.site_name },
+              { label: "Investigation Status", value: incMeta?.investigation_status },
+            ].map((meta) => (
+              <div key={meta.label} className="min-w-0">
+                <div className="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-0.5">{meta.label}</div>
+                <div className="text-[11px] font-bold text-slate-700 truncate" title={meta.value || "-"}>
+                  {meta.value || "-"}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+
 
         {/* Split pane body */}
         <div className="flex-1 flex overflow-hidden">
           
           {/* Left panel: files tree list */}
           <div className="w-[320px] min-w-[240px] flex flex-col border-r bg-white overflow-hidden shrink-0">
+            <div className="px-3 py-2 border-b bg-slate-50/50 shrink-0 flex items-center justify-between">
+              <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest">
+                BUKTI AWAL
+              </span>
+            </div>
             <div className="flex-1 overflow-auto custom-scrollbar">
               
               {/* Folder: DATA AUDIO */}
@@ -1867,26 +1949,6 @@ Rekomendasi Tindakan:
                   </button>
                 </div>
               ))}
-            </div>
-
-            {/* Sidebar Buttons */}
-            <div className="p-2 border-t bg-slate-50 flex gap-2 shrink-0">
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex-1 h-8 text-[10px] font-bold bg-white border-slate-200 hover:bg-slate-50 gap-1.5 rounded-none transition-all shadow-sm"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                Add Files
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex-1 h-8 text-[10px] font-bold bg-white border-slate-200 hover:bg-slate-50 gap-1.5 rounded-none transition-all shadow-sm"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                Add Folder
-              </Button>
             </div>
           </div>
 
@@ -1976,42 +2038,17 @@ Rekomendasi Tindakan:
             </span>
           </div>
 
-          {/* Title input with validations */}
+          {/* Title input (Auto-generated) */}
           <div className="flex-1 min-w-[200px] relative">
             <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-1.5">
               Case Title
             </label>
             <input
               type="text"
-              className={cn(
-                "w-full h-8 text-xs border rounded-none px-2.5 font-bold transition-all focus:outline-hidden focus:ring-0",
-                isTitleInvalid ? "border-rose-400 bg-rose-50/30 text-rose-700 focus:border-rose-500" : "border-slate-200 bg-white text-slate-800 focus:border-slate-400"
-              )}
-              placeholder="e.g. Investigasi Kecelakaan Belawan"
+              className="w-full h-8 text-xs border rounded-none px-2.5 font-bold border-slate-200 bg-slate-50 text-slate-600 cursor-not-allowed focus:outline-hidden focus:ring-0"
               value={caseTitle}
-              onChange={(e) => setCaseTitle(e.target.value)}
+              disabled
             />
-            {isTitleInvalid && (
-              <span className="text-[8px] font-bold text-rose-500 absolute -bottom-3.5 left-0 block leading-normal uppercase tracking-wider">
-                {!caseTitle.trim() ? "JUDUL TIDAK BOLEH KOSONG" : "JUDUL TIDAK BOLEH DEFAULT"}
-              </span>
-            )}
-          </div>
-
-          {/* Site selection */}
-          <div className="w-40 flex-shrink-0">
-            <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-1.5">
-              Operational Site
-            </label>
-            <select
-              className="w-full h-8 text-xs border border-slate-200 rounded-none px-2.5 bg-white font-bold text-slate-800 focus:outline-hidden focus:border-slate-400 cursor-pointer"
-              value={selectedSite}
-              onChange={(e) => setSelectedSite(e.target.value)}
-            >
-              <option value="Site Alpha">Site Alpha</option>
-              <option value="Site Beta">Site Beta</option>
-              <option value="Site Gamma">Site Gamma</option>
-            </select>
           </div>
 
           {/* Verification check */}
@@ -2043,7 +2080,7 @@ Rekomendasi Tindakan:
         {/* Footer */}
         <div className="px-6 py-4 border-t bg-white flex items-center justify-between shrink-0">
           <div className="flex flex-col">
-            <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest">{fileItems.length} BUKTI</span>
+            <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest">{fileItems.length} BUKTI AWAL</span>
             <span className="text-[9px] font-bold text-slate-450 uppercase tracking-tighter mt-0.5">{formatBytes(totalBytes)} PAYLOAD</span>
           </div>
 

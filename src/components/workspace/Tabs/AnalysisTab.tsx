@@ -22,6 +22,7 @@ import {
   Quote, 
   Activity, 
   Users, 
+  User,
   Copy, 
   FileJson,
   XCircle,
@@ -257,12 +258,32 @@ const initialAgentsState: AgentState[] = [
      }
   },
   { 
+     id: 'actor', 
+     name: 'Aktor Analisis', 
+     icon: User, 
+     purpose: 'Identify and analyze roles, responsibilities, and relationships of key actors.', 
+     status: 'completed', 
+     dependencies: ['peepo'],
+     runCount: 1,
+     lastRunTimestamp: "Yesterday, 4:18 PM",
+     tokenEstimate: 2800,
+     history: [],
+     backendCapabilities: { canPause: true, canResume: true, canStop: true, canRerun: true },
+     results: {
+        actors: [
+           { name: "Operator Saiful", role: "Operator Unit Hauling", responsibility: "Mengemudikan unit secara aman sesuai prosedur keselamatan kerja", findings: "Terbaca deviasi fatigue sebanyak 41 kali selama Minggu 10-41" },
+           { name: "Pengawas Fatur", role: "Pengawas Lapangan", responsibility: "Melakukan pengawasan & validasi kelelahan kru di lapangan", findings: "Mengonfirmasi kondisi operator via WA saja tanpa meminta bukti foto/visual" },
+           { name: "Petugas Aris", role: "DMS Control Room Operator", responsibility: "Memantau alert fatigue pada sistem DMS & mengoordinasikan intervensi", findings: "Hanya fokus di jalur emergency pasca-kecelakaan karena respons terbatas" }
+        ]
+     }
+  },
+  { 
      id: 'ipls', 
      name: 'IPLS Layers', 
      icon: LayoutGrid, 
      purpose: 'Integrated Profile Layer analysis for defensive barrier audit.', 
      status: 'completed', 
-     dependencies: ['peepo'],
+     dependencies: ['actor'],
      runCount: 1,
      lastRunTimestamp: "Yesterday, 4:20 PM",
      tokenEstimate: 3200,
@@ -1088,6 +1109,54 @@ export default function AnalysisTab() {
                                                         <div className="bg-slate-900 p-6 shadow-sm border border-slate-800 rounded-sm">
                                                            <span className="text-[9px] font-black text-emerald-400/50 uppercase tracking-widest block mb-2">Synthesis Intelligence</span>
                                                            <p className="text-[11px] font-black text-white uppercase tracking-tight leading-relaxed">{selectedAgent?.results?.synthesis}</p>
+                                                        </div>
+                                                     </div>
+                                                  </div>
+                                               </div>
+                                            </div>
+                                         ) : selectedAgentId === 'actor' ? (
+                                            <div className="flex flex-col h-full bg-slate-50/10 animate-in fade-in duration-500 overflow-hidden">
+                                               <div className="h-12 flex items-center justify-between px-5 border-b border-slate-200 bg-white shrink-0">
+                                                  <div className="flex items-center gap-2">
+                                                     <div className="h-2 w-2 rounded-full bg-[#8ba861]" />
+                                                     <h2 className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Aktor Analisis Sheet</h2>
+                                                  </div>
+                                                  <div className="flex items-center gap-2">
+                                                     <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse" />
+                                                     <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Actor Mapping Complete</span>
+                                                  </div>
+                                               </div>
+                                               
+                                               <div className="flex-1 overflow-auto p-6 scrollbar-thin">
+                                                  <div className="max-w-[1400px] mx-auto space-y-8 pb-12">
+                                                     <div className="space-y-3">
+                                                        <div className="flex items-center gap-3">
+                                                           <span className="px-2.5 py-1 rounded text-[9px] font-black text-white uppercase tracking-widest bg-slate-900">
+                                                              Pemetaan Peran & Tanggung Jawab Aktor
+                                                           </span>
+                                                           <div className="h-px flex-1 bg-slate-200" />
+                                                        </div>
+                                                        <div className="bg-white border-l border-t border-slate-200 overflow-hidden shadow-sm">
+                                                           <table className="w-full text-left border-collapse">
+                                                              <thead>
+                                                                 <tr className="bg-slate-50/80">
+                                                                    <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest w-48 border-r border-b border-slate-200 bg-slate-50/30">NAMA AKTOR</th>
+                                                                    <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest w-56 border-r border-b border-slate-200 bg-slate-50/30">PERAN / JABATAN</th>
+                                                                    <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest border-r border-b border-slate-200 bg-slate-50/30">TANGGUNG JAWAB UTAMA</th>
+                                                                    <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest border-r border-b border-slate-200 bg-slate-50/30">TEMUAN / INVESTIGASI</th>
+                                                                 </tr>
+                                                              </thead>
+                                                              <tbody>
+                                                                 {(selectedAgent?.results?.actors || []).map((actor: any, idx: number) => (
+                                                                    <tr key={idx} className="hover:bg-slate-50/40 border-b border-slate-100 transition-colors">
+                                                                       <td className="px-5 py-3.5 text-[11px] font-bold text-slate-900 border-r border-slate-200/60 uppercase tracking-wider">{actor.name}</td>
+                                                                       <td className="px-5 py-3.5 text-[11px] font-medium text-slate-600 border-r border-slate-200/60">{actor.role}</td>
+                                                                       <td className="px-5 py-3.5 text-[11px] leading-relaxed text-slate-600 border-r border-slate-200/60">{actor.responsibility}</td>
+                                                                       <td className="px-5 py-3.5 text-[11px] leading-relaxed text-slate-700 bg-slate-50/20">{actor.findings}</td>
+                                                                    </tr>
+                                                                 ))}
+                                                              </tbody>
+                                                           </table>
                                                         </div>
                                                      </div>
                                                   </div>
