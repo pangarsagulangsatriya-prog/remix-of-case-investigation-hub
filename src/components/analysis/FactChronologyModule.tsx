@@ -320,17 +320,16 @@ export const TraceabilityPanel: React.FC<{
   onClose: () => void,
   onUpdateStatus: (status: VerificationStatus) => void,
   onEdit: () => void
-}> = ({ item, onClose, onUpdateStatus, onEdit }) => {
-  const status = STATUS_CONFIG[item.verification_status];
-  
-  const groupedTraceability = useMemo(() => {
-    return {
-      audio: item.traceability?.filter(t => t.source_type === 'audio') || [],
-      image: item.traceability?.filter(t => t.source_type === 'image') || [],
-      document: item.traceability?.filter(t => t.source_type === 'document') || [],
-      video: item.traceability?.filter(t => t.source_type === 'video') || [],
-    };
-  }, [item.traceability]);
+}> = ({ item, onClose }) => {
+  const breakdown = item.breakdown || {};
+  const w5h1 = [
+    { label: "WHAT", desc: "Apa yang terjadi", value: breakdown.action?.value || item.chronology_text },
+    { label: "WHO", desc: "Siapa yang terlibat", value: breakdown.subject?.value || breakdown.actor || "-" },
+    { label: "WHERE", desc: "Dimana kejadiannya", value: "-" },
+    { label: "WHEN", desc: "Kapan kejadiannya", value: breakdown.time || item.time_label },
+    { label: "WHY", desc: "Kenapa bisa terjadi", value: "Dalam proses investigasi" },
+    { label: "HOW", desc: "Bagaimana kondisinya", value: breakdown.condition?.value || "-" }
+  ];
 
   return (
     <div className="flex flex-col h-full bg-white shadow-[-8px_0_30px_-15px_rgba(0,0,0,0.1)]">
@@ -339,11 +338,11 @@ export const TraceabilityPanel: React.FC<{
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2.5">
             <div className="h-8 w-8 rounded-lg bg-slate-900 flex items-center justify-center text-white">
-              <Zap className="h-4 w-4" />
+              <TableIcon className="h-4 w-4" />
             </div>
             <div>
-              <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight leading-none">Traceability Matrix</h3>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Audit & Validation Console</p>
+              <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight leading-none">Dekomposisi Fakta</h3>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">5W 1H Analysis</p>
             </div>
           </div>
           <Button variant="ghost" size="sm" onClick={onClose} className="h-8 w-8 p-0 rounded-full hover:bg-slate-100">
@@ -352,200 +351,34 @@ export const TraceabilityPanel: React.FC<{
         </div>
 
         <div className="bg-slate-50/80 rounded-xl p-4 border border-slate-100 space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-mono font-black text-slate-400 bg-white px-2 py-0.5 border rounded">[{item.time_label}]</span>
-              <div className={cn("flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border", status.color)}>
-                <status.icon className="h-3 w-3" /> {status.label}
-              </div>
-            </div>
-            <span className={cn("text-[9px] font-black px-2 py-0.5 rounded uppercase border", 
-              item.phase === 'pre_contact' ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
-              item.phase === 'contact' ? "bg-rose-50 text-rose-600 border-rose-100" :
-              "bg-amber-50 text-amber-600 border-amber-100"
-            )}>
-              {item.phase.replace("_", " ")}
-            </span>
-          </div>
           <p className="text-[13px] font-bold text-slate-800 leading-relaxed pr-2">
-            {item.chronology_text}
+            "{item.chronology_text}"
           </p>
-          <div className="flex gap-2 pt-2 border-t border-slate-200/50">
-             <Button variant="ghost" size="sm" onClick={onEdit} className="h-8 px-3 text-[9px] font-black uppercase tracking-widest gap-2 hover:bg-white border">
-                <Pencil className="h-3 w-3 text-slate-400" /> Edit Text
-             </Button>
-          </div>
         </div>
       </div>
 
-      {/* Main Content Area */}
+      {/* Main Content Area: 5W1H Table */}
       <div className="flex-1 overflow-auto p-6 scrollbar-thin bg-slate-50/20">
-        <div className="space-y-8">
-          {/* AI Synthesis Summary */}
-          {item.synthesis_summary && (
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <Brain className="h-3.5 w-3.5 text-blue-500" />
-                <h4 className="text-[10px] font-black text-slate-700 uppercase tracking-[0.15em]">AI Synthesis Strategy</h4>
-              </div>
-              <div className="bg-blue-50/40 border border-blue-100/50 rounded-sm p-4 relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-3 opacity-5">
-                   <Quote className="h-12 w-12 rotate-180" />
-                </div>
-                <p className="text-[11px] font-bold text-blue-800/80 leading-relaxed relative z-10">
-                  {item.synthesis_summary}
-                </p>
-                <div className="mt-3 flex items-center gap-4">
-                   <div className="flex-1">
-                      <div className="flex justify-between items-center mb-1">
-                         <span className="text-[9px] font-black text-blue-400 uppercase tracking-tighter">Support Strength</span>
-                         <span className="text-[9px] font-black text-blue-600 uppercase">{(item.support_strength || 0) * 100}%</span>
-                      </div>
-                      <div className="h-1 bg-blue-100 rounded-full overflow-hidden">
-                         <div className="h-full bg-blue-500 rounded-full" style={{ width: `${(item.support_strength || 0) * 100}%` }} />
-                      </div>
-                   </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Evidence Traceability */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Layers className="h-3.5 w-3.5 text-slate-400" />
-                <h4 className="text-[10px] font-black text-slate-700 uppercase tracking-[0.15em]">Supporting Lineage</h4>
-              </div>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{item.traceability?.length || 0} Sources</span>
-            </div>
-
-            {(!item.traceability || item.traceability.length === 0) ? (
-              <div className="bg-white border border-dashed border-slate-200 rounded-sm p-10 text-center">
-                 <Search className="h-8 w-8 text-slate-200 mx-auto mb-4" />
-                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">No traceability data available for this node</p>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                {(Object.entries(groupedTraceability) as [string, Traceability[]][]).map(([type, traces]) => {
-                  if (traces.length === 0) return null;
-                  const Icon = type === 'audio' ? Mic : type === 'image' ? Camera : type === 'document' ? FileText : Video;
-                  return (
-                    <div key={type} className="space-y-3">
-                      <div className="flex items-center gap-2 px-1">
-                         <Icon className="h-3 w-3 text-slate-400" />
-                         <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{type} Evidence</span>
-                      </div>
-                      {traces.map((t, idx) => (
-                        <div key={t.trace_id} className="bg-white border border-slate-200 rounded-sm overflow-hidden transition-all group">
-                          <div className="p-3 bg-slate-50/50 border-b flex items-center justify-between">
-                             <div className="flex items-center gap-2">
-                                <div className="h-6 w-6 rounded bg-white border flex items-center justify-center text-slate-400 group-hover:text-primary transition-colors">
-                                   <Icon className="h-3 w-3" />
-                                </div>
-                                <div className="flex flex-col">
-                                   <span className="text-[10px] font-black text-slate-700 truncate max-w-[180px]">{t.source_file_name}</span>
-                                   <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">
-                                      {t.page_number ? `Page ${t.page_number}` : t.timestamp_start ? `[${t.timestamp_start}]` : "Full Asset"}
-                                   </span>
-                                </div>
-                             </div>
-                             <div className="flex items-center gap-2">
-                                <span className={cn("text-[8px] font-black px-1.5 py-0.5 rounded uppercase border whitespace-nowrap", 
-                                  t.support_type === 'direct' ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
-                                  t.support_type === 'partial' ? "bg-amber-50 text-amber-600 border-amber-100" :
-                                  "bg-slate-50 text-slate-500 border-slate-100"
-                                )}>
-                                   {t.support_type}
-                                </span>
-                                <Button variant="ghost" size="sm" className="h-6 w-6 p-0 rounded-full hover:bg-slate-200">
-                                   <ExternalLink className="h-2.5 w-2.5 text-slate-400" />
-                                </Button>
-                             </div>
-                          </div>
-                          <div className="p-4 space-y-3">
-                             <div className="space-y-1.5">
-                                <div className="flex items-center gap-1.5 opacity-40">
-                                   <Quote className="h-2.5 w-2.5 text-slate-400" />
-                                   <span className="text-[8px] font-black text-slate-400 uppercase tracking-[0.1em]">Extracted Material</span>
-                                </div>
-                                <div className="bg-slate-50/80 rounded-lg p-3 border border-slate-100/50">
-                                   <p className="text-[11px] font-bold text-slate-600 italic leading-relaxed">
-                                      "{t.extracted_content}"
-                                   </p>
-                                </div>
-                             </div>
-                             {t.extracted_summary && (
-                               <div className="pt-2 border-t border-slate-50 flex items-start gap-2">
-                                  <div className="h-1.5 w-1.5 rounded-full bg-blue-500 mt-1 shrink-0" />
-                                  <p className="text-[10px] font-bold text-slate-400 leading-tight">
-                                     {t.extracted_summary}
-                                  </p>
-                               </div>
-                             )}
-                          </div>
-                          <div className="px-4 py-2.5 bg-slate-50/30 border-t flex items-center justify-between">
-                             <div className="flex items-center gap-4">
-                                <div className="flex items-center gap-1">
-                                   <BarChart3 className="h-2.5 w-2.5 text-slate-300" />
-                                   <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Confidence: {t.confidence_score * 100}%</span>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                   <Cpu className="h-2.5 w-2.5 text-slate-300" />
-                                   <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">Node: {t.extraction_run_id.slice(-4)}</span>
-                                </div>
-                             </div>
-                             <span className="text-[8px] font-bold text-slate-300 uppercase tabular-nums">ID: {t.trace_id.slice(0, 8)}</span>
-                          </div>
-                        </div>
-                      ))}
+        <div className="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-sm">
+          <table className="w-full text-left border-collapse">
+            <tbody>
+              {w5h1.map((row, idx) => (
+                <tr key={row.label} className={cn("border-b border-slate-100 last:border-0", idx % 2 === 0 ? "bg-white" : "bg-slate-50/50")}>
+                  <td className="p-4 align-top w-[140px] border-r border-slate-100">
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[11px] font-black text-slate-900 uppercase tracking-widest">{row.label}</span>
+                      <span className="text-[9px] font-bold text-slate-400">{row.desc}</span>
                     </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Reviewer Actions */}
-      <div className="p-6 border-t bg-white shrink-0 space-y-4">
-        <h5 className="text-[10px] font-black text-slate-800 uppercase tracking-widest flex items-center gap-2 mb-2">
-           <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" /> Formal Verification Action
-        </h5>
-        <div className="grid grid-cols-2 gap-2">
-           <Button 
-             onClick={() => onUpdateStatus('human_verified')}
-             className="bg-emerald-600 hover:bg-emerald-700 text-white h-10 text-[9px] font-black uppercase tracking-widest gap-2 rounded-sm"
-           >
-              <Check className="h-3.5 w-3.5" /> Approve Full 
-           </Button>
-           <Button 
-             onClick={() => onUpdateStatus('partially_supported')}
-             variant="outline"
-             className="border-slate-200 text-slate-700 h-10 text-[9px] font-black uppercase tracking-widest gap-2 rounded-sm"
-           >
-              <Crosshair className="h-3.5 w-3.5 text-blue-500" /> Part Support
-           </Button>
-           <Button 
-             onClick={() => onUpdateStatus('needs_review')}
-             variant="outline"
-             className="border-slate-200 text-slate-700 h-10 text-[9px] font-black uppercase tracking-widest gap-2 rounded-sm"
-           >
-              <Clock className="h-3.5 w-3.5 text-amber-500" /> Mark Review
-           </Button>
-           <Button 
-             onClick={() => onUpdateStatus('unsupported')}
-             variant="outline"
-             className="border-slate-200 text-slate-700 h-10 text-[9px] font-black uppercase tracking-widest gap-2 rounded-sm"
-           >
-              <XCircle className="h-3.5 w-3.5 text-rose-500" /> Unsupported
-           </Button>
-        </div>
-        <div className="bg-slate-50 rounded-sm p-3 border border-slate-100">
-           <p className="text-[9px] font-bold text-slate-400 leading-relaxed">
-             Approving or marking this row will flag it as **Human Evaluated** in the final audit trail and PDF report.
-           </p>
+                  </td>
+                  <td className="p-4 align-top">
+                    <p className="text-[12px] font-medium text-slate-700 leading-relaxed">
+                      {row.value}
+                    </p>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
