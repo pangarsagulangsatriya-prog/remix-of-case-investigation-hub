@@ -342,13 +342,14 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
 const renderHighlightedStatement = (text: string, item: ChronologyItem) => {
   const breakdown = item.breakdown || {};
   
+  const tagColor = "bg-slate-100 text-slate-800 border-slate-300/80";
   const dimensions = [
-    { label: "WHEN", value: breakdown.time, color: "bg-amber-50 text-amber-800 border-amber-200" },
-    { label: "WHO", value: breakdown.subject?.value || breakdown.actor, color: "bg-blue-50 text-blue-800 border-blue-200" },
-    { label: "WHAT", value: breakdown.action?.value, color: "bg-purple-50 text-purple-800 border-purple-200" },
-    { label: "WHERE", value: breakdown.location?.value, color: "bg-emerald-50 text-emerald-800 border-emerald-200" },
-    { label: "WHY", value: breakdown.why?.value, color: "bg-rose-50 text-rose-800 border-rose-200" },
-    { label: "HOW", value: breakdown.condition?.value, color: "bg-teal-50 text-teal-800 border-teal-200" }
+    { label: "WHEN", value: breakdown.time, color: tagColor },
+    { label: "WHO", value: breakdown.subject?.value || breakdown.actor, color: tagColor },
+    { label: "WHAT", value: breakdown.action?.value, color: tagColor },
+    { label: "WHERE", value: breakdown.location?.value, color: tagColor },
+    { label: "WHY", value: breakdown.why?.value, color: tagColor },
+    { label: "HOW", value: breakdown.condition?.value, color: tagColor }
   ];
 
   const searchTargets = dimensions
