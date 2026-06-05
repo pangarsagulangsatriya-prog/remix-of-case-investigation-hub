@@ -321,14 +321,31 @@ export const TraceabilityPanel: React.FC<{
   onUpdateStatus: (status: VerificationStatus) => void,
   onEdit: () => void
 }> = ({ item, onClose }) => {
+  const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
+
+  const toggleRow = (label: string) => {
+    setExpandedRows(prev => ({ ...prev, [label]: !prev[label] }));
+  };
+
   const breakdown = item.breakdown || {};
+  
+  const mappedTraceability = item.traceability?.map(t => ({
+    type: t.source_type,
+    content: t.extracted_content,
+    time: t.timestamp_start,
+    speaker: t.source_file_name,
+    thumbnail: t.source_type === 'video' ? 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=300&q=80' : undefined
+  })) || [];
+
+  const whatCitations = [...((breakdown.action as any)?.citations || []), ...mappedTraceability];
+
   const w5h1 = [
-    { label: "WHAT", desc: "Apa yang terjadi", value: breakdown.action?.value || item.chronology_text },
-    { label: "WHO", desc: "Siapa yang terlibat", value: breakdown.subject?.value || breakdown.actor || "-" },
-    { label: "WHERE", desc: "Dimana kejadiannya", value: "-" },
-    { label: "WHEN", desc: "Kapan kejadiannya", value: breakdown.time || item.time_label },
-    { label: "WHY", desc: "Kenapa bisa terjadi", value: "Dalam proses investigasi" },
-    { label: "HOW", desc: "Bagaimana kondisinya", value: breakdown.condition?.value || "-" }
+    { label: "WHAT", desc: "Apa yang terjadi", value: breakdown.action?.value || item.chronology_text, citations: whatCitations },
+    { label: "WHO", desc: "Siapa yang terlibat", value: breakdown.subject?.value || breakdown.actor || "-", citations: (breakdown.subject as any)?.citations },
+    { label: "WHERE", desc: "Dimana kejadiannya", value: "-", citations: [] },
+    { label: "WHEN", desc: "Kapan kejadiannya", value: breakdown.time || item.time_label, citations: [] },
+    { label: "WHY", desc: "Kenapa bisa terjadi", value: "Dalam proses investigasi", citations: [] },
+    { label: "HOW", desc: "Bagaimana kondisinya", value: breakdown.condition?.value || "-", citations: (breakdown.condition as any)?.citations }
   ];
 
   return (
@@ -371,9 +388,59 @@ export const TraceabilityPanel: React.FC<{
                     </div>
                   </td>
                   <td className="p-4 align-top">
-                    <p className="text-[12px] font-medium text-slate-700 leading-relaxed">
-                      {row.value}
-                    </p>
+                    <div 
+                      className={cn("flex items-start justify-between gap-4", row.citations && row.citations.length > 0 && "cursor-pointer group")} 
+                      onClick={() => row.citations?.length && toggleRow(row.label)}
+                    >
+                      <p className="text-[12px] font-medium text-slate-700 leading-relaxed group-hover:text-slate-900 transition-colors">
+                        {row.value}
+                      </p>
+                      {row.citations && row.citations.length > 0 && (
+                        <Button variant="ghost" size="sm" className="h-6 px-2 py-0 text-[9px] font-black uppercase tracking-widest text-indigo-600 hover:bg-indigo-50 shrink-0">
+                           {expandedRows[row.label] ? <ChevronDown className="h-3 w-3 rotate-180" /> : <ChevronDown className="h-3 w-3" />}
+                           <span className="ml-1">{row.citations.length} Citations</span>
+                        </Button>
+                      )}
+                    </div>
+                    
+                    {expandedRows[row.label] && row.citations && row.citations.length > 0 && (
+                      <div className="mt-4 space-y-2 border-t border-slate-100 pt-4 animate-in fade-in slide-in-from-top-2">
+                        {row.citations.map((cite: any, i: number) => {
+                          const Icon = cite.type === 'audio' ? Mic : cite.type === 'video' ? Video : cite.type === 'image' ? Camera : FileText;
+                          return (
+                            <div key={i} className="bg-indigo-50/30 p-3.5 rounded-md border border-indigo-100 relative group">
+                               <div className="flex items-center gap-2 mb-3">
+                                  <div className="h-6 w-6 bg-white border border-indigo-100 rounded shadow-sm flex items-center justify-center">
+                                     <Icon className="h-3 w-3 text-indigo-500" />
+                                  </div>
+                                  <span className="text-[9px] font-black uppercase text-indigo-700 tracking-widest">
+                                    {cite.type} Evidence
+                                  </span>
+                                  {(cite.speaker || cite.time) && (
+                                     <>
+                                       <span className="text-indigo-200">•</span>
+                                       <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
+                                         {cite.speaker} {cite.time ? `(${cite.time})` : ''}
+                                       </span>
+                                     </>
+                                  )}
+                               </div>
+                               <div className="flex gap-4">
+                                  {(cite.type === 'image' || cite.type === 'video') && cite.thumbnail && (
+                                     <div className="h-14 w-20 shrink-0 bg-slate-900 rounded overflow-hidden relative shadow-sm border border-indigo-200/50">
+                                        <img src={cite.thumbnail} className="h-full w-full object-cover opacity-80" />
+                                        {cite.type === 'video' && <Play className="h-4 w-4 text-white absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 fill-current" />}
+                                     </div>
+                                  )}
+                                  <p className="text-[12px] font-medium text-slate-700 italic leading-relaxed">
+                                    "{cite.content || cite.text || cite.extracted_content}"
+                                  </p>
+                               </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </td>
                 </tr>
               ))}
