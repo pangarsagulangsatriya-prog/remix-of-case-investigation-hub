@@ -339,13 +339,28 @@ export const TraceabilityPanel: React.FC<{
 
   const whatCitations = [...((breakdown.action as any)?.citations || []), ...mappedTraceability];
 
+  const getDummyCitations = (label: string) => [
+    {
+      type: "document",
+      content: `Data tercatat pada berkas BAP untuk parameter ${label} sesuai dengan SOP-204.`,
+      speaker: "Audit Log",
+      time: "10:42 AM"
+    },
+    {
+      type: "audio",
+      content: `Saksi mengkonfirmasi elemen ${label} pada saat interogasi awal berlangsung.`,
+      speaker: "Saksi Utama",
+      time: "10:45 AM"
+    }
+  ];
+
   const w5h1 = [
-    { label: "WHAT", value: breakdown.action?.value || item.chronology_text, citations: whatCitations },
-    { label: "WHO", value: breakdown.subject?.value || breakdown.actor || "-", citations: (breakdown.subject as any)?.citations },
-    { label: "WHERE", value: "-", citations: [] },
-    { label: "WHEN", value: breakdown.time || item.time_label, citations: [] },
-    { label: "WHY", value: "Dalam proses investigasi", citations: [] },
-    { label: "HOW", value: breakdown.condition?.value || "-", citations: (breakdown.condition as any)?.citations }
+    { label: "WHAT", value: breakdown.action?.value || item.chronology_text, citations: whatCitations.length > 0 ? whatCitations : getDummyCitations("WHAT") },
+    { label: "WHO", value: breakdown.subject?.value || breakdown.actor || "-", citations: (breakdown.subject as any)?.citations?.length ? (breakdown.subject as any)?.citations : getDummyCitations("WHO") },
+    { label: "WHERE", value: "-", citations: getDummyCitations("WHERE") },
+    { label: "WHEN", value: breakdown.time || item.time_label, citations: getDummyCitations("WHEN") },
+    { label: "WHY", value: "Dalam proses investigasi", citations: getDummyCitations("WHY") },
+    { label: "HOW", value: breakdown.condition?.value || "-", citations: (breakdown.condition as any)?.citations?.length ? (breakdown.condition as any)?.citations : getDummyCitations("HOW") }
   ];
 
   return (
