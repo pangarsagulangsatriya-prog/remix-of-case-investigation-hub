@@ -419,7 +419,7 @@ const renderHighlightedStatement = (text: string, item: ChronologyItem) => {
       <span 
         key={`match-${idx}`} 
         className={cn(
-          "inline-block px-1.5 py-0.5 border font-sans font-semibold mx-1.5 rounded-none align-middle text-[12.5px] leading-none", 
+          "inline-block px-2 py-1 border font-sans font-semibold mx-1.5 my-1 rounded-none align-middle text-[12.5px] leading-[1.6] max-w-full break-words", 
           match.color
         )}
       >
@@ -437,7 +437,7 @@ const renderHighlightedStatement = (text: string, item: ChronologyItem) => {
     );
   }
 
-  return <div className="leading-[2.4] text-slate-700 text-[12.5px] font-sans py-1">{result}</div>;
+  return <div className="leading-[2.8] text-slate-700 text-[12.5px] font-sans py-2 px-1">{result}</div>;
 };
 
 // ── Traceability Panel Component ──────────────────────────────────────────
