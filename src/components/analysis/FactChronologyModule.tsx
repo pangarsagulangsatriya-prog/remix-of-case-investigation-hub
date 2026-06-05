@@ -333,6 +333,113 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
   );
 };
 
+// ── Highlight 5W1H Substrings helper ────────────────────────────────────────
+
+const renderHighlightedStatement = (text: string, item: ChronologyItem) => {
+  const breakdown = item.breakdown || {};
+  
+  const dimensions = [
+    { label: "WHEN", value: breakdown.time, color: "bg-amber-50 text-amber-800 border-amber-200" },
+    { label: "WHO", value: breakdown.subject?.value || breakdown.actor, color: "bg-blue-50 text-blue-800 border-blue-200" },
+    { label: "WHAT", value: breakdown.action?.value, color: "bg-purple-50 text-purple-800 border-purple-200" },
+    { label: "WHERE", value: breakdown.location?.value, color: "bg-emerald-50 text-emerald-800 border-emerald-200" },
+    { label: "WHY", value: breakdown.why?.value, color: "bg-rose-50 text-rose-800 border-rose-200" },
+    { label: "HOW", value: breakdown.condition?.value, color: "bg-teal-50 text-teal-800 border-teal-200" }
+  ];
+
+  const searchTargets = dimensions
+    .map(d => ({
+      label: d.label,
+      val: d.value?.trim(),
+      color: d.color
+    }))
+    .filter(t => t.val && t.val !== "-" && t.val.length > 1 && t.val.toLowerCase() !== text.toLowerCase());
+
+  if (searchTargets.length === 0) {
+    return <span className="font-sans text-slate-700 text-[12.5px] leading-relaxed">{text}</span>;
+  }
+
+  interface MatchRange {
+    start: number;
+    end: number;
+    label: string;
+    color: string;
+    originalText: string;
+  }
+
+  const matches: MatchRange[] = [];
+  const lowerText = text.toLowerCase();
+
+  searchTargets.forEach(target => {
+    const query = target.val!.toLowerCase();
+    let idx = lowerText.indexOf(query);
+    while (idx !== -1) {
+      matches.push({
+        start: idx,
+        end: idx + query.length,
+        label: target.label,
+        color: target.color,
+        originalText: text.substring(idx, idx + query.length)
+      });
+      idx = lowerText.indexOf(query, idx + 1);
+    }
+  });
+
+  matches.sort((a, b) => {
+    if (a.start !== b.start) return a.start - b.start;
+    return (b.end - b.start) - (a.end - a.start);
+  });
+
+  const activeMatches: MatchRange[] = [];
+  let lastEnd = 0;
+  for (const match of matches) {
+    if (match.start >= lastEnd) {
+      activeMatches.push(match);
+      lastEnd = match.end;
+    }
+  }
+
+  const result: React.ReactNode[] = [];
+  let currentIndex = 0;
+
+  activeMatches.forEach((match, idx) => {
+    if (match.start > currentIndex) {
+      result.push(
+        <span key={`text-${currentIndex}`} className="font-sans text-slate-700 text-[12.5px] leading-relaxed">
+          {text.substring(currentIndex, match.start)}
+        </span>
+      );
+    }
+    result.push(
+      <span 
+        key={`match-${idx}`} 
+        className={cn(
+          "inline-flex flex-col items-start px-1.5 py-0.5 border font-sans font-medium mx-1 my-0.5 rounded-none align-middle", 
+          match.color
+        )}
+      >
+        <span className="text-[12.5px] leading-tight font-sans font-semibold">
+          {match.originalText}
+        </span>
+        <span className="text-[7.5px] font-bold font-mono tracking-wider opacity-70 mt-0.5 leading-none uppercase">
+          {match.label}
+        </span>
+      </span>
+    );
+    currentIndex = match.end;
+  });
+
+  if (currentIndex < text.length) {
+    result.push(
+      <span key={`text-end`} className="font-sans text-slate-700 text-[12.5px] leading-relaxed">
+        {text.substring(currentIndex)}
+      </span>
+    );
+  }
+
+  return <div className="flex flex-wrap items-center gap-y-0.5 leading-relaxed">{result}</div>;
+};
+
 // ── Traceability Panel Component ──────────────────────────────────────────
 
 export const TraceabilityPanel: React.FC<{ 
@@ -461,10 +568,10 @@ export const TraceabilityPanel: React.FC<{
         </div>
 
         <div className="bg-slate-50/50 p-3 border border-slate-200 rounded-none mb-1">
-          <div className="text-[9px] font-mono font-bold uppercase tracking-widest text-slate-400 mb-1">Chronology Statement</div>
-          <p className="text-[12px] text-slate-700 leading-normal font-sans">
-            {item.chronology_text}
-          </p>
+          <div className="text-[9px] font-mono font-bold uppercase tracking-widest text-slate-400 mb-1.5">Chronology Statement</div>
+          <div className="mt-1">
+            {renderHighlightedStatement(item.chronology_text, item)}
+          </div>
         </div>
       </div>
 
