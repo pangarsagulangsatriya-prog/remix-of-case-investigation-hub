@@ -364,96 +364,133 @@ export const TraceabilityPanel: React.FC<{
   ];
 
   return (
-    <div className="flex flex-col h-full bg-white shadow-[-8px_0_30px_-15px_rgba(0,0,0,0.1)]">
+    <div className="flex flex-col h-full bg-white border-l border-slate-200">
       {/* Panel Header */}
-      <div className="p-6 border-b border-slate-200 bg-white shrink-0">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-2.5">
-            <div className="h-8 w-8 bg-blue-600 flex items-center justify-center text-white">
-              <TableIcon className="h-4 w-4" />
+      <div className="p-4 border-b border-slate-200 bg-white shrink-0">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <div className="h-6 w-6 bg-slate-900 flex items-center justify-center text-white rounded-none">
+              <TableIcon className="h-3.5 w-3.5" />
             </div>
             <div>
-              <h3 className="text-[14px] font-semibold text-slate-900 uppercase tracking-wide leading-none">Dekomposisi Fakta</h3>
-              <p className="text-[11px] text-slate-500 uppercase tracking-wider mt-1">5W1H Analysis</p>
+              <h3 className="text-[13px] font-bold text-slate-900 uppercase tracking-wider leading-none">Dekomposisi Fakta</h3>
+              <p className="text-[10px] text-slate-500 uppercase tracking-widest mt-1">5W1H Analysis</p>
             </div>
           </div>
-          <Button variant="ghost" size="sm" onClick={onClose} className="h-8 w-8 p-0 hover:bg-slate-100 rounded-none">
+          <Button variant="ghost" size="sm" onClick={onClose} className="h-7 w-7 p-0 hover:bg-slate-100 rounded-none">
             <X className="h-4 w-4 text-slate-500" />
           </Button>
         </div>
 
-        <div className="bg-slate-50 p-4 border-l-4 border-slate-300">
-          <p className="text-[13px] text-slate-800 leading-relaxed pr-2 font-serif italic">
-            "{item.chronology_text}"
+        <div className="bg-slate-50/50 p-3 border border-slate-200 rounded-none mb-1">
+          <div className="text-[9px] font-mono font-bold uppercase tracking-widest text-slate-400 mb-1">Chronology Statement</div>
+          <p className="text-[12px] text-slate-700 leading-normal font-sans">
+            {item.chronology_text}
           </p>
         </div>
       </div>
 
-      {/* Main Content Area: 5W1H Table */}
-      <div className="flex-1 overflow-auto p-6 scrollbar-thin bg-white">
-        <div className="border border-slate-300 bg-white">
-          <table className="w-full text-left border-collapse">
-            <tbody>
-              {w5h1.map((row, idx) => (
+      {/* Main Content Area: 5W1H Full-Width Table */}
+      <div className="flex-1 overflow-auto p-0 scrollbar-thin bg-slate-50/20">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="bg-slate-100/80 border-b border-slate-200">
+              <th className="w-10 px-2 py-2.5 text-center border-r border-slate-200">
+                {/* Expand Indicator Column */}
+              </th>
+              <th className="px-3 py-2.5 text-[10px] font-bold text-slate-500 uppercase tracking-widest w-20 border-r border-slate-200">
+                Dimensi
+              </th>
+              <th className="px-3 py-2.5 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                Nilai Fakta
+              </th>
+              <th className="px-3 py-2.5 text-[10px] font-bold text-slate-500 uppercase tracking-widest w-24 text-right border-l border-slate-200/60">
+                Bukti
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {w5h1.map((row) => {
+              const isExpanded = !!expandedRows[row.label];
+              const hasCitations = row.citations && row.citations.length > 0;
+              
+              return (
                 <React.Fragment key={row.label}>
                   <tr 
-                    className={cn("border-b border-slate-200 transition-colors", row.citations?.length ? "hover:bg-slate-50 cursor-pointer" : "bg-white")}
-                    onClick={() => row.citations?.length && toggleRow(row.label)}
+                    className={cn(
+                      "border-b border-slate-200 transition-colors duration-150 rounded-none",
+                      hasCitations ? "hover:bg-slate-50/80 cursor-pointer" : "bg-white",
+                      isExpanded ? "bg-slate-50" : ""
+                    )}
+                    onClick={() => hasCitations && toggleRow(row.label)}
                   >
-                    <td className="px-4 py-4 align-top w-[120px] bg-slate-50/50">
-                      <span className="text-[12px] font-semibold text-slate-900 tracking-wider uppercase">{row.label}</span>
+                    <td className="px-2 py-3 text-center border-r border-slate-200 align-middle">
+                      {hasCitations && (
+                        <div className="flex items-center justify-center">
+                          <ChevronDown 
+                            className={cn(
+                              "h-3.5 w-3.5 text-slate-400 transition-transform duration-200", 
+                              isExpanded ? "rotate-180 text-blue-600" : ""
+                            )} 
+                          />
+                        </div>
+                      )}
                     </td>
-                    <td className="px-4 py-4 align-top">
-                      <div className="flex flex-col items-start gap-2">
-                        <p className="text-[14px] text-slate-800 leading-relaxed">
-                          {row.value}
-                        </p>
-                        {row.citations && row.citations.length > 0 && (
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-6 px-0 text-[12px] font-medium text-blue-600 hover:text-blue-800 hover:bg-transparent rounded-none"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleRow(row.label);
-                            }}
-                          >
-                             {expandedRows[row.label] ? <ChevronDown className="h-4 w-4 rotate-180 mr-1" /> : <ChevronDown className="h-4 w-4 mr-1" />}
-                             {row.citations.length} Citations
-                          </Button>
-                        )}
-                      </div>
+                    <td className="px-3 py-3 align-middle border-r border-slate-200 font-mono text-[11px] font-bold text-slate-700 tracking-wider">
+                      {row.label}
+                    </td>
+                    <td className="px-3 py-3 align-middle text-[12.5px] text-slate-800 font-normal leading-normal">
+                      {row.value}
+                    </td>
+                    <td className="px-3 py-3 align-middle text-right border-l border-slate-200/60">
+                      {hasCitations ? (
+                        <span className="inline-flex items-center text-[10px] font-semibold text-blue-600 bg-blue-50/80 px-1.5 py-0.5 border border-blue-200/50 rounded-none">
+                          {row.citations.length} Citations
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-slate-400 font-normal">-</span>
+                      )}
                     </td>
                   </tr>
                   
-                  {expandedRows[row.label] && row.citations && row.citations.length > 0 && (
-                    <tr className="bg-slate-100 border-b border-slate-300">
-                      <td colSpan={2} className="p-0">
-                        <div className="border-l-4 border-blue-600 bg-white m-4 ml-6 shadow-sm">
-                          <div className="border border-slate-200 border-l-0 divide-y divide-slate-100">
+                  {isExpanded && hasCitations && (
+                    <tr className="bg-slate-50 border-b border-slate-200">
+                      <td colSpan={4} className="p-0 border-l-4 border-l-blue-600">
+                        <div className="bg-slate-50 p-4 border-b border-slate-200/60">
+                          <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                            <Zap className="h-3 w-3 text-blue-600" />
+                            Evidence List ({row.citations.length})
+                          </div>
+                          <div className="space-y-2">
                             {row.citations.map((cite: any, i: number) => {
-                              const Icon = cite.type === 'audio' ? Mic : cite.type === 'video' ? Video : cite.type === 'image' ? Camera : FileText;
+                              const Icon = cite.type === 'audio' 
+                                ? Mic 
+                                : cite.type === 'video' 
+                                  ? Video 
+                                  : cite.type === 'image' 
+                                    ? Camera 
+                                    : FileText;
                               return (
-                                <div key={i} className="p-4 flex flex-col gap-2">
-                                   <div className="flex items-center gap-2">
-                                      <Icon className="h-4 w-4 text-slate-500" />
-                                      <span className="text-[12px] font-semibold text-slate-900 capitalize tracking-wide">
-                                        {cite.type} Evidence
+                                <div 
+                                  key={i} 
+                                  className="bg-white border border-slate-200 p-3 flex flex-col gap-2 rounded-none hover:border-slate-300 transition-colors"
+                                >
+                                  <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
+                                    <div className="flex items-center gap-2">
+                                      <Icon className="h-3.5 w-3.5 text-slate-500" />
+                                      <span className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">
+                                        {cite.type} EVIDENCE
                                       </span>
-                                      {(cite.speaker || cite.time) && (
-                                         <>
-                                            <span className="text-slate-300">•</span>
-                                            <span className="text-[12px] text-slate-600">
-                                              {cite.speaker} {cite.time ? `(${cite.time})` : ''}
-                                            </span>
-                                         </>
-                                      )}
-                                   </div>
-                                   <div className="pl-6 ml-2">
-                                     <p className="text-[13px] text-slate-800 leading-relaxed font-serif">
-                                       "{cite.content || cite.text || cite.extracted_content}"
-                                     </p>
-                                   </div>
+                                    </div>
+                                    {(cite.speaker || cite.time) && (
+                                      <span className="text-[10px] font-mono text-slate-500 bg-slate-50 px-1.5 py-0.5 border border-slate-100 rounded-none">
+                                        {cite.speaker} {cite.time ? `• ${cite.time}` : ''}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="text-[12px] text-slate-600 leading-relaxed font-sans font-normal italic pl-2 border-l-2 border-slate-200">
+                                    "{cite.content || cite.text || cite.extracted_content}"
+                                  </div>
                                 </div>
                               );
                             })}
@@ -463,10 +500,10 @@ export const TraceabilityPanel: React.FC<{
                     </tr>
                   )}
                 </React.Fragment>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
     </div>
   );
