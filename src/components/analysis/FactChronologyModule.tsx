@@ -392,10 +392,10 @@ export const TraceabilityPanel: React.FC<{
   ];
 
   const w5h1 = [
-    { label: "WHAT", value: breakdown.action?.value || item.chronology_text, citations: whatCitations.length > 0 ? whatCitations : getDummyCitations("WHAT") },
-    { label: "WHO", value: breakdown.subject?.value || breakdown.actor || "-", citations: (breakdown.subject as any)?.citations?.length ? (breakdown.subject as any)?.citations : getDummyCitations("WHO") },
-    { label: "WHERE", value: (breakdown.location as any)?.value || "-", citations: getDummyCitations("WHERE") },
     { label: "WHEN", value: breakdown.time || item.time_label, citations: getDummyCitations("WHEN") },
+    { label: "WHO", value: breakdown.subject?.value || breakdown.actor || "-", citations: (breakdown.subject as any)?.citations?.length ? (breakdown.subject as any)?.citations : getDummyCitations("WHO") },
+    { label: "WHAT", value: breakdown.action?.value || item.chronology_text, citations: whatCitations.length > 0 ? whatCitations : getDummyCitations("WHAT") },
+    { label: "WHERE", value: (breakdown.location as any)?.value || "-", citations: getDummyCitations("WHERE") },
     { label: "WHY", value: (breakdown.why as any)?.value || "Dalam proses investigasi", citations: getDummyCitations("WHY") },
     { label: "HOW", value: breakdown.condition?.value || "-", citations: (breakdown.condition as any)?.citations?.length ? (breakdown.condition as any)?.citations : getDummyCitations("HOW") }
   ];
