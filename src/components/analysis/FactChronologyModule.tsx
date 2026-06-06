@@ -71,6 +71,45 @@ export interface Traceability {
 export interface SPOKField {
   value: string;
   evidence?: string;
+  original_value?: string;
+  annotated_by_human?: boolean;
+  citations?: any[];
+}
+
+export type EntityType = "PERSON" | "UNIT" | "SITE" | "COMPANY" | "LOCATION" | "EQUIPMENT" | "SYSTEM";
+export type EntityMatchResult = "same_entity" | "different_entity" | "unknown_entity";
+export type SemanticMatchResult = "same_meaning" | "partial_meaning" | "different_meaning";
+
+export interface AccuracyFieldResult {
+  label: string;
+  aiValue: string;
+  humanValue: string;
+  isAnnotated: boolean;
+  levenshteinDistance: number;
+  maxLength: number;
+  similarityPercent: number;
+  level: string;
+  fieldScore: number;
+  // Hybrid scoring fields
+  lexicalSimilarity: number;
+  entityType: EntityType | null;
+  aiEntity: string | null;
+  annotationEntity: string | null;
+  aiCanonicalEntityId: string | null;
+  annotationCanonicalEntityId: string | null;
+  entityMatch: EntityMatchResult | null;
+  semanticSimilarity: number | null;
+  criticalMismatch: boolean;
+  scoreCap: number | null;
+  reason: string;
+}
+
+export interface AccuracyResult {
+  accuracy: number;
+  validFieldsCount: number;
+  fields: AccuracyFieldResult[];
+  calculatedAt: string;
+  engineVersion: string;
 }
 
 export interface ChronologyItem {
@@ -390,52 +429,211 @@ const getSemanticDifferenceScale = (val: string, orig: string) => {
   const distance = calculateLevenshteinDistance(v1, v2);
   const maxLen = Math.max(v1.length, v2.length);
   const sim = maxLen === 0 ? 1 : (maxLen - distance) / maxLen;
-  if (sim >= 0.75) return { label: "Identik / Sangat Mirip", score: 90, color: "text-emerald-400", bg: "bg-emerald-500" };
-  if (sim >= 0.4) return { label: "Berbeda Parsial", score: 60, color: "text-amber-400", bg: "bg-amber-500" };
-  return { label: "Berbeda Signifikan", score: 20, color: "text-rose-400", bg: "bg-rose-500" };
+  const realPercent = Math.round(sim * 100);
+  if (sim >= 0.75) return { label: "Identik / Sangat Mirip", score: realPercent, color: "text-emerald-400", bg: "bg-emerald-500" };
+  if (sim >= 0.4) return { label: "Berbeda Parsial", score: realPercent, color: "text-amber-400", bg: "bg-amber-500" };
+  return { label: "Berbeda Signifikan", score: realPercent, color: "text-rose-400", bg: "bg-rose-500" };
 };
 
-const calculateItemAccuracy = (item: ChronologyItem) => {
+const calculateNormalizedSimilarity = (a: string, b: string): { distance: number, maxLength: number, similarity: number } => {
+  const v1 = (a || "").toString().toLowerCase().trim();
+  const v2 = (b || "").toString().toLowerCase().trim();
+  if (v1 === v2) return { distance: 0, maxLength: Math.max(v1.length, v2.length) || 1, similarity: 100 };
+  const distance = calculateLevenshteinDistance(v1, v2);
+  const maxLength = Math.max(v1.length, v2.length);
+  const similarity = maxLength === 0 ? 100 : Math.round(((maxLength - distance) / maxLength) * 100);
+  return { distance, maxLength, similarity };
+};
+
+const getSimilarityLevel = (similarity: number): string => {
+  if (similarity >= 75) return "Identik / Sangat Mirip";
+  if (similarity >= 40) return "Berbeda Parsial";
+  return "Berbeda Signifikan";
+};
+
+// --- HYBRID ENGINE HELPERS ---
+
+const ENTITY_REGISTRY: Record<string, { id: string, type: EntityType, names: string[] }> = {
+  "P001": { id: "P001", type: "PERSON", names: ["fatur", "faturrahman", "fatur rahman"] },
+  "P002": { id: "P002", type: "PERSON", names: ["fatimah", "siti fatimah"] },
+  "U001": { id: "U001", type: "UNIT", names: ["hd-785", "hd785", "komatsu hd 785"] },
+  "S001": { id: "S001", type: "SITE", names: ["bmo2", "bmo-2", "site bmo 2"] },
+  "C001": { id: "C001", type: "COMPANY", names: ["buma", "pt buma", "pt bukit makmur mandiri utama"] }
+};
+
+const resolveEntity = (text: string): { id: string | null, type: EntityType | null, name: string | null } => {
+  if (!text) return { id: null, type: null, name: null };
+  const normalized = text.toLowerCase().trim();
+  
+  for (const [id, entity] of Object.entries(ENTITY_REGISTRY)) {
+    if (entity.names.some(n => normalized.includes(n) || n.includes(normalized))) {
+      return { id: entity.id, type: entity.type, name: entity.names[0] };
+    }
+  }
+  return { id: null, type: null, name: text }; 
+};
+
+const getCategoryEntityType = (label: string): EntityType | null => {
+  if (label === "PIHAK") return "PERSON";
+  if (label === "OBJEK") return "UNIT";
+  if (label === "SUMBER") return "SYSTEM";
+  return null;
+};
+
+const isIdentitySensitive = (label: string) => ["PIHAK", "OBJEK", "SUMBER"].includes(label);
+
+const evaluateSemanticSimilarity = (aiVal: string, humVal: string): SemanticMatchResult => {
+  const { similarity } = calculateNormalizedSimilarity(aiVal, humVal);
+  if (similarity >= 75) return "same_meaning";
+  if (similarity >= 40) return "partial_meaning";
+  return "different_meaning";
+};
+
+const extractCoreEntityName = (text: string): string => {
+  if (!text) return "";
+  const t = text.trim();
+  const match = t.match(/\(([^)]+)\)/);
+  if (match) return match[1].toLowerCase().trim();
+  const words = t.split(/\s+/);
+  if (words.length > 1) return words[words.length - 1].toLowerCase().trim();
+  return t.toLowerCase().trim();
+};
+
+// --- END HYBRID ENGINE HELPERS ---
+
+const calculateItemAccuracy = (item: ChronologyItem): AccuracyResult => {
   const breakdown = item.breakdown || {};
   const fieldsForAccuracy = [
     { label: "WAKTU", val: breakdown.time || item.time_label, orig: (breakdown as any).time_original_value || breakdown.time || item.time_label, isHuman: !!(breakdown as any).time_annotated_by_human },
-    { label: "PIHAK", val: breakdown.subject?.value || breakdown.actor, orig: breakdown.subject?.original_value || breakdown.subject?.value || breakdown.actor, isHuman: !!(breakdown.subject as any)?.annotated_by_human },
-    { label: "OBJEK", val: breakdown.object?.value || (breakdown.location as any)?.value, orig: breakdown.object?.original_value || (breakdown.location as any)?.original_value || breakdown.object?.value || (breakdown.location as any)?.value, isHuman: !!(breakdown.location as any)?.annotated_by_human || !!(breakdown.object as any)?.annotated_by_human },
-    { label: "KEJADIAN", val: breakdown.action?.value, orig: breakdown.action?.original_value || breakdown.action?.value, isHuman: !!(breakdown.action as any)?.annotated_by_human },
-    { label: "KONTEKS", val: breakdown.condition?.value, orig: breakdown.condition?.original_value || breakdown.condition?.value, isHuman: !!(breakdown.condition as any)?.annotated_by_human },
-    { label: "SUMBER", val: breakdown.source_system?.value, orig: breakdown.source_system?.original_value || breakdown.source_system?.value, isHuman: !!(breakdown.source_system as any)?.annotated_by_human },
-    { label: "DAMPAK", val: (breakdown.why as any)?.value, orig: (breakdown.why as any)?.original_value || (breakdown.why as any)?.value, isHuman: !!(breakdown.why as any)?.annotated_by_human }
+    { label: "PIHAK", val: breakdown.subject?.value || breakdown.actor, orig: breakdown.subject?.original_value || breakdown.subject?.value || breakdown.actor, isHuman: !!breakdown.subject?.annotated_by_human },
+    { label: "OBJEK", val: breakdown.object?.value || breakdown.location?.value, orig: breakdown.object?.original_value || breakdown.location?.original_value || breakdown.object?.value || breakdown.location?.value, isHuman: !!breakdown.location?.annotated_by_human || !!breakdown.object?.annotated_by_human },
+    { label: "KEJADIAN", val: breakdown.action?.value, orig: breakdown.action?.original_value || breakdown.action?.value, isHuman: !!breakdown.action?.annotated_by_human },
+    { label: "KONTEKS", val: breakdown.condition?.value, orig: breakdown.condition?.original_value || breakdown.condition?.value, isHuman: !!breakdown.condition?.annotated_by_human },
+    { label: "SUMBER", val: breakdown.source_system?.value, orig: breakdown.source_system?.original_value || breakdown.source_system?.value, isHuman: !!breakdown.source_system?.annotated_by_human },
+    { label: "DAMPAK", val: breakdown.why?.value, orig: breakdown.why?.original_value || breakdown.why?.value, isHuman: !!breakdown.why?.annotated_by_human }
   ];
 
   let totalScore = 0;
   let totalValidFields = 0;
+  const fields: AccuracyFieldResult[] = [];
 
   fieldsForAccuracy.forEach(f => {
-    if ((f.val && f.val !== "-") || (f.orig && f.orig !== "-")) {
-      totalValidFields++;
-      if (!f.isHuman) {
-        totalScore += 100;
+    const aiValue = f.orig || "-";
+    const humanValue = f.val || "-";
+    const hasData = aiValue !== "-" || humanValue !== "-";
+
+    if (!hasData) {
+      fields.push({
+        label: f.label, aiValue, humanValue, isAnnotated: false,
+        levenshteinDistance: 0, maxLength: 0, similarityPercent: 100,
+        level: "Tidak ada data", fieldScore: 100,
+        lexicalSimilarity: 100, entityType: null, aiEntity: null, annotationEntity: null,
+        aiCanonicalEntityId: null, annotationCanonicalEntityId: null, entityMatch: null,
+        semanticSimilarity: null, criticalMismatch: false, scoreCap: null, reason: "No data available"
+      });
+      return;
+    }
+
+    totalValidFields++;
+
+    if (!f.isHuman) {
+      totalScore += 100;
+      fields.push({
+        label: f.label, aiValue, humanValue, isAnnotated: false,
+        levenshteinDistance: 0, maxLength: Math.max(aiValue.length, humanValue.length) || 1, similarityPercent: 100,
+        level: "Belum ada koreksi manusia", fieldScore: 100,
+        lexicalSimilarity: 100, entityType: null, aiEntity: null, annotationEntity: null,
+        aiCanonicalEntityId: null, annotationCanonicalEntityId: null, entityMatch: null,
+        semanticSimilarity: null, criticalMismatch: false, scoreCap: null, reason: "No human correction yet"
+      });
+      return;
+    }
+
+    const { distance, maxLength, similarity: lexicalSim } = calculateNormalizedSimilarity(humanValue, aiValue);
+    
+    let finalScore = lexicalSim;
+    let criticalMismatch = false;
+    let scoreCap: number | null = null;
+    let reason = "Lexical similarity calculation";
+    let level = getSimilarityLevel(lexicalSim);
+    
+    let entityType: EntityType | null = null;
+    let aiEntity: string | null = null;
+    let annotationEntity: string | null = null;
+    let aiCanonicalId: string | null = null;
+    let annotationCanonicalId: string | null = null;
+    let entityMatch: EntityMatchResult | null = null;
+    let semanticSimilarity: number | null = null;
+
+    if (isIdentitySensitive(f.label)) {
+      entityType = getCategoryEntityType(f.label) || "PERSON";
+      const entAI = resolveEntity(aiValue);
+      const entHuman = resolveEntity(humanValue);
+      
+      aiEntity = entAI.name;
+      annotationEntity = entHuman.name;
+      aiCanonicalId = entAI.id;
+      annotationCanonicalId = entHuman.id;
+      
+      if (entAI.id && entHuman.id) {
+        entityMatch = entAI.id === entHuman.id ? "same_entity" : "different_entity";
       } else {
-        const v1 = (f.val || "").toString().toLowerCase().trim();
-        const v2 = (f.orig || "").toString().toLowerCase().trim();
-        if (v1 === v2) {
-          totalScore += 100;
+        const coreAI = extractCoreEntityName(aiValue);
+        const coreHuman = extractCoreEntityName(humanValue);
+        if (coreAI === coreHuman) {
+          entityMatch = "same_entity";
         } else {
-          const distance = calculateLevenshteinDistance(v1, v2);
-          const maxLen = Math.max(v1.length, v2.length);
-          const sim = maxLen === 0 ? 1 : (maxLen - distance) / maxLen;
-          
-          if (sim >= 0.75) totalScore += 90;
-          else if (sim >= 0.4) totalScore += 60;
-          else totalScore += 20;
+          entityMatch = "different_entity";
         }
       }
+
+      if (entityMatch === "different_entity") {
+        criticalMismatch = true;
+        scoreCap = 20;
+        finalScore = Math.min(finalScore, 20);
+        level = "Berbeda Signifikan";
+        reason = "Entitas merujuk pada identitas yang berbeda";
+      } else if (entityMatch === "unknown_entity") {
+        reason = "Entity unresolved, relying on lexical similarity";
+      } else {
+        reason = "Entity match confirmed";
+      }
+    } else {
+      // Descriptive field
+      semanticSimilarity = lexicalSim; // Simplified mock for semantic similarity
+      const semanticMatch = evaluateSemanticSimilarity(aiValue, humanValue);
+      
+      if (semanticMatch === "different_meaning") {
+        finalScore = Math.min(finalScore, 40);
+        level = "Berbeda Signifikan";
+        reason = "Makna semantik berbeda secara signifikan";
+      } else if (semanticMatch === "same_meaning" && lexicalSim < 75) {
+        finalScore = Math.max(finalScore, 80);
+        level = "Identik / Sangat Mirip";
+        reason = "Makna semantik serupa meskipun teks berbeda";
+      } else {
+        reason = "Semantic match aligns with lexical similarity";
+      }
     }
+
+    totalScore += finalScore;
+
+    fields.push({
+      label: f.label, aiValue, humanValue, isAnnotated: true,
+      levenshteinDistance: distance, maxLength, similarityPercent: finalScore,
+      level, fieldScore: finalScore,
+      lexicalSimilarity: lexicalSim, entityType, aiEntity, annotationEntity,
+      aiCanonicalEntityId: aiCanonicalId, annotationCanonicalEntityId: annotationCanonicalId,
+      entityMatch, semanticSimilarity, criticalMismatch, scoreCap, reason
+    });
   });
 
   return {
     accuracy: totalValidFields > 0 ? Math.round(totalScore / totalValidFields) : 100,
-    validFieldsCount: totalValidFields
+    validFieldsCount: totalValidFields,
+    fields,
+    calculatedAt: new Date().toISOString(),
+    engineVersion: "Hybrid-1.0"
   };
 };
 
@@ -896,10 +1094,10 @@ export const TraceabilityPanel: React.FC<{
         annotated_by_human: true 
       };
     } else if (label === "OBJEK") {
-      const origLocation = (breakdown.location as any)?.original_value || (breakdown.location as any)?.value;
+      const origLocation = breakdown.location?.original_value || breakdown.location?.value;
       const origObject = breakdown.object?.original_value || breakdown.object?.value;
       updatedBreakdown.location = { 
-        ...((breakdown.location as any) || {}), 
+        ...(breakdown.location || {}), 
         value: newValue, 
         original_value: origLocation,
         annotated_by_human: true 
@@ -916,9 +1114,9 @@ export const TraceabilityPanel: React.FC<{
       (updatedBreakdown as any).time_annotated_by_human = true;
     } else if (label === "DAMPAK") {
       updatedBreakdown.why = { 
-        ...((breakdown.why as any) || {}), 
+        ...(breakdown.why || {}), 
         value: newValue, 
-        original_value: (breakdown.why as any)?.original_value || (breakdown.why as any)?.value,
+        original_value: breakdown.why?.original_value || breakdown.why?.value,
         annotated_by_human: true 
       };
     } else if (label === "KONTEKS") {
@@ -948,7 +1146,7 @@ export const TraceabilityPanel: React.FC<{
     thumbnail: t.source_type === 'video' ? 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=300&q=80' : undefined
   })) || [];
 
-  const whatCitations = [...((breakdown.action as any)?.citations || []), ...mappedTraceability];
+  const whatCitations = [...(breakdown.action?.citations || []), ...mappedTraceability];
 
   const getDummyCitations = (label: string) => [
     {
@@ -969,18 +1167,20 @@ export const TraceabilityPanel: React.FC<{
 
   const w5h1 = [
     { label: "WAKTU", value: breakdown.time || item.time_label, citations: getDummyCitations("WAKTU") },
-    { label: "PIHAK", value: breakdown.subject?.value || breakdown.actor || "-", citations: (breakdown.subject as any)?.citations?.length ? (breakdown.subject as any)?.citations : getDummyCitations("PIHAK") },
-    { label: "OBJEK", value: breakdown.object?.value || (breakdown.location as any)?.value || "-", citations: getDummyCitations("OBJEK") },
+    { label: "PIHAK", value: breakdown.subject?.value || breakdown.actor || "-", citations: breakdown.subject?.citations?.length ? breakdown.subject?.citations : getDummyCitations("PIHAK") },
+    { label: "OBJEK", value: breakdown.object?.value || breakdown.location?.value || "-", citations: getDummyCitations("OBJEK") },
     { label: "KEJADIAN", value: breakdown.action?.value || item.chronology_text, citations: whatCitations.length > 0 ? whatCitations : getDummyCitations("KEJADIAN") },
-    { label: "KONTEKS", value: breakdown.condition?.value || "-", citations: (breakdown.condition as any)?.citations?.length ? (breakdown.condition as any)?.citations : getDummyCitations("KONTEKS") },
+    { label: "KONTEKS", value: breakdown.condition?.value || "-", citations: breakdown.condition?.citations?.length ? breakdown.condition?.citations : getDummyCitations("KONTEKS") },
     { label: "SUMBER", value: breakdown.source_system?.value || "DMS & Kamera Pengawas", citations: getDummyCitations("SUMBER") },
     { label: "STATUS", value: item.status === "human_verified" ? "Terkonfirmasi" : "Menunggu Validasi", citations: getDummyCitations("STATUS") },
-    { label: "DAMPAK", value: (breakdown.why as any)?.value || "Risiko Operasional & Keselamatan", citations: getDummyCitations("DAMPAK") },
+    { label: "DAMPAK", value: breakdown.why?.value || "Risiko Operasional & Keselamatan", citations: getDummyCitations("DAMPAK") },
     { label: "TINDAKAN", value: "Proses Investigasi", citations: getDummyCitations("TINDAKAN") }
   ];
 
-  const { accuracy: accuracyPercent, validFieldsCount: totalValidFields } = calculateItemAccuracy(item);
+  const accuracyResult = calculateItemAccuracy(item);
+  const { accuracy: accuracyPercent, validFieldsCount: totalValidFields, fields: accuracyFields } = accuracyResult;
 
+  const [showDebugPanel, setShowDebugPanel] = useState(false);
 
   return (
     <div className="flex flex-col h-full bg-white border-l border-slate-200">
@@ -1007,7 +1207,7 @@ export const TraceabilityPanel: React.FC<{
         <TooltipProvider delayDuration={150}>
           <Tooltip>
             <TooltipTrigger asChild>
-              <div className="bg-slate-50 border border-slate-200 p-3 rounded-none mb-3 flex flex-col gap-2 cursor-help group hover:bg-slate-100 transition-colors">
+              <div className="bg-slate-50 border border-slate-200 p-3 rounded-none mb-1 flex flex-col gap-2 cursor-help group hover:bg-slate-100 transition-colors">
                 <div className="flex items-center justify-between text-[11px]">
                   <span className="font-mono text-slate-500 font-bold uppercase tracking-wider group-hover:text-slate-700">Akurasi Ekstraksi AI</span>
                   <span className={cn(
@@ -1031,39 +1231,149 @@ export const TraceabilityPanel: React.FC<{
                   />
                 </div>
                 <div className="flex items-center justify-between text-[9px] font-mono text-slate-400 mt-0.5 uppercase tracking-wide">
-                  <span>Deviasi Semantik Anotator</span>
-                  <span>Skala 3-Level ({totalValidFields} Atribut)</span>
+                  <span>Hybrid Accuracy Scoring</span>
+                  <span>Lexical + Semantic ({totalValidFields} Atribut)</span>
                 </div>
               </div>
             </TooltipTrigger>
-            <TooltipContent side="left" align="start" className="w-[320px] bg-slate-900 text-slate-300 text-[10.5px] p-3 font-sans rounded-none shadow-xl flex flex-col gap-2 z-50 border border-slate-700">
+            <TooltipContent side="left" align="start" className="w-[340px] bg-slate-900 text-slate-300 text-[10.5px] p-3 font-sans rounded-none shadow-xl flex flex-col gap-2 z-50 border border-slate-700">
               <div className="text-white font-bold text-[11px] mb-1 flex items-center gap-2">
                 <Brain className="w-3.5 h-3.5 text-blue-400" />
-                Penghitungan Akurasi Ekstraksi
+                Hybrid Accuracy Engine
               </div>
               <p className="leading-relaxed">
-                Akurasi dihitung menggunakan <strong>Algoritma Levenshtein Distance</strong> untuk mengukur kemiripan string secara semantik antara hasil ekstraksi AI dan anotasi manual oleh manusia.
+                Sistem menggunakan <strong>Hybrid Scoring</strong> yang menggabungkan Normalized Levenshtein Similarity, Entity-Aware Matching, dan perbandingan semantik.
               </p>
               <div className="mt-1 flex flex-col gap-1.5 p-2 bg-slate-800/50 border border-slate-700">
                 <div className="flex items-center justify-between">
                   <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Identik / Sangat Mirip</span>
-                  <span className="font-mono text-[9px] text-slate-400">Similarity ≥ 75%</span>
+                  <span className="font-mono text-[9px] text-slate-400">Score ≥ 75%</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>Berbeda Parsial</span>
-                  <span className="font-mono text-[9px] text-slate-400">Similarity ≥ 40%</span>
+                  <span className="font-mono text-[9px] text-slate-400">Score ≥ 40%</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>Berbeda Signifikan</span>
-                  <span className="font-mono text-[9px] text-slate-400">Similarity &lt; 40%</span>
+                  <span className="font-mono text-[9px] text-slate-400">Score &lt; 40%</span>
                 </div>
               </div>
-              <p className="text-[9.5px] text-slate-400 leading-relaxed mt-1">
-                Atribut yang tidak dianotasi manusia dianggap memiliki akurasi 100%. Total skor dari setiap atribut dirata-rata untuk persentase keseluruhan.
-              </p>
+              <div className="p-2 bg-blue-500/10 border border-blue-500/20 text-blue-200 mt-1">
+                <p className="text-[9.5px] leading-relaxed">
+                  <strong>Catatan:</strong> Levenshtein digunakan untuk membaca kedekatan teks. Untuk nama orang, unit, lokasi, company, dan entitas penting lain, sistem juga memeriksa kecocokan entitas. Jika teks terlihat mirip tetapi merujuk ke entitas berbeda, hasil tetap dihitung sebagai Berbeda Signifikan.
+                </p>
+              </div>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
+
+        {/* Debug Inspection Toggle */}
+        <button
+          onClick={() => setShowDebugPanel(!showDebugPanel)}
+          className="w-full flex items-center justify-center gap-1.5 py-1.5 text-[9px] font-bold text-slate-400 hover:text-blue-600 hover:bg-blue-50/50 transition-colors uppercase tracking-wider border border-transparent hover:border-blue-200 rounded-none mb-2"
+        >
+          <Brain className="h-3 w-3" />
+          {showDebugPanel ? "Tutup detail kalkulasi" : "🧠 Lihat detail kalkulasi"}
+        </button>
+
+        {/* Debug Inspection Panel */}
+        {showDebugPanel && (
+          <div className="border border-slate-200 bg-slate-50/80 rounded-none mb-3 overflow-hidden animate-in slide-in-from-top duration-200">
+            <div className="px-3 py-2 bg-slate-900 flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <Brain className="h-3 w-3 text-blue-400" />
+                <span className="text-[9px] font-black text-white uppercase tracking-widest">Hybrid Engine Debug v1.0</span>
+              </div>
+              <span className="text-[8px] font-mono text-slate-400">{accuracyResult.calculatedAt.slice(0, 19)}</span>
+            </div>
+            
+            {/* Item metadata */}
+            <div className="px-3 py-2 border-b border-slate-200 bg-white">
+              <div className="grid grid-cols-2 gap-2 text-[9px]">
+                <div>
+                  <span className="font-bold text-slate-400 uppercase tracking-wider">Item ID</span>
+                  <div className="font-mono text-slate-700 truncate" title={item.id}>{item.id}</div>
+                </div>
+                <div>
+                  <span className="font-bold text-slate-400 uppercase tracking-wider">Global Accuracy</span>
+                  <div className="font-mono font-black text-slate-900">{accuracyPercent}%</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Hybrid Details Table */}
+            <div className="overflow-x-auto">
+              <table className="w-full text-[8px] border-collapse min-w-[600px]">
+                <thead>
+                  <tr className="bg-slate-100 border-b border-slate-200">
+                    <th className="px-2 py-1.5 text-left font-black text-slate-500 uppercase tracking-wider">Atribut</th>
+                    <th className="px-2 py-1.5 text-center font-black text-slate-500 uppercase tracking-wider">Lexical</th>
+                    <th className="px-2 py-1.5 text-center font-black text-slate-500 uppercase tracking-wider">Entity</th>
+                    <th className="px-2 py-1.5 text-center font-black text-slate-500 uppercase tracking-wider">Semantic</th>
+                    <th className="px-2 py-1.5 text-center font-black text-slate-500 uppercase tracking-wider">Crit</th>
+                    <th className="px-2 py-1.5 text-right font-black text-slate-500 uppercase tracking-wider">Cap</th>
+                    <th className="px-2 py-1.5 text-right font-black text-slate-900 uppercase tracking-wider">Final%</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {accuracyFields.map((field, idx) => (
+                    <tr key={idx} className={cn("border-b border-slate-100", field.isAnnotated ? "bg-white" : "bg-slate-50/50")}>
+                      <td className="px-2 py-1.5 font-mono font-bold text-slate-700">
+                        {field.label}
+                        <div className="text-[7px] text-slate-400 font-sans mt-0.5" title={field.reason}>{field.reason.substring(0, 30)}...</div>
+                      </td>
+                      <td className="px-2 py-1.5 text-center font-mono text-slate-600">
+                        {field.isAnnotated ? `${field.lexicalSimilarity}%` : '-'}
+                      </td>
+                      <td className="px-2 py-1.5 text-center">
+                        {field.entityType ? (
+                          <div className="flex flex-col items-center gap-0.5">
+                            <span className="text-[7px] font-black uppercase text-blue-600 bg-blue-50 px-1">{field.entityType}</span>
+                            <span className={cn("text-[7px] font-mono", 
+                              field.entityMatch === 'same_entity' ? 'text-emerald-600' :
+                              field.entityMatch === 'different_entity' ? 'text-rose-600 font-bold' : 'text-amber-600'
+                            )}>{field.entityMatch || '-'}</span>
+                          </div>
+                        ) : '-'}
+                      </td>
+                      <td className="px-2 py-1.5 text-center font-mono text-slate-600">
+                        {field.semanticSimilarity !== null ? `${field.semanticSimilarity}%` : '-'}
+                      </td>
+                      <td className="px-2 py-1.5 text-center">
+                        {field.criticalMismatch ? (
+                          <span className="text-rose-600 font-black">YES</span>
+                        ) : (
+                          <span className="text-slate-300">-</span>
+                        )}
+                      </td>
+                      <td className="px-2 py-1.5 text-right font-mono text-slate-500">
+                        {field.scoreCap !== null ? `≤${field.scoreCap}` : '-'}
+                      </td>
+                      <td className="px-2 py-1.5 text-right">
+                        <span className={cn(
+                          "font-mono font-black",
+                          field.similarityPercent >= 75 ? "text-emerald-600" :
+                          field.similarityPercent >= 40 ? "text-amber-600" :
+                          "text-rose-600"
+                        )}>{field.fieldScore}%</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Raw payload */}
+            <details className="border-t border-slate-200 bg-white">
+              <summary className="px-3 py-1.5 text-[8px] font-bold text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-slate-100 select-none">
+                Raw Calculation Payload (JSON)
+              </summary>
+              <div className="px-3 py-2 bg-slate-900 overflow-auto max-h-[200px]">
+                <pre className="text-[7px] text-slate-300 font-mono whitespace-pre-wrap leading-relaxed">{JSON.stringify(accuracyResult, null, 2)}</pre>
+              </div>
+            </details>
+          </div>
+        )}
 
         <div className="bg-slate-50/50 p-3 border border-slate-200 rounded-none mb-1 group/stmt">
           <div className="flex items-center justify-between mb-1.5">
