@@ -2045,3 +2045,149 @@ export function VideoSceneSession({ currentTime, onJump }: { currentTime: number
     </div>
   );
 }
+
+export function CaseMetadataExtractionConsole({ file }: { file: any }) {
+  // Mock data representing the metadata the user wants
+  const mockForm = {
+    waktu_insiden: {
+      tanggal: "09 Juni 2026",
+      jam: "20:59 WITA",
+      shift: "Shift 2",
+    },
+    informasi_tambahan: {
+      kategori: "Illness",
+      status: "INSIDEN BARU",
+      kronologis: "Pekerja mengeluh nyeri ulu hati dan pusing. Pasien 1 orang kondisi sadar penuh. Tim ER dan Medik merespon.",
+    },
+    call_taker_ccr: {
+      perusahaan: "PT Suprima Mitra Adihusada",
+      nama: "CCR_EMPLOYEE_001",
+      no_telp: "08XXXXXXXX01",
+    },
+    pelapor_insiden: {
+      perusahaan: "PT Suprima Mitra Adihusada",
+      nama: "REPORTER_001",
+      no_telp: "08YYYYYYYY01",
+      keterangan: "Pelapor berada dilokasi dan merupakan tim ER yang merespon pasien",
+    },
+    lokasi_insiden: {
+      site: "LMO",
+      lokasi: "Station ER LMO",
+      detil_lokasi: "Station",
+      keterangan: "Pos FA FAD_LMO",
+    },
+    data_korban: [
+      { id: "KORBAN_001_01", tipe: "TAMBANG", kondisi: "Sadar Penuh" },
+      { id: "KORBAN_001_02", tipe: "TAMBANG", kondisi: "Luka Ringan" }
+    ],
+    saksi_langsung: [
+      { nama: "Budi Santoso", jabatan: "Operator", perusahaan: "PT FAD" }
+    ],
+    saksi_tidak_langsung: [
+      { nama: "Agus Pratama", jabatan: "Pengawas", perusahaan: "PT FAD" }
+    ]
+  };
+
+  const SectionTitle = ({ title }: { title: string }) => (
+    <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em] border-b pb-2 mb-4">{title}</h4>
+  );
+
+  const InfoRow = ({ label, value }: { label: string, value: React.ReactNode }) => (
+    <div className="flex flex-col sm:flex-row sm:items-center py-2 border-b border-slate-50 last:border-0 gap-1 sm:gap-4 hover:bg-slate-50/50 transition-colors">
+      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest sm:w-1/3 shrink-0">{label}</span>
+      <span className="text-[11px] font-bold text-slate-800 flex-1">{value}</span>
+    </div>
+  );
+
+  return (
+    <div className="p-6 space-y-8 animate-in fade-in duration-500 bg-white">
+      <div>
+        <SectionTitle title="Waktu Insiden" />
+        <div className="bg-white p-4 rounded-sm border border-slate-200 shadow-sm">
+          <InfoRow label="Tanggal Kejadian" value={mockForm.waktu_insiden.tanggal} />
+          <InfoRow label="Jam Kejadian" value={mockForm.waktu_insiden.jam} />
+          <InfoRow label="Shift" value={mockForm.waktu_insiden.shift} />
+        </div>
+      </div>
+
+      <div>
+        <SectionTitle title="Informasi Tambahan" />
+        <div className="bg-white p-4 rounded-sm border border-slate-200 shadow-sm">
+          <InfoRow label="Kategori Insiden" value={mockForm.informasi_tambahan.kategori} />
+          <InfoRow label="Status Investigasi" value={mockForm.informasi_tambahan.status} />
+          <InfoRow label="Kronologis Singkat" value={mockForm.informasi_tambahan.kronologis} />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <div>
+          <SectionTitle title="Call Taker CCR" />
+          <div className="bg-white p-4 rounded-sm border border-slate-200 shadow-sm h-full">
+            <InfoRow label="Perusahaan" value={mockForm.call_taker_ccr.perusahaan} />
+            <InfoRow label="Nama Karyawan" value={mockForm.call_taker_ccr.nama} />
+            <InfoRow label="No. Telepon" value={mockForm.call_taker_ccr.no_telp} />
+          </div>
+        </div>
+        <div>
+          <SectionTitle title="Pelapor Insiden" />
+          <div className="bg-white p-4 rounded-sm border border-slate-200 shadow-sm h-full">
+            <InfoRow label="Perusahaan" value={mockForm.pelapor_insiden.perusahaan} />
+            <InfoRow label="Nama Karyawan" value={mockForm.pelapor_insiden.nama} />
+            <InfoRow label="No. Telepon" value={mockForm.pelapor_insiden.no_telp} />
+            <InfoRow label="Keterangan Pelapor" value={mockForm.pelapor_insiden.keterangan} />
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <SectionTitle title="Lokasi Insiden" />
+        <div className="bg-white p-4 rounded-sm border border-slate-200 shadow-sm">
+          <InfoRow label="Site" value={mockForm.lokasi_insiden.site} />
+          <InfoRow label="Lokasi Umum" value={mockForm.lokasi_insiden.lokasi} />
+          <InfoRow label="Detil Lokasi" value={mockForm.lokasi_insiden.detil_lokasi} />
+          <InfoRow label="Keterangan Tambahan" value={mockForm.lokasi_insiden.keterangan} />
+        </div>
+      </div>
+
+      <div>
+        <SectionTitle title="Data Korban" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {mockForm.data_korban.map((k, i) => (
+            <div key={i} className="bg-rose-50/50 border border-rose-100 p-3 rounded-sm flex justify-between items-center shadow-sm">
+              <div>
+                <span className="block text-[11px] font-black text-rose-900">{k.id}</span>
+                <span className="text-[9px] font-bold text-rose-600 uppercase tracking-widest">{k.tipe}</span>
+              </div>
+              <span className="px-2 py-1 bg-white text-rose-700 text-[9px] font-black border border-rose-200 rounded uppercase shadow-sm">{k.kondisi}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <div>
+          <SectionTitle title="Saksi Langsung" />
+          <div className="space-y-2">
+            {mockForm.saksi_langsung.map((s, i) => (
+              <div key={i} className="bg-white p-3 rounded-sm border border-slate-200 shadow-sm">
+                <span className="block text-[11px] font-black text-slate-800 mb-0.5">{s.nama}</span>
+                <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">{s.jabatan} - {s.perusahaan}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div>
+          <SectionTitle title="Saksi Tidak Langsung" />
+          <div className="space-y-2">
+            {mockForm.saksi_tidak_langsung.map((s, i) => (
+              <div key={i} className="bg-white p-3 rounded-sm border border-slate-200 shadow-sm">
+                <span className="block text-[11px] font-black text-slate-800 mb-0.5">{s.nama}</span>
+                <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">{s.jabatan} - {s.perusahaan}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

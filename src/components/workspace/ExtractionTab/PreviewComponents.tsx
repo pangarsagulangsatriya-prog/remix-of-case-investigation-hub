@@ -43,7 +43,7 @@ export function AdaptiveSourcePreview({
   if (isImage) return <ImagePreview file={file} />;
   if (isAudio) return <AudioPreview file={file} currentTime={audioCurrentTime} setCurrentTime={setAudioCurrentTime} isPlaying={audioIsPlaying} setIsPlaying={setAudioIsPlaying} playbackSpeed={audioPlaybackSpeed} setPlaybackSpeed={setAudioPlaybackSpeed} audioRef={audioRef} />;
   if (isVideo) return <VideoPreview file={file} currentTime={videoCurrentTime} setCurrentTime={setVideoCurrentTime} isPlaying={videoIsPlaying} setIsPlaying={setVideoIsPlaying} videoRef={videoRef} />;
-  if (isDocument) return <DocumentPreview file={file} />;
+  if (isDocument || lowerType === "case-metadata") return <DocumentPreview file={file} />;
 
   return (
     <div className="flex flex-col items-center justify-center p-20 text-slate-300 opacity-50 bg-white/50 rounded-sm border-2 border-dashed border-slate-200">

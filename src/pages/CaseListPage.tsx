@@ -1695,34 +1695,49 @@ Rekomendasi Tindakan:
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          const validEvidences = parsed.filter(p => p.id !== "dummy-primary-1");
-          if (validEvidences.length > 0) {
-            items = validEvidences.map((p: any) => {
-              let category = "Document";
-              let groupId = "__loose__";
-              if (p.type === 'video') category = "Video";
-              else if (p.type === 'audio') { category = "Audio"; groupId = "data_audio"; }
-              else if (p.type === 'image') category = "Image";
-              
-              return {
-                id: p.id,
-                file: null,
-                name: p.name,
-                category,
-                size: p.size,
-                relativePath: p.name,
-                groupId: groupId,
-                groupName: groupId === "data_audio" ? "DATA AUDIO" : "Individual Files",
-                previewUrl: p.url || ""
-              };
-            });
-          }
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          items = parsed.map((p: any) => {
+            let category = "Document";
+            let groupId = "__loose__";
+            if (p.type === 'video') category = "Video";
+            else if (p.type === 'audio') { category = "Audio"; groupId = "data_audio"; }
+            else if (p.type === 'image') category = "Image";
+            else if (p.type === 'case-metadata') category = "Document";
+            
+            return {
+              id: p.id,
+              file: null,
+              name: p.name,
+              category,
+              size: p.size,
+              relativePath: p.name,
+              groupId: groupId,
+              groupName: groupId === "data_audio" ? "DATA AUDIO" : "Individual Files",
+              previewUrl: p.url || ""
+            };
+          });
         }
       } catch (e) {}
     }
 
     if (items.length === 0) {
+      items = [
+        {
+          id: "dummy-primary-1",
+          file: null,
+          name: "Dokumen_HSE_2161.pdf",
+          category: "Document" as const,
+          size: 152300,
+          relativePath: "Dokumen_HSE_2161.pdf",
+          groupId: "__loose__",
+          groupName: "Individual Files",
+          previewUrl: "https://dummy-hse.local/files/unspecified-document"
+        }
+      ];
+    }
+    
+    // Fallback block if somehow we need to return early
+    if (false) {
       items = [
         {
           id: "d1",
@@ -1836,33 +1851,130 @@ Rekomendasi Tindakan:
         </div>
 
         {/* Incident Information Panel */}
-        <div className="px-6 py-4 border-b bg-slate-50/30 shrink-0">
-          <div className="text-[10px] font-black text-slate-450 uppercase tracking-widest mb-3">
-            INFORMASI INSIDEN
-          </div>
-          <div className="grid grid-cols-4 gap-x-6 gap-y-3.5">
-            {[
-              { label: "No. Incident", value: incMeta?.no_incident },
-              { label: "CCR ID", value: incMeta?.ccr_id },
-              { label: "Incident Date", value: incMeta?.incident_date },
-              { label: "Reporting Date", value: incMeta?.reporting_date },
-              { label: "Incident Type", value: incMeta?.incident_type },
-              { label: "Incident Category", value: incMeta?.incident_category },
-              { label: "Reporter", value: incMeta?.reporter },
-              { label: "Company", value: incMeta?.ccr_company_name },
-              { label: "Employee", value: incMeta?.ccr_employee_name },
-              { label: "Site Company", value: incMeta?.site_company_name },
-              { label: "Site ID", value: incMeta?.site_id },
-              { label: "Site Name", value: incMeta?.site_name },
-              { label: "Investigation Status", value: incMeta?.investigation_status },
-            ].map((meta) => (
-              <div key={meta.label} className="min-w-0">
-                <div className="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-0.5">{meta.label}</div>
-                <div className="text-[11px] font-bold text-slate-700 truncate" title={meta.value || "-"}>
-                  {meta.value || "-"}
+        <div className="px-6 py-4 border-b bg-white shrink-0 overflow-y-auto max-h-[360px] custom-scrollbar">
+          <div className="flex flex-col gap-6">
+            
+            {/* Form grids */}
+            <div className="grid grid-cols-2 gap-6">
+              
+              {/* Left Column */}
+              <div className="space-y-4">
+                {/* WAKTU INSIDEN */}
+                <div>
+                   <h4 className="text-[10px] font-black text-slate-450 uppercase tracking-widest mb-3 border-b pb-1">WAKTU INSIDEN</h4>
+                   <div className="grid grid-cols-[120px_1fr] items-center gap-2 mb-2">
+                      <span className="text-[10px] font-bold text-slate-500">TANGGAL & JAM</span>
+                      <div className="border border-slate-200 rounded-sm px-3 py-1.5 text-[11px] font-medium text-slate-800 bg-white">09 June 2026, 20:59 WITA</div>
+                   </div>
+                   <div className="grid grid-cols-[120px_1fr] items-center gap-2 mb-2">
+                      <span className="text-[10px] font-bold text-slate-500">SHIFT</span>
+                      <div className="border border-slate-200 rounded-sm px-3 py-1.5 text-[11px] font-medium text-slate-800 bg-white">Shift 2</div>
+                   </div>
+                </div>
+
+                {/* LOKASI INSIDEN */}
+                <div>
+                   <h4 className="text-[10px] font-black text-slate-450 uppercase tracking-widest mb-3 border-b pb-1">LOKASI INSIDEN</h4>
+                   <div className="grid grid-cols-[120px_1fr] items-center gap-2 mb-2">
+                      <span className="text-[10px] font-bold text-slate-500">SITE</span>
+                      <div className="border border-slate-200 rounded-sm px-3 py-1.5 text-[11px] font-medium text-slate-800 bg-white">LMO</div>
+                   </div>
+                   <div className="grid grid-cols-[120px_1fr] items-center gap-2 mb-2">
+                      <span className="text-[10px] font-bold text-slate-500">LOKASI</span>
+                      <div className="border border-slate-200 rounded-sm px-3 py-1.5 text-[11px] font-medium text-slate-800 bg-white">Station ER LMO</div>
+                   </div>
+                   <div className="grid grid-cols-[120px_1fr] items-center gap-2">
+                      <span className="text-[10px] font-bold text-slate-500">DETIL LOKASI</span>
+                      <div className="border border-slate-200 rounded-sm px-3 py-1.5 text-[11px] font-medium text-slate-800 bg-white">Station</div>
+                   </div>
                 </div>
               </div>
-            ))}
+
+              {/* Right Column */}
+              <div className="space-y-4">
+                {/* INFORMASI TAMBAHAN */}
+                <div>
+                   <h4 className="text-[10px] font-black text-slate-450 uppercase tracking-widest mb-3 border-b pb-1">INFORMASI TAMBAHAN</h4>
+                   <div className="grid grid-cols-[120px_1fr] items-center gap-2 mb-2">
+                      <span className="text-[10px] font-bold text-slate-500">KATEGORI</span>
+                      <div className="border border-slate-200 rounded-sm px-3 py-1.5 text-[11px] font-medium text-slate-800 bg-white">Illness</div>
+                   </div>
+                   <div className="grid grid-cols-[120px_1fr] items-center gap-2 mb-2">
+                      <span className="text-[10px] font-bold text-slate-500">STATUS</span>
+                      <div className="border border-slate-200 rounded-sm px-3 py-1.5 text-[11px] font-medium text-slate-800 bg-white">INSIDEN BARU</div>
+                   </div>
+                   <div className="grid grid-cols-[120px_1fr] items-start gap-2">
+                      <span className="text-[10px] font-bold text-slate-500 pt-2">KRONOLOGIS</span>
+                      <div className="border border-slate-200 rounded-sm px-3 py-1.5 text-[11px] font-medium text-slate-800 bg-white leading-relaxed">
+                        Illness_PT FAD_Pos FA FAD_LMO_09 Juni 2026_Jam kejadian belum diketahui_(Jam dilaporkan 20:59 WITA)_Pekerja mengeluh nyeri ulu hati dan pusing_Pasien 1 orang kondisi sadar penuh_Tim ER dan Medik merespon pasien
+                      </div>
+                   </div>
+                </div>
+
+                {/* PELAPOR */}
+                <div>
+                   <h4 className="text-[10px] font-black text-slate-450 uppercase tracking-widest mb-3 border-b pb-1">PELAPOR & CALL TAKER</h4>
+                   <div className="grid grid-cols-[120px_1fr] items-center gap-2 mb-2">
+                      <span className="text-[10px] font-bold text-slate-500">NAMA PELAPOR</span>
+                      <div className="border border-slate-200 rounded-sm px-3 py-1.5 text-[11px] font-medium text-slate-800 bg-white">REPORTER_001 (PT Suprima Mitra Adihusada)</div>
+                   </div>
+                   <div className="grid grid-cols-[120px_1fr] items-center gap-2 mb-2">
+                      <span className="text-[10px] font-bold text-slate-500">CALL TAKER</span>
+                      <div className="border border-slate-200 rounded-sm px-3 py-1.5 text-[11px] font-medium text-slate-800 bg-white">CCR_EMPLOYEE_001</div>
+                   </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Table */}
+            <div>
+              <h4 className="text-[10px] font-black text-slate-450 uppercase tracking-widest mb-3">DATA KORBAN, SAKSI LANGSUNG DAN SAKSI TIDAK LANGSUNG</h4>
+              <div className="border border-slate-200 rounded-sm overflow-hidden">
+                <table className="w-full text-left bg-white">
+                  <thead className="bg-[#1f9347] text-white">
+                    <tr>
+                      <th className="p-2.5 text-[9px] font-bold uppercase tracking-wider border-r border-white/20">KATEGORI</th>
+                      <th className="p-2.5 text-[9px] font-bold uppercase tracking-wider border-r border-white/20">BEID</th>
+                      <th className="p-2.5 text-[9px] font-bold uppercase tracking-wider border-r border-white/20">NAMA KARYAWAN</th>
+                      <th className="p-2.5 text-[9px] font-bold uppercase tracking-wider border-r border-white/20">PERUSAHAAN</th>
+                      <th className="p-2.5 text-[9px] font-bold uppercase tracking-wider border-r border-white/20">JABATAN STRUKTURAL</th>
+                      <th className="p-2.5 text-[9px] font-bold uppercase tracking-wider border-r border-white/20">JABATAN FUNGSIONAL</th>
+                      <th className="p-2.5 text-[9px] font-bold uppercase tracking-wider">KETERANGAN</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    <tr className="hover:bg-slate-50">
+                      <td className="p-2.5 text-[11px] text-slate-700 border-r border-slate-100">Korban/Pelaku</td>
+                      <td className="p-2.5 text-[11px] text-slate-700 border-r border-slate-100">K-001</td>
+                      <td className="p-2.5 text-[11px] font-bold text-slate-900 border-r border-slate-100">KORBAN_001_01 <br/><span className="text-[9px] text-slate-400 font-normal">[TAMBANG]</span></td>
+                      <td className="p-2.5 text-[11px] text-slate-700 border-r border-slate-100">PT Suprima Mitra Adihusada</td>
+                      <td className="p-2.5 text-[11px] text-slate-700 border-r border-slate-100">-</td>
+                      <td className="p-2.5 text-[11px] text-slate-700 border-r border-slate-100">-</td>
+                      <td className="p-2.5 text-[11px] text-slate-700">Korban</td>
+                    </tr>
+                    <tr className="hover:bg-slate-50">
+                      <td className="p-2.5 text-[11px] text-slate-700 border-r border-slate-100">Korban/Pelaku</td>
+                      <td className="p-2.5 text-[11px] text-slate-700 border-r border-slate-100">K-002</td>
+                      <td className="p-2.5 text-[11px] font-bold text-slate-900 border-r border-slate-100">KORBAN_001_02 <br/><span className="text-[9px] text-slate-400 font-normal">[TAMBANG]</span></td>
+                      <td className="p-2.5 text-[11px] text-slate-700 border-r border-slate-100">PT Suprima Mitra Adihusada</td>
+                      <td className="p-2.5 text-[11px] text-slate-700 border-r border-slate-100">-</td>
+                      <td className="p-2.5 text-[11px] text-slate-700 border-r border-slate-100">-</td>
+                      <td className="p-2.5 text-[11px] text-slate-700">Korban</td>
+                    </tr>
+                    <tr className="hover:bg-slate-50">
+                      <td className="p-2.5 text-[11px] text-slate-700 border-r border-slate-100">Saksi Langsung</td>
+                      <td className="p-2.5 text-[11px] text-slate-700 border-r border-slate-100">S-991</td>
+                      <td className="p-2.5 text-[11px] font-bold text-slate-900 border-r border-slate-100">REPORTER_001</td>
+                      <td className="p-2.5 text-[11px] text-slate-700 border-r border-slate-100">PT Suprima Mitra Adihusada</td>
+                      <td className="p-2.5 text-[11px] text-slate-700 border-r border-slate-100">-</td>
+                      <td className="p-2.5 text-[11px] text-slate-700 border-r border-slate-100 max-w-[200px]" title="Pelapor berada dilokasi dan merupakan tim ER yang merespon pasien">Pelapor berada dilokasi dan merupakan tim ER yang merespon pasien</td>
+                      <td className="p-2.5 text-[11px] text-slate-700">Pelapor</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            
           </div>
         </div>
 
@@ -1881,43 +1993,45 @@ Rekomendasi Tindakan:
             <div className="flex-1 overflow-auto custom-scrollbar">
               
               {/* Folder: DATA AUDIO */}
-              <div className="border-b bg-white">
-                <div className="flex items-center gap-2 px-3 py-2 bg-slate-50/50 border-b border-slate-100 group/ghdr">
-                  <button
-                    onClick={() => setIsFolderExpanded(!isFolderExpanded)}
-                    className="p-0.5 hover:bg-slate-200 rounded-sm transition-colors shrink-0"
-                  >
-                    {isFolderExpanded ? <ChevronDown className="h-3 w-3 text-slate-400" /> : <ChevronRight className="h-3 w-3 text-slate-400" />}
-                  </button>
-                  <Folders className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                  <span className="text-[10px] font-black text-slate-600 uppercase tracking-tight flex-1 truncate">DATA AUDIO</span>
-                  <span className="text-[9px] font-bold text-slate-450 mr-2">
-                    {fileItems.filter(f => f.groupId === "data_audio").length}
-                  </span>
-                </div>
-
-                {isFolderExpanded && fileItems.filter(f => f.groupId === "data_audio").map((fileObj) => (
-                  <div
-                    key={fileObj.id}
-                    onClick={() => setSelectedFileId(fileObj.id)}
-                    className={cn(
-                      "flex items-center gap-2.5 px-3 py-1.5 pl-8 border-b border-slate-50 transition-all group/frow cursor-pointer",
-                      selectedFileId === fileObj.id ? "bg-slate-50 border-l-[3px] border-l-slate-400" : "border-l-[3px] border-l-transparent hover:bg-slate-50/50"
-                    )}
-                  >
-                    <div className="h-6 w-6 rounded-none bg-slate-50 border flex items-center justify-center shrink-0 overflow-hidden">
-                      <AudioIcon className="h-3.5 w-3.5 text-amber-500" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[10px] font-medium text-slate-700 truncate leading-tight">{fileObj.name}</p>
-                      <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">{formatBytes(fileObj.size)}</span>
-                    </div>
-                    <button className="p-1 hover:bg-rose-50 rounded-none opacity-0 group-hover/frow:opacity-100 text-slate-300 hover:text-rose-500 transition-all shrink-0 ml-2">
-                      <Trash2 className="h-3 w-3" />
+              {fileItems.filter(f => f.groupId === "data_audio").length > 0 && (
+                <div className="border-b bg-white">
+                  <div className="flex items-center gap-2 px-3 py-2 bg-slate-50/50 border-b border-slate-100 group/ghdr">
+                    <button
+                      onClick={() => setIsFolderExpanded(!isFolderExpanded)}
+                      className="p-0.5 hover:bg-slate-200 rounded-sm transition-colors shrink-0"
+                    >
+                      {isFolderExpanded ? <ChevronDown className="h-3 w-3 text-slate-400" /> : <ChevronRight className="h-3 w-3 text-slate-400" />}
                     </button>
+                    <Folders className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                    <span className="text-[10px] font-black text-slate-600 uppercase tracking-tight flex-1 truncate">DATA AUDIO</span>
+                    <span className="text-[9px] font-bold text-slate-450 mr-2">
+                      {fileItems.filter(f => f.groupId === "data_audio").length}
+                    </span>
                   </div>
-                ))}
-              </div>
+
+                  {isFolderExpanded && fileItems.filter(f => f.groupId === "data_audio").map((fileObj) => (
+                    <div
+                      key={fileObj.id}
+                      onClick={() => setSelectedFileId(fileObj.id)}
+                      className={cn(
+                        "flex items-center gap-2.5 px-3 py-1.5 pl-8 border-b border-slate-50 transition-all group/frow cursor-pointer",
+                        selectedFileId === fileObj.id ? "bg-slate-50 border-l-[3px] border-l-slate-400" : "border-l-[3px] border-l-transparent hover:bg-slate-50/50"
+                      )}
+                    >
+                      <div className="h-6 w-6 rounded-none bg-slate-50 border flex items-center justify-center shrink-0 overflow-hidden">
+                        <AudioIcon className="h-3.5 w-3.5 text-amber-500" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[10px] font-medium text-slate-700 truncate leading-tight">{fileObj.name}</p>
+                        <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">{formatBytes(fileObj.size)}</span>
+                      </div>
+                      <button className="p-1 hover:bg-rose-50 rounded-none opacity-0 group-hover/frow:opacity-100 text-slate-300 hover:text-rose-500 transition-all shrink-0 ml-2">
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               {/* Other Loose Files flat list */}
               {fileItems.filter(f => f.groupId !== "data_audio").map((fileObj) => (
@@ -1994,7 +2108,15 @@ Rekomendasi Tindakan:
 
                     {/* Document View Frame */}
                     {selectedFile.category === "Document" && (
-                      <iframe src={selectedFile.previewUrl} className="h-full w-full border-none bg-white font-mono text-[10px] p-6 text-slate-800" title="Text Preview" />
+                      selectedFile.previewUrl.includes("dummy-hse.local") ? (
+                        <div className="h-full w-full bg-slate-50 flex flex-col items-center justify-center p-6 text-center border-none">
+                           <FileText className="h-10 w-10 text-slate-300 mb-3" />
+                           <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-1 truncate w-full px-8">{selectedFile.name}</span>
+                           <a href={selectedFile.previewUrl} target="_blank" rel="noreferrer" className="text-[10px] font-medium text-blue-500 hover:underline flex items-center gap-1 mt-2"><ExternalLink className="h-3 w-3" /> {selectedFile.previewUrl}</a>
+                        </div>
+                      ) : (
+                        <iframe src={selectedFile.previewUrl} className="h-full w-full border-none bg-white font-mono text-[10px] p-6 text-slate-800" title="Text Preview" />
+                      )
                     )}
                   </div>
 

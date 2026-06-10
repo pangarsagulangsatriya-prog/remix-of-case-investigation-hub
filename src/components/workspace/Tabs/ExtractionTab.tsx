@@ -25,7 +25,10 @@ import {
   ImageExtractionConsole, 
   DocumentExtractionConsole, 
   AudioExtractionConsole, 
-  VideoAnalysisPanel 
+  VideoAnalysisPanel,
+  VideoSceneSession,
+  AudioSceneSession,
+  CaseMetadataExtractionConsole
 } from "../ExtractionTab/ConsoleComponents";
 import EvidencePreparationExperience from "../ExtractionTab/EvidencePreparationExperience";
 import { EvidenceCenterEmptyState, EvidenceRightEmptyState } from "../ExtractionTab/EvidenceEmptyState";
@@ -75,12 +78,13 @@ export default function ExtractionTab() {
     }
     return [{
       id: "dummy-primary-1",
-      name: "primary_evidence_preview_001.mp4",
-      type: "video",
-      size: 25165824,
-      created_at: "2026-05-20T14:22:00Z",
+      name: "Form_Insiden_Lengkap.pdf",
+      type: "case-metadata",
+      size: 152300,
+      created_at: "2026-06-09T20:59:00Z",
       extraction_status: "completed",
-      batch_id: "UTAMA"
+      batch_id: "UTAMA",
+      url: "https://dummy-hse.local/files/15569488"
     }];
   });
   const [isPrimaryUploadModalOpen, setIsPrimaryUploadModalOpen] = useState(false);
@@ -1127,6 +1131,7 @@ export default function ExtractionTab() {
              const isAudio = lowerType === "audio" || lowerName.match(/\.(mp3|wav|ogg|m4a|aac)$/);
              const isVideo = lowerType === "video" || lowerName.match(/\.(mp4|webm|ogg|mov|m4v|avi|wmv)$/);
              const isDocument = lowerType === "document" || lowerName.match(/\.(pdf|doc|docx|txt|rtf|xls|xlsx|csv)$/);
+             const isCaseMetadata = lowerType === "case-metadata";
 
              return (
                <div className="flex-1 overflow-y-auto custom-scrollbar">
@@ -1136,6 +1141,8 @@ export default function ExtractionTab() {
                      <AudioExtractionConsole file={activeFile} onJump={jumpToAudioTime} currentTime={audioCurrentTime} />
                    ) : isImage ? (
                      <ImageExtractionConsole file={activeFile} />
+                   ) : isCaseMetadata ? (
+                     <CaseMetadataExtractionConsole file={activeFile} />
                    ) : isDocument ? (
                      <DocumentExtractionConsole file={activeFile} />
                    ) : null}
