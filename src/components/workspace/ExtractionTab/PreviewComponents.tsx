@@ -5,7 +5,7 @@ import {
   Play, Pause, ChevronLeft, ChevronRight, User, 
   Layout, BookText, Search, ExternalLink, Download, 
   Maximize2, Minimize2, Activity, FileText, Folders, Volume2, VolumeX,
-  SkipBack, SkipForward, Repeat, Gauge, AlertTriangle
+  SkipBack, SkipForward, Repeat, Gauge, AlertTriangle, Upload
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,7 +43,8 @@ export function AdaptiveSourcePreview({
   if (isImage) return <ImagePreview file={file} />;
   if (isAudio) return <AudioPreview file={file} currentTime={audioCurrentTime} setCurrentTime={setAudioCurrentTime} isPlaying={audioIsPlaying} setIsPlaying={setAudioIsPlaying} playbackSpeed={audioPlaybackSpeed} setPlaybackSpeed={setAudioPlaybackSpeed} audioRef={audioRef} />;
   if (isVideo) return <VideoPreview file={file} currentTime={videoCurrentTime} setCurrentTime={setVideoCurrentTime} isPlaying={videoIsPlaying} setIsPlaying={setVideoIsPlaying} videoRef={videoRef} />;
-  if (isDocument || lowerType === "case-metadata") return <DocumentPreview file={file} />;
+  if (lowerType === "case-metadata") return <CaseMetadataExtractionConsole file={file} />;
+  if (isDocument) return <DocumentPreview file={file} />;
 
   return (
     <div className="flex flex-col items-center justify-center p-20 text-slate-300 opacity-50 bg-white/50 rounded-sm border-2 border-dashed border-slate-200">
@@ -1164,6 +1165,171 @@ export function DocumentPreview({ file }: { file: any }) {
           </div>
           <div className="text-[9px] font-black text-slate-300 uppercase tracking-tighter">Forensic Review Interface v2.4</div>
        </div>
+    </div>
+  );
+}
+
+export function CaseMetadataExtractionConsole({ file }: { file: any }) {
+  return (
+    <div className="w-full h-full flex flex-col bg-[#f0f2f4]">
+      {/* Top Bar matching screenshot */}
+      <div className="px-6 py-4 border-b bg-white flex items-center justify-between shrink-0 shadow-sm z-10">
+        <div className="flex items-center gap-4">
+          <div className="h-10 w-10 bg-slate-900 rounded-sm flex items-center justify-center shadow-sm text-white">
+            <Upload className="h-5 w-5" />
+          </div>
+          <div>
+            <h2 className="text-sm font-black text-slate-900 uppercase tracking-widest leading-none mb-2">
+              METADATA_INSIDEN_2161.JSON
+            </h2>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center px-1.5 py-0.5 text-[9px] font-bold bg-slate-200 text-slate-700 border border-slate-300 rounded-sm">
+                CCR ID: CCR-2026-01
+              </span>
+              <span className="inline-flex items-center px-1.5 py-0.5 text-[9px] font-bold bg-blue-50 text-blue-700 border border-blue-200 rounded-sm">
+                Incident Type: Unsafe Condition
+              </span>
+              <span className="inline-flex items-center px-1.5 py-0.5 text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-sm">
+                Site: GMO
+              </span>
+              <span className="inline-flex items-center px-1.5 py-0.5 text-[9px] font-bold bg-amber-50 text-amber-700 border border-amber-200 rounded-sm">
+                Investigation: INVESTIGASI
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-auto p-8 flex justify-center custom-scrollbar">
+        <div className="w-full max-w-5xl bg-white shadow-md border border-slate-200 rounded-sm p-8">
+          {/* Form grids */}
+          <div className="grid grid-cols-2 gap-8">
+            
+            {/* Left Column */}
+            <div className="space-y-6">
+              {/* WAKTU INSIDEN */}
+              <div>
+                  <h4 className="text-[11px] font-black text-slate-800 uppercase tracking-widest mb-4 border-b-2 border-slate-100 pb-2">WAKTU INSIDEN</h4>
+                  <div className="grid grid-cols-[140px_1fr] items-center gap-4 mb-3">
+                    <span className="text-[10px] font-bold text-slate-500">TANGGAL & JAM</span>
+                    <div className="border border-slate-200 rounded-sm px-3 py-2 text-[11px] font-medium text-slate-800 bg-white shadow-sm">09 June 2026, 20:59 WITA</div>
+                  </div>
+                  <div className="grid grid-cols-[140px_1fr] items-center gap-4 mb-3">
+                    <span className="text-[10px] font-bold text-slate-500">SHIFT</span>
+                    <div className="border border-slate-200 rounded-sm px-3 py-2 text-[11px] font-medium text-slate-800 bg-white shadow-sm">Shift 2</div>
+                  </div>
+              </div>
+
+              {/* LOKASI INSIDEN */}
+              <div>
+                  <h4 className="text-[11px] font-black text-slate-800 uppercase tracking-widest mb-4 border-b-2 border-slate-100 pb-2">LOKASI INSIDEN</h4>
+                  <div className="grid grid-cols-[140px_1fr] items-center gap-4 mb-3">
+                    <span className="text-[10px] font-bold text-slate-500">SITE</span>
+                    <div className="border border-slate-200 rounded-sm px-3 py-2 text-[11px] font-medium text-slate-800 bg-white shadow-sm">LMO</div>
+                  </div>
+                  <div className="grid grid-cols-[140px_1fr] items-center gap-4 mb-3">
+                    <span className="text-[10px] font-bold text-slate-500">LOKASI</span>
+                    <div className="border border-slate-200 rounded-sm px-3 py-2 text-[11px] font-medium text-slate-800 bg-white shadow-sm">Station ER LMO</div>
+                  </div>
+                  <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                    <span className="text-[10px] font-bold text-slate-500">DETIL LOKASI</span>
+                    <div className="border border-slate-200 rounded-sm px-3 py-2 text-[11px] font-medium text-slate-800 bg-white shadow-sm">Station</div>
+                  </div>
+              </div>
+            </div>
+
+            {/* Right Column */}
+            <div className="space-y-6">
+              {/* INFORMASI TAMBAHAN */}
+              <div>
+                  <h4 className="text-[11px] font-black text-slate-800 uppercase tracking-widest mb-4 border-b-2 border-slate-100 pb-2">INFORMASI TAMBAHAN</h4>
+                  <div className="grid grid-cols-[140px_1fr] items-center gap-4 mb-3">
+                    <span className="text-[10px] font-bold text-slate-500">KATEGORI</span>
+                    <div className="border border-slate-200 rounded-sm px-3 py-2 text-[11px] font-medium text-slate-800 bg-white shadow-sm">Illness</div>
+                  </div>
+                  <div className="grid grid-cols-[140px_1fr] items-center gap-4 mb-3">
+                    <span className="text-[10px] font-bold text-slate-500">STATUS</span>
+                    <div className="border border-slate-200 rounded-sm px-3 py-2 text-[11px] font-medium text-slate-800 bg-white shadow-sm">INSIDEN BARU</div>
+                  </div>
+                  <div className="grid grid-cols-[140px_1fr] items-start gap-4">
+                    <span className="text-[10px] font-bold text-slate-500 pt-2">KRONOLOGIS</span>
+                    <div className="border border-slate-200 rounded-sm px-3 py-2 text-[11px] font-medium text-slate-800 bg-white shadow-sm leading-relaxed">
+                      Illness_PT FAD_Pos FA FAD_LMO_09 Juni 2026_Jam kejadian belum diketahui_(Jam dilaporkan 20:59 WITA)_Pekerja mengeluh nyeri ulu hati dan pusing_Pasien 1 orang kondisi sadar penuh_Tim ER dan Medik merespon pasien
+                    </div>
+                  </div>
+              </div>
+
+              {/* PELAPOR */}
+              <div>
+                  <h4 className="text-[11px] font-black text-slate-800 uppercase tracking-widest mb-4 border-b-2 border-slate-100 pb-2">PELAPOR & CALL TAKER</h4>
+                  <div className="grid grid-cols-[140px_1fr] items-center gap-4 mb-3">
+                    <span className="text-[10px] font-bold text-slate-500">NAMA PELAPOR</span>
+                    <div className="border border-slate-200 rounded-sm px-3 py-2 text-[11px] font-medium text-slate-800 bg-white shadow-sm">REPORTER_001 (PT Suprima Mitra Adihusada)</div>
+                  </div>
+                  <div className="grid grid-cols-[140px_1fr] items-center gap-4 mb-3">
+                    <span className="text-[10px] font-bold text-slate-500">CALL TAKER</span>
+                    <div className="border border-slate-200 rounded-sm px-3 py-2 text-[11px] font-medium text-slate-800 bg-white shadow-sm">CCR_EMPLOYEE_001</div>
+                  </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Table */}
+          <div className="pt-8">
+            <h4 className="text-[11px] font-black text-slate-800 uppercase tracking-widest mb-4">DATA KORBAN, SAKSI LANGSUNG DAN SAKSI TIDAK LANGSUNG</h4>
+            <div className="border border-slate-200 rounded-sm overflow-hidden shadow-sm">
+              <table className="w-full text-left bg-white">
+                <thead className="bg-[#1f9347] text-white">
+                  <tr>
+                    <th className="p-3 text-[10px] font-bold uppercase tracking-wider border-r border-white/20">KATEGORI</th>
+                    <th className="p-3 text-[10px] font-bold uppercase tracking-wider border-r border-white/20">BEID</th>
+                    <th className="p-3 text-[10px] font-bold uppercase tracking-wider border-r border-white/20">NAMA KARYAWAN</th>
+                    <th className="p-3 text-[10px] font-bold uppercase tracking-wider border-r border-white/20">PERUSAHAAN</th>
+                    <th className="p-3 text-[10px] font-bold uppercase tracking-wider border-r border-white/20">JABATAN STRUKTURAL</th>
+                    <th className="p-3 text-[10px] font-bold uppercase tracking-wider border-r border-white/20">JABATAN FUNGSIONAL</th>
+                    <th className="p-3 text-[10px] font-bold uppercase tracking-wider">KETERANGAN</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  <tr className="hover:bg-slate-50 transition-colors">
+                    <td className="p-3 text-[11px] text-slate-700">Korban/Pelaku</td>
+                    <td className="p-3 text-[11px] text-slate-700 font-mono">K-001</td>
+                    <td className="p-3 text-[11px] text-slate-900 font-bold">
+                      KORBAN_001_01<br/>
+                      <span className="text-[9px] text-slate-400 font-normal uppercase">[TAMBANG]</span>
+                    </td>
+                    <td className="p-3 text-[11px] text-slate-700">PT Suprima Mitra Adihusada</td>
+                    <td className="p-3 text-[11px] text-slate-700 text-center">-</td>
+                    <td className="p-3 text-[11px] text-slate-700 text-center">-</td>
+                    <td className="p-3 text-[11px] text-slate-700">Korban</td>
+                  </tr>
+                  <tr className="hover:bg-slate-50 transition-colors">
+                    <td className="p-3 text-[11px] text-slate-700">Korban/Pelaku</td>
+                    <td className="p-3 text-[11px] text-slate-700 font-mono">K-002</td>
+                    <td className="p-3 text-[11px] text-slate-900 font-bold">
+                      KORBAN_001_02<br/>
+                      <span className="text-[9px] text-slate-400 font-normal uppercase">[TAMBANG]</span>
+                    </td>
+                    <td className="p-3 text-[11px] text-slate-700">PT Suprima Mitra Adihusada</td>
+                    <td className="p-3 text-[11px] text-slate-700 text-center">-</td>
+                    <td className="p-3 text-[11px] text-slate-700 text-center">-</td>
+                    <td className="p-3 text-[11px] text-slate-700">Korban</td>
+                  </tr>
+                  <tr className="hover:bg-slate-50 transition-colors">
+                    <td className="p-3 text-[11px] text-slate-700">Saksi Langsung</td>
+                    <td className="p-3 text-[11px] text-slate-700 font-mono">S-991</td>
+                    <td className="p-3 text-[11px] text-slate-900 font-bold">REPORTER_001</td>
+                    <td className="p-3 text-[11px] text-slate-700">PT Suprima Mitra Adihusada</td>
+                    <td className="p-3 text-[11px] text-slate-700 text-center">-</td>
+                    <td className="p-3 text-[11px] text-slate-700">Pelapor berada dilokasi dan merupakan tim ER yang merespon pasien</td>
+                    <td className="p-3 text-[11px] text-slate-700">Pelapor</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

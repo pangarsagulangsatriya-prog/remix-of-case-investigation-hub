@@ -11,6 +11,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   FlaskConical,
+  Database,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -29,6 +30,7 @@ import {
 
 const navItems = [
   { title: "Cases", url: "/cases", icon: FolderSearch },
+  { title: "Data Connector", url: "/data-connector", icon: Database },
 
   { title: "Review & Approval", url: "/review", icon: CheckCircle2 },
   { title: "Audit Trail", url: "/audit-trail", icon: History },

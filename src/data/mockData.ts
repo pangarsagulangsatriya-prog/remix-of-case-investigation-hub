@@ -519,8 +519,8 @@ export const mockLegacyCases = [
     "additionalInformation": "Informasi pelapor, kondisi umum pasien sadar penuh",
     "jumlahKorban": 2,
     "korban": "KORBAN_001_01 [TAMBANG]; KORBAN_001_02 [TAMBANG]",
-    "incidentDocumentId": null,
-    "incidentDocumentURL": null
+    "incidentDocumentId": 15354568,
+    "incidentDocumentURL": "https://hseautomation.beraucoal.co.id/beats2/file/15354568"
   },
   {
     "noInsiden": 2160,
@@ -545,8 +545,8 @@ export const mockLegacyCases = [
     "additionalInformation": "Kondisi korban sadar penuh",
     "jumlahKorban": 2,
     "korban": "KORBAN_002_01 [TAMBANG]; KORBAN_002_02 [TAMBANG]",
-    "incidentDocumentId": 15569488,
-    "incidentDocumentURL": "https://dummy-hse.local/files/15569488"
+    "incidentDocumentId": 15340740,
+    "incidentDocumentURL": "https://hseautomation.beraucoal.co.id/beats2/file/15340740"
   },
   {
     "noInsiden": 2159,
@@ -571,8 +571,8 @@ export const mockLegacyCases = [
     "additionalInformation": "Informasi pelapor, kondisi driver aman dan tidak ada keluhan",
     "jumlahKorban": 3,
     "korban": "KORBAN_003_01 [TAMBANG]; KORBAN_003_02 [TAMBANG]; KORBAN_003_03 [TAMBANG]",
-    "incidentDocumentId": 15568427,
-    "incidentDocumentURL": "https://dummy-hse.local/files/15568427"
+    "incidentDocumentId": 15342551,
+    "incidentDocumentURL": "https://hseautomation.beraucoal.co.id/beats2/file/15342551"
   },
   {
     "noInsiden": 2158,
@@ -597,8 +597,8 @@ export const mockLegacyCases = [
     "additionalInformation": "Kaca belakang Unit HM-400 terkena lentingan material dari vessel unit",
     "jumlahKorban": 2,
     "korban": "KORBAN_004_01 [TAMBANG]; KORBAN_004_02 [TAMBANG]",
-    "incidentDocumentId": 15561918,
-    "incidentDocumentURL": "https://dummy-hse.local/files/15561918"
+    "incidentDocumentId": 15328575,
+    "incidentDocumentURL": "https://hseautomation.beraucoal.co.id/beats2/file/15328575"
   },
   {
     "noInsiden": 2157,
@@ -623,8 +623,8 @@ export const mockLegacyCases = [
     "additionalInformation": null,
     "jumlahKorban": 1,
     "korban": "KORBAN_005_01 [TAMBANG]",
-    "incidentDocumentId": null,
-    "incidentDocumentURL": null
+    "incidentDocumentId": 15328622,
+    "incidentDocumentURL": "https://hseautomation.beraucoal.co.id/beats2/file/15328622"
   },
   {
     "noInsiden": 2156,
@@ -649,8 +649,8 @@ export const mockLegacyCases = [
     "additionalInformation": "Final drive nomer 3 dan 4 unit LD- 2002 terlepas",
     "jumlahKorban": 2,
     "korban": "KORBAN_006_01 [TAMBANG]; KORBAN_006_02 [TAMBANG]",
-    "incidentDocumentId": 15558158,
-    "incidentDocumentURL": "https://dummy-hse.local/files/15558158"
+    "incidentDocumentId": 15345009,
+    "incidentDocumentURL": "https://hseautomation.beraucoal.co.id/beats2/file/15345009"
   },
   {
     "noInsiden": 2155,
@@ -675,8 +675,8 @@ export const mockLegacyCases = [
     "additionalInformation": "Kondisi Pasien Sadar Penuh",
     "jumlahKorban": 1,
     "korban": "KORBAN_007_01 [TAMBANG]",
-    "incidentDocumentId": 15531319,
-    "incidentDocumentURL": "https://dummy-hse.local/files/15531319"
+    "incidentDocumentId": 15319327,
+    "incidentDocumentURL": "https://hseautomation.beraucoal.co.id/beats2/file/15319327"
   },
   {
     "noInsiden": 2154,
@@ -701,8 +701,8 @@ export const mockLegacyCases = [
     "additionalInformation": "laporan ini merupakan bagian dari emergency drill (simulasi)",
     "jumlahKorban": 1,
     "korban": "KORBAN_008_01 [TAMBANG]",
-    "incidentDocumentId": null,
-    "incidentDocumentURL": null
+    "incidentDocumentId": 15272187,
+    "incidentDocumentURL": "https://hseautomation.beraucoal.co.id/beats2/file/15272187"
   },
   {
     "noInsiden": 2153,
@@ -727,8 +727,8 @@ export const mockLegacyCases = [
     "additionalInformation": "Kondisi pasien sadar penuh",
     "jumlahKorban": 2,
     "korban": "KORBAN_009_01 [TAMBANG]; KORBAN_009_02 [TAMBANG]",
-    "incidentDocumentId": 15519703,
-    "incidentDocumentURL": "https://dummy-hse.local/files/15519703"
+    "incidentDocumentId": 15270047,
+    "incidentDocumentURL": "https://hseautomation.beraucoal.co.id/beats2/file/15270047"
   },
   {
     "noInsiden": 2152,
@@ -753,7 +753,7 @@ export const mockLegacyCases = [
     "additionalInformation": "Informasi pelapor yang merupakan tim ERG yang merespon, pasien kondisi sadar penuh",
     "jumlahKorban": 2,
     "korban": "KORBAN_010_01 [TAMBANG]; KORBAN_010_02 [TAMBANG]",
-    "incidentDocumentId": 15517374,
-    "incidentDocumentURL": "https://dummy-hse.local/files/15517374"
+    "incidentDocumentId": 15267040,
+    "incidentDocumentURL": "https://hseautomation.beraucoal.co.id/beats2/file/15267040"
   }
 ];

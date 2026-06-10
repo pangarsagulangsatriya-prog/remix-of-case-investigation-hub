@@ -27,8 +27,7 @@ import {
   AudioExtractionConsole, 
   VideoAnalysisPanel,
   VideoSceneSession,
-  AudioSceneSession,
-  CaseMetadataExtractionConsole
+  AudioSceneSession
 } from "../ExtractionTab/ConsoleComponents";
 import EvidencePreparationExperience from "../ExtractionTab/EvidencePreparationExperience";
 import { EvidenceCenterEmptyState, EvidenceRightEmptyState } from "../ExtractionTab/EvidenceEmptyState";
@@ -72,20 +71,29 @@ export default function ExtractionTab() {
 
   // State
   const [primaryEvidences, setPrimaryEvidences] = useState<any[]>(() => {
-    const saved = localStorage.getItem(`primary_evidences_demo_global`);
-    if (saved) {
-      try { return JSON.parse(saved); } catch (e) {}
-    }
-    return [{
-      id: "dummy-primary-1",
-      name: "Form_Insiden_Lengkap.pdf",
-      type: "case-metadata",
-      size: 152300,
-      created_at: "2026-06-09T20:59:00Z",
-      extraction_status: "completed",
-      batch_id: "UTAMA",
-      url: "https://dummy-hse.local/files/15569488"
-    }];
+    // Force the new dual-file setup for the demo, ignoring previous localStorage state
+    return [
+      {
+        id: "dummy-primary-1",
+        name: "Form_Insiden_Lengkap.pdf",
+        type: "document",
+        size: 152300,
+        created_at: "2026-06-09T20:59:00Z",
+        extraction_status: "completed",
+        batch_id: "UTAMA",
+        url: "https://hseautomation.beraucoal.co.id/beats2/file/15354568"
+      },
+      {
+        id: "dummy-primary-2",
+        name: "Metadata_Insiden_2161.json",
+        type: "case-metadata",
+        size: 4096,
+        created_at: "2026-06-09T21:05:00Z",
+        extraction_status: "completed",
+        batch_id: "UTAMA",
+        url: "https://dummy-hse.local/files/metadata_2161"
+      }
+    ];
   });
   const [isPrimaryUploadModalOpen, setIsPrimaryUploadModalOpen] = useState(false);
 
@@ -1077,81 +1085,81 @@ export default function ExtractionTab() {
          </div>
       </div>
 
-      <div className="w-[460px] border-l border-slate-200 bg-white flex flex-col shrink-0 z-20 shadow-[-2px_0_10px_rgba(0,0,0,0.03)] overflow-hidden">
-        {activeFile ? (() => {
-             if (activeFile.extraction_status === "failed") {
-               return (
-                 <div id="failed-extraction-console" className="flex-1 flex flex-col h-full bg-white select-none antialiased">
-                   <div className="px-5 border-b border-slate-100 flex items-center justify-between shrink-0 h-11">
-                     <span className="text-[10px] font-black text-slate-700 uppercase tracking-[0.2em] leading-none">ANALYSIS CONSOLE</span>
-                     <span className="text-[9px] font-bold text-rose-600 bg-rose-50 border border-rose-100 px-2 py-0.5 rounded-[3px] uppercase tracking-wider leading-none">FAILED</span>
-                   </div>
-
-                   <div className="flex-1 flex flex-col items-center justify-center p-8 text-center space-y-6">
-                     <div className="h-16 w-16 rounded-full bg-rose-50 border border-rose-100 flex items-center justify-center shadow-sm shrink-0">
-                       <AlertCircle className="h-7 w-7 text-rose-500" />
+      {!(activeFile && activeFile.type?.toLowerCase() === "case-metadata") && (
+        <div className="w-[460px] border-l border-slate-200 bg-white flex flex-col shrink-0 z-20 shadow-[-2px_0_10px_rgba(0,0,0,0.03)] overflow-hidden">
+          {activeFile ? (() => {
+               if (activeFile.extraction_status === "failed") {
+                 return (
+                   <div id="failed-extraction-console" className="flex-1 flex flex-col h-full bg-white select-none antialiased">
+                     <div className="px-5 border-b border-slate-100 flex items-center justify-between shrink-0 h-11">
+                       <span className="text-[10px] font-black text-slate-700 uppercase tracking-[0.2em] leading-none">ANALYSIS CONSOLE</span>
+                       <span className="text-[9px] font-bold text-rose-600 bg-rose-50 border border-rose-100 px-2 py-0.5 rounded-[3px] uppercase tracking-wider leading-none">FAILED</span>
                      </div>
 
-                     <div className="space-y-2 max-w-[320px]">
-                       <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest leading-none">Ekstraksi Bukti Gagal</h3>
-                       <p className="text-[10px] text-slate-455 font-bold uppercase tracking-wider leading-relaxed">
-                         Mesin analisis kecerdasan AI gagal melakukan ekstraksi dan penataan berkas data forensik ini.
-                       </p>
-                     </div>
-
-                     <div className="w-full max-w-[340px] text-left p-4 rounded-[6px] bg-rose-50/30 border border-rose-100 font-mono text-[10.5px] text-rose-800 space-y-1.5 shadow-2xs">
-                       <div className="flex items-center justify-between border-b border-rose-100/50 pb-1.5 mb-1.5">
-                         <span className="text-[9px] font-black text-rose-700 uppercase tracking-widest">Detail Kesalahan</span>
-                         <span className="text-[8px] font-bold text-rose-500/80">ERROR CODE: 504</span>
+                     <div className="flex-1 flex flex-col items-center justify-center p-8 text-center space-y-6">
+                       <div className="h-16 w-16 rounded-full bg-rose-50 border border-rose-100 flex items-center justify-center shadow-sm shrink-0">
+                         <AlertCircle className="h-7 w-7 text-rose-500" />
                        </div>
-                       <p className="leading-relaxed font-semibold">
-                         {activeFile.metadata?.error_message || "Reason: Analysis engine timeout or connection reset by peer (504)"}
-                       </p>
-                     </div>
 
-                     <Button
-                       id="retry-extraction-button"
-                       onClick={() => {
-                         setFileToRerun(activeFile);
-                         setIsRerunModalOpen(true);
-                       }}
-                       className="h-11 px-9 bg-slate-900 hover:bg-slate-800 text-white font-black text-xs uppercase tracking-widest rounded-[4px] shadow-md hover:-translate-y-0.5 active:scale-95 transition-all duration-200 flex items-center gap-2"
-                     >
-                       <RefreshCw className="h-3.5 w-3.5" />
-                       <span>Proses Ulang (Retry)</span>
-                     </Button>
+                       <div className="space-y-2 max-w-[320px]">
+                         <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest leading-none">Ekstraksi Bukti Gagal</h3>
+                         <p className="text-[10px] text-slate-455 font-bold uppercase tracking-wider leading-relaxed">
+                           Mesin analisis kecerdasan AI gagal melakukan ekstraksi dan penataan berkas data forensik ini.
+                         </p>
+                       </div>
+
+                       <div className="w-full max-w-[340px] text-left p-4 rounded-[6px] bg-rose-50/30 border border-rose-100 font-mono text-[10.5px] text-rose-800 space-y-1.5 shadow-2xs">
+                         <div className="flex items-center justify-between border-b border-rose-100/50 pb-1.5 mb-1.5">
+                           <span className="text-[9px] font-black text-rose-700 uppercase tracking-widest">Detail Kesalahan</span>
+                           <span className="text-[8px] font-bold text-rose-500/80">ERROR CODE: 504</span>
+                         </div>
+                         <p className="leading-relaxed font-semibold">
+                           {activeFile.metadata?.error_message || "Reason: Analysis engine timeout or connection reset by peer (504)"}
+                         </p>
+                       </div>
+
+                       <Button
+                         id="retry-extraction-button"
+                         onClick={() => {
+                           setFileToRerun(activeFile);
+                           setIsRerunModalOpen(true);
+                         }}
+                         className="h-11 px-9 bg-slate-900 hover:bg-slate-800 text-white font-black text-xs uppercase tracking-widest rounded-[4px] shadow-md hover:-translate-y-0.5 active:scale-95 transition-all duration-200 flex items-center gap-2"
+                       >
+                         <RefreshCw className="h-3.5 w-3.5" />
+                         <span>Proses Ulang (Retry)</span>
+                       </Button>
+                     </div>
                    </div>
+                 );
+               }
+
+               const lowerType = activeFile.type?.toLowerCase();
+               const lowerName = activeFile.name?.toLowerCase() || "";
+               const isImage = lowerType === "image" || lowerName.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/);
+               const isAudio = lowerType === "audio" || lowerName.match(/\.(mp3|wav|ogg|m4a|aac)$/);
+               const isVideo = lowerType === "video" || lowerName.match(/\.(mp4|webm|ogg|mov|m4v|avi|wmv)$/);
+               const isDocument = lowerType === "document" || lowerName.match(/\.(pdf|doc|docx|txt|rtf|xls|xlsx|csv)$/);
+               const isCaseMetadata = lowerType === "case-metadata";
+
+               return (
+                 <div className="flex-1 overflow-y-auto custom-scrollbar">
+                     {isVideo ? (
+                       <VideoAnalysisPanel file={activeFile} currentTime={videoCurrentTime || 0} onJump={jumpToVideoTime} />
+                     ) : isAudio ? (
+                       <AudioExtractionConsole file={activeFile} onJump={jumpToAudioTime} currentTime={audioCurrentTime} />
+                     ) : isImage ? (
+                       <ImageExtractionConsole file={activeFile} />
+                     ) : isDocument ? (
+                       <DocumentExtractionConsole file={activeFile} />
+                     ) : null}
                  </div>
                );
-             }
-
-             const lowerType = activeFile.type?.toLowerCase();
-             const lowerName = activeFile.name?.toLowerCase() || "";
-             const isImage = lowerType === "image" || lowerName.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/);
-             const isAudio = lowerType === "audio" || lowerName.match(/\.(mp3|wav|ogg|m4a|aac)$/);
-             const isVideo = lowerType === "video" || lowerName.match(/\.(mp4|webm|ogg|mov|m4v|avi|wmv)$/);
-             const isDocument = lowerType === "document" || lowerName.match(/\.(pdf|doc|docx|txt|rtf|xls|xlsx|csv)$/);
-             const isCaseMetadata = lowerType === "case-metadata";
-
-             return (
-               <div className="flex-1 overflow-y-auto custom-scrollbar">
-                   {isVideo ? (
-                     <VideoAnalysisPanel file={activeFile} currentTime={videoCurrentTime || 0} onJump={jumpToVideoTime} />
-                   ) : isAudio ? (
-                     <AudioExtractionConsole file={activeFile} onJump={jumpToAudioTime} currentTime={audioCurrentTime} />
-                   ) : isImage ? (
-                     <ImageExtractionConsole file={activeFile} />
-                   ) : isCaseMetadata ? (
-                     <CaseMetadataExtractionConsole file={activeFile} />
-                   ) : isDocument ? (
-                     <DocumentExtractionConsole file={activeFile} />
-                   ) : null}
-               </div>
-             );
-         })() : (
-          <EvidenceRightEmptyState hoveredFile={hoveredFile} />
-        )}
-      </div>
+           })() : (
+            <EvidenceRightEmptyState hoveredFile={hoveredFile} />
+          )}
+        </div>
+      )}
       </>
       )}
 

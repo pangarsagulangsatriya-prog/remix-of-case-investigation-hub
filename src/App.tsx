@@ -12,6 +12,7 @@ import AuditTrailPage from "./pages/AuditTrailPage";
 import AdminPage from "./pages/AdminPage";
 import ExecutiveViewPage from "./pages/ExecutiveViewPage";
 import LabsAudioExtractionPage from "./pages/LabsAudioExtractionPage";
+import DataConnectorPage from "./pages/DataConnectorPage";
 
 import NotFound from "./pages/NotFound";
 
@@ -34,6 +35,7 @@ const App = () => (
           <Route path="/audit-trail" element={<AuditTrailPage />} />
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/executive" element={<ExecutiveViewPage />} />
+          <Route path="/data-connector" element={<DataConnectorPage />} />
           <Route path="/labs/audio-extraction" element={<LabsAudioExtractionPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
