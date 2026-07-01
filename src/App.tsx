@@ -13,6 +13,8 @@ import AdminPage from "./pages/AdminPage";
 import ExecutiveViewPage from "./pages/ExecutiveViewPage";
 import LabsAudioExtractionPage from "./pages/LabsAudioExtractionPage";
 import DataConnectorPage from "./pages/DataConnectorPage";
+import KnowledgePage from "./pages/KnowledgePage";
+import KnowledgeSyncPage from "./pages/KnowledgeSyncPage";
 
 import NotFound from "./pages/NotFound";
 
@@ -36,6 +38,8 @@ const App = () => (
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/executive" element={<ExecutiveViewPage />} />
           <Route path="/data-connector" element={<DataConnectorPage />} />
+          <Route path="/knowledge" element={<KnowledgePage />} />
+          <Route path="/knowledge/sync-history" element={<KnowledgeSyncPage />} />
           <Route path="/labs/audio-extraction" element={<LabsAudioExtractionPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
