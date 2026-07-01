@@ -6,7 +6,7 @@ import {
   Folder, Folders, MoreVertical, Pencil, Trash2, Loader2, CheckCircle2, 
   Box, Upload, ChevronLeft, ChevronRight as ChevronRightIcon, 
   Cpu, ChevronsDown, ChevronsUp, AlertCircle, RefreshCw, FolderOpen,
-  Dices, PowerOff
+  Dices, PowerOff, Database, FileText
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -751,64 +751,13 @@ export default function ExtractionTab() {
 
   return (
     <div className="flex h-full bg-[#f0f2f4] overflow-hidden">
-      <div className="w-[320px] border-r border-slate-200 bg-white flex flex-col shrink-0 z-10 shadow-[1px_0_10px_rgba(0,0,0,0.02)]">
+      <div className={cn(
+        "border-r border-slate-200 bg-white flex flex-col shrink-0 z-10 shadow-[1px_0_10px_rgba(0,0,0,0.02)] transition-all duration-300",
+        activeFile ? "w-[320px]" : "flex-1"
+      )}>
         <div className="p-5 border-b border-slate-100 shrink-0 bg-white">
-          <div className="flex flex-col gap-4">
-            {/* Header with Title and Counter */}
-            <div className="flex items-center justify-end">
-              <div className="flex items-center gap-2">
-                 <button 
-                  onClick={toggleAll}
-                  title={isAllExpanded ? "Collapse All Folders" : "Expand All Folders"}
-                  className="p-1.5 hover:bg-slate-50 hover:shadow-sm rounded-[4px] border border-slate-200 text-slate-500 hover:text-slate-900 transition-all bg-white mr-1 flex items-center justify-center"
-                 >
-                   {isAllExpanded ? (
-                     <FolderOpen className="h-3.5 w-3.5" />
-                   ) : (
-                     <Folder className="h-3.5 w-3.5" />
-                   )}
-                 </button>
-                 <div className="flex items-center bg-white border border-slate-200 rounded-[6px] divide-x divide-slate-200 shadow-sm overflow-hidden">
-                    <div className="flex flex-col items-center justify-center py-1.5 px-3 min-w-[75px] bg-white">
-                      <span className="text-[15px] font-black text-rose-600 leading-none mb-0.5">
-                        {1 + batches.filter(b => b.type === "Folder").length + filteredFiles.filter((f: any) => !batches.find(b => b.id === f.batch_id && b.type === "Folder")).length}
-                      </span>
-                      <span className="text-[8px] font-bold text-slate-400 uppercase tracking-[0.15em] leading-none">
-                        Total
-                      </span>
-                    </div>
-                    <div className="flex flex-col items-center justify-center py-1.5 px-3 min-w-[75px] bg-white">
-                      <span className="text-[15px] font-black text-slate-800 leading-none mb-0.5">
-                        1
-                      </span>
-                      <span className="text-[8px] font-bold text-slate-400 uppercase tracking-[0.15em] leading-none">
-                        Utama
-                      </span>
-                    </div>
-                    <div className="flex flex-col items-center justify-center py-1.5 px-3 min-w-[75px] bg-white">
-                      <span className="text-[15px] font-black text-[#0f62fe] leading-none mb-0.5">
-                        {batches.filter(b => b.type === "Folder").length + filteredFiles.filter((f: any) => !batches.find(b => b.id === f.batch_id && b.type === "Folder")).length}
-                      </span>
-                      <span className="text-[8px] font-bold text-slate-400 uppercase tracking-[0.15em] leading-none">
-                        Pendukung
-                      </span>
-                    </div>
-                 </div>
-              </div>
-            </div>
-
-            {/* Search and Add Actions */}
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-300" />
-                <input 
-                  type="text" 
-                  placeholder="Search..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full h-9 bg-slate-50 border border-slate-100 rounded-[4px] pl-9 pr-4 text-[11px] font-bold focus:ring-1 focus:ring-[#0f62fe]/20 focus:border-[#0f62fe] transition-all outline-none"
-                />
-              </div>
+          <div className="flex flex-wrap items-center justify-between gap-3 w-full">
+            <div className="flex items-center gap-2 flex-1 min-w-[200px]">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button 
@@ -817,7 +766,7 @@ export default function ExtractionTab() {
                     <Plus className="h-3.5 w-3.5" /> TAMBAH
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48 rounded-[4px]">
+                <DropdownMenuContent align="start" className="w-48 rounded-[4px]">
                   <DropdownMenuItem onClick={() => setIsCreateFolderModalOpen(true)} className="text-[11px] font-bold py-2.5 rounded-[4px]">
                     <FolderPlus className="h-4 w-4 mr-2.5 text-emerald-600" /> Buat Folder
                   </DropdownMenuItem>
@@ -830,15 +779,78 @@ export default function ExtractionTab() {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+
+              <div className="relative flex-1 max-w-[240px]">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-300" />
+                <input 
+                  type="text" 
+                  placeholder="Search..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full h-9 bg-slate-50 border border-slate-100 rounded-[4px] pl-9 pr-4 text-[11px] font-bold focus:ring-1 focus:ring-[#0f62fe]/20 focus:border-[#0f62fe] transition-all outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+               <div className="flex items-center bg-white border border-slate-200 rounded-[6px] divide-x divide-slate-200 shadow-sm overflow-hidden shrink-0">
+                  <div className="flex flex-col items-center justify-center py-1.5 px-3 min-w-[75px] bg-white">
+                    <span className="text-[15px] font-black text-rose-600 leading-none mb-0.5">
+                      {1 + batches.filter(b => b.type === "Folder").length + filteredFiles.filter((f: any) => !batches.find(b => b.id === f.batch_id && b.type === "Folder")).length}
+                    </span>
+                    <span className="text-[8px] font-bold text-slate-400 uppercase tracking-[0.15em] leading-none">
+                      Total
+                    </span>
+                  </div>
+                  <div className="flex flex-col items-center justify-center py-1.5 px-3 min-w-[75px] bg-white">
+                    <span className="text-[15px] font-black text-slate-800 leading-none mb-0.5">
+                      1
+                    </span>
+                    <span className="text-[8px] font-bold text-slate-400 uppercase tracking-[0.15em] leading-none">
+                      Utama
+                    </span>
+                  </div>
+                  <div className="flex flex-col items-center justify-center py-1.5 px-3 min-w-[75px] bg-white">
+                    <span className="text-[15px] font-black text-[#0f62fe] leading-none mb-0.5">
+                      {batches.filter(b => b.type === "Folder").length + filteredFiles.filter((f: any) => !batches.find(b => b.id === f.batch_id && b.type === "Folder")).length}
+                    </span>
+                    <span className="text-[8px] font-bold text-slate-400 uppercase tracking-[0.15em] leading-none">
+                      Pendukung
+                    </span>
+                  </div>
+               </div>
+               <button 
+                onClick={toggleAll}
+                title={isAllExpanded ? "Collapse All Folders" : "Expand All Folders"}
+                className="p-1.5 hover:bg-slate-50 hover:shadow-sm rounded-[4px] border border-slate-200 text-slate-500 hover:text-slate-900 transition-all bg-white flex items-center justify-center shrink-0 h-9 w-9"
+               >
+                 {isAllExpanded ? (
+                   <FolderOpen className="h-4 w-4" />
+                 ) : (
+                   <Folder className="h-4 w-4" />
+                 )}
+               </button>
             </div>
           </div>
-        <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar bg-white border-t border-slate-100">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar bg-white border-t border-slate-100 relative">
+          {/* Table Header */}
+          <div className="grid grid-cols-[minmax(250px,_1fr)_150px_180px_130px_60px] gap-4 items-center px-4 py-2 bg-slate-50/90 border-b border-slate-200 text-[10px] font-black text-slate-500 uppercase tracking-widest sticky top-0 z-10 backdrop-blur-sm">
+            <div className="pl-12">NAMA BERKAS</div>
+            <div>TIPE</div>
+            <div>TANGGAL UNGGAH</div>
+            <div>STATUS AI</div>
+            <div className="text-center">AKSI</div>
+          </div>
+
           <div className="space-y-0">
 
-            {/* BUKTI UTAMA */}
+            {/* BUKTI UTAMA / DATA CCR */}
             <div className="mt-4 border-t border-slate-100 pt-2">
               <div className="px-4 py-2 flex items-center justify-between">
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Bukti Utama</span>
+                <div className="flex items-center gap-1.5">
+                  <Database className="h-4 w-4 text-slate-400" />
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Data CCR</span>
+                </div>
                 <span className="text-[10px] font-bold text-slate-400">{primaryEvidences.length}</span>
               </div>
               <div className="bg-white">
@@ -847,7 +859,7 @@ export default function ExtractionTab() {
                     key={evidence.id}
                     file={evidence} 
                     isSelected={selectedFile?.id === evidence.id}
-                    onSelect={() => setSelectedFile(evidence)}
+                    onSelect={() => setSelectedFile(selectedFile?.id === evidence.id ? null : evidence)}
                     onMove={handleMoveFile}
                     onDelete={() => handleDeletePrimaryEvidence(evidence.id)}
                     onRerun={() => {}}
@@ -862,7 +874,10 @@ export default function ExtractionTab() {
             {/* BUKTI PENDUKUNG (formerly File Mandiri / Bukti Tambahan) */}
             <div className="mt-4 border-t border-slate-100 pt-2">
               <div className="px-4 py-2 flex items-center justify-between">
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Bukti Pendukung</span>
+                <div className="flex items-center gap-1.5">
+                  <FileText className="h-4 w-4 text-slate-400" />
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Bukti Pendukung</span>
+                </div>
                 <span className="text-[10px] font-bold text-slate-400">
                   {batches.filter(b => b.type === "Folder").length + filteredFiles.filter((f: any) => !batches.find(b => b.id === f.batch_id && b.type === "Folder")).length}
                 </span>
@@ -870,35 +885,50 @@ export default function ExtractionTab() {
                <div className="bg-white">
             {/* 1. Real Folders (User Created) */}
             {batches.filter(b => b.type === "Folder").map((batch) => (
-              <div key={batch.id} className="border-b border-slate-100/60">
+              <div key={batch.id} className="border-b border-slate-200">
                 <div 
                   onClick={() => toggleBatch(batch.id)}
                   className={cn(
-                    "flex items-center h-[40px] px-4 hover:bg-slate-50 cursor-pointer transition-all gap-2 group/header",
-                    expandedBatches.includes(batch.id) ? "bg-slate-50/30" : ""
+                    "grid grid-cols-[minmax(250px,_1fr)_150px_180px_130px_60px] gap-4 items-center px-4 py-1.5 min-h-[40px] hover:bg-slate-50 cursor-pointer transition-all group/header bg-white",
+                    expandedBatches.includes(batch.id) ? "bg-slate-50/50" : ""
                   )}
                 >
-                  <ChevronRight className={cn(
-                    "h-3.5 w-3.5 text-slate-400 transition-transform duration-150 shrink-0",
-                    expandedBatches.includes(batch.id) ? "rotate-90" : ""
-                  )} />
-                  <Folder className={cn(
-                    "h-4 w-4 shrink-0", 
-                    expandedBatches.includes(batch.id) ? "text-[#0f62fe]" : "text-slate-400"
-                  )} />
-                  <span className="text-[11px] font-bold text-slate-800 uppercase tracking-widest flex-1 truncate" title={batch.name}>{batch.name}</span>
-                  <span className="text-[10px] font-bold text-slate-400 mr-2 shrink-0">
-                    {files.filter((f: any) => f.batch_id === batch.id).length}
-                  </span>
+                  {/* Col 1: Name and Icon */}
+                  <div className="flex items-center gap-3 min-w-0">
+                    <ChevronRight className={cn(
+                      "h-4 w-4 text-slate-400 transition-transform duration-200 shrink-0",
+                      expandedBatches.includes(batch.id) ? "rotate-90" : ""
+                    )} />
+                    <div className="h-7 w-7 rounded-md bg-indigo-50 border border-indigo-100 flex items-center justify-center shrink-0">
+                      <Folder className="h-3.5 w-3.5 text-indigo-500" />
+                    </div>
+                    <span className="text-[12px] font-medium text-slate-800 truncate" title={batch.name}>{batch.name}</span>
+                  </div>
+
+                  {/* Col 2: Type */}
+                  <div className="text-[11px] text-slate-500 font-medium truncate">
+                    Folder Berkas
+                  </div>
+
+                  {/* Col 3: Date */}
+                  <div className="text-[11px] text-slate-500 font-medium">
+                    14 Okt 2023, 16:45
+                  </div>
+
+                  {/* Col 4: Status AI */}
+                  <div className="text-[12px] text-slate-400 font-medium">
+                    -
+                  </div>
                   
-                  <div className="transition-opacity">
+                  {/* Col 5: Actions */}
+                  <div className="flex items-center justify-center shrink-0 transition-opacity opacity-0 group-hover/header:opacity-100">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                        <button className="p-1.5 hover:bg-slate-200 rounded-[4px] text-slate-400 transition-all shrink-0">
-                          <MoreVertical className="h-3.5 w-3.5" />
+                        <button className="p-1.5 hover:bg-slate-200 rounded-md text-slate-500 transition-all shrink-0">
+                          <MoreVertical className="h-4 w-4" />
                         </button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-48">
+                      <DropdownMenuContent align="end" className="w-48 rounded-[6px]">
                         <DropdownMenuLabel className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2 py-1.5">Aksi Folder</DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => {
@@ -906,22 +936,19 @@ export default function ExtractionTab() {
                           setRenameValue(batch.name);
                           setIsRenameFolderModalOpen(true);
                         }} className="text-[11px] font-bold py-2 rounded-[4px]">
-                           <Pencil className="h-3.5 w-3.5 mr-2 text-slate-400" /> Ubah Nama Folder
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setIsUploadModalOpen(true)} className="text-[11px] font-bold py-2 rounded-[4px]">
-                           <FileUp className="h-3.5 w-3.5 mr-2 text-slate-400" /> Upload ke Folder
+                           <Pencil className="h-3.5 w-3.5 mr-2 text-slate-400" /> Ubah Nama
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => {
                            const isAnalysisActive = localStorage.getItem(`analysis_running_${caseId}`) === "true";
                            if (isAnalysisActive) {
-                             toast.warning("Folder tidak dapat dihapus karena analisis AI sedang berjalan menggunakan sumber daya dari repositori bukti.");
+                             toast.warning("Folder tidak dapat dihapus karena analisis AI sedang berjalan.");
                              return;
                            }
                            const folderFiles = files.filter((f: any) => f.batch_id === batch.id);
                            const hasRunningFiles = folderFiles.some((f: any) => f.extraction_status === "pending" || f.extraction_status === "processing");
                            if (hasRunningFiles) {
-                             toast.warning("Folder tidak dapat dihapus karena terdapat file di dalamnya yang sedang dalam proses upload atau ekstraksi.");
+                             toast.warning("Folder tidak dapat dihapus karena terdapat file yang sedang diproses.");
                              return;
                            }
                            setDeleteFolderTarget(batch);
@@ -947,7 +974,7 @@ export default function ExtractionTab() {
                           key={file.id} 
                           file={file} 
                           isSelected={selectedFile?.id === file.id}
-                          onSelect={() => setSelectedFile(file)}
+                          onSelect={() => setSelectedFile(selectedFile?.id === file.id ? null : file)}
                           onMove={handleMoveFile}
                           onDelete={() => { setSelectedFile(file); setIsDeleteModalOpen(true); }}
                           onRerun={(f: any) => {
@@ -976,7 +1003,7 @@ export default function ExtractionTab() {
                         key={file.id} 
                         file={file} 
                         isSelected={selectedFile?.id === file.id}
-                        onSelect={() => setSelectedFile(file)}
+                        onSelect={() => setSelectedFile(selectedFile?.id === file.id ? null : file)}
                         onMove={handleMoveFile}
                         onDelete={() => { setSelectedFile(file); setIsDeleteModalOpen(true); }}
                         onRerun={(f: any) => {
@@ -1023,12 +1050,11 @@ export default function ExtractionTab() {
          <div className="flex-1 flex flex-col relative z-0 bg-white">
            <EvidencePreparationExperience file={activeFile} isSuccess={successFileId === activeFile.id} />
          </div>
-      ) : (
+      ) : activeFile ? (
         <>
           <div className="flex-1 flex flex-col relative z-0 bg-white">
             <div className="h-12 border-b flex items-center justify-between px-6 shrink-0 bg-white">
-           {activeFile ? (
-             <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4">
                  <div className="flex items-center gap-1 border-r pr-4 border-slate-100">
                     <button onClick={goToPrev} className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-900 transition-all disabled:opacity-30"><ChevronLeft className="h-4 w-4" /></button>
                     <button onClick={goToNext} className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-900 transition-all disabled:opacity-30"><ChevronRightIcon className="h-4 w-4" /></button>
@@ -1040,14 +1066,10 @@ export default function ExtractionTab() {
                     <h2 className="text-sm font-medium text-slate-900 tracking-tight">{activeFile.name}</h2>
                  </div>
               </div>
-           ) : (
-             <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Evidence Workspace Ready</div>
-           )}
         </div>
 
-        <div className="flex-1 overflow-auto bg-[#f0f2f4] p-6 flex flex-col items-center custom-scrollbar" style={{ minWidth: 0 }}>
+         <div className="flex-1 overflow-auto bg-[#f0f2f4] p-6 flex flex-col items-center custom-scrollbar" style={{ minWidth: 0 }}>
              <div className={`w-full flex ${(activeFile?.type === "Image" || activeFile?.type === "Document") ? "max-w-5xl h-full items-center justify-center" : "max-w-5xl items-start justify-center pt-4"}`}>
-               {activeFile ? (
                  <AdaptiveSourcePreview 
                     file={activeFile} 
                     videoCurrentTime={videoCurrentTime}
@@ -1063,31 +1085,13 @@ export default function ExtractionTab() {
                     setPlaybackSpeed={setAudioPlaybackSpeed}
                     audioRef={audioRef}
                   />
-              ) : (
-                <EvidenceCenterEmptyState 
-                  repositoryHasFiles={filteredFiles.length > 0}
-                  failedCount={filteredFiles.filter((f: any) => f.extraction_status === "failed").length}
-                  hoveredFile={hoveredFile}
-                  onSelectFirstEvidence={() => {
-                    const first = filteredFiles.find((f: any) => f.extraction_status !== "failed");
-                    if (first) setSelectedFile(first);
-                    else if (filteredFiles.length > 0) setSelectedFile(filteredFiles[0]);
-                  }}
-                  onReviewFailedFiles={() => {
-                    const failed = filteredFiles.find((f: any) => f.extraction_status === "failed");
-                    if (failed) setSelectedFile(failed);
-                  }}
-                  onUploadEvidence={() => setIsUploadModalOpen(true)}
-                  onCreateFolder={() => setIsCreateFolderModalOpen(true)}
-                />
-              )}
             </div>
          </div>
       </div>
 
-      {!(activeFile && activeFile.type?.toLowerCase() === "case-metadata") && (
+      {!(activeFile.type?.toLowerCase() === "case-metadata") && (
         <div className="w-[460px] border-l border-slate-200 bg-white flex flex-col shrink-0 z-20 shadow-[-2px_0_10px_rgba(0,0,0,0.03)] overflow-hidden">
-          {activeFile ? (() => {
+          {(() => {
                if (activeFile.extraction_status === "failed") {
                  return (
                    <div id="failed-extraction-console" className="flex-1 flex flex-col h-full bg-white select-none antialiased">
@@ -1155,13 +1159,11 @@ export default function ExtractionTab() {
                      ) : null}
                  </div>
                );
-           })() : (
-            <EvidenceRightEmptyState hoveredFile={hoveredFile} />
-          )}
+           })()}
         </div>
       )}
       </>
-      )}
+      ) : null}
 
       <DeleteConfirmationModal 
         isOpen={isDeleteModalOpen}
@@ -1489,7 +1491,7 @@ export default function ExtractionTab() {
       <Modal
         isOpen={isPrimaryUploadModalOpen}
         onClose={() => setIsPrimaryUploadModalOpen(false)}
-        title="Upload Bukti Utama"
+        title="Upload Data CCR"
         showCloseButton
       >
         <div className="p-6">

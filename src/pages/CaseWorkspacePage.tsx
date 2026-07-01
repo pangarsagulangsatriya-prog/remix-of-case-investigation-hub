@@ -7,7 +7,8 @@ import { useEvidence, useUploadEvidence } from "@/hooks/useEvidence";
 import { useInsertAuditLog } from "@/hooks/useAuditLogs";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Loader2, ArrowLeft, ChevronLeft, ChevronRight, Clock, AlertTriangle, Pencil, Check, X, Trash2, ShieldAlert, Lock, Cpu } from "lucide-react";
+import { StatusChip } from "@/components/StatusChip";
+import { Loader2, ArrowLeft, ChevronLeft, ChevronRight, Clock, AlertTriangle, Pencil, Check, X, Trash2, ShieldAlert, Lock, Cpu, ExternalLink, CheckCircle2, Database, FileText, BookOpen, User, PlayCircle, List, Search, ChevronDown, Building2, MapPin, Target, Sparkles, Server, Calendar } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 // Modular Tab Components (Lazy Loaded)
@@ -53,11 +54,17 @@ class WorkspaceErrorBoundary extends React.Component<{ children: React.ReactNode
 export default function CaseWorkspacePage() {
   const { caseId } = useParams<{ caseId: string }>();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("Evidence Review");
+  const [currentStep, setCurrentStep] = useState(1);
+  const [showAuditTrail, setShowAuditTrail] = useState(false);
   const [hasDemoDerivation, setHasDemoDerivation] = useState(false);
 
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState("");
+  const [showProfile, setShowProfile] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
+  const [showCaseList, setShowCaseList] = useState(false);
+  const [caseSearchQuery, setCaseSearchQuery] = useState("");
+  const [showAIProgress, setShowAIProgress] = useState(false);
 
   const updateCaseMutation = useUpdateCase();
   const insertAuditLogMutation = useInsertAuditLog();
@@ -213,18 +220,121 @@ export default function CaseWorkspacePage() {
     <WorkspaceErrorBoundary>
       <AppLayout hideHeader>
         <div className="flex flex-col h-screen overflow-hidden bg-slate-50/10">
-          {/* Case Header */}
-          <div className="bg-white border-b px-6 py-4 flex items-center justify-between shrink-0 relative z-30">
+          {/* Global Utility Bar */}
+          <div className="bg-slate-50 border-b px-8 py-2 flex items-center justify-between shrink-0 relative z-30">
+            <div className="flex items-center gap-2">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => navigate('/cases')}
+                  className="h-6 px-2 -ml-2 text-[10px] font-bold text-slate-500 hover:text-slate-900 gap-1 rounded uppercase tracking-widest transition-colors"
+                >
+                  <ArrowLeft className="h-3.5 w-3.5" /> Back to Cases
+                </Button>
+                <div className="h-3 w-[1px] bg-slate-300 mx-1"></div>
+                <div className="flex items-center">
+                   <div className="relative mr-1">
+                     <Button
+                       variant="ghost"
+                       size="sm"
+                       onClick={() => setShowCaseList(!showCaseList)}
+                       className={`h-6 px-1.5 text-[10px] font-bold rounded gap-1 transition-colors ${showCaseList ? 'bg-slate-200 text-slate-900' : 'text-slate-500 hover:text-slate-900'}`}
+                       title="All Cases"
+                     >
+                       <List className="h-3.5 w-3.5" />
+                     </Button>
+                     {showCaseList && (
+                       <div className="absolute left-0 top-full mt-2 bg-white border border-slate-200 shadow-xl rounded-lg p-3 w-[300px] z-50">
+                          <div className="relative mb-3">
+                            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                            <input 
+                              type="text" 
+                              placeholder="Search cases..." 
+                              value={caseSearchQuery}
+                              onChange={(e) => setCaseSearchQuery(e.target.value)}
+                              className="w-full text-xs border border-slate-200 rounded-md pl-8 pr-3 py-1.5 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all"
+                            />
+                          </div>
+                          <div className="max-h-[300px] overflow-y-auto pr-1 space-y-1">
+                            {cases?.filter(c => c.title.toLowerCase().includes(caseSearchQuery.toLowerCase()) || c.id.toLowerCase().includes(caseSearchQuery.toLowerCase())).map(c => (
+                               <div 
+                                 key={c.id}
+                                 onClick={() => { navigate(`/cases/${c.id}`); setShowCaseList(false); }}
+                                 className={`p-2 rounded cursor-pointer transition-colors ${c.id === caseId ? 'bg-emerald-50 text-emerald-700' : 'hover:bg-slate-50 text-slate-700'}`}
+                               >
+                                 <div className="truncate text-xs font-bold leading-tight">{c.title || 'Untitled Case'}</div>
+                                 <div className="text-[9px] text-slate-400 font-medium uppercase tracking-wider mt-0.5">ID: {c.id.substring(0,8)}</div>
+                               </div>
+                            ))}
+                            {cases?.filter(c => c.title.toLowerCase().includes(caseSearchQuery.toLowerCase()) || c.id.toLowerCase().includes(caseSearchQuery.toLowerCase())).length === 0 && (
+                               <div className="text-xs text-slate-400 text-center py-6 font-medium">No cases found.</div>
+                            )}
+                          </div>
+                       </div>
+                     )}
+                   </div>
+                  <Button
+                     variant="ghost"
+                     size="sm"
+                     disabled={!prevCase}
+                     onClick={() => navigate(`/cases/${prevCase?.id}`)}
+                     className="h-6 px-1.5 text-[10px] font-bold text-slate-500 hover:text-slate-900 rounded gap-1 transition-colors"
+                     title="Previous Case"
+                   >
+                     <ChevronLeft className="h-3.5 w-3.5" />
+                   </Button>
+                   <Button
+                     variant="ghost"
+                     size="sm"
+                     disabled={!nextCase}
+                     onClick={() => navigate(`/cases/${nextCase?.id}`)}
+                     className="h-6 px-1.5 text-[10px] font-bold text-slate-500 hover:text-slate-900 rounded gap-1 transition-colors"
+                     title="Next Case"
+                   >
+                     <ChevronRight className="h-3.5 w-3.5" />
+                   </Button>
+                </div>
+            </div>
+            
             <div className="flex items-center gap-4">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => navigate('/cases')}
-                className="h-9 w-9 p-0 rounded-full hover:bg-slate-100 text-slate-500 border border-slate-100 "
-              >
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-              <div>
+               <a href="#" className="flex items-center gap-1.5 text-[9px] font-bold text-slate-500 hover:text-slate-900 uppercase tracking-widest transition-colors">
+                 <BookOpen className="h-3 w-3" /> Documentation
+               </a>
+               <Button 
+                 variant="outline" 
+                 size="sm" 
+                 onClick={() => setShowAuditTrail(!showAuditTrail)} 
+                 className={`h-6 text-[9px] font-bold px-3 uppercase tracking-wider rounded-full bg-white border-slate-200 shadow-sm transition-colors ${showAuditTrail ? 'bg-slate-100 text-slate-900 border-slate-300' : 'text-slate-600 hover:text-slate-900'}`}
+               >
+                 <Clock className="h-3 w-3 mr-1.5" />
+                 {showAuditTrail ? "Close Audit Trail" : "Audit Trail"}
+               </Button>
+               <div className="h-4 w-[1px] bg-slate-300 mx-1"></div>
+               <div className="relative">
+                 <button onClick={() => setShowProfile(!showProfile)} className="flex items-center justify-center h-6 w-6 rounded-full bg-slate-200 text-slate-500 hover:bg-slate-300 hover:text-slate-700 transition-colors focus:outline-none">
+                   <User className="h-3.5 w-3.5" />
+                 </button>
+                 {showProfile && (
+                   <div className="absolute right-0 top-full mt-2 bg-white border border-slate-200 shadow-xl rounded-lg p-4 min-w-[200px] z-50">
+                     <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Signed in as</div>
+                     <div className="text-sm font-bold text-slate-800">Investigator Pro</div>
+                     <div className="text-xs text-slate-500 mt-1">ID: INV-88293</div>
+                   </div>
+                 )}
+               </div>
+            </div>
+          </div>
+
+          {/* Main Workspace Header Container */}
+          <div className="bg-white border-b flex flex-col shrink-0 relative z-20">
+            {/* Main Header Row */}
+            <div className="px-8 py-5 flex items-start justify-between gap-8">
+            
+            {/* Project Title Area */}
+            <div className="flex-1 min-w-[300px] max-w-[500px] flex flex-col items-start mt-1">
+
+              <div className="flex-1 w-full">
+                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">CASE TITLE</div>
                 {isEditingTitle ? (
                   <div className="flex items-center gap-2">
                     <input
@@ -232,148 +342,149 @@ export default function CaseWorkspacePage() {
                       value={titleInput}
                       onChange={(e) => setTitleInput(e.target.value)}
                       onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          handleSaveTitle();
-                        } else if (e.key === "Escape") {
+                        if (e.key === "Enter") handleSaveTitle();
+                        else if (e.key === "Escape") {
                           setIsEditingTitle(false);
                           setTitleInput(caseData?.title || "");
                         }
                       }}
                       onBlur={handleSaveTitle}
-                      className="text-lg font-bold tracking-tight text-slate-900 border border-slate-200 rounded px-2.5 py-1 bg-slate-50 w-72 focus:outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all leading-tight h-8"
+                      className="text-lg font-bold tracking-tight text-slate-900 border border-slate-200 rounded px-2.5 py-1 bg-slate-50 w-full focus:outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all leading-tight h-8"
                       autoFocus
                       maxLength={100}
                       disabled={updateCaseMutation.isPending}
                     />
-                    <Button 
-                      size="sm" 
-                      variant="ghost" 
-                      onClick={handleSaveTitle}
-                      disabled={updateCaseMutation.isPending}
-                      className="h-8 w-8 p-0 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded"
-                    >
-                      {updateCaseMutation.isPending ? (
-                        <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
-                      ) : (
-                        <Check className="h-4 w-4" />
-                      )}
-                    </Button>
-                    <Button 
-                      size="sm" 
-                      variant="ghost" 
-                      onClick={() => {
-                        setIsEditingTitle(false);
-                        setTitleInput(caseData?.title || "");
-                      }}
-                      disabled={updateCaseMutation.isPending}
-                      className="h-8 w-8 p-0 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded"
-                    >
-                      <X className="h-4 w-4" />
+                    <Button size="sm" variant="ghost" onClick={handleSaveTitle} disabled={updateCaseMutation.isPending} className="h-8 w-8 p-0 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded shrink-0">
+                      {updateCaseMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin text-slate-400" /> : <Check className="h-4 w-4" />}
                     </Button>
                   </div>
                 ) : (
                   <div 
-                    className="flex items-center gap-2 group/title cursor-pointer py-1 px-1.5 -ml-1.5 rounded hover:bg-slate-50 transition-colors"
+                    className="group/title cursor-pointer py-1 px-1.5 -ml-1.5 rounded hover:bg-slate-50 transition-colors w-full"
                     onClick={() => setIsEditingTitle(true)}
-                    title="Click to rename case"
+                    title={caseData?.title || "Click to rename case"}
                   >
-                    <h1 className="text-xl font-bold tracking-tight text-slate-900 border-none p-0 flex items-center gap-2 leading-none">
-                      {caseData?.title || "Unknown Case"}
-                    </h1>
-                    <span className="text-slate-400 font-mono text-sm leading-none ml-1">#{caseData?.case_number || "???"}</span>
-                    <button 
-                      className="opacity-0 group-hover/title:opacity-100 p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all ml-1 shrink-0"
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </button>
+                    <div className="flex items-start gap-2">
+                      <h1 className="text-xl font-medium tracking-tight text-slate-400 border-none p-0 flex items-center gap-2 leading-snug uppercase">
+                        {caseData?.title ? <span className="text-slate-700 font-bold line-clamp-2">{caseData.title}</span> : "UNTITLED PROJECT..."}
+                      </h1>
+                      <button className="opacity-0 group-hover/title:opacity-100 p-1.5 mt-0.5 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition-all shrink-0">
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                   </div>
                 )}
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 border-r pr-4 border-slate-100">
-                 <Button
-                   variant="ghost"
-                   size="sm"
-                   disabled={!prevCase}
-                   onClick={() => navigate(`/cases/${prevCase?.id}`)}
-                   className="h-8 px-2 text-[10px] font-black uppercase tracking-widest gap-1 text-slate-400 hover:text-slate-900 transition-all"
-                 >
-                   <ChevronLeft className="h-3.5 w-3.5" /> Previous
-                 </Button>
-                 <Button
-                   variant="ghost"
-                   size="sm"
-                   disabled={!nextCase}
-                   onClick={() => navigate(`/cases/${nextCase?.id}`)}
-                   className="h-8 px-2 text-[10px] font-black uppercase tracking-widest gap-1 text-slate-400 hover:text-slate-900 transition-all"
-                 >
-                   Next <ChevronRight className="h-3.5 w-3.5" />
-                 </Button>
-              </div>
-              <div className="flex items-center gap-2">
-                {hasDemoDerivation && (
-                   <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-sm animate-pulse mr-2">
-                      <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />
-                      <span className="text-[10px] font-black text-amber-700 uppercase tracking-tight">Demo Derivation Active</span>
-                   </div>
-                )}
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setDeleteCaptchaInput("");
-                    setIsConsentChecked(false);
-                    setIsDeleteModalOpen(true);
-                  }}
-                  className="h-9 font-bold px-3 border-rose-200 hover:border-rose-400 hover:bg-rose-50/50 text-rose-600 transition-all flex items-center gap-1.5"
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Hapus Kasus
-                </Button>
-                <Button className="h-9 font-bold px-4 bg-slate-900 text-white ">Submit Case</Button>
-              </div>
-            </div>
-          </div>
+                
+                <div className="mt-1.5 flex flex-wrap items-center gap-3 text-[10px] font-bold text-slate-400 tracking-wider uppercase">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-slate-500">ID:</span> {caseData?.id?.substring(0, 8) || "N/A"}
+                  </div>
+                  <div className="h-1 w-1 rounded-full bg-slate-300"></div>
+                  <div className="flex items-center gap-1.5">
+                    <Clock className="h-3 w-3" />
+                    {caseData?.created_at ? new Date(caseData.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Date Unknown'}
+                  </div>
+                  <div className="h-1 w-1 rounded-full bg-slate-300 hidden md:block"></div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-slate-400 uppercase tracking-widest text-[9px]">STATUS INVESTIGASI:</span>
+                    <span className="text-xs font-bold text-slate-700">{caseData?.investigation_status || "INVESTIGASI"}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 ml-1">
+                    <span className="text-slate-400 uppercase tracking-widest text-[9px]">STATUS AI:</span>
+                    <StatusChip status={caseData?.ai_status || "belum_mulai"} />
+                  </div>
 
-          {/* Tab Navigation */}
-          <div className="bg-white border-b h-12 flex items-center justify-between px-6 shrink-0 relative z-20 ">
-            <div className="flex gap-1 h-full items-center">
-              {tabs.map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`h-full px-5 text-xs font-bold transition-all relative ${
-                    activeTab === tab ? "text-primary bg-primary/5" : "text-slate-500 hover:bg-slate-50"
-                  }`}
-                >
-                  {tab}
-                  {activeTab === tab && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary " />}
-                </button>
-              ))}
+                  <div className="h-1 w-1 rounded-full bg-slate-300 hidden md:block ml-1"></div>
+
+                  <div className="relative flex items-center gap-1.5 ml-1">
+                    <span className="text-slate-400 uppercase tracking-widest text-[9px]">PROGRESS AI:</span>
+                    <div 
+                      onClick={() => setShowAIProgress(!showAIProgress)}
+                      className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-full px-2 py-0.5 cursor-pointer hover:bg-slate-100 hover:border-emerald-200 transition-all group"
+                    >
+                       <Sparkles className="h-3 w-3 text-emerald-500 group-hover:text-emerald-600" />
+                       <div className="w-16 h-1 bg-slate-200 rounded-full overflow-hidden">
+                          <div className="h-full bg-emerald-500 rounded-full" style={{width: '85%'}}></div>
+                       </div>
+                       <span className="text-[9px] font-bold text-slate-600 group-hover:text-emerald-700">85%</span>
+                    </div>
+                    
+                    {showAIProgress && (
+                       <div className="absolute top-full mt-2 left-0 bg-white border border-slate-200 rounded-lg shadow-xl p-4 w-64 z-50">
+                          <div className="flex items-center justify-between mb-3 border-b border-slate-100 pb-2">
+                             <div className="text-[10px] font-black text-slate-600 uppercase tracking-widest">AI Progress Details</div>
+                             <button onClick={() => setShowAIProgress(false)} className="hover:bg-slate-100 p-1 rounded-full transition-colors"><X className="h-3 w-3 text-slate-400 hover:text-slate-600" /></button>
+                          </div>
+                          <div className="space-y-2">
+                             <div className="flex items-center gap-2 text-[10px] font-medium text-slate-600"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> Initial Extraction</div>
+                             <div className="flex items-center gap-2 text-[10px] font-medium text-slate-600"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> Semantic Structuring</div>
+                             <div className="flex items-center gap-2 text-[10px] font-medium text-slate-600"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> Threat Vector Analysis</div>
+                             <div className="flex items-center gap-2 text-[10px] font-medium text-slate-400"><Loader2 className="h-3.5 w-3.5 animate-spin text-emerald-500" /> Cross-referencing Entities</div>
+                          </div>
+                       </div>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="flex items-center gap-6">
-               <div className="flex items-center gap-2 border-l pl-6 border-slate-100">
-                  <Clock className="h-3.5 w-3.5 text-slate-400" />
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                    {caseData?.created_at ? new Date(caseData.created_at).toLocaleDateString() : 'Now'}
-                  </span>
+
+            {/* Stepper Area */}
+            <div className="flex-[1.5] flex items-center justify-center relative px-4 max-w-2xl mt-1">
+               <div className="w-full relative">
+                 <div className="absolute top-[24px] left-[10%] right-[10%] h-[2px] bg-slate-300 -z-10"></div>
+                 <div className="flex justify-between w-full">
+                    {[
+                      { id: 1, name: "DATA", desc: "PENGUMPULAN DATA", icon: Database },
+                      { id: 2, name: "ANALISIS", desc: "PROSES INVESTIGASI", icon: FileText },
+                      { id: 3, name: "SUBMIT", desc: "SUBMIT LAPORAN KE HSE", icon: CheckCircle2 }
+                    ].map((step) => {
+                       const isActive = currentStep === step.id && !showAuditTrail;
+                       return (
+                         <div 
+                           key={step.id} 
+                           onClick={() => { setCurrentStep(step.id); setShowAuditTrail(false); }}
+                           className="flex flex-col items-center gap-3 cursor-pointer group bg-white px-2"
+                         >
+                            <div className={`h-12 w-12 rounded-[14px] flex items-center justify-center transition-all duration-300 transform ${isActive ? 'bg-slate-900 border-2 border-slate-900 text-white scale-[1.15]' : 'bg-white border-2 border-slate-300 text-slate-500 group-hover:border-slate-400 group-hover:text-slate-900 group-hover:scale-110'}`}>
+                               <step.icon className={`h-5 w-5 ${isActive ? 'stroke-[3px]' : 'stroke-[2.5px]'}`} />
+                            </div>
+                            <div className={`text-center transition-all duration-300 ${isActive ? 'mt-1.5' : 'mt-0 group-hover:mt-1'}`}>
+                               <div className={`text-[11px] font-black uppercase tracking-[0.2em] mb-0.5 transition-colors ${isActive ? 'text-slate-900' : 'text-slate-600 group-hover:text-slate-900'}`}>{step.name}</div>
+                               <div className={`text-[9px] font-extrabold uppercase tracking-widest transition-colors ${isActive ? 'text-slate-600' : 'text-slate-400 group-hover:text-slate-600'}`}>{step.desc}</div>
+                            </div>
+                         </div>
+                       )
+                    })}
+                 </div>
                </div>
             </div>
+
+            {/* Right Controls Area (Tutorial) */}
+            <div className="flex-1 min-w-[150px] max-w-[250px] hidden lg:flex justify-end items-center mt-1">
+               <button onClick={() => setShowTutorial(true)} className="group flex items-center justify-center gap-2 border border-slate-200 bg-white rounded-full px-4 py-2 hover:border-emerald-200 hover:bg-emerald-50 transition-all focus:outline-none">
+                 <PlayCircle className="h-4 w-4 text-slate-400 group-hover:text-emerald-600 transition-colors" />
+                 <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 group-hover:text-emerald-700 transition-colors">Tutorial</span>
+               </button>
+            </div>
+            </div>
           </div>
 
-          {/* Tab Content Area */}
-          <div className="flex-1 overflow-hidden relative">
+          {/* Step Content Area */}
+          <div className="flex-1 overflow-hidden relative bg-slate-50/30">
             <Suspense fallback={
               <div className="flex h-full items-center justify-center">
-                <Loader2 className="h-8 w-8 text-slate-200 animate-spin" />
+                <Loader2 className="h-8 w-8 text-slate-300 animate-spin" />
               </div>
             }>
-              {activeTab === "Evidence Review" && <ExtractionTab />}
-              {activeTab === "Analysis" && <AnalysisTab />}
-              {activeTab === "Reports" && <ReportsTab />}
-              {activeTab === "Review" && <ReviewTab />}
-              {activeTab === "Audit Trail" && <AuditTrailTab />}
+              {showAuditTrail ? (
+                <AuditTrailTab />
+              ) : (
+                <>
+                  {currentStep === 1 && <ExtractionTab />}
+                  {currentStep === 2 && <AnalysisTab />}
+                  {currentStep === 3 && <ReportsTab />}
+                </>
+              )}
             </Suspense>
           </div>
 
@@ -526,6 +637,27 @@ export default function CaseWorkspacePage() {
                       </Button>
                     </>
                   )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Tutorial Modal */}
+          {showTutorial && (
+            <div className="fixed inset-0 bg-slate-900/50 z-50 flex items-center justify-center p-8 backdrop-blur-sm" onClick={() => setShowTutorial(false)}>
+              <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full overflow-hidden border border-slate-200" onClick={e => e.stopPropagation()}>
+                <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                  <div className="flex items-center gap-2 text-slate-700 font-bold tracking-tight">
+                    <PlayCircle className="h-5 w-5 text-emerald-600" />
+                    Workspace Tutorial
+                  </div>
+                  <button onClick={() => setShowTutorial(false)} className="text-slate-400 hover:text-slate-700 p-1 rounded-md hover:bg-slate-200 transition-colors focus:outline-none">
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+                <div className="aspect-video bg-slate-900 flex flex-col items-center justify-center relative group p-10">
+                  <PlayCircle className="h-16 w-16 text-white/40 group-hover:text-white/80 transition-colors cursor-pointer mb-4" />
+                  <div className="text-white/60 text-sm font-medium tracking-wide">Video Player Placeholder</div>
                 </div>
               </div>
             </div>

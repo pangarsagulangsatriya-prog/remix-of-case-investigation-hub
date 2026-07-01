@@ -10,8 +10,6 @@ import {
   Shield,
   PanelLeftClose,
   PanelLeftOpen,
-  FlaskConical,
-  Database,
   BookOpen,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
@@ -32,12 +30,10 @@ import {
 const navItems = [
   { title: "Cases", url: "/cases", icon: FolderSearch },
   { title: "Knowledge", url: "/knowledge", icon: BookOpen },
-  { title: "Data Connector", url: "/data-connector", icon: Database },
 
   { title: "Review & Approval", url: "/review", icon: CheckCircle2 },
   { title: "Audit Trail", url: "/audit-trail", icon: History },
   { title: "Admin", url: "/admin", icon: Settings },
-  { title: "Labs", url: "/labs/audio-extraction", icon: FlaskConical },
 ];
 
 import { BerauCoalLogo } from "./BrandLogo";
