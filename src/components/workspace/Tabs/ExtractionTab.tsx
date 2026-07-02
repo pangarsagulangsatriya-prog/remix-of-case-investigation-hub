@@ -56,7 +56,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { Clock, RotateCcw, Check, X } from "lucide-react";
+import { Clock, RotateCcw, X } from "lucide-react";
 import { toast } from "sonner";
 import { EvidenceDerivationInjector } from "../ExtractionTab/EvidenceDerivationInjector";
 import { useSearchParams } from "react-router-dom";
