@@ -621,12 +621,32 @@ export function UploadModal({
   // ---- Render ----
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="bg-white rounded-[4px] shadow-2xl w-full max-w-5xl overflow-hidden flex flex-col h-[680px] border border-slate-200 animate-in zoom-in-95 duration-200">
+    <div 
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+      onDragEnter={handleDragEvent}
+      onDragLeave={handleDragEvent}
+      onDragOver={handleDragEvent}
+      onDrop={handleDrop}
+    >
+      <div className="bg-white w-full max-w-5xl overflow-hidden flex flex-col h-[680px] border border-slate-200 animate-in zoom-in-95 duration-200 relative">
+        {/* ---- Global Drag Overlay ---- */}
+        {isDragActive && (
+          <div className="absolute inset-0 z-50 bg-slate-900/10 backdrop-blur-[2px] flex items-center justify-center pointer-events-none">
+            <div className="bg-white px-8 py-6 flex flex-col items-center gap-4 border-2 border-emerald-500 scale-105 animate-in zoom-in-95 duration-200">
+              <div className="h-16 w-16 bg-emerald-50 flex items-center justify-center border border-emerald-100">
+                <Upload className="h-8 w-8 text-emerald-500" />
+              </div>
+              <div className="text-center">
+                <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest mb-1">Lepaskan File di Sini</h3>
+                <p className="text-[11px] font-bold text-slate-500">Otomatis diproses ke dalam daftar unggahan</p>
+              </div>
+            </div>
+          </div>
+        )}
         {/* ---- Header ---- */}
-        <div className="px-6 py-4 border-b flex items-center justify-between bg-slate-50/50 shrink-0">
+        <div className="px-6 py-4 border-b flex items-center justify-between bg-slate-50 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 bg-slate-900 rounded-[4px] flex items-center justify-center shadow-sm">
+            <div className="h-10 w-10 bg-slate-900 flex items-center justify-center">
               <Upload className="h-5 w-5 text-white" />
             </div>
             <div>
@@ -697,22 +717,16 @@ export function UploadModal({
         {/* ---- Main content ---- */}
         {isEmpty ? (
           /* Empty drop-zone */
-          <div
-            className="flex-1 flex flex-col items-center justify-center p-8"
-            onDragEnter={handleDragEvent}
-            onDragLeave={handleDragEvent}
-            onDragOver={handleDragEvent}
-            onDrop={handleDrop}
-          >
+          <div className="flex-1 flex flex-col items-center justify-center p-8">
             <div
-              className={`w-full max-w-lg flex flex-col items-center justify-center p-14 border-2 border-dashed rounded-[2px] transition-all duration-200
+              className={`w-full max-w-lg flex flex-col items-center justify-center p-14 border-2 border-dashed transition-all duration-200
                 ${
                   isDragActive
                     ? "border-primary bg-primary/5 scale-[0.99]"
-                    : "border-slate-200 bg-slate-50/40"
+                    : "border-slate-300 bg-slate-50/40"
                 }`}
             >
-              <div className="h-16 w-16 bg-white border border-slate-200 rounded-[2px] flex items-center justify-center mb-5 shadow-sm">
+              <div className="h-16 w-16 bg-white border border-slate-200 flex items-center justify-center mb-5">
                 <Folders className="h-8 w-8 text-slate-300" />
               </div>
               <h3 className="text-sm font-black text-slate-800 uppercase tracking-wide mb-1.5">
@@ -726,7 +740,7 @@ export function UploadModal({
               <div className="flex items-center gap-3">
                 <Button
                   variant="outline"
-                  className="h-10 px-6 text-xs font-bold border-slate-200 rounded-[2px] hover:border-primary/50 hover:text-primary hover:bg-primary/5 gap-2 transition-all"
+                  className="h-10 px-6 text-xs font-bold border-slate-300 hover:border-primary/50 hover:text-primary hover:bg-primary/5 gap-2 transition-all rounded-none"
                   onClick={() => fileInputRef.current?.click()}
                 >
                   <FilePlus className="h-4 w-4" />
@@ -734,7 +748,7 @@ export function UploadModal({
                 </Button>
                 <Button
                   variant="outline"
-                  className="h-10 px-6 text-xs font-bold border-slate-200 rounded-[2px] hover:border-primary/50 hover:text-primary hover:bg-primary/5 gap-2 transition-all"
+                  className="h-10 px-6 text-xs font-bold border-slate-300 hover:border-primary/50 hover:text-primary hover:bg-primary/5 gap-2 transition-all rounded-none"
                   onClick={() => folderInputRef.current?.click()}
                 >
                   <FolderPlus className="h-4 w-4" />
@@ -761,7 +775,7 @@ export function UploadModal({
                       selectedFileId === fileObj.id ? "bg-slate-100 border-l-[3px] border-l-slate-900" : "border-l-[3px] border-l-transparent"
                     )}
                   >
-                    <div className="h-7 w-7 rounded-sm bg-slate-50 border flex items-center justify-center shrink-0 overflow-hidden">
+                    <div className="h-7 w-7 bg-slate-50 border border-slate-200 flex items-center justify-center shrink-0 overflow-hidden">
                       {fileObj.category === "Image" && fileObj.previewUrl ? (
                         <img src={fileObj.previewUrl} className="h-full w-full object-cover" alt="" />
                       ) : (
@@ -827,7 +841,7 @@ export function UploadModal({
                               selectedFileId === fileObj.id ? "bg-slate-50 border-l-[3px] border-l-slate-400" : "border-l-[3px] border-l-transparent hover:bg-slate-50/50"
                             )}
                           >
-                             <div className="h-6 w-6 rounded-sm bg-slate-50 border flex items-center justify-center shrink-0 overflow-hidden">
+                             <div className="h-6 w-6 bg-slate-50 border border-slate-200 flex items-center justify-center shrink-0 overflow-hidden">
                                 {fileObj.category === "Image" && fileObj.previewUrl ? (
                                   <img src={fileObj.previewUrl} className="h-full w-full object-cover" alt="" />
                                 ) : (
@@ -855,24 +869,24 @@ export function UploadModal({
 
               {/* Add more buttons */}
               {!isUploading && (
-                <div className="p-2 border-t bg-slate-50 flex gap-2 shrink-0">
+                <div className="p-3 border-t border-slate-200 bg-slate-50 flex gap-2 shrink-0">
                   <Button
                     variant="outline"
                     size="sm"
-                    className="flex-1 h-8 text-[10px] font-bold bg-white border-slate-200 hover:bg-slate-50 gap-1.5 rounded-sm transition-all shadow-sm"
+                    className="flex-1 h-9 text-[10px] font-bold bg-white border-slate-300 hover:bg-slate-100 hover:text-emerald-600 gap-1.5 rounded-none transition-all"
                     onClick={() => fileInputRef.current?.click()}
                   >
-                    <FilePlus className="h-3.5 w-3.5" />
-                    Add Files
+                    <FilePlus className="h-4 w-4" />
+                    Tambah File
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
-                    className="flex-1 h-8 text-[10px] font-bold bg-white border-slate-200 hover:bg-slate-50 gap-1.5 rounded-sm transition-all shadow-sm"
+                    className="flex-1 h-9 text-[10px] font-bold bg-white border-slate-300 hover:bg-slate-100 hover:text-emerald-600 gap-1.5 rounded-none transition-all"
                     onClick={() => folderInputRef.current?.click()}
                   >
-                    <FolderPlus className="h-3.5 w-3.5" />
-                    Add Folder
+                    <FolderPlus className="h-4 w-4" />
+                    Tambah Folder
                   </Button>
                 </div>
               )}
@@ -898,9 +912,9 @@ export function UploadModal({
 
                     <div className="flex-1 overflow-auto p-6 flex flex-col gap-6 bg-slate-50/20 custom-scrollbar">
                       {/* Media preview area */}
-                      <div className="aspect-video bg-[#0c121e] rounded-[4px] overflow-hidden border border-slate-800 shadow-xl flex items-center justify-center relative group/prev">
+                      <div className="aspect-video bg-[#0c121e] overflow-hidden border border-slate-800 flex items-center justify-center relative group/prev">
                          <div className="absolute top-3 right-3 z-10 opacity-0 group-hover/prev:opacity-100 transition-opacity">
-                            <div className="px-2 py-1 bg-slate-900/80 backdrop-blur rounded-[2px] text-[9px] font-bold text-white uppercase tracking-widest border border-white/10">
+                            <div className="px-2 py-1 bg-slate-900/80 backdrop-blur text-[9px] font-bold text-white uppercase tracking-widest border border-white/10">
                                Forensic Preview
                             </div>
                          </div>
@@ -947,14 +961,14 @@ export function UploadModal({
                       </div>
 
                       {/* Metadata grid */}
-                      <div className="grid grid-cols-2 gap-6 bg-white p-4 rounded-[4px] border border-slate-100 shadow-sm">
+                      <div className="grid grid-cols-2 gap-x-6 gap-y-4 bg-white p-4 border border-slate-200">
                         {[
                           { label: "NAMA FILE", value: selectedFile.file.name },
                           { label: "MODALITAS", value: selectedFile.category },
                           { label: "UKURAN", value: formatBytes(selectedFile.file.size) },
                           { label: "PATH ASAL", value: selectedFile.relativePath },
                         ].map(({ label, value }) => (
-                          <div key={label} className="space-y-1">
+                          <div key={label} className="space-y-0.5">
                             <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] block">
                               {label}
                             </span>
@@ -970,16 +984,10 @@ export function UploadModal({
                 </>
               ) : (
                 /* No file selected — also acts as a drop target */
-                <div
-                  className="flex-1 flex flex-col items-center justify-center p-8"
-                  onDragEnter={handleDragEvent}
-                  onDragLeave={handleDragEvent}
-                  onDragOver={handleDragEvent}
-                  onDrop={handleDrop}
-                >
+                <div className="flex-1 flex flex-col items-center justify-center p-8">
                   <div
-                    className={`p-10 border-2 border-dashed rounded-2xl transition-all text-center w-full max-w-xs
-                      ${isDragActive ? "border-primary bg-primary/5" : "border-slate-100"}`}
+                    className={`p-10 border-2 border-dashed transition-all text-center w-full max-w-xs
+                      ${isDragActive ? "border-primary bg-primary/5" : "border-slate-300"}`}
                   >
                     <FileIcon className="h-10 w-10 mx-auto mb-3 text-slate-200" />
                     <p className="text-[10px] font-bold uppercase tracking-widest text-slate-300">
@@ -1104,17 +1112,17 @@ export function UploadModal({
 
           <div className="flex items-center gap-3 shrink-0">
               <Button
-                variant="ghost"
-                className="h-9 px-6 text-[11px] font-bold text-slate-500 hover:bg-slate-100 hover:text-slate-900 rounded-[4px]"
+                variant="outline"
+                className="h-10 px-6 text-[11px] font-bold text-slate-700 bg-white border-slate-300 hover:bg-slate-50 hover:text-slate-900 rounded-none"
               onClick={handleClose}
               disabled={isUploading}
             >
-              {isEmpty ? "Close" : "Discard"}
+              {isEmpty ? "Tutup" : "Batal"}
             </Button>
             {!isEmpty && (
               <Button
                 className={cn(
-                  "h-10 px-8 text-[11px] font-black bg-slate-900 hover:bg-slate-800 text-white rounded-[4px] transition-all active:scale-[0.98] gap-2 uppercase tracking-[0.15em] shadow-lg shadow-slate-200",
+                  "h-10 px-8 text-[11px] font-black bg-slate-900 hover:bg-slate-800 text-white rounded-none transition-all active:scale-[0.98] gap-2 uppercase tracking-[0.15em]",
                   isUploading ? "opacity-80" : ""
                 )}
                 onClick={handleUpload}

@@ -216,11 +216,11 @@ const PHASE_CONFIG = {
 };
 
 export const STATUS_CONFIG: Record<VerificationStatus, { label: string, color: string, icon: any }> = {
-  ai_generated: { label: "AI Generated", color: "bg-blue-50 text-blue-600 border-blue-100", icon: Brain },
-  human_verified: { label: "Human Verified", color: "bg-emerald-50 text-emerald-600 border-emerald-100", icon: ShieldCheck },
-  needs_review: { label: "Needs Review", color: "bg-amber-50 text-amber-600 border-amber-100", icon: Clock },
-  partially_supported: { label: "Partially Supported", color: "bg-violet-50 text-violet-600 border-violet-100", icon: Crosshair },
-  unsupported: { label: "Unsupported", color: "bg-rose-50 text-rose-600 border-rose-100", icon: AlertTriangle },
+  ai_generated: { label: "Dihasilkan AI", color: "bg-blue-50 text-blue-600 border-blue-100", icon: Brain },
+  human_verified: { label: "Terverifikasi Manusia", color: "bg-emerald-50 text-emerald-600 border-emerald-100", icon: ShieldCheck },
+  needs_review: { label: "Perlu Ditinjau", color: "bg-amber-50 text-amber-600 border-amber-100", icon: Clock },
+  partially_supported: { label: "Didukung Sebagian", color: "bg-violet-50 text-violet-600 border-violet-100", icon: Crosshair },
+  unsupported: { label: "Tidak Didukung", color: "bg-rose-50 text-rose-600 border-rose-100", icon: AlertTriangle },
 };
 
 export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({ 
@@ -286,7 +286,7 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
 
     setEditingId(null);
     setEditBuffer({});
-    toast.success("Entry updated.");
+    toast.success("Entri diperbarui.");
   };
 
   const handleCancelEdit = () => {
@@ -1193,7 +1193,7 @@ export const TraceabilityPanel: React.FC<{
             </div>
             <div>
               <h3 className="text-[13px] font-bold text-slate-900 uppercase tracking-wider leading-none">Dekomposisi Fakta</h3>
-              <p className="text-[10px] text-slate-500 uppercase tracking-widest mt-1">Investigation Evidence Analysis</p>
+              <p className="text-[10px] text-slate-500 uppercase tracking-widest mt-1">Analisis Bukti Investigasi</p>
             </div>
           </div>
           <div className="flex items-center">
@@ -1377,7 +1377,7 @@ export const TraceabilityPanel: React.FC<{
 
         <div className="bg-slate-50/50 p-3 border border-slate-200 rounded-none mb-1 group/stmt">
           <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[9px] font-mono font-bold uppercase tracking-widest text-slate-400">Chronology Statement</span>
+            <span className="text-[9px] font-mono font-bold uppercase tracking-widest text-slate-400">Pernyataan Kronologi</span>
             {!isEditingStatement && (
               <Button
                 variant="ghost"
@@ -1651,11 +1651,11 @@ const FactSlideView: React.FC<{
       {/* Title Area */}
       <div className="flex justify-between items-start mb-6 border-b-2 border-slate-900 pb-4">
         <div>
-          <div className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-1">OVERVIEW INCIDENT</div>
-          <h2 className="text-[36px] font-black uppercase tracking-tighter leading-none">FACT & CHRONOLOGY</h2>
+          <div className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-1">GAMBARAN UMUM INSIDEN</div>
+          <h2 className="text-[36px] font-black uppercase tracking-tighter leading-none">FAKTA & KRONOLOGI</h2>
         </div>
         <div className="text-right">
-          <div className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1">Investigation Code</div>
+          <div className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1">Kode Investigasi</div>
           <div className="text-sm font-mono font-bold text-slate-800">#{metadata.caseCode}</div>
         </div>
       </div>
@@ -1663,7 +1663,7 @@ const FactSlideView: React.FC<{
       {/* Summary Block */}
       <div className="mb-6 bg-slate-50 border-l-4 border-slate-900 p-5 rounded-r-lg shadow-sm">
         <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-2">
-          <Shield className="h-3 w-3" /> EXECUTIVE SUMMARY
+          <Shield className="h-3 w-3" /> RINGKASAN EKSEKUTIF
         </div>
         <div className="text-[15px] text-slate-700 font-medium leading-relaxed italic">
           {metadata.summary}
@@ -1673,13 +1673,13 @@ const FactSlideView: React.FC<{
       {/* Metadata Grid */}
       <div className="grid grid-cols-4 gap-x-8 gap-y-4 mb-8 bg-white border border-slate-100 p-6 rounded-xl shadow-sm">
         {[
-          { label: 'Incident Date', value: metadata.incidentDate, icon: Calendar },
-          { label: 'Incident Time', value: metadata.incidentTime, icon: Clock },
-          { label: 'Location', value: metadata.location, icon: MapPin },
-          { label: 'Incident Type', value: metadata.incidentType, icon: Search },
-          { label: 'Department', value: metadata.department, icon: User },
-          { label: 'Evidence Source', value: metadata.evidenceSource, icon: Layers },
-          { label: 'Severity', value: metadata.severity, icon: AlertTriangle },
+          { label: 'Tanggal Insiden', value: metadata.incidentDate, icon: Calendar },
+          { label: 'Waktu Insiden', value: metadata.incidentTime, icon: Clock },
+          { label: 'Lokasi', value: metadata.location, icon: MapPin },
+          { label: 'Jenis Insiden', value: metadata.incidentType, icon: Search },
+          { label: 'Departemen', value: metadata.department, icon: User },
+          { label: 'Sumber Bukti', value: metadata.evidenceSource, icon: Layers },
+          { label: 'Tingkat Keparahan', value: metadata.severity, icon: AlertTriangle },
         ].map((m) => (
           <div key={m.label} className="min-w-0">
             <div className="text-[8px] font-black text-slate-400 uppercase mb-1 flex items-center gap-1">
@@ -1698,7 +1698,7 @@ const FactSlideView: React.FC<{
             <div key={phase} className="flex flex-col border border-slate-100 rounded-2xl overflow-hidden bg-white shadow-sm ring-1 ring-slate-200/50">
               <div className={cn(config.color, "px-5 py-3 flex items-center justify-between")}>
                 <span className="text-[11px] font-black text-white uppercase tracking-[0.2em]">{config.label}</span>
-                <span className="text-[9px] font-black text-white/60">{groupedItems[phase].length} Events</span>
+                <span className="text-[9px] font-black text-white/60">{groupedItems[phase].length} Kejadian</span>
               </div>
               <div className="flex-1 overflow-y-auto p-5 space-y-4 custom-scrollbar bg-slate-50/10">
                 {groupedItems[phase].length > 0 ? groupedItems[phase].map((item) => (
@@ -1725,7 +1725,7 @@ const FactSlideView: React.FC<{
                           </div>
                           {item.traceability && (
                              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">Trace</span>
+                                <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">Lacak</span>
                                 <ChevronRight className="h-2.5 w-2.5 text-slate-300" />
                              </div>
                           )}
@@ -1739,7 +1739,7 @@ const FactSlideView: React.FC<{
                 )) : (
                   <div className="h-full flex flex-col items-center justify-center opacity-20 py-10">
                     <History className="h-8 w-8 mb-2" />
-                    <span className="text-[9px] font-black uppercase">No Data</span>
+                    <span className="text-[9px] font-black uppercase">Tidak Ada Data</span>
                   </div>
                 )}
               </div>

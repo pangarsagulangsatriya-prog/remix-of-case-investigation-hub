@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import { 
   Pencil, Trash2, MoreVertical, Folder, FileText, 
   Image as ImageIcon, Mic as AudioIcon, Video as VideoIcon, 
-  FileCode, Box, RefreshCw, Loader2, Check, AlertCircle, X, Clock, AlertTriangle
+  FileCode, Box, RefreshCw, Loader2, Check, AlertCircle, X, Clock, AlertTriangle, Database, User
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -136,7 +136,7 @@ export function FileRow({ file, isSelected, onSelect, onMove, onDelete, onRename
       onMouseEnter={() => onHoverChange && onHoverChange(file)}
       onMouseLeave={() => onHoverChange && onHoverChange(null)}
       className={cn(
-        "grid grid-cols-[minmax(250px,_1fr)_150px_180px_130px_60px] gap-4 items-center px-4 py-1.5 min-h-[40px] border-b border-slate-200 cursor-pointer transition-all relative group bg-white",
+        "grid grid-cols-[minmax(250px,_1fr)_150px_160px_140px_130px_60px] gap-4 items-center px-4 py-1.5 min-h-[40px] border-b border-slate-200 cursor-pointer transition-all relative group bg-white",
         isSelected ? "bg-slate-50/70 shadow-[inset_3px_0_0_#0f62fe]" : "hover:bg-slate-50/50"
       )}
     >
@@ -171,13 +171,30 @@ export function FileRow({ file, isSelected, onSelect, onMove, onDelete, onRename
         {getFileType(file.type, file.name)}
       </div>
 
+      {/* Col 2.5: Uploader */}
+      <div className="flex items-center gap-2 truncate">
+        {file.batch_id === "UTAMA" ? (
+          <div className="flex w-fit items-center gap-1.5 px-2 py-0.5 rounded bg-slate-100 border border-slate-200 text-[10px] font-bold text-slate-600">
+            <Database className="h-3 w-3 text-slate-500" />
+            Data CCR
+          </div>
+        ) : (
+          <div className="flex items-center gap-1.5 text-[11px] font-medium text-slate-600">
+            <div className="h-5 w-5 rounded-full bg-slate-200 flex items-center justify-center shrink-0">
+              <User className="h-3 w-3 text-slate-500" />
+            </div>
+            <span className="truncate">Pengguna (Human)</span>
+          </div>
+        )}
+      </div>
+
       {/* Col 3: Date */}
       <div className="text-[11px] text-slate-500 font-medium">
         {formatDate(file.created_at)}
       </div>
 
       {/* Col 4: Status AI */}
-      <div className="flex items-center shrink-0">
+      <div id="tour-step-5-status" className="flex items-center shrink-0">
          <TooltipProvider delayDuration={0}>
            <Tooltip>
              <TooltipTrigger asChild>

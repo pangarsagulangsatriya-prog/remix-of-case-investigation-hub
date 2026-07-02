@@ -9,6 +9,8 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { StatusChip } from "@/components/StatusChip";
 import { Loader2, ArrowLeft, ChevronLeft, ChevronRight, Clock, AlertTriangle, Pencil, Check, X, Trash2, ShieldAlert, Lock, Cpu, ExternalLink, CheckCircle2, Database, FileText, BookOpen, User, PlayCircle, List, Search, ChevronDown, Building2, MapPin, Target, Sparkles, Server, Calendar } from "lucide-react";
+import { TourProvider, useTour } from '@/components/workspace/TourContext';
+import { ProductTourOverlay } from '@/components/workspace/ProductTourOverlay';
 import { supabase } from "@/lib/supabase";
 
 // Modular Tab Components (Lazy Loaded)
@@ -51,7 +53,22 @@ class WorkspaceErrorBoundary extends React.Component<{ children: React.ReactNode
   }
 }
 
-export default function CaseWorkspacePage() {
+// Standalone ProductTourButton — declared outside CaseWorkspaceInner so it can call useTour()
+const ProductTourButton = () => {
+  const { startTour } = useTour();
+  return (
+    <button 
+      onClick={startTour} 
+      className="group flex items-center justify-center border border-slate-200 bg-white rounded-md px-3 h-9 hover:border-emerald-200 hover:bg-emerald-50 transition-all duration-300 focus:outline-none overflow-hidden"
+      title="Panduan"
+    >
+      <Sparkles className="h-4 w-4 text-slate-400 group-hover:text-emerald-600 transition-colors shrink-0" />
+      <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 group-hover:text-emerald-700 transition-all duration-300 max-w-0 opacity-0 group-hover:max-w-xs group-hover:opacity-100 group-hover:ml-2 whitespace-nowrap">Panduan</span>
+    </button>
+  );
+};
+
+function CaseWorkspaceInner() {
   const { caseId } = useParams<{ caseId: string }>();
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
@@ -62,6 +79,7 @@ export default function CaseWorkspacePage() {
   const [titleInput, setTitleInput] = useState("");
   const [showProfile, setShowProfile] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
+
   const [showCaseList, setShowCaseList] = useState(false);
   const [caseSearchQuery, setCaseSearchQuery] = useState("");
   const [showAIProgress, setShowAIProgress] = useState(false);
@@ -218,452 +236,463 @@ export default function CaseWorkspacePage() {
 
   return (
     <WorkspaceErrorBoundary>
+      <ProductTourOverlay />
       <AppLayout hideHeader>
         <div className="flex flex-col h-screen overflow-hidden bg-slate-50/10">
-          {/* Global Utility Bar */}
-          <div className="bg-slate-50 border-b px-8 py-2 flex items-center justify-between shrink-0 relative z-30">
-            <div className="flex items-center gap-2">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => navigate('/cases')}
-                  className="h-6 px-2 -ml-2 text-[10px] font-bold text-slate-500 hover:text-slate-900 gap-1 rounded uppercase tracking-widest transition-colors"
-                >
-                  <ArrowLeft className="h-3.5 w-3.5" /> Back to Cases
-                </Button>
-                <div className="h-3 w-[1px] bg-slate-300 mx-1"></div>
-                <div className="flex items-center">
-                   <div className="relative mr-1">
+            {/* Global Utility Bar */}
+            <div className="bg-slate-50 border-b px-8 py-2 flex items-center justify-between shrink-0 relative z-30">
+              <div className="flex items-center gap-2">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => navigate('/cases')}
+                    className="h-6 px-2 -ml-2 text-[10px] font-bold text-slate-500 hover:text-slate-900 gap-1 rounded uppercase tracking-widest transition-colors"
+                  >
+                    <ArrowLeft className="h-3.5 w-3.5" /> KEMBALI
+                  </Button>
+                  <div className="h-3 w-[1px] bg-slate-300 mx-1"></div>
+                  <div className="flex items-center">
+                     <div className="relative mr-1">
+                       <Button
+                         variant="ghost"
+                         size="sm"
+                         onClick={() => setShowCaseList(!showCaseList)}
+                         className={`h-6 px-2 text-[9px] font-bold rounded gap-1.5 transition-colors uppercase tracking-widest ${showCaseList ? 'bg-slate-200 text-slate-900' : 'text-slate-500 hover:text-slate-900'}`}
+                         title="Semua Kasus"
+                       >
+                         <List className="h-3.5 w-3.5" /> DAFTAR
+                       </Button>
+                       {showCaseList && (
+                         <div className="absolute left-0 top-full mt-2 bg-white border border-slate-200 shadow-xl rounded-lg p-3 w-[300px] z-50">
+                            <div className="relative mb-3">
+                              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                              <input 
+                                type="text" 
+                                placeholder="Search cases..." 
+                                value={caseSearchQuery}
+                                onChange={(e) => setCaseSearchQuery(e.target.value)}
+                                className="w-full text-xs border border-slate-200 rounded-md pl-8 pr-3 py-1.5 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all"
+                              />
+                            </div>
+                            <div className="max-h-[300px] overflow-y-auto pr-1 space-y-1">
+                              {cases?.filter(c => c.title.toLowerCase().includes(caseSearchQuery.toLowerCase()) || c.id.toLowerCase().includes(caseSearchQuery.toLowerCase())).map(c => (
+                                 <div 
+                                   key={c.id}
+                                   onClick={() => { navigate(`/cases/${c.id}`); setShowCaseList(false); }}
+                                   className={`p-2 rounded cursor-pointer transition-colors ${c.id === caseId ? 'bg-emerald-50 text-emerald-700' : 'hover:bg-slate-50 text-slate-700'}`}
+                                 >
+                                   <div className="truncate text-xs font-bold leading-tight">{c.title || 'Untitled Case'}</div>
+                                   <div className="text-[9px] text-slate-400 font-medium uppercase tracking-wider mt-0.5">ID: {c.id.substring(0,8)}</div>
+                                 </div>
+                              ))}
+                              {cases?.filter(c => c.title.toLowerCase().includes(caseSearchQuery.toLowerCase()) || c.id.toLowerCase().includes(caseSearchQuery.toLowerCase())).length === 0 && (
+                                 <div className="text-xs text-slate-400 text-center py-6 font-medium">No cases found.</div>
+                              )}
+                            </div>
+                         </div>
+                       )}
+                     </div>
+                    <Button
+                       variant="ghost"
+                       size="sm"
+                       disabled={!prevCase}
+                       onClick={() => navigate(`/cases/${prevCase?.id}`)}
+                       className="h-6 px-2 text-[9px] font-bold text-slate-500 hover:text-slate-900 rounded gap-1.5 uppercase tracking-widest transition-colors"
+                       title="Kasus Sebelumnya"
+                     >
+                       <ChevronLeft className="h-3.5 w-3.5" /> SEBELUMNYA
+                     </Button>
                      <Button
                        variant="ghost"
                        size="sm"
-                       onClick={() => setShowCaseList(!showCaseList)}
-                       className={`h-6 px-1.5 text-[10px] font-bold rounded gap-1 transition-colors ${showCaseList ? 'bg-slate-200 text-slate-900' : 'text-slate-500 hover:text-slate-900'}`}
-                       title="All Cases"
+                       disabled={!nextCase}
+                       onClick={() => navigate(`/cases/${nextCase?.id}`)}
+                       data-tour="next-case-btn"
+                       className="h-6 px-2 text-[9px] font-bold text-slate-500 hover:text-slate-900 rounded gap-1.5 uppercase tracking-widest transition-colors"
+                       title="Kasus Selanjutnya"
                      >
-                       <List className="h-3.5 w-3.5" />
+                       SELANJUTNYA <ChevronRight className="h-3.5 w-3.5" />
                      </Button>
-                     {showCaseList && (
-                       <div className="absolute left-0 top-full mt-2 bg-white border border-slate-200 shadow-xl rounded-lg p-3 w-[300px] z-50">
-                          <div className="relative mb-3">
-                            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-                            <input 
-                              type="text" 
-                              placeholder="Search cases..." 
-                              value={caseSearchQuery}
-                              onChange={(e) => setCaseSearchQuery(e.target.value)}
-                              className="w-full text-xs border border-slate-200 rounded-md pl-8 pr-3 py-1.5 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all"
-                            />
-                          </div>
-                          <div className="max-h-[300px] overflow-y-auto pr-1 space-y-1">
-                            {cases?.filter(c => c.title.toLowerCase().includes(caseSearchQuery.toLowerCase()) || c.id.toLowerCase().includes(caseSearchQuery.toLowerCase())).map(c => (
-                               <div 
-                                 key={c.id}
-                                 onClick={() => { navigate(`/cases/${c.id}`); setShowCaseList(false); }}
-                                 className={`p-2 rounded cursor-pointer transition-colors ${c.id === caseId ? 'bg-emerald-50 text-emerald-700' : 'hover:bg-slate-50 text-slate-700'}`}
-                               >
-                                 <div className="truncate text-xs font-bold leading-tight">{c.title || 'Untitled Case'}</div>
-                                 <div className="text-[9px] text-slate-400 font-medium uppercase tracking-wider mt-0.5">ID: {c.id.substring(0,8)}</div>
-                               </div>
-                            ))}
-                            {cases?.filter(c => c.title.toLowerCase().includes(caseSearchQuery.toLowerCase()) || c.id.toLowerCase().includes(caseSearchQuery.toLowerCase())).length === 0 && (
-                               <div className="text-xs text-slate-400 text-center py-6 font-medium">No cases found.</div>
-                            )}
-                          </div>
-                       </div>
-                     )}
-                   </div>
-                  <Button
-                     variant="ghost"
-                     size="sm"
-                     disabled={!prevCase}
-                     onClick={() => navigate(`/cases/${prevCase?.id}`)}
-                     className="h-6 px-1.5 text-[10px] font-bold text-slate-500 hover:text-slate-900 rounded gap-1 transition-colors"
-                     title="Previous Case"
-                   >
-                     <ChevronLeft className="h-3.5 w-3.5" />
-                   </Button>
-                   <Button
-                     variant="ghost"
-                     size="sm"
-                     disabled={!nextCase}
-                     onClick={() => navigate(`/cases/${nextCase?.id}`)}
-                     className="h-6 px-1.5 text-[10px] font-bold text-slate-500 hover:text-slate-900 rounded gap-1 transition-colors"
-                     title="Next Case"
-                   >
-                     <ChevronRight className="h-3.5 w-3.5" />
-                   </Button>
-                </div>
-            </div>
-            
-            <div className="flex items-center gap-4">
-               <a href="#" className="flex items-center gap-1.5 text-[9px] font-bold text-slate-500 hover:text-slate-900 uppercase tracking-widest transition-colors">
-                 <BookOpen className="h-3 w-3" /> Documentation
-               </a>
-               <Button 
-                 variant="outline" 
-                 size="sm" 
-                 onClick={() => setShowAuditTrail(!showAuditTrail)} 
-                 className={`h-6 text-[9px] font-bold px-3 uppercase tracking-wider rounded-full bg-white border-slate-200 shadow-sm transition-colors ${showAuditTrail ? 'bg-slate-100 text-slate-900 border-slate-300' : 'text-slate-600 hover:text-slate-900'}`}
-               >
-                 <Clock className="h-3 w-3 mr-1.5" />
-                 {showAuditTrail ? "Close Audit Trail" : "Audit Trail"}
-               </Button>
-               <div className="h-4 w-[1px] bg-slate-300 mx-1"></div>
-               <div className="relative">
-                 <button onClick={() => setShowProfile(!showProfile)} className="flex items-center justify-center h-6 w-6 rounded-full bg-slate-200 text-slate-500 hover:bg-slate-300 hover:text-slate-700 transition-colors focus:outline-none">
-                   <User className="h-3.5 w-3.5" />
-                 </button>
-                 {showProfile && (
-                   <div className="absolute right-0 top-full mt-2 bg-white border border-slate-200 shadow-xl rounded-lg p-4 min-w-[200px] z-50">
-                     <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Signed in as</div>
-                     <div className="text-sm font-bold text-slate-800">Investigator Pro</div>
-                     <div className="text-xs text-slate-500 mt-1">ID: INV-88293</div>
-                   </div>
-                 )}
-               </div>
-            </div>
-          </div>
-
-          {/* Main Workspace Header Container */}
-          <div className="bg-white border-b flex flex-col shrink-0 relative z-20">
-            {/* Main Header Row */}
-            <div className="px-8 py-5 flex items-start justify-between gap-8">
-            
-            {/* Project Title Area */}
-            <div className="flex-1 min-w-[300px] max-w-[500px] flex flex-col items-start mt-1">
-
-              <div className="flex-1 w-full">
-                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">CASE TITLE</div>
-                {isEditingTitle ? (
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      value={titleInput}
-                      onChange={(e) => setTitleInput(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") handleSaveTitle();
-                        else if (e.key === "Escape") {
-                          setIsEditingTitle(false);
-                          setTitleInput(caseData?.title || "");
-                        }
-                      }}
-                      onBlur={handleSaveTitle}
-                      className="text-lg font-bold tracking-tight text-slate-900 border border-slate-200 rounded px-2.5 py-1 bg-slate-50 w-full focus:outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all leading-tight h-8"
-                      autoFocus
-                      maxLength={100}
-                      disabled={updateCaseMutation.isPending}
-                    />
-                    <Button size="sm" variant="ghost" onClick={handleSaveTitle} disabled={updateCaseMutation.isPending} className="h-8 w-8 p-0 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded shrink-0">
-                      {updateCaseMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin text-slate-400" /> : <Check className="h-4 w-4" />}
-                    </Button>
                   </div>
-                ) : (
-                  <div 
-                    className="group/title cursor-pointer py-1 px-1.5 -ml-1.5 rounded hover:bg-slate-50 transition-colors w-full"
-                    onClick={() => setIsEditingTitle(true)}
-                    title={caseData?.title || "Click to rename case"}
-                  >
-                    <div className="flex items-start gap-2">
-                      <h1 className="text-xl font-medium tracking-tight text-slate-400 border-none p-0 flex items-center gap-2 leading-snug uppercase">
-                        {caseData?.title ? <span className="text-slate-700 font-bold line-clamp-2">{caseData.title}</span> : "UNTITLED PROJECT..."}
-                      </h1>
-                      <button className="opacity-0 group-hover/title:opacity-100 p-1.5 mt-0.5 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition-all shrink-0">
-                        <Pencil className="h-3.5 w-3.5" />
-                      </button>
+              </div>
+              
+              <div className="flex items-center gap-4">
+                 <a href="#" className="flex items-center gap-1.5 text-[9px] font-bold text-slate-500 hover:text-slate-900 uppercase tracking-widest transition-colors">
+                   <BookOpen className="h-3 w-3" /> Documentation
+                 </a>
+                 <Button 
+                   variant="outline" 
+                   size="sm" 
+                   onClick={() => setShowAuditTrail(!showAuditTrail)} 
+                   className={`h-6 text-[9px] font-bold px-3 uppercase tracking-wider rounded-full bg-white border-slate-200 shadow-sm transition-colors ${showAuditTrail ? 'bg-slate-100 text-slate-900 border-slate-300' : 'text-slate-600 hover:text-slate-900'}`}
+                 >
+                   <Clock className="h-3 w-3 mr-1.5" />
+                   {showAuditTrail ? "Close Audit Trail" : "Audit Trail"}
+                 </Button>
+                 <div className="h-4 w-[1px] bg-slate-300 mx-1"></div>
+                 <div className="relative">
+                   <button onClick={() => setShowProfile(!showProfile)} className="flex items-center justify-center h-6 w-6 rounded-full bg-slate-200 text-slate-500 hover:bg-slate-300 hover:text-slate-700 transition-colors focus:outline-none">
+                     <User className="h-3.5 w-3.5" />
+                   </button>
+                   {showProfile && (
+                     <div className="absolute right-0 top-full mt-2 bg-white border border-slate-200 shadow-xl rounded-lg p-4 min-w-[200px] z-50">
+                       <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Signed in as</div>
+                       <div className="text-sm font-bold text-slate-800">Investigator Pro</div>
+                       <div className="text-xs text-slate-500 mt-1">ID: INV-88293</div>
+                     </div>
+                   )}
+                 </div>
+              </div>
+            </div>
+
+            {/* Main Workspace Header Container */}
+            <div id="tour-step-1-header" data-tour="workspace-header" className="bg-white border-b flex flex-col shrink-0 relative z-20">
+              {/* Main Header Row */}
+              <div className="px-6 py-3 flex items-start justify-between gap-4">
+              
+              {/* Project Title Area */}
+              <div className="flex-1 min-w-[300px] max-w-[500px] flex flex-col items-start">
+
+                <div className="flex-1 w-full">
+                  <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">CASE TITLE</div>
+                  {isEditingTitle ? (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={titleInput}
+                        onChange={(e) => setTitleInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") handleSaveTitle();
+                          else if (e.key === "Escape") {
+                            setIsEditingTitle(false);
+                            setTitleInput(caseData?.title || "");
+                          }
+                        }}
+                        onBlur={handleSaveTitle}
+                        className="text-lg font-bold tracking-tight text-slate-900 border border-slate-200 rounded px-2.5 py-1 bg-slate-50 w-full focus:outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all leading-tight h-8"
+                        autoFocus
+                        maxLength={100}
+                        disabled={updateCaseMutation.isPending}
+                      />
+                      <Button size="sm" variant="ghost" onClick={handleSaveTitle} disabled={updateCaseMutation.isPending} className="h-8 w-8 p-0 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded shrink-0">
+                        {updateCaseMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin text-slate-400" /> : <Check className="h-4 w-4" />}
+                      </Button>
                     </div>
-                  </div>
-                )}
-                
-                <div className="mt-1.5 flex flex-wrap items-center gap-3 text-[10px] font-bold text-slate-400 tracking-wider uppercase">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-slate-500">ID:</span> {caseData?.id?.substring(0, 8) || "N/A"}
-                  </div>
-                  <div className="h-1 w-1 rounded-full bg-slate-300"></div>
-                  <div className="flex items-center gap-1.5">
-                    <Clock className="h-3 w-3" />
-                    {caseData?.created_at ? new Date(caseData.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Date Unknown'}
-                  </div>
-                  <div className="h-1 w-1 rounded-full bg-slate-300 hidden md:block"></div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-slate-400 uppercase tracking-widest text-[9px]">STATUS INVESTIGASI:</span>
-                    <span className="text-xs font-bold text-slate-700">{caseData?.investigation_status || "INVESTIGASI"}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 ml-1">
-                    <span className="text-slate-400 uppercase tracking-widest text-[9px]">STATUS AI:</span>
-                    <StatusChip status={caseData?.ai_status || "belum_mulai"} />
-                  </div>
-
-                  <div className="h-1 w-1 rounded-full bg-slate-300 hidden md:block ml-1"></div>
-
-                  <div className="relative flex items-center gap-1.5 ml-1">
-                    <span className="text-slate-400 uppercase tracking-widest text-[9px]">PROGRESS AI:</span>
+                  ) : (
                     <div 
-                      onClick={() => setShowAIProgress(!showAIProgress)}
-                      className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-full px-2 py-0.5 cursor-pointer hover:bg-slate-100 hover:border-emerald-200 transition-all group"
+                      className="group/title cursor-pointer py-1 px-1.5 -ml-1.5 rounded hover:bg-slate-50 transition-colors w-full"
+                      onClick={() => setIsEditingTitle(true)}
+                      title={caseData?.title || "Click to rename case"}
                     >
-                       <Sparkles className="h-3 w-3 text-emerald-500 group-hover:text-emerald-600" />
-                       <div className="w-16 h-1 bg-slate-200 rounded-full overflow-hidden">
-                          <div className="h-full bg-emerald-500 rounded-full" style={{width: '85%'}}></div>
-                       </div>
-                       <span className="text-[9px] font-bold text-slate-600 group-hover:text-emerald-700">85%</span>
+                      <div className="flex items-start gap-2">
+                        <h1 className="text-lg font-medium tracking-tight text-slate-400 border-none p-0 flex items-center gap-2 leading-none uppercase">
+                          {caseData?.title ? <span className="text-slate-700 font-bold line-clamp-1">{caseData.title}</span> : "UNTITLED PROJECT..."}
+                        </h1>
+                        <button className="opacity-0 group-hover/title:opacity-100 p-1 mt-0 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition-all shrink-0">
+                          <Pencil className="h-3 w-3" />
+                        </button>
+                      </div>
                     </div>
-                    
-                    {showAIProgress && (
-                       <div className="absolute top-full mt-2 left-0 bg-white border border-slate-200 rounded-lg shadow-xl p-4 w-64 z-50">
-                          <div className="flex items-center justify-between mb-3 border-b border-slate-100 pb-2">
-                             <div className="text-[10px] font-black text-slate-600 uppercase tracking-widest">AI Progress Details</div>
-                             <button onClick={() => setShowAIProgress(false)} className="hover:bg-slate-100 p-1 rounded-full transition-colors"><X className="h-3 w-3 text-slate-400 hover:text-slate-600" /></button>
+                  )}
+                  
+                  <div className="mt-1 flex flex-wrap items-center gap-2 text-[9px] font-bold text-slate-400 tracking-wider uppercase">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-slate-500">ID:</span> {caseData?.id?.substring(0, 8) || "N/A"}
+                    </div>
+                    <div className="h-1 w-1 rounded-full bg-slate-300"></div>
+                    <div className="flex items-center gap-1.5">
+                      <Clock className="h-3 w-3" />
+                      {caseData?.created_at ? new Date(caseData.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Date Unknown'}
+                    </div>
+                    <div className="h-1 w-1 rounded-full bg-slate-300 hidden md:block"></div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-slate-400 uppercase tracking-widest text-[9px]">STATUS INVESTIGASI:</span>
+                      <span className="text-xs font-bold text-slate-700">{caseData?.investigation_status || "INVESTIGASI"}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 ml-1">
+                      <span className="text-slate-400 uppercase tracking-widest text-[9px]">STATUS AI:</span>
+                      <StatusChip status={caseData?.ai_status || "belum_mulai"} />
+                    </div>
+
+                    <div className="h-1 w-1 rounded-full bg-slate-300 hidden md:block ml-1"></div>
+
+                    <div className="relative flex items-center gap-1.5 ml-1">
+                      <div 
+                        onClick={() => setShowAIProgress(!showAIProgress)}
+                        className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-full px-2 py-0.5 cursor-pointer hover:bg-slate-100 hover:border-emerald-200 transition-all group"
+                      >
+                         <Sparkles className="h-3 w-3 text-emerald-500 group-hover:text-emerald-600" />
+                         <div className="w-16 h-1 bg-slate-200 rounded-full overflow-hidden">
+                            <div className="h-full bg-emerald-500 rounded-full" style={{width: '85%'}}></div>
+                         </div>
+                         <span className="text-[9px] font-bold text-slate-600 group-hover:text-emerald-700">85%</span>
+                      </div>
+                      
+                      {showAIProgress && (
+                         <div className="absolute top-full mt-2 left-0 bg-white border border-slate-200 rounded-lg shadow-xl p-4 w-64 z-50">
+                            <div className="flex items-center justify-between mb-3 border-b border-slate-100 pb-2">
+                               <div className="text-[10px] font-black text-slate-600 uppercase tracking-widest">AI Progress Details</div>
+                               <button onClick={() => setShowAIProgress(false)} className="hover:bg-slate-100 p-1 rounded-full transition-colors"><X className="h-3 w-3 text-slate-400 hover:text-slate-600" /></button>
+                            </div>
+                            <div className="space-y-2">
+                               <div className="flex items-center gap-2 text-[10px] font-medium text-slate-600"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> Initial Extraction</div>
+                               <div className="flex items-center gap-2 text-[10px] font-medium text-slate-600"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> Semantic Structuring</div>
+                               <div className="flex items-center gap-2 text-[10px] font-medium text-slate-600"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> Threat Vector Analysis</div>
+                               <div className="flex items-center gap-2 text-[10px] font-medium text-slate-400"><Loader2 className="h-3.5 w-3.5 animate-spin text-emerald-500" /> Cross-referencing Entities</div>
+                            </div>
+                         </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Stepper Area */}
+              <div id="tour-step-8-next" className="flex-[1.5] flex items-center justify-center relative px-4 max-w-2xl mt-1">
+                 <div className="w-full relative">
+                   <div className="absolute top-[18px] left-[10%] right-[10%] h-[2px] bg-slate-300 -z-10"></div>
+                   <div className="flex justify-between w-full">
+                      {[
+                        { id: 1, name: "DATA", desc: "PENGUMPULAN DATA", icon: Database },
+                        { id: 2, name: "ANALISIS", desc: "PROSES INVESTIGASI", icon: FileText },
+                        { id: 3, name: "SUBMIT", desc: "SUBMIT LAPORAN KE HSE", icon: CheckCircle2 }
+                      ].map((step) => {
+                         const isActive = currentStep === step.id && !showAuditTrail;
+                         return (
+                           <div 
+                             key={step.id} 
+                             onClick={() => { setCurrentStep(step.id); setShowAuditTrail(false); }}
+                             className="flex flex-col items-center gap-1.5 cursor-pointer group bg-white px-2"
+                           >
+                              <div className={`h-9 w-9 rounded-[10px] flex items-center justify-center transition-all duration-300 transform ${isActive ? 'bg-slate-900 border-2 border-slate-900 text-white scale-[1.15]' : 'bg-white border-2 border-slate-300 text-slate-500 group-hover:border-slate-400 group-hover:text-slate-900 group-hover:scale-110'}`}>
+                                 <step.icon className={`h-4 w-4 ${isActive ? 'stroke-[3px]' : 'stroke-[2.5px]'}`} />
+                              </div>
+                              <div className={`text-center transition-all duration-300 ${isActive ? 'mt-1' : 'mt-0 group-hover:mt-0.5'}`}>
+                                 <div className={`text-[10px] font-black uppercase tracking-[0.2em] mb-0.5 transition-colors ${isActive ? 'text-slate-900' : 'text-slate-600 group-hover:text-slate-900'}`}>{step.name}</div>
+                                 <div className={`text-[8px] font-extrabold uppercase tracking-widest transition-colors ${isActive ? 'text-slate-600' : 'text-slate-400 group-hover:text-slate-600'}`}>{step.desc}</div>
+                              </div>
+                           </div>
+                         )
+                      })}
+                   </div>
+                 </div>
+              </div>
+
+              {/* Right Controls Area */}
+              <div className="flex-1 min-w-[150px] max-w-[250px] hidden lg:flex flex-row justify-end items-center gap-2 mt-1">
+                 <button onClick={() => setShowTutorial(true)} title="Video" className="group flex items-center justify-center border border-slate-200 bg-white rounded-md px-3 h-9 hover:border-emerald-200 hover:bg-emerald-50 transition-all duration-300 focus:outline-none overflow-hidden">
+                   <PlayCircle className="h-4 w-4 text-slate-400 group-hover:text-emerald-600 transition-colors shrink-0" />
+                   <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 group-hover:text-emerald-700 transition-all duration-300 max-w-0 opacity-0 group-hover:max-w-xs group-hover:opacity-100 group-hover:ml-2 whitespace-nowrap">Video</span>
+                 </button>
+                 <ProductTourButton />
+              </div>
+              </div>
+            </div>
+
+            {/* Step Content Area */}
+            <div className="flex-1 overflow-hidden relative bg-slate-50/30">
+              <Suspense fallback={
+                <div className="flex h-full items-center justify-center">
+                  <Loader2 className="h-8 w-8 text-slate-300 animate-spin" />
+                </div>
+              }>
+                {showAuditTrail ? (
+                  <AuditTrailTab />
+                ) : (
+                  <>
+                    {currentStep === 1 && <ExtractionTab />}
+                    {currentStep === 2 && <AnalysisTab />}
+                    {currentStep === 3 && <ReportsTab />}
+                  </>
+                )}
+              </Suspense>
+            </div>
+
+            {/* Delete Case Confirmation Modal */}
+            {isDeleteModalOpen && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-[6px] transition-all duration-300">
+                <div className="bg-white border border-slate-200/80 w-full max-w-md rounded-md shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-[0.98] duration-200 border-t-4 border-t-rose-600">
+                  {/* Header Banner - Clinical, precise layout */}
+                  <div className="px-6 py-5 flex items-start gap-4 border-b border-slate-100 bg-slate-50/50">
+                    <div className={`h-10 w-10 rounded flex items-center justify-center shrink-0 shadow-sm border ${isProcessingActive ? 'bg-rose-50 border-rose-200 text-rose-600' : 'bg-rose-50 border-rose-200 text-rose-600'}`}>
+                      <ShieldAlert className="h-5 w-5 stroke-[2]" />
+                    </div>
+                    <div className="space-y-1">
+                      <span className="text-[9px] font-black text-rose-600 uppercase tracking-[0.25em] block leading-none">
+                        {isProcessingActive ? 'SYSTEM PURGE LOCKED' : 'DESTRUCTION PROTOCOL'}
+                      </span>
+                      <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-tight leading-tight">
+                        {isProcessingActive ? 'Penghapusan Ditangguhkan' : 'Hapus Kasus Forensik'}
+                      </h3>
+                      <p className="text-[10px] text-slate-400 font-semibold tracking-tight">
+                        {isProcessingActive ? 'Interlock proteksi berkas aktif' : 'Tindakan kritis • Bersifat permanen & irreversible'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Content Body */}
+                  <div className="p-6 space-y-5 flex-1 overflow-y-auto">
+                    {isProcessingActive ? (
+                      /* CASE A: Active Extraction / Analysis Running */
+                      <div className="space-y-4">
+                        <div className="bg-rose-50/30 border border-rose-100 p-4 rounded-sm space-y-3">
+                          <span className="text-[10px] font-black text-rose-700 uppercase tracking-widest block flex items-center gap-1.5 leading-none">
+                            <Cpu className="h-3.5 w-3.5 animate-spin" />
+                            {isAnalysisActive ? "Analisis AI Sedang Berjalan" : `Berkas Bukti Aktif (${runningFiles.length})`}
+                          </span>
+                          <p className="text-xs font-semibold text-rose-950/80 leading-relaxed">
+                            {isAnalysisActive 
+                              ? "Ada proses analisis AI (Fact & Chronology, dll.) yang sedang berjalan menggunakan sumber daya dari repositori bukti pada kasus ini. Demi menjaga integritas data dan kestabilan sistem, tindakan penghapusan diblokir hingga proses analisis selesai secara tuntas."
+                              : "Ada proses ekstraksi data bukti forensik yang sedang berlangsung pada kasus ini. Demi menjaga integritas data dan kestabilan sistem, tindakan penghapusan diblokir hingga seluruh proses berikut selesai secara tuntas."}
+                          </p>
+                          
+                          {!isAnalysisActive && (
+                            <div className="max-h-40 overflow-y-auto space-y-1.5 pr-1 custom-scrollbar">
+                              {runningFiles.map(f => (
+                                <div key={f.id} className="flex items-center justify-between p-2.5 bg-white border border-rose-100/50 rounded-sm shadow-sm">
+                                  <div className="flex items-center gap-2">
+                                    <Loader2 className="h-3.5 w-3.5 text-rose-500 animate-spin" />
+                                    <span className="text-xs font-bold text-slate-700 truncate max-w-[200px]">{f.name}</span>
+                                  </div>
+                                  <span className="text-[9px] font-black text-rose-600 uppercase tracking-wider bg-rose-50 px-2 py-0.5 rounded border border-rose-100">
+                                    {f.extraction_status}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      /* CASE B: Safe to Delete (Idle) */
+                      <div className="space-y-5">
+                        {/* Authorized Initiator Info - Dossier / Badge Style */}
+                        <div className="bg-slate-50 border border-slate-100 p-4 rounded-sm relative overflow-hidden space-y-3 shadow-inner">
+                          <div className="absolute top-0 right-0 bg-slate-200/50 border-l border-b border-slate-200/80 text-[7px] font-black text-slate-500 uppercase tracking-widest px-2.5 py-1 rounded-bl-sm">
+                            AUTHENTICATED OPERATOR
                           </div>
-                          <div className="space-y-2">
-                             <div className="flex items-center gap-2 text-[10px] font-medium text-slate-600"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> Initial Extraction</div>
-                             <div className="flex items-center gap-2 text-[10px] font-medium text-slate-600"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> Semantic Structuring</div>
-                             <div className="flex items-center gap-2 text-[10px] font-medium text-slate-600"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> Threat Vector Analysis</div>
-                             <div className="flex items-center gap-2 text-[10px] font-medium text-slate-400"><Loader2 className="h-3.5 w-3.5 animate-spin text-emerald-500" /> Cross-referencing Entities</div>
+                          
+                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block leading-none">
+                            Initiating Officer
+                          </span>
+                          
+                          <div className="flex items-center gap-3 pt-1">
+                            <div className="h-9 w-9 rounded-sm bg-slate-900 text-white flex items-center justify-center font-bold text-xs uppercase border border-slate-800">
+                              AD
+                            </div>
+                            <div>
+                              <div className="text-xs font-black text-slate-900 uppercase">Administrator (admin)</div>
+                              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Senior Lead Investigator — Forensic Ops</div>
+                            </div>
                           </div>
-                       </div>
+                        </div>
+
+                        {/* Captcha Verification - Precise typography */}
+                        <div className="space-y-2.5">
+                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">
+                            Masukkan Kode Konfirmasi Kasus
+                          </label>
+                          <p className="text-xs text-slate-500 leading-normal">
+                            Ketik kode kasus unik <span className="font-mono font-bold bg-rose-50 text-rose-700 px-1.5 py-0.5 rounded border border-rose-100/50">#{caseData?.case_number}</span> di bawah untuk membypass proteksi.
+                          </p>
+                          <div className="relative">
+                            <input
+                              type="text"
+                              value={deleteCaptchaInput}
+                              onChange={(e) => setDeleteCaptchaInput(e.target.value)}
+                              placeholder="Ketik nomor kasus di sini..."
+                              className="w-full text-xs font-mono tracking-widest border border-slate-200 rounded p-2.5 bg-slate-50 focus:outline-none focus:bg-white focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all uppercase h-10 pr-10 shadow-sm"
+                            />
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
+                              <Lock className="h-4 w-4" />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Consent Checkbox - Formally Wrapped */}
+                        <label className="flex gap-3 items-start cursor-pointer group select-none bg-rose-50/20 hover:bg-rose-50/30 border border-rose-100/40 p-3.5 rounded-sm transition-all">
+                          <input
+                            type="checkbox"
+                            checked={isConsentChecked}
+                            onChange={(e) => setIsConsentChecked(e.target.checked)}
+                            className="mt-0.5 h-4 w-4 rounded border-slate-300 text-rose-600 focus:ring-rose-500 cursor-pointer shadow-sm"
+                          />
+                          <span className="text-xs font-bold text-slate-600 group-hover:text-slate-900 transition-colors leading-relaxed">
+                            Saya menyatakan secara sadar bertanggung jawab penuh atas segala konsekuensi penghapusan berkas kasus ini secara permanen dari basis data sistem.
+                          </span>
+                        </label>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Footer Action Bar */}
+                  <div className="bg-slate-50 px-6 py-4 border-t border-slate-100 flex items-center justify-end gap-2.5">
+                    {isProcessingActive ? (
+                      <Button 
+                        onClick={() => setIsDeleteModalOpen(false)}
+                        className="h-10 px-6 bg-slate-900 hover:bg-slate-800 text-white font-black text-[10px] uppercase tracking-widest rounded-[4px] transition-all"
+                      >
+                        Kembali ke Workspace
+                      </Button>
+                    ) : (
+                      <>
+                        <Button
+                          variant="outline"
+                          onClick={() => { setIsDeleteModalOpen(false); setDeleteCaptchaInput(""); setIsConsentChecked(false); }}
+                          className="h-10 px-5 font-bold text-xs uppercase tracking-wider rounded-[4px] border-slate-200"
+                        >
+                          Batalkan
+                        </Button>
+                        <Button
+                          onClick={async () => {
+                            try {
+                              await deleteCaseMutation.mutateAsync(caseId!);
+                              toast.success("Case permanently deleted.");
+                              navigate('/cases');
+                            } catch (error) {
+                              toast.error("Failed to delete case.");
+                            }
+                          }}
+                          disabled={deleteCaptchaInput !== caseData?.case_number || !isConsentChecked || deleteCaseMutation.isPending}
+                          className="h-10 px-6 bg-rose-600 hover:bg-rose-700 text-white font-black text-[10px] uppercase tracking-widest rounded-[4px] disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                        >
+                          {deleteCaseMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Hapus Permanen"}
+                        </Button>
+                      </>
                     )}
                   </div>
                 </div>
               </div>
-            </div>
+            )}
 
-            {/* Stepper Area */}
-            <div className="flex-[1.5] flex items-center justify-center relative px-4 max-w-2xl mt-1">
-               <div className="w-full relative">
-                 <div className="absolute top-[24px] left-[10%] right-[10%] h-[2px] bg-slate-300 -z-10"></div>
-                 <div className="flex justify-between w-full">
-                    {[
-                      { id: 1, name: "DATA", desc: "PENGUMPULAN DATA", icon: Database },
-                      { id: 2, name: "ANALISIS", desc: "PROSES INVESTIGASI", icon: FileText },
-                      { id: 3, name: "SUBMIT", desc: "SUBMIT LAPORAN KE HSE", icon: CheckCircle2 }
-                    ].map((step) => {
-                       const isActive = currentStep === step.id && !showAuditTrail;
-                       return (
-                         <div 
-                           key={step.id} 
-                           onClick={() => { setCurrentStep(step.id); setShowAuditTrail(false); }}
-                           className="flex flex-col items-center gap-3 cursor-pointer group bg-white px-2"
-                         >
-                            <div className={`h-12 w-12 rounded-[14px] flex items-center justify-center transition-all duration-300 transform ${isActive ? 'bg-slate-900 border-2 border-slate-900 text-white scale-[1.15]' : 'bg-white border-2 border-slate-300 text-slate-500 group-hover:border-slate-400 group-hover:text-slate-900 group-hover:scale-110'}`}>
-                               <step.icon className={`h-5 w-5 ${isActive ? 'stroke-[3px]' : 'stroke-[2.5px]'}`} />
-                            </div>
-                            <div className={`text-center transition-all duration-300 ${isActive ? 'mt-1.5' : 'mt-0 group-hover:mt-1'}`}>
-                               <div className={`text-[11px] font-black uppercase tracking-[0.2em] mb-0.5 transition-colors ${isActive ? 'text-slate-900' : 'text-slate-600 group-hover:text-slate-900'}`}>{step.name}</div>
-                               <div className={`text-[9px] font-extrabold uppercase tracking-widest transition-colors ${isActive ? 'text-slate-600' : 'text-slate-400 group-hover:text-slate-600'}`}>{step.desc}</div>
-                            </div>
-                         </div>
-                       )
-                    })}
-                 </div>
-               </div>
-            </div>
-
-            {/* Right Controls Area (Tutorial) */}
-            <div className="flex-1 min-w-[150px] max-w-[250px] hidden lg:flex justify-end items-center mt-1">
-               <button onClick={() => setShowTutorial(true)} className="group flex items-center justify-center gap-2 border border-slate-200 bg-white rounded-full px-4 py-2 hover:border-emerald-200 hover:bg-emerald-50 transition-all focus:outline-none">
-                 <PlayCircle className="h-4 w-4 text-slate-400 group-hover:text-emerald-600 transition-colors" />
-                 <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 group-hover:text-emerald-700 transition-colors">Tutorial</span>
-               </button>
-            </div>
-            </div>
-          </div>
-
-          {/* Step Content Area */}
-          <div className="flex-1 overflow-hidden relative bg-slate-50/30">
-            <Suspense fallback={
-              <div className="flex h-full items-center justify-center">
-                <Loader2 className="h-8 w-8 text-slate-300 animate-spin" />
-              </div>
-            }>
-              {showAuditTrail ? (
-                <AuditTrailTab />
-              ) : (
-                <>
-                  {currentStep === 1 && <ExtractionTab />}
-                  {currentStep === 2 && <AnalysisTab />}
-                  {currentStep === 3 && <ReportsTab />}
-                </>
-              )}
-            </Suspense>
-          </div>
-
-          {/* Delete Case Confirmation Modal */}
-          {isDeleteModalOpen && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-[6px] transition-all duration-300">
-              <div className="bg-white border border-slate-200/80 w-full max-w-md rounded-md shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-[0.98] duration-200 border-t-4 border-t-rose-600">
-                {/* Header Banner - Clinical, precise layout */}
-                <div className="px-6 py-5 flex items-start gap-4 border-b border-slate-100 bg-slate-50/50">
-                  <div className={`h-10 w-10 rounded flex items-center justify-center shrink-0 shadow-sm border ${isProcessingActive ? 'bg-rose-50 border-rose-200 text-rose-600' : 'bg-rose-50 border-rose-200 text-rose-600'}`}>
-                    <ShieldAlert className="h-5 w-5 stroke-[2]" />
-                  </div>
-                  <div className="space-y-1">
-                    <span className="text-[9px] font-black text-rose-600 uppercase tracking-[0.25em] block leading-none">
-                      {isProcessingActive ? 'SYSTEM PURGE LOCKED' : 'DESTRUCTION PROTOCOL'}
-                    </span>
-                    <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-tight leading-tight">
-                      {isProcessingActive ? 'Penghapusan Ditangguhkan' : 'Hapus Kasus Forensik'}
-                    </h3>
-                    <p className="text-[10px] text-slate-400 font-semibold tracking-tight">
-                      {isProcessingActive ? 'Interlock proteksi berkas aktif' : 'Tindakan kritis • Bersifat permanen & irreversible'}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Content Body */}
-                <div className="p-6 space-y-5 flex-1 overflow-y-auto">
-                  {isProcessingActive ? (
-                    /* CASE A: Active Extraction / Analysis Running */
-                    <div className="space-y-4">
-                      <div className="bg-rose-50/30 border border-rose-100 p-4 rounded-sm space-y-3">
-                        <span className="text-[10px] font-black text-rose-700 uppercase tracking-widest block flex items-center gap-1.5 leading-none">
-                          <Cpu className="h-3.5 w-3.5 animate-spin" />
-                          {isAnalysisActive ? "Analisis AI Sedang Berjalan" : `Berkas Bukti Aktif (${runningFiles.length})`}
-                        </span>
-                        <p className="text-xs font-semibold text-rose-950/80 leading-relaxed">
-                          {isAnalysisActive 
-                            ? "Ada proses analisis AI (Fact & Chronology, dll.) yang sedang berjalan menggunakan sumber daya dari repositori bukti pada kasus ini. Demi menjaga integritas data dan kestabilan sistem, tindakan penghapusan diblokir hingga proses analisis selesai secara tuntas."
-                            : "Ada proses ekstraksi data bukti forensik yang sedang berlangsung pada kasus ini. Demi menjaga integritas data dan kestabilan sistem, tindakan penghapusan diblokir hingga seluruh proses berikut selesai secara tuntas."}
-                        </p>
-                        
-                        {!isAnalysisActive && (
-                          <div className="max-h-40 overflow-y-auto space-y-1.5 pr-1 custom-scrollbar">
-                            {runningFiles.map(f => (
-                              <div key={f.id} className="flex items-center justify-between p-2.5 bg-white border border-rose-100/50 rounded-sm shadow-sm">
-                                <div className="flex items-center gap-2">
-                                  <Loader2 className="h-3.5 w-3.5 text-rose-500 animate-spin" />
-                                  <span className="text-xs font-bold text-slate-700 truncate max-w-[200px]">{f.name}</span>
-                                </div>
-                                <span className="text-[9px] font-black text-rose-600 uppercase tracking-wider bg-rose-50 px-2 py-0.5 rounded border border-rose-100">
-                                  {f.extraction_status}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ) : (
-                    /* CASE B: Safe to Delete (Idle) */
-                    <div className="space-y-5">
-                      {/* Authorized Initiator Info - Dossier / Badge Style */}
-                      <div className="bg-slate-50 border border-slate-100 p-4 rounded-sm relative overflow-hidden space-y-3 shadow-inner">
-                        <div className="absolute top-0 right-0 bg-slate-200/50 border-l border-b border-slate-200/80 text-[7px] font-black text-slate-500 uppercase tracking-widest px-2.5 py-1 rounded-bl-sm">
-                          AUTHENTICATED OPERATOR
-                        </div>
-                        
-                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block leading-none">
-                          Initiating Officer
-                        </span>
-                        
-                        <div className="flex items-center gap-3 pt-1">
-                          <div className="h-9 w-9 rounded-sm bg-slate-900 text-white flex items-center justify-center font-bold text-xs uppercase border border-slate-800">
-                            AD
-                          </div>
-                          <div>
-                            <div className="text-xs font-black text-slate-900 uppercase">Administrator (admin)</div>
-                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Senior Lead Investigator — Forensic Ops</div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Captcha Verification - Precise typography */}
-                      <div className="space-y-2.5">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">
-                          Masukkan Kode Konfirmasi Kasus
-                        </label>
-                        <p className="text-xs text-slate-500 leading-normal">
-                          Ketik kode kasus unik <span className="font-mono font-bold bg-rose-50 text-rose-700 px-1.5 py-0.5 rounded border border-rose-100/50">#{caseData?.case_number}</span> di bawah untuk membypass proteksi.
-                        </p>
-                        <div className="relative">
-                          <input
-                            type="text"
-                            value={deleteCaptchaInput}
-                            onChange={(e) => setDeleteCaptchaInput(e.target.value)}
-                            placeholder="Ketik nomor kasus di sini..."
-                            className="w-full text-xs font-mono tracking-widest border border-slate-200 rounded p-2.5 bg-slate-50 focus:outline-none focus:bg-white focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all uppercase h-10 pr-10 shadow-sm"
-                          />
-                          <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
-                            <Lock className="h-4 w-4" />
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Consent Checkbox - Formally Wrapped */}
-                      <label className="flex gap-3 items-start cursor-pointer group select-none bg-rose-50/20 hover:bg-rose-50/30 border border-rose-100/40 p-3.5 rounded-sm transition-all">
-                        <input
-                          type="checkbox"
-                          checked={isConsentChecked}
-                          onChange={(e) => setIsConsentChecked(e.target.checked)}
-                          className="mt-0.5 h-4 w-4 rounded border-slate-300 text-rose-600 focus:ring-rose-500 cursor-pointer shadow-sm"
-                        />
-                        <span className="text-xs font-bold text-slate-600 group-hover:text-slate-900 transition-colors leading-relaxed">
-                          Saya menyatakan secara sadar bertanggung jawab penuh atas segala konsekuensi penghapusan berkas kasus ini secara permanen dari basis data sistem.
-                        </span>
-                      </label>
-                    </div>
-                  )}
-                </div>
-
-                {/* Footer Action Bar */}
-                <div className="bg-slate-50 px-6 py-4 border-t border-slate-100 flex items-center justify-end gap-2.5">
-                  {isProcessingActive ? (
-                    <Button 
-                      onClick={() => setIsDeleteModalOpen(false)}
-                      className="bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-[10px] uppercase tracking-wider px-5 h-9 rounded-sm shadow-sm transition-all"
-                    >
-                      Kembali ke Workspace
-                    </Button>
-                  ) : (
-                    <>
-                      <Button 
-                        variant="ghost"
-                        onClick={() => setIsDeleteModalOpen(false)}
-                        className="text-slate-400 hover:text-slate-800 font-extrabold text-[10px] uppercase tracking-wider h-9 px-4 rounded-sm border border-slate-200/80 bg-white hover:bg-slate-50 transition-all"
-                      >
-                        Batal
-                      </Button>
-                      <Button 
-                        onClick={handleDeleteCase}
-                        disabled={deleteCaptchaInput.trim() !== (caseData?.case_number || "") || !isConsentChecked || deleteCaseMutation.isPending}
-                        className="bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white font-extrabold text-[10px] uppercase tracking-wider px-5 h-9 gap-1.5 rounded-sm shadow-sm transition-all flex items-center justify-center"
-                      >
-                        {deleteCaseMutation.isPending ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                          <Trash2 className="h-3.5 w-3.5" />
-                        )}
-                        {deleteCaseMutation.isPending ? 'Purging...' : 'PURGE CASE PERMANENTLY'}
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Tutorial Modal */}
-          {showTutorial && (
-            <div className="fixed inset-0 bg-slate-900/50 z-50 flex items-center justify-center p-8 backdrop-blur-sm" onClick={() => setShowTutorial(false)}>
-              <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full overflow-hidden border border-slate-200" onClick={e => e.stopPropagation()}>
-                <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-                  <div className="flex items-center gap-2 text-slate-700 font-bold tracking-tight">
-                    <PlayCircle className="h-5 w-5 text-emerald-600" />
+            {/* Tutorial Modal */}
+            {showTutorial && (
+              <div className="fixed inset-0 bg-slate-900/50 z-50 flex items-center justify-center p-8 backdrop-blur-sm" onClick={() => setShowTutorial(false)}>
+                <div className="bg-white border border-slate-200 rounded-lg shadow-2xl max-w-2xl w-full overflow-hidden" onClick={(e) => e.stopPropagation()}>
+                  <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                    <h2 className="text-sm font-black text-slate-900 uppercase tracking-widest">
                     Workspace Tutorial
+                    </h2>
+                    <button onClick={() => setShowTutorial(false)} className="text-slate-400 hover:text-slate-700 p-1 rounded-md hover:bg-slate-200 transition-colors focus:outline-none">
+                      <X className="h-5 w-5" />
+                    </button>
                   </div>
-                  <button onClick={() => setShowTutorial(false)} className="text-slate-400 hover:text-slate-700 p-1 rounded-md hover:bg-slate-200 transition-colors focus:outline-none">
-                    <X className="h-5 w-5" />
-                  </button>
-                </div>
-                <div className="aspect-video bg-slate-900 flex flex-col items-center justify-center relative group p-10">
-                  <PlayCircle className="h-16 w-16 text-white/40 group-hover:text-white/80 transition-colors cursor-pointer mb-4" />
-                  <div className="text-white/60 text-sm font-medium tracking-wide">Video Player Placeholder</div>
+                  <div className="p-6">
+                    <p className="text-sm text-slate-600 leading-relaxed">Tutorial content will be available soon.</p>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
-        </div>
-      </AppLayout>
-    </WorkspaceErrorBoundary>
+            )}
+          </div>
+        </AppLayout>
+      </WorkspaceErrorBoundary>
+  );
+}
+
+export default function CaseWorkspacePage() {
+  return (
+    <TourProvider>
+      <CaseWorkspaceInner />
+    </TourProvider>
   );
 }

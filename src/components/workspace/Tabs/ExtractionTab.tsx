@@ -6,7 +6,7 @@ import {
   Folder, Folders, MoreVertical, Pencil, Trash2, Loader2, CheckCircle2, 
   Box, Upload, ChevronLeft, ChevronRight as ChevronRightIcon, 
   Cpu, ChevronsDown, ChevronsUp, AlertCircle, RefreshCw, FolderOpen,
-  Dices, PowerOff, Database, FileText
+  Dices, PowerOff, Database, FileText, Filter
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -59,8 +59,10 @@ import { Clock, RotateCcw, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { EvidenceDerivationInjector } from "../ExtractionTab/EvidenceDerivationInjector";
 import { useSearchParams } from "react-router-dom";
+import { useTour } from '@/components/workspace/TourContext';
 
 export default function ExtractionTab() {
+  const { currentStep: tourStep, isActive: isTourActive } = useTour();
   const [isHistoryDrawerOpen, setIsHistoryDrawerOpen] = useState(false);
   const [historyFile, setHistoryFile] = useState<any>(null);
   const { caseId } = useParams<{ caseId: string }>();
@@ -148,6 +150,15 @@ export default function ExtractionTab() {
       setHasInitializedExpansion(true);
     }
   }, [isLoading, batches, hasInitializedExpansion]);
+
+  // Tour Auto-Select Logic
+  useEffect(() => {
+    if (isTourActive && (tourStep === 6 || tourStep === 7)) {
+      if (!selectedFile && primaryEvidences.length > 0) {
+        setSelectedFile(primaryEvidences[0]);
+      }
+    }
+  }, [isTourActive, tourStep, selectedFile, primaryEvidences]);
 
   const [deleteFolderTarget, setDeleteFolderTarget] = useState<any>(null);
   const [fileToRerun, setFileToRerun] = useState<any>(null);
@@ -755,40 +766,46 @@ export default function ExtractionTab() {
         "border-r border-slate-200 bg-white flex flex-col shrink-0 z-10 shadow-[1px_0_10px_rgba(0,0,0,0.02)] transition-all duration-300",
         activeFile ? "w-[320px]" : "flex-1"
       )}>
-        <div className="p-5 border-b border-slate-100 shrink-0 bg-white">
+        <div className="p-5 shrink-0 bg-white">
           <div className="flex flex-wrap items-center justify-between gap-3 w-full">
-            <div className="flex items-center gap-2 flex-1 min-w-[200px]">
+            <div className="flex items-center gap-3 flex-1 min-w-[200px]">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button 
-                    className="h-9 bg-slate-900 hover:bg-slate-800 text-white font-black px-3 rounded-[4px] text-[10px] uppercase tracking-widest gap-1.5 shrink-0 shadow-sm"
+                    id="tour-step-2-upload"
+                    className="h-9 bg-white hover:bg-slate-50 text-slate-900 border border-slate-200 font-black px-4 rounded-md text-[10px] uppercase tracking-widest gap-1.5 shrink-0 shadow-sm transition-all"
                   >
-                    <Plus className="h-3.5 w-3.5" /> TAMBAH
+                    <Plus className="h-4 w-4 text-slate-500" /> TAMBAH
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-48 rounded-[4px]">
-                  <DropdownMenuItem onClick={() => setIsCreateFolderModalOpen(true)} className="text-[11px] font-bold py-2.5 rounded-[4px]">
+                <DropdownMenuContent align="start" className="w-48 rounded-md shadow-lg border-slate-200">
+                  <DropdownMenuItem onClick={() => setIsCreateFolderModalOpen(true)} className="text-[11px] font-bold py-2.5 cursor-pointer">
                     <FolderPlus className="h-4 w-4 mr-2.5 text-emerald-600" /> Buat Folder
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => setIsUploadModalOpen(true)} className="text-[11px] font-bold py-2.5 rounded-[4px]">
+                  <DropdownMenuItem onClick={() => setIsUploadModalOpen(true)} className="text-[11px] font-bold py-2.5 cursor-pointer">
                     <FileUp className="h-4 w-4 mr-2.5 text-slate-500" /> Upload File
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setIsUploadModalOpen(true)} className="text-[11px] font-bold py-2.5 rounded-[4px]">
+                  <DropdownMenuItem onClick={() => setIsUploadModalOpen(true)} className="text-[11px] font-bold py-2.5 cursor-pointer">
                     <FolderUp className="h-4 w-4 mr-2.5 text-slate-500" /> Upload Folder
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              <div className="relative flex-1 max-w-[240px]">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-300" />
-                <input 
-                  type="text" 
-                  placeholder="Search..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full h-9 bg-slate-50 border border-slate-100 rounded-[4px] pl-9 pr-4 text-[11px] font-bold focus:ring-1 focus:ring-[#0f62fe]/20 focus:border-[#0f62fe] transition-all outline-none"
-                />
+              <div id="tour-step-3-search" className="relative flex-1 max-w-[400px] flex items-center gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <input 
+                    type="text" 
+                    placeholder="Cari nama atau tipe berkas..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full h-9 bg-white border border-slate-200 rounded-md pl-9 pr-4 text-xs font-medium text-slate-700 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all outline-none shadow-sm"
+                  />
+                </div>
+                <Button variant="outline" className="h-9 w-9 p-0 rounded-md border-slate-200 text-slate-500 hover:text-slate-900 bg-white shadow-sm shrink-0">
+                  <Filter className="h-4 w-4" />
+                </Button>
               </div>
             </div>
 
@@ -832,26 +849,19 @@ export default function ExtractionTab() {
                </button>
             </div>
           </div>
-        <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar bg-white border-t border-slate-100 relative">
-          {/* Table Header */}
-          <div className="grid grid-cols-[minmax(250px,_1fr)_150px_180px_130px_60px] gap-4 items-center px-4 py-2 bg-slate-50/90 border-b border-slate-200 text-[10px] font-black text-slate-500 uppercase tracking-widest sticky top-0 z-10 backdrop-blur-sm">
-            <div className="pl-12">NAMA BERKAS</div>
-            <div>TIPE</div>
-            <div>TANGGAL UNGGAH</div>
-            <div>STATUS AI</div>
-            <div className="text-center">AKSI</div>
-          </div>
+        <div id="tour-step-4-groups" className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar bg-white relative">
+          {/* Table Header removed per user request */}
 
           <div className="space-y-0">
 
             {/* BUKTI UTAMA / DATA CCR */}
-            <div className="mt-4 border-t border-slate-100 pt-2">
-              <div className="px-4 py-2 flex items-center justify-between">
-                <div className="flex items-center gap-1.5">
-                  <Database className="h-4 w-4 text-slate-400" />
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Data CCR</span>
+            <div className="mt-2">
+              <div className="px-4 py-2.5 flex items-center justify-between bg-slate-100/80 border-y border-slate-200 shadow-sm">
+                <div className="flex items-center gap-2">
+                  <Database className="h-4 w-4 text-slate-500" />
+                  <span className="text-[11px] font-bold text-slate-700 uppercase tracking-widest">DATA CCR</span>
                 </div>
-                <span className="text-[10px] font-bold text-slate-400">{primaryEvidences.length}</span>
+                <span className="text-[11px] font-bold text-slate-500 bg-slate-200/50 px-2 py-0.5 rounded-full">{primaryEvidences.length}</span>
               </div>
               <div className="bg-white">
                 {primaryEvidences.map((evidence) => (
@@ -871,14 +881,14 @@ export default function ExtractionTab() {
               </div>
             </div>
 
-            {/* BUKTI PENDUKUNG (formerly File Mandiri / Bukti Tambahan) */}
-            <div className="mt-4 border-t border-slate-100 pt-2">
-              <div className="px-4 py-2 flex items-center justify-between">
-                <div className="flex items-center gap-1.5">
-                  <FileText className="h-4 w-4 text-slate-400" />
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Bukti Pendukung</span>
+            {/* BUKTI PENDUKUNG */}
+            <div className="mt-6">
+              <div className="px-4 py-2.5 flex items-center justify-between bg-slate-100/80 border-y border-slate-200 shadow-sm">
+                <div className="flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-slate-500" />
+                  <span className="text-[11px] font-bold text-slate-700 uppercase tracking-widest">BUKTI PENDUKUNG</span>
                 </div>
-                <span className="text-[10px] font-bold text-slate-400">
+                <span className="text-[11px] font-bold text-slate-500 bg-slate-200/50 px-2 py-0.5 rounded-full">
                   {batches.filter(b => b.type === "Folder").length + filteredFiles.filter((f: any) => !batches.find(b => b.id === f.batch_id && b.type === "Folder")).length}
                 </span>
               </div>
@@ -889,8 +899,8 @@ export default function ExtractionTab() {
                 <div 
                   onClick={() => toggleBatch(batch.id)}
                   className={cn(
-                    "grid grid-cols-[minmax(250px,_1fr)_150px_180px_130px_60px] gap-4 items-center px-4 py-1.5 min-h-[40px] hover:bg-slate-50 cursor-pointer transition-all group/header bg-white",
-                    expandedBatches.includes(batch.id) ? "bg-slate-50/50" : ""
+                    "grid grid-cols-[minmax(250px,_1fr)_150px_160px_140px_130px_60px] gap-4 items-center px-4 py-2 min-h-[44px] hover:bg-slate-200/50 cursor-pointer transition-all group/header",
+                    expandedBatches.includes(batch.id) ? "bg-slate-100/60 shadow-inner" : "bg-slate-50/80"
                   )}
                 >
                   {/* Col 1: Name and Icon */}
@@ -908,6 +918,11 @@ export default function ExtractionTab() {
                   {/* Col 2: Type */}
                   <div className="text-[11px] text-slate-500 font-medium truncate">
                     Folder Berkas
+                  </div>
+
+                  {/* Col 2.5: Uploader */}
+                  <div className="text-[11px] text-slate-500 font-medium truncate">
+                    -
                   </div>
 
                   {/* Col 3: Date */}
@@ -965,9 +980,9 @@ export default function ExtractionTab() {
                 </div>
 
                 {expandedBatches.includes(batch.id) && (
-                  <div className="bg-white">
+                  <div className="bg-slate-50/30 shadow-[inset_0_2px_4px_rgba(0,0,0,0.01)] border-t border-slate-100">
                     {files.filter((f: any) => f.batch_id === batch.id).length === 0 ? (
-                      <div className="h-[40px] flex items-center px-12 text-[10px] font-medium text-slate-400 uppercase tracking-widest italic">FOLDER KOSONG</div>
+                      <div className="h-[44px] flex items-center px-12 text-[10px] font-medium text-slate-400 uppercase tracking-widest italic bg-white">FOLDER KOSONG</div>
                     ) : (
                       files.filter((f: any) => f.batch_id === batch.id).map((file: any) => (
                         <FileRow 
@@ -1068,7 +1083,7 @@ export default function ExtractionTab() {
               </div>
         </div>
 
-         <div className="flex-1 overflow-auto bg-[#f0f2f4] p-6 flex flex-col items-center custom-scrollbar" style={{ minWidth: 0 }}>
+         <div id="tour-step-6-preview" className="flex-1 overflow-auto bg-[#f0f2f4] p-6 flex flex-col items-center custom-scrollbar" style={{ minWidth: 0 }}>
              <div className={`w-full flex ${(activeFile?.type === "Image" || activeFile?.type === "Document") ? "max-w-5xl h-full items-center justify-center" : "max-w-5xl items-start justify-center pt-4"}`}>
                  <AdaptiveSourcePreview 
                     file={activeFile} 
@@ -1090,7 +1105,7 @@ export default function ExtractionTab() {
       </div>
 
       {!(activeFile.type?.toLowerCase() === "case-metadata") && (
-        <div className="w-[460px] border-l border-slate-200 bg-white flex flex-col shrink-0 z-20 shadow-[-2px_0_10px_rgba(0,0,0,0.03)] overflow-hidden">
+        <div id="tour-step-7-insights" className="w-[460px] border-l border-slate-200 bg-white flex flex-col shrink-0 z-20 shadow-[-2px_0_10px_rgba(0,0,0,0.03)] overflow-hidden">
           {(() => {
                if (activeFile.extraction_status === "failed") {
                  return (

@@ -47,7 +47,8 @@ import {
 import { cn } from "@/lib/utils";
 import { useEvidence } from "@/hooks/useEvidence";
 import { AgentState, AgentRunHistory, EvidenceTraceLink } from "@/types/workspace";
-import { FactChronologyModule } from "@/components/analysis/FactChronologyModule";
+import { FactChronologyModule, TraceabilityPanel } from "@/components/analysis/FactChronologyModule";
+import { ActorAnalysisModule, ActorDetailPanel } from "@/components/analysis/ActorAnalysisModule";
 
 // Icons mapping for local use
 const AudioIcon = Activity;
@@ -56,9 +57,9 @@ const DocIcon = FileText;
 const initialAgentsState: AgentState[] = [
   { 
      id: 'fact', 
-     name: 'Fact & Chronology', 
+     name: 'Fakta & Kronologi', 
      icon: Clock, 
-     purpose: 'Reconstruct sequence of events from raw evidence batches.', 
+     purpose: 'Merekonstruksi urutan kejadian dari bukti-bukti mentah.', 
      status: 'completed', 
      dependencies: [],
      runCount: 3,
@@ -236,52 +237,333 @@ const initialAgentsState: AgentState[] = [
      }
   },
   { 
-     id: 'peepo', 
-     name: 'PEEPO Factor', 
-     icon: Users, 
-     purpose: 'Synthesize People, Equipment, Environment, Procedure, and Organisation factors.', 
+     id: 'actor', 
+     name: 'Analisis Aktor', 
+     icon: User, 
+     purpose: 'Mengidentifikasi dan menganalisis peran, tanggung jawab, dan hubungan aktor utama.', 
      status: 'completed', 
      dependencies: ['fact'],
-     runCount: 1,
-     lastRunTimestamp: "Yesterday, 4:15 PM",
-     tokenEstimate: 4500,
-     history: [],
-     backendCapabilities: { canPause: true, canResume: true, canStop: true, canRerun: true },
-     results: {
-        people: ["Operator failure to recognize early vibration signs", "Fatigue during end-of-shift transition"],
-        environment: ["High dust levels in Zone B affecting sensor accuracy", "Inadequate lighting near Section 14 drives"],
-        equipment: ["Belt tensioner malalignment", "Sensor lag in SCADA relay"],
-        procedures: ["Incomplete pre-start checklist for conveyor belts", "Delayed emergency response protocol"],
-        organisation: ["Insufficient maintenance staffing for Site Alpha", "Budget constraints on high-grade replacement parts"],
-        ringkasan: "Multiple systemic failures across all PEEPO categories contributed to the belt rupture.",
-        synthesis: "CRITICAL: The interplay between equipment fatigue and procedural gaps created a window for failure."
-     }
-  },
-  { 
-     id: 'actor', 
-     name: 'Aktor Analisis', 
-     icon: User, 
-     purpose: 'Identify and analyze roles, responsibilities, and relationships of key actors.', 
-     status: 'completed', 
-     dependencies: ['peepo'],
      runCount: 1,
      lastRunTimestamp: "Yesterday, 4:18 PM",
      tokenEstimate: 2800,
      history: [],
      backendCapabilities: { canPause: true, canResume: true, canStop: true, canRerun: true },
      results: {
-        actors: [
-           { name: "Operator Saiful", role: "Operator Unit Hauling", responsibility: "Mengemudikan unit secara aman sesuai prosedur keselamatan kerja", findings: "Terbaca deviasi fatigue sebanyak 41 kali selama Minggu 10-41" },
-           { name: "Pengawas Fatur", role: "Pengawas Lapangan", responsibility: "Melakukan pengawasan & validasi kelelahan kru di lapangan", findings: "Mengonfirmasi kondisi operator via WA saja tanpa meminta bukti foto/visual" },
-           { name: "Petugas Aris", role: "DMS Control Room Operator", responsibility: "Memantau alert fatigue pada sistem DMS & mengoordinasikan intervensi", findings: "Hanya fokus di jalur emergency pasca-kecelakaan karena respons terbatas" }
+        actor_registry_status: {
+           total_ccr_actors: 8,
+           total_fact_chronology_actors: 11,
+           total_system_actors: 3,
+           matched_actors: 6,
+           unmatched_ccr_actors: 2,
+           missing_from_ccr: 2,
+           predicted_actor_type_count: 1,
+           recommended_for_review_count: 2,
+           downstream_allowed_count: 5,
+           downstream_hold_for_review_count: 3,
+           confidence: "High"
+        },
+        crosscheck_findings: {
+           missing_from_ccr: [],
+           listed_in_ccr_not_found_in_chronology: [],
+           role_conflicts: [],
+           duplicate_candidates: [],
+           weak_identity_matches: [],
+           predicted_roles_needing_review: []
+        },
+        actor_registry: [
+           {
+              actor_id: "a-001",
+              beid: "BE-7654",
+              name: "Operator Saiful",
+              company: "PT KMB",
+              ccr_category: "Korban / Terlibat Langsung",
+              jabatan_struktural: "Operator Hauler",
+              involvement_level: "primary_involved_worker",
+              actor_type_assignments: [],
+              linked_events: [
+                 { event_id: "e1", phase: "PRA_KONTAK", time: "22:15 WITA", action_summary: "Sistem DMS memicu peringatan kritis kategori Lockdown pada unit yang sedang dioperasikan oleh Operator Saiful" },
+                 { event_id: "e2", phase: "KONTAK", time: "01:35 WITA", action_summary: "Unit Operator Saiful mengalami kecelakaan tunggal yang teramati melalui video surveillance DMS" }
+              ],
+              identity_decomposition: {
+                 subject: { value: "Operator Saiful (BE-7654)" },
+                 action: { value: "Mengemudikan unit secara aman sesuai prosedur keselamatan kerja" },
+                 object: { value: "Unit Hauling" },
+                 source_system: { value: "DMS System & CCR Database" },
+                 condition: { value: "Tercatat mengalami deviasi fatigue 41 kali dalam proses investigasi" }
+              },
+              role_crosscheck_decomposition: {
+                 ccr_role_claim: { value: "Operator Hauler (Korban / Terlibat Langsung)" },
+                 chronology_role_observation: { value: "Mengoperasikan unit dan mengalami fatigue lockdown sebelum kecelakaan tunggal" },
+                 match_result: { value: "Matched" }
+              },
+              review_recommendation: {
+                 recommended_for_review: false,
+                 review_priority: "None",
+                 review_reason: null,
+                 downstream_usage: "allowed",
+                 downstream_note: null
+              }
+           },
+           {
+              actor_id: "a-002",
+              beid: "BE-9182",
+              name: "Pengawas Fatur",
+              company: "PT KMB",
+              ccr_category: "Pengawas Lapangan",
+              jabatan_struktural: "Supervisor Hauling",
+              involvement_level: "direct_supervisor",
+              actor_type_assignments: [],
+              linked_events: [
+                 { event_id: "e3", phase: "PRA_KONTAK", time: "Pasca 22:15", action_summary: "Pengawas Fatur mengonfirmasi kondisi operator dalam keadaan baik secara verbal melalui aplikasi WhatsApp tanpa bukti visual" }
+              ],
+              identity_decomposition: {
+                 subject: { value: "Pengawas Fatur (BE-9182)" },
+                 action: { value: "Melakukan pengawasan & validasi kelelahan kru di lapangan" },
+                 object: { value: "Kru Hauling (Saiful)" },
+                 source_system: { value: "Log WhatsApp & BAP Investigasi" },
+                 condition: { value: "Tugas jaga malam / Shift Kritis" }
+              },
+              role_crosscheck_decomposition: {
+                 ccr_role_claim: { value: "Pengawas Lapangan" },
+                 chronology_role_observation: { value: "Hanya melakukan validasi verbal via chat WhatsApp tanpa bukti visual" },
+                 match_result: { value: "Role Conflict" }
+              },
+              review_recommendation: {
+                 recommended_for_review: true,
+                 review_priority: "Medium",
+                 review_reason: "Validasi pengawasan tidak sesuai prosedur standar",
+                 downstream_usage: "allowed_with_note",
+                 downstream_note: "Pengawasan dilakukan dengan deviasi (tanpa visual)"
+              }
+           },
+           {
+              actor_id: "a-003",
+              beid: "BE-5511",
+              name: "Petugas Aris",
+              company: "PT Berau Coal",
+              ccr_category: "DMS Control Room Operator",
+              jabatan_struktural: "Petugas CCR",
+              involvement_level: "system_actor",
+              actor_type_assignments: [],
+              linked_events: [
+                 { event_id: "e4", phase: "PASCA_KONTAK", time: "Pasca 01:35", action_summary: "Petugas Control Room (Aris) dengan monitoring standby memfokuskan pemantauan pada jalur emergency dikarenakan respons pengawas lapangan terbatas" }
+              ],
+              identity_decomposition: {
+                 subject: { value: "Petugas Aris (BE-5511)" },
+                 action: { value: "Memantau alert fatigue pada sistem DMS & mengoordinasikan intervensi" },
+                 object: { value: "Sistem DMS (Dashboard)" },
+                 source_system: { value: "Log Radio & BAP" },
+                 condition: { value: "Memfokuskan pada jalur emergency pasca-kejadian" }
+              },
+              role_crosscheck_decomposition: {
+                 ccr_role_claim: { value: "DMS Control Room Operator" },
+                 chronology_role_observation: { value: "Memantau alert dan merespons melalui radio/DMS" },
+                 match_result: { value: "Matched" }
+              },
+              review_recommendation: {
+                 recommended_for_review: false,
+                 review_priority: "None",
+                 review_reason: null,
+                 downstream_usage: "allowed",
+                 downstream_note: null
+              }
+           }
         ]
      }
   },
   { 
+     id: 'peepo', 
+     name: 'Faktor PEEPO', 
+     icon: Users, 
+     purpose: 'Mensintesis faktor Manusia, Peralatan, Lingkungan, Prosedur, dan Organisasi.', 
+     status: 'completed', 
+     dependencies: ['actor'],
+     runCount: 1,
+     lastRunTimestamp: "Yesterday, 4:15 PM",
+     tokenEstimate: 4500,
+     history: [],
+     backendCapabilities: { canPause: true, canResume: true, canStop: true, canRerun: true },
+     results: {
+        people: [
+          {
+            id: "peepo-p1",
+            chronology_text: "Sdr Ade Lukmanul Hakim tidak langsung mengaktifkan tombol Emergency Shut Down Engine Saat melihat indikasi awal adanya Fire Case di Area Engine WA 500- 3 MIJ 1001 dikarenakan panik",
+            status: "human_verified",
+            breakdown: {
+              subject:  { value: "Sdr Ade Lukmanul Hakim", citations: [] },
+              action:   { value: "tidak langsung mengaktifkan tombol Emergency Shut Down Engine", citations: [] },
+              location: { value: "Area Engine WA 500- 3 MIJ 1001", citations: [] },
+              condition:{ value: "Saat melihat indikasi awal adanya Fire Case", citations: [] },
+              why:      { value: "dikarenakan panik", citations: [] }
+            }
+          },
+          {
+            id: "peepo-p2",
+            chronology_text: "Operator Wheel Loader belum memahami sepenuhnya prosedur penggunaan Fire Suppression sistem otomatis saat kejadian berlangsung",
+            status: "needs_review",
+            breakdown: {
+              subject:  { value: "Operator Wheel Loader", citations: [] },
+              action:   { value: "belum memahami sepenuhnya prosedur penggunaan Fire Suppression sistem otomatis", citations: [] },
+              condition:{ value: "saat kejadian berlangsung", citations: [] }
+            }
+          },
+          {
+            id: "peepo-p3",
+            chronology_text: "Pengawas area tidak berada di lokasi saat indikasi awal api muncul sehingga instruksi tanggap darurat tertunda",
+            status: "ai_generated",
+            breakdown: {
+              subject:  { value: "Pengawas area", citations: [] },
+              action:   { value: "tidak berada di lokasi", citations: [] },
+              condition:{ value: "saat indikasi awal api muncul", citations: [] },
+              why:      { value: "instruksi tanggap darurat tertunda", citations: [] }
+            }
+          }
+        ],
+        environment: [
+          {
+            id: "peepo-e1",
+            chronology_text: "Terdapat material batu bara / fine Coal yang menumpuk pada bagian atas fuel tank sisi kiri dan kanan , yang menyelip anatar hose oli cooler transmisi dan Hydraulic ( Pembersihan yang dilakukan tidak menyeluruh pada semua bagian atas Fuel Tank , bagian yang dibersihkan hanya yang terlihat dari luar / bagian bawah oil pan )",
+            status: "ai_generated",
+            breakdown: {
+              object:   { value: "material batu bara / fine Coal", citations: [] },
+              action:   { value: "menumpuk pada bagian atas fuel tank sisi kiri dan kanan , yang menyelip anatar hose oli cooler transmisi dan Hydraulic", citations: [] },
+              condition:{ value: "Pembersihan yang dilakukan tidak menyeluruh pada semua bagian atas Fuel Tank", citations: [] },
+              why:      { value: "bagian yang dibersihkan hanya yang terlihat dari luar / bagian bawah oil pan", citations: [] }
+            }
+          },
+          {
+            id: "peepo-e2",
+            chronology_text: "Suhu ruang mesin yang tinggi dipicu oleh sirkulasi udara yang kurang baik di area terowongan blok C",
+            status: "ai_generated",
+            breakdown: {
+              object:   { value: "Suhu ruang mesin", citations: [] },
+              action:   { value: "tinggi dipicu oleh sirkulasi udara yang kurang baik", citations: [] },
+              location: { value: "area terowongan blok C", citations: [] }
+            }
+          },
+          {
+            id: "peepo-e3",
+            chronology_text: "Terdapat paparan debu tebal yang menutupi sensor panas, sehingga alarm dini terlambat berbunyi",
+            status: "partially_supported",
+            breakdown: {
+              object:   { value: "paparan debu tebal", citations: [] },
+              action:   { value: "menutupi sensor panas", citations: [] },
+              why:      { value: "alarm dini terlambat berbunyi", citations: [] }
+            }
+          }
+        ],
+        equipment: [
+          {
+            id: "peepo-eq1",
+            chronology_text: "Tidak ada indikasi Fire Supporession aktif saat operator menekan tombol manual yang ada di luar cabin ( tombol yang berada di tangga bagian kanan )",
+            status: "ai_generated",
+            breakdown: {
+              action:   { value: "Tidak ada indikasi Fire Supporession aktif", citations: [] },
+              subject:  { value: "operator", citations: [] },
+              object:   { value: "tombol manual", citations: [] },
+              location: { value: "di luar cabin ( tombol yang berada di tangga bagian kanan )", citations: [] }
+            }
+          },
+          {
+            id: "peepo-eq2",
+            chronology_text: "Fire Suppression yang terpasang pada unit WA 500-3 MIJ 1001 belum dilakukan perawatan Rutin setiap minimal 6 bulan sekali , pemeriksaan dan perbaikan terakhir di tanggal 10 Agustus 2024",
+            status: "human_verified",
+            breakdown: {
+              object:   { value: "Fire Suppression", citations: [] },
+              location: { value: "unit WA 500-3 MIJ 1001", citations: [] },
+              action:   { value: "belum dilakukan perawatan Rutin setiap minimal 6 bulan sekali", citations: [] },
+              condition:{ value: "pemeriksaan dan perbaikan terakhir di tanggal 10 Agustus 2024", citations: [] }
+            }
+          },
+          {
+            id: "peepo-eq3",
+            chronology_text: "Hose hidrolik yang berdekatan dengan fuel tank mengalami penipisan akibat gesekan terus-menerus dengan chasis unit",
+            status: "ai_generated",
+            breakdown: {
+              object:   { value: "Hose hidrolik", citations: [] },
+              location: { value: "berdekatan dengan fuel tank", citations: [] },
+              action:   { value: "mengalami penipisan", citations: [] },
+              why:      { value: "akibat gesekan terus-menerus dengan chasis unit", citations: [] }
+            }
+          }
+        ],
+        procedures: [
+          {
+            id: "peepo-pr1",
+            chronology_text: "Proses pencucian unit pada area engine belum diatur dengan detail dan terukur , sehingga saat dilakukan pencucian unit Whelloader material Fine coal hanya yang berada diatas fuel Tank hanya pada area yang kelihatan dari luar , bagian sisi kanan dan kiri dekat chasis masih terdapat sisa fine coal",
+            status: "needs_review",
+            breakdown: {
+              object:   { value: "Proses pencucian unit", citations: [] },
+              location: { value: "area engine", citations: [] },
+              action:   { value: "belum diatur dengan detail dan terukur", citations: [] },
+              condition:{ value: "material Fine coal hanya yang berada diatas fuel Tank hanya pada area yang kelihatan dari luar", citations: [] },
+              why:      { value: "bagian sisi kanan dan kiri dekat chasis masih terdapat sisa fine coal", citations: [] }
+            }
+          },
+          {
+            id: "peepo-pr2",
+            chronology_text: "Belum ada schedule Drill Penangganan Fire Case , sehingga berpotensi Operator belum bisa mengatasi cara penangganan Tanggap darurat dengan benar",
+            status: "ai_generated",
+            breakdown: {
+              action:   { value: "Belum ada schedule Drill Penangganan Fire Case", citations: [] },
+              subject:  { value: "Operator", citations: [] },
+              why:      { value: "berpotensi Operator belum bisa mengatasi cara penangganan Tanggap darurat dengan benar", citations: [] }
+            }
+          },
+          {
+            id: "peepo-pr3",
+            chronology_text: "Protokol pelaporan insiden kebakaran tidak memiliki matriks eskalasi yang jelas untuk menghubungi tim pemadam eksternal",
+            status: "ai_generated",
+            breakdown: {
+              object:   { value: "Protokol pelaporan insiden kebakaran", citations: [] },
+              action:   { value: "tidak memiliki matriks eskalasi yang jelas", citations: [] },
+              why:      { value: "untuk menghubungi tim pemadam eksternal", citations: [] }
+            }
+          }
+        ],
+        organisation: [
+          {
+            id: "peepo-o1",
+            chronology_text: "Dalam Pemenuhan Tindakan Perbaikan dan pecegahan atas Rekomendasi Investigasi hanya data terkait pihak atau unit yang terlibat saja yang dimasukan dalam penginputan di system Talkslist Tindakan perbaikan , sehingga masih menungkinkan beberapa hal terlewat ditindaklanjuti dengam penuh",
+            status: "ai_generated",
+            breakdown: {
+              object:   { value: "Tindakan Perbaikan dan pecegahan atas Rekomendasi Investigasi", citations: [] },
+              action:   { value: "hanya data terkait pihak atau unit yang terlibat saja yang dimasukan dalam penginputan", citations: [] },
+              location: { value: "system Talkslist Tindakan perbaikan", citations: [] },
+              why:      { value: "masih menungkinkan beberapa hal terlewat ditindaklanjuti dengam penuh", citations: [] }
+            }
+          },
+          {
+            id: "peepo-o2",
+            chronology_text: "Petugas / Whasing man belum diberikan Job Desc yang detail terkait hasil pencucian unit yang baik",
+            status: "partially_supported",
+            breakdown: {
+              subject:  { value: "Petugas / Whasing man", citations: [] },
+              action:   { value: "belum diberikan Job Desc yang detail", citations: [] },
+              condition:{ value: "terkait hasil pencucian unit yang baik", citations: [] }
+            }
+          },
+          {
+            id: "peepo-o3",
+            chronology_text: "Manajemen site belum mengalokasikan anggaran khusus untuk peremajaan sistem Fire Suppression otomatis pada unit lama",
+            status: "needs_review",
+            breakdown: {
+              subject:  { value: "Manajemen site", citations: [] },
+              action:   { value: "belum mengalokasikan anggaran khusus", citations: [] },
+              object:   { value: "sistem Fire Suppression otomatis", citations: [] },
+              condition:{ value: "pada unit lama", citations: [] }
+            }
+          }
+        ],
+        ringkasan: "Multiple systemic failures across all PEEPO categories contributed to the belt rupture.",
+        synthesis: "CRITICAL: The interplay between equipment fatigue and procedural gaps created a window for failure."
+     }
+  },
+  { 
      id: 'ipls', 
-     name: 'IPLS Layers', 
+     name: 'Lapisan IPLS', 
      icon: LayoutGrid, 
-     purpose: 'Integrated Profile Layer analysis for defensive barrier audit.', 
+     purpose: 'Mengevaluasi Lapisan Perlindungan Awal terhadap bahaya yang teridentifikasi.', 
      status: 'completed', 
      dependencies: ['actor'],
      runCount: 1,
@@ -299,9 +581,9 @@ const initialAgentsState: AgentState[] = [
   },
   { 
      id: 'prev', 
-     name: 'Prevention Plan', 
+     name: 'Rencana Pencegahan', 
      icon: Brain, 
-     purpose: 'Generate industrial-grade action plan to prevent recurrence.', 
+     purpose: 'Membuat rencana tindakan perbaikan dan pencegahan.', 
      status: 'completed', 
      dependencies: ['ipls'],
      runCount: 1,
@@ -751,11 +1033,11 @@ export default function AnalysisTab() {
             <div className="h-12 border-b border-slate-200 flex items-center justify-between px-5 bg-white shrink-0">
                <div className="flex items-center gap-2">
                   <div className={`h-2 w-2 rounded-full ${globalStatus === 'running' ? 'bg-amber-500 animate-pulse' : 'bg-slate-300'}`} />
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Orchestration</span>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Orkestrasi</span>
                </div>
                {globalStatus === 'running' && (
                   <Button onClick={stopChain} variant="ghost" size="sm" className="h-7 px-2 text-[9px] font-bold text-rose-500 hover:bg-rose-50 border border-rose-100">
-                     <XCircle className="h-3 w-3 mr-1" /> Stop
+                     <XCircle className="h-3 w-3 mr-1" /> Hentikan
                   </Button>
                )}
             </div>
@@ -766,7 +1048,7 @@ export default function AnalysisTab() {
                   disabled={globalStatus === 'running'}
                   className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-[10px] uppercase tracking-wider h-10  border-none group"
                >
-                  <Play className="h-3 w-3 mr-2 group-hover:translate-x-0.5 transition-transform" /> Execute Full Chain
+                  <Play className="h-3 w-3 mr-2 group-hover:translate-x-0.5 transition-transform" /> Eksekusi Semua Agen
                </Button>
             </div>
 
@@ -804,7 +1086,6 @@ export default function AnalysisTab() {
 
                         <div className="space-y-1 mb-4">
                            <h4 className={`text-[11px] font-black uppercase tracking-[0.15em] ${selectedAgentId === agent.id ? "text-slate-900" : "text-slate-500"}`}>{agent.name}</h4>
-                           <p className="text-[10px] font-medium text-slate-400 leading-snug line-clamp-2 opacity-80">{agent.purpose}</p>
                         </div>
 
                         <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-50">
@@ -814,7 +1095,7 @@ export default function AnalysisTab() {
                                  variant="outline" 
                                  className="col-span-2 h-10 bg-rose-50 hover:bg-rose-100 border-rose-100 text-rose-600 text-[10px] font-black uppercase tracking-[0.1em] rounded-sm transition-all"
                               >
-                                 <XCircle className="h-4 w-4 mr-2" /> Stop Node
+                                 <XCircle className="h-4 w-4 mr-2" /> Hentikan Agen
                               </Button>
                            ) : (
                               <>
@@ -822,7 +1103,7 @@ export default function AnalysisTab() {
                                     onClick={(e) => { e.stopPropagation(); setPreRunAgentId(agent.id); }}
                                     className="h-10 bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-black uppercase tracking-[0.1em] rounded-sm shadow-[0_4px_12px_rgba(0,0,0,0.15)] transition-all hover:-translate-y-0.5 active:translate-y-0"
                                  >
-                                    <Play className="h-3.5 w-3.5 mr-2 fill-current" /> {agent.runCount > 0 ? "Rerun" : "Execute"}
+                                    <Play className="h-3.5 w-3.5 mr-2 fill-current" /> {agent.runCount > 0 ? "Jalankan Ulang" : "Eksekusi"}
                                  </Button>
                                  <div className="flex gap-1.5">
                                     <Button 
@@ -854,8 +1135,8 @@ export default function AnalysisTab() {
                                         >
                                            <div className="bg-white">
                                               <div className="p-4 border-b border-slate-50 bg-slate-50/30 flex items-center justify-between">
-                                                 <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Knowledge Sources</h3>
-                                                 <span className="text-[9px] font-bold text-slate-400 bg-white px-2 py-0.5 border rounded-full">{evidenceFiles.length} Assets</span>
+                                                 <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Sumber Pengetahuan</h3>
+                                                 <span className="text-[9px] font-bold text-slate-400 bg-white px-2 py-0.5 border rounded-full">{evidenceFiles.length} Aset</span>
                                               </div>
                                               
                                               <div className="max-h-[320px] overflow-y-auto p-2 custom-scrollbar">
@@ -947,7 +1228,7 @@ export default function AnalysisTab() {
                                               
                                               <div className="p-4 border-t border-slate-50 bg-slate-50/10">
                                                  <div className="flex items-center justify-between mb-2">
-                                                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none">Active Payload</span>
+                                                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none">Muatan Aktif</span>
                                                     <span className="text-[10px] font-black text-slate-900 tabular-nums">
                                                        {(localKnowledgeSelection[agent.id] || []).filter(id => evidenceFiles.some(f => f.id === id)).length} / {evidenceFiles.length}
                                                     </span>
@@ -966,7 +1247,7 @@ export default function AnalysisTab() {
                                                     disabled={JSON.stringify(localKnowledgeSelection[agent.id]) === JSON.stringify(agent.knowledgeSelection)}
                                                     className="w-full h-9 bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-black uppercase tracking-widest rounded-sm disabled:opacity-30 transition-all"
                                                  >
-                                                    Save Changes
+                                                    Simpan Perubahan
                                                  </Button>
                                               </div>
                                            </div>
@@ -997,12 +1278,12 @@ export default function AnalysisTab() {
                            {selectedAgent?.status === 'running' ? (
                               <div className="flex flex-col items-center justify-center h-full text-center space-y-8 animate-pulse text-slate-300">
                                  <Loader2 className="h-12 w-12 animate-spin" />
-                                 <span className="text-[20px] font-black uppercase tracking-[0.2em]">{selectedAgent.microStatus || "Processing Matrix..."}</span>
+                                 <span className="text-[20px] font-black uppercase tracking-[0.2em]">{selectedAgent.microStatus || "Memproses Matriks..."}</span>
                               </div>
                            ) : !selectedAgent?.results ? (
                               <div className="flex flex-col h-full items-center justify-center text-center opacity-30 grayscale pointer-events-none space-y-6">
                                  <Cpu className="h-12 w-12 text-slate-300" />
-                                 <h2 className="text-3xl font-black uppercase tracking-[0.2em] text-slate-400">Node Standby</h2>
+                                 <h2 className="text-3xl font-black uppercase tracking-[0.2em] text-slate-400">Agen Siaga</h2>
                               </div>
                            ) : (
                               <div className="flex-1 animate-in fade-in duration-500 overflow-hidden">
@@ -1032,11 +1313,11 @@ export default function AnalysisTab() {
                                                <div className="h-12 flex items-center justify-between px-5 border-b border-slate-200 bg-white shrink-0">
                                                   <div className="flex items-center gap-2">
                                                      <div className="h-2 w-2 rounded-full bg-[#8ba861]" />
-                                                     <h2 className="text-[10px] font-black text-slate-900 uppercase tracking-widest">PEEPO Factor Analysis Sheet</h2>
+                                                     <h2 className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Lembar Analisis Faktor PEEPO</h2>
                                                   </div>
                                                   <div className="flex items-center gap-2">
                                                      <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse" />
-                                                     <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Synthesis Complete</span>
+                                                     <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Sintesis Selesai</span>
                                                   </div>
                                                </div>
                                                
@@ -1060,9 +1341,7 @@ export default function AnalysisTab() {
                                                               <table className="w-full text-left border-collapse">
                                                                  <thead>
                                                                     <tr className="bg-slate-50/80">
-                                                                       <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest w-24 border-r border-b border-slate-200 bg-slate-50/30">ID</th>
-                                                                       <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest border-r border-b border-slate-200 bg-slate-50/30">Forensic Finding</th>
-                                                                       <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest w-32 border-r border-b border-slate-200 bg-slate-50/30">Traceability</th>
+                                                                       <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest border-r border-b border-slate-200 bg-slate-50/30">TEMUAN</th>
                                                                     </tr>
                                                                  </thead>
                                                                  <tbody>
@@ -1078,18 +1357,12 @@ export default function AnalysisTab() {
                                                                              )}
                                                                           >
                                                                              <td className="px-5 py-4 align-top border-r border-b border-slate-200">
-                                                                                <span className="text-[11px] font-mono font-black text-slate-400">#{section.id.slice(0, 1).toUpperCase()}{idx + 1}</span>
-                                                                             </td>
-                                                                             <td className="px-5 py-4 align-top border-r border-b border-slate-200">
                                                                                 <p className={cn(
                                                                                    "text-[11px] font-bold leading-relaxed pr-8",
                                                                                    isSelected ? "text-slate-900" : "text-slate-700"
                                                                                 )}>
-                                                                                   {item.label || item}
+                                                                                   {item.chronology_text || item.label || item}
                                                                                 </p>
-                                                                             </td>
-                                                                             <td className="px-5 py-4 align-top border-r border-b border-slate-200 text-center">
-                                                                                <Search className={cn("h-3.5 w-3.5 mx-auto", isSelected ? "text-slate-900" : "text-slate-300")} />
                                                                              </td>
                                                                           </tr>
                                                                        );
@@ -1103,11 +1376,11 @@ export default function AnalysisTab() {
                                                      {/* Summary & Synthesis Indicator */}
                                                      <div className="grid grid-cols-2 gap-6 pt-4">
                                                         <div className="bg-white border-l border-t border-slate-200 p-6 shadow-sm rounded-sm">
-                                                           <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-2">Analysis Summary</span>
+                                                           <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-2">Ringkasan Analisis</span>
                                                            <p className="text-[11px] font-bold text-slate-600 leading-relaxed italic">"{selectedAgent?.results?.ringkasan}"</p>
                                                         </div>
                                                         <div className="bg-slate-900 p-6 shadow-sm border border-slate-800 rounded-sm">
-                                                           <span className="text-[9px] font-black text-emerald-400/50 uppercase tracking-widest block mb-2">Synthesis Intelligence</span>
+                                                           <span className="text-[9px] font-black text-emerald-400/50 uppercase tracking-widest block mb-2">Kecerdasan Sintesis</span>
                                                            <p className="text-[11px] font-black text-white uppercase tracking-tight leading-relaxed">{selectedAgent?.results?.synthesis}</p>
                                                         </div>
                                                      </div>
@@ -1115,63 +1388,21 @@ export default function AnalysisTab() {
                                                </div>
                                             </div>
                                          ) : selectedAgentId === 'actor' ? (
-                                            <div className="flex flex-col h-full bg-slate-50/10 animate-in fade-in duration-500 overflow-hidden">
-                                               <div className="h-12 flex items-center justify-between px-5 border-b border-slate-200 bg-white shrink-0">
-                                                  <div className="flex items-center gap-2">
-                                                     <div className="h-2 w-2 rounded-full bg-[#8ba861]" />
-                                                     <h2 className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Aktor Analisis Sheet</h2>
-                                                  </div>
-                                                  <div className="flex items-center gap-2">
-                                                     <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse" />
-                                                     <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Actor Mapping Complete</span>
-                                                  </div>
-                                               </div>
-                                               
-                                               <div className="flex-1 overflow-auto p-6 scrollbar-thin">
-                                                  <div className="max-w-[1400px] mx-auto space-y-8 pb-12">
-                                                     <div className="space-y-3">
-                                                        <div className="flex items-center gap-3">
-                                                           <span className="px-2.5 py-1 rounded text-[9px] font-black text-white uppercase tracking-widest bg-slate-900">
-                                                              Pemetaan Peran & Tanggung Jawab Aktor
-                                                           </span>
-                                                           <div className="h-px flex-1 bg-slate-200" />
-                                                        </div>
-                                                        <div className="bg-white border-l border-t border-slate-200 overflow-hidden shadow-sm">
-                                                           <table className="w-full text-left border-collapse">
-                                                              <thead>
-                                                                 <tr className="bg-slate-50/80">
-                                                                    <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest w-48 border-r border-b border-slate-200 bg-slate-50/30">NAMA AKTOR</th>
-                                                                    <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest w-56 border-r border-b border-slate-200 bg-slate-50/30">PERAN / JABATAN</th>
-                                                                    <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest border-r border-b border-slate-200 bg-slate-50/30">TANGGUNG JAWAB UTAMA</th>
-                                                                    <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest border-r border-b border-slate-200 bg-slate-50/30">TEMUAN / INVESTIGASI</th>
-                                                                 </tr>
-                                                              </thead>
-                                                              <tbody>
-                                                                 {(selectedAgent?.results?.actors || []).map((actor: any, idx: number) => (
-                                                                    <tr key={idx} className="hover:bg-slate-50/40 border-b border-slate-100 transition-colors">
-                                                                       <td className="px-5 py-3.5 text-[11px] font-bold text-slate-900 border-r border-slate-200/60 uppercase tracking-wider">{actor.name}</td>
-                                                                       <td className="px-5 py-3.5 text-[11px] font-medium text-slate-600 border-r border-slate-200/60">{actor.role}</td>
-                                                                       <td className="px-5 py-3.5 text-[11px] leading-relaxed text-slate-600 border-r border-slate-200/60">{actor.responsibility}</td>
-                                                                       <td className="px-5 py-3.5 text-[11px] leading-relaxed text-slate-700 bg-slate-50/20">{actor.findings}</td>
-                                                                    </tr>
-                                                                 ))}
-                                                              </tbody>
-                                                           </table>
-                                                        </div>
-                                                     </div>
-                                                  </div>
-                                               </div>
-                                            </div>
+                                            <ActorAnalysisModule 
+                                               data={selectedAgent?.results as any}
+                                               onSelectActor={handleSelectRow}
+                                               selectedActorId={selectedRowId}
+                                            />
                                          ) : selectedAgentId === 'ipls' ? (
                                             <div className="flex flex-col h-full bg-slate-50/10 animate-in fade-in duration-500 overflow-hidden">
                                                <div className="h-12 flex items-center justify-between px-5 border-b border-slate-200 bg-white shrink-0">
                                                   <div className="flex items-center gap-2">
                                                      <div className="h-2 w-2 rounded-full bg-[#8ba861]" />
-                                                     <h2 className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Integrated Profile Layer (IPLS) Sheet</h2>
+                                                     <h2 className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Lembar Lapisan Profil Terintegrasi (IPLS)</h2>
                                                   </div>
                                                   <div className="flex items-center gap-2">
                                                      <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse" />
-                                                     <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Defensive Audit Complete</span>
+                                                     <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Audit Defensif Selesai</span>
                                                   </div>
                                                </div>
                                                
@@ -1190,8 +1421,8 @@ export default function AnalysisTab() {
                                                                  <thead>
                                                                     <tr className="bg-slate-50/80">
                                                                        <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest w-24 border-r border-b border-slate-200 bg-slate-50/30">STATUS</th>
-                                                                       <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest border-r border-b border-slate-200 bg-slate-50/30">Defensive Audit Point</th>
-                                                                       <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest w-32 border-r border-b border-slate-200 bg-slate-50/30">Traceability</th>
+                                                                       <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest border-r border-b border-slate-200 bg-slate-50/30">Poin Audit Defensif</th>
+                                                                       <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest w-32 border-r border-b border-slate-200 bg-slate-50/30">Keterlacakan</th>
                                                                     </tr>
                                                                  </thead>
                                                                  <tbody>
@@ -1250,20 +1481,20 @@ export default function AnalysisTab() {
                                                <div className="h-12 flex items-center justify-between px-5 border-b border-slate-200 bg-white shrink-0">
                                                   <div className="flex items-center gap-2">
                                                      <div className="h-2 w-2 rounded-full bg-[#8ba861]" />
-                                                     <h2 className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Prevention Action Plan Sheet</h2>
+                                                     <h2 className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Lembar Rencana Tindakan Pencegahan</h2>
                                                   </div>
                                                   <div className="flex items-center gap-2">
                                                      <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse" />
-                                                     <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Plan Finalized</span>
+                                                     <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Rencana Difinalisasi</span>
                                                   </div>
                                                </div>
                                                
                                                <div className="flex-1 overflow-auto p-6 scrollbar-thin">
                                                   <div className="max-w-[1600px] mx-auto space-y-10 pb-12">
                                                      {[
-                                                        { id: 'root', title: 'Root Cause Actions', color: 'bg-red-500', data: selectedAgent?.results?.root_cause_actions },
-                                                        { id: 'nc', title: 'Non Conformity Actions', color: 'bg-amber-500', data: selectedAgent?.results?.non_conformity_actions },
-                                                        { id: 'imp', title: 'Improvement Actions', color: 'bg-emerald-500', data: selectedAgent?.results?.improvement_actions },
+                                                        { id: 'root', title: 'Tindakan Akar Masalah', color: 'bg-red-500', data: selectedAgent?.results?.root_cause_actions },
+                                                        { id: 'nc', title: 'Tindakan Ketidaksesuaian', color: 'bg-amber-500', data: selectedAgent?.results?.non_conformity_actions },
+                                                        { id: 'imp', title: 'Tindakan Perbaikan', color: 'bg-emerald-500', data: selectedAgent?.results?.improvement_actions },
                                                      ].map((section) => (
                                                         <div key={section.id} className="space-y-3">
                                                            <div className="flex items-center gap-3">
@@ -1279,7 +1510,7 @@ export default function AnalysisTab() {
                                                                        <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest w-12 border-r border-b border-slate-200 bg-slate-50/30">NO</th>
                                                                        <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest w-24 border-r border-b border-slate-200 bg-slate-50/30">LAYER</th>
                                                                        <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest w-32 border-r border-b border-slate-200 bg-slate-50/30">CONTROL</th>
-                                                                       <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest border-r border-b border-slate-200 bg-slate-50/30">Prevention Action</th>
+                                                                       <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest border-r border-b border-slate-200 bg-slate-50/30">Tindakan Pencegahan</th>
                                                                        <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest w-32 border-r border-b border-slate-200 bg-slate-50/30">PIC</th>
                                                                        <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest w-24 border-r border-b border-slate-200 bg-slate-50/30">DUE DATE</th>
                                                                        <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest w-24 border-b border-slate-200 bg-slate-50/30 text-center">STATUS</th>
@@ -1363,7 +1594,75 @@ export default function AnalysisTab() {
                    )}
                </div>
 
-               {selectedRowId && selectedAgentId !== 'fact' && (
+               {selectedRowId && selectedAgentId === 'actor' && (() => {
+                  const actorAgent = agents.find(a => a.id === 'actor');
+                  const actor = actorAgent?.results?.actor_registry?.find((a: any) => a.actor_id === selectedRowId);
+                  
+                  if (!actor) return null;
+                  return <ActorDetailPanel actor={actor} onClose={() => setSelectedRowId(null)} />;
+               })()}
+
+               {selectedRowId && selectedAgentId === 'peepo' && (() => {
+                  const peepoAgent = agents.find(a => a.id === 'peepo');
+                  const sections = ['people', 'environment', 'equipment', 'procedures', 'organisation'];
+                  const item = sections
+                     .flatMap(section => peepoAgent?.results?.[section] || [])
+                     .find((i: any) => i.id === selectedRowId);
+
+                  if (!item) return null;
+
+                  return (
+                     <div className="w-[420px] shrink-0 border-l border-slate-200 bg-white shadow-[-10px_0_30px_-15px_rgba(0,0,0,0.1)] z-20 flex flex-col animate-in slide-in-from-right duration-300">
+                        <TraceabilityPanel
+                           key={item.id}
+                           item={item}
+                           onClose={() => setSelectedRowId(null)}
+                           onUpdateStatus={(status) => {
+                              setAgents(prev => prev.map(a => {
+                                 if (a.id !== 'peepo') return a;
+                                 const updatedResults = { ...a.results };
+                                 sections.forEach(sec => {
+                                    if (updatedResults[sec]) {
+                                       updatedResults[sec] = updatedResults[sec].map((i: any) => i.id === selectedRowId ? { ...i, status } : i);
+                                    }
+                                 });
+                                 return { ...a, results: updatedResults };
+                              }));
+                              toast.success("Status PEEPO updated");
+                           }}
+                           onUpdateBreakdown={(newBreakdown) => {
+                              setAgents(prev => prev.map(a => {
+                                 if (a.id !== 'peepo') return a;
+                                 const updatedResults = { ...a.results };
+                                 sections.forEach(sec => {
+                                    if (updatedResults[sec]) {
+                                       updatedResults[sec] = updatedResults[sec].map((i: any) => i.id === selectedRowId ? { ...i, breakdown: newBreakdown, annotated_by_human: true } : i);
+                                    }
+                                 });
+                                 return { ...a, results: updatedResults };
+                              }));
+                              toast.success("Dekomposisi PEEPO updated");
+                           }}
+                           onUpdateChronologyText={(newText) => {
+                              setAgents(prev => prev.map(a => {
+                                 if (a.id !== 'peepo') return a;
+                                 const updatedResults = { ...a.results };
+                                 sections.forEach(sec => {
+                                    if (updatedResults[sec]) {
+                                       updatedResults[sec] = updatedResults[sec].map((i: any) => i.id === selectedRowId ? { ...i, chronology_text: newText, annotated_by_human: true } : i);
+                                    }
+                                 });
+                                 return { ...a, results: updatedResults };
+                              }));
+                              toast.success("Temuan PEEPO updated");
+                           }}
+                           onEdit={() => {}}
+                        />
+                     </div>
+                  );
+               })()}
+
+               {selectedRowId && selectedAgentId !== 'fact' && selectedAgentId !== 'peepo' && selectedAgentId !== 'actor' && (
                   <div className="w-[420px] shrink-0 border-l border-slate-200 bg-white shadow-[-10px_0_30px_-15px_rgba(0,0,0,0.1)] z-20 flex flex-col animate-in slide-in-from-right duration-300">
                      <div className="h-12 border-b border-slate-200 flex items-center justify-between px-5 bg-slate-50/50 shrink-0">
                         <div className="flex items-center gap-2">
@@ -1463,7 +1762,6 @@ function PreRunModal({ agent, onClose, onRun }: { agent: AgentState, onClose: ()
              <div className="flex flex-col">
                 <span className="text-[9px] font-black text-slate-400 uppercase mb-2">Agent Context</span>
                 <span className="text-[14px] font-black text-slate-900 uppercase tracking-tight leading-none">{agent.name}</span>
-                <p className="text-[11px] font-bold text-slate-500 mt-2 leading-relaxed opacity-70">{agent.purpose}</p>
              </div>
              
              <div className="grid grid-cols-2 gap-6 pt-2">
