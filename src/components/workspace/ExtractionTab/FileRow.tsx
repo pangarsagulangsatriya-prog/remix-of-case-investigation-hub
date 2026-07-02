@@ -328,11 +328,8 @@ export function FileRow({ file, isSelected, onSelect, onMove, onDelete, onRename
     >
       {compact ? (
         <>
-          <div className="h-7 w-7 rounded-md bg-slate-100 flex items-center justify-center shrink-0 relative">
+          <div className="h-7 w-7 rounded-md bg-slate-100 flex items-center justify-center shrink-0">
             {getFileIcon(file.type, file.name)}
-            {hasCriticalIncident(file) && (
-               <div className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-rose-500 border border-white shadow-sm" title="Ada Temuan Penting" />
-            )}
           </div>
           
           <div className="flex-1 min-w-0 flex flex-col justify-center">
@@ -362,11 +359,8 @@ export function FileRow({ file, isSelected, onSelect, onMove, onDelete, onRename
               <GripVertical className="h-4 w-4" />
            </div>
         )}
-        <div className="h-7 w-7 rounded-md bg-slate-100 flex items-center justify-center shrink-0 relative">
+        <div className="h-7 w-7 rounded-md bg-slate-100 flex items-center justify-center shrink-0">
           {getFileIcon(file.type, file.name)}
-          {hasCriticalIncident(file) && (
-             <div className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-rose-500 border-2 border-white shadow-sm" title="Ada Temuan Penting" />
-          )}
         </div>
         <div className="min-w-0 flex-1">
           <TooltipProvider delayDuration={500}>

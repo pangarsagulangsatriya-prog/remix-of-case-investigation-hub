@@ -1043,11 +1043,8 @@ export default function ExtractionTab() {
                           "h-3.5 w-3.5 text-slate-400 transition-transform duration-200 shrink-0",
                           expandedBatches.includes(batch.id) ? "rotate-90" : ""
                         )} />
-                        <div className="h-6 w-6 rounded-md bg-indigo-50 border border-indigo-100 flex items-center justify-center shrink-0 relative">
+                        <div className="h-6 w-6 rounded-md bg-indigo-50 border border-indigo-100 flex items-center justify-center shrink-0">
                           <Folder className="h-3 w-3 text-indigo-500" />
-                          {folderFiles.some((f: any) => hasCriticalIncident(f)) && (
-                             <div className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-rose-500 border border-white shadow-sm" title="Berisi Temuan Penting" />
-                          )}
                         </div>
                         <span className="text-[11px] font-bold text-slate-800 truncate" title={batch.name}>
                           {batch.name}
@@ -1069,11 +1066,8 @@ export default function ExtractionTab() {
                           "h-4 w-4 text-slate-400 transition-transform duration-200 shrink-0",
                           expandedBatches.includes(batch.id) ? "rotate-90" : ""
                         )} />
-                        <div className="h-7 w-7 rounded-md bg-indigo-50 border border-indigo-100 flex items-center justify-center shrink-0 relative">
+                        <div className="h-7 w-7 rounded-md bg-indigo-50 border border-indigo-100 flex items-center justify-center shrink-0">
                           <Folder className="h-3.5 w-3.5 text-indigo-500" />
-                          {folderFiles.some((f: any) => hasCriticalIncident(f)) && (
-                             <div className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-rose-500 border-2 border-white shadow-sm" title="Berisi Temuan Penting" />
-                          )}
                         </div>
                         <span className="text-[12px] font-medium text-slate-800 truncate" title={batch.name}>{batch.name}</span>
                       </div>
