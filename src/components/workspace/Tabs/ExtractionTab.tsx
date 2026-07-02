@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -859,7 +860,16 @@ export default function ExtractionTab() {
               <div className="px-4 py-2.5 flex items-center justify-between bg-slate-100/80 border-y border-slate-200 shadow-sm">
                 <div className="flex items-center gap-2">
                   <Database className="h-4 w-4 text-slate-500" />
-                  <span className="text-[11px] font-bold text-slate-700 uppercase tracking-widest">DATA CCR</span>
+                  <TooltipProvider delayDuration={100}>
+                    <Tooltip>
+                      <TooltipTrigger className="cursor-help">
+                        <span className="text-[11px] font-bold text-slate-700 uppercase tracking-widest border-b border-dashed border-slate-400">DATA CCR</span>
+                      </TooltipTrigger>
+                      <TooltipContent side="right" className="max-w-[250px] p-3 text-xs leading-relaxed bg-white text-slate-700 border-slate-200 shadow-md">
+                        <p><strong>CCR (Central Control Room)</strong> adalah pusat kendali operasi. Data ini otomatis disinkronisasi dari sistem _dispatch_ pusat dan dianggap valid sebagai bukti utama investigasi.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
                 <span className="text-[11px] font-bold text-slate-500 bg-slate-200/50 px-2 py-0.5 rounded-full">{primaryEvidences.length}</span>
               </div>

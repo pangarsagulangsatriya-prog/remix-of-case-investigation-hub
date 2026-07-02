@@ -174,16 +174,25 @@ export function FileRow({ file, isSelected, onSelect, onMove, onDelete, onRename
       {/* Col 2.5: Uploader */}
       <div className="flex items-center gap-2 truncate">
         {file.batch_id === "UTAMA" ? (
-          <div className="flex w-fit items-center gap-1.5 px-2 py-0.5 rounded bg-slate-100 border border-slate-200 text-[10px] font-bold text-slate-600">
-            <Database className="h-3 w-3 text-slate-500" />
-            Data CCR
-          </div>
+          <TooltipProvider delayDuration={100}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex w-fit items-center gap-1.5 px-2 py-0.5 rounded bg-slate-100 border border-slate-200 text-[10px] font-bold text-slate-600 cursor-help border-b-dashed border-b-slate-400">
+                  <Database className="h-3 w-3 text-slate-500" />
+                  Data CCR
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="max-w-[250px] p-3 text-xs leading-relaxed bg-white text-slate-700 border-slate-200 shadow-md">
+                <p><strong>CCR (Central Control Room)</strong> adalah pusat kendali operasi. Data ini otomatis disinkronisasi dari sistem _dispatch_ pusat dan dianggap valid sebagai bukti utama investigasi.</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         ) : (
           <div className="flex items-center gap-1.5 text-[11px] font-medium text-slate-600">
-            <div className="h-5 w-5 rounded-full bg-slate-200 flex items-center justify-center shrink-0">
-              <User className="h-3 w-3 text-slate-500" />
+            <div className="h-5 w-5 rounded-full overflow-hidden shrink-0 border border-slate-200 bg-slate-50">
+              <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=RudiHeryanto&backgroundColor=f8fafc" alt="Rudi Heryanto" className="h-full w-full object-cover" />
             </div>
-            <span className="truncate">Pengguna (Human)</span>
+            <span className="truncate font-semibold">Rudi Heryanto</span>
           </div>
         )}
       </div>
