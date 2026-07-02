@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { 
-  Play, 
+  Play,
+  Pause, 
   RotateCcw,
   Brain, 
   Clock, 
@@ -54,6 +55,14 @@ import { ActorAnalysisModule, ActorDetailPanel } from "@/components/analysis/Act
 // Icons mapping for local use
 const AudioIcon = Activity;
 const DocIcon = FileText;
+
+export const AgentDisplayMeta: Record<string, { nodeId: string, subtitle: string }> = {
+  fact: { nodeId: 'CHR-04', subtitle: 'Reconstructing event timeline' },
+  actor: { nodeId: 'ACT-02', subtitle: 'Identifying key personnel' },
+  peepo: { nodeId: 'PPO-01', subtitle: 'Analyzing environmental context' },
+  ipls: { nodeId: 'LYR-09', subtitle: 'Security layer validation' },
+  prev: { nodeId: 'PRV-03', subtitle: 'Generating prevention plans' }
+};
 
 const initialAgentsState: AgentState[] = [
   { 
@@ -1032,288 +1041,128 @@ export default function AnalysisTab() {
     <div className="flex h-full bg-[#f0f2f4] overflow-hidden animate-in fade-in duration-500">
          <div className="w-[320px] border-r border-slate-200 bg-slate-50 flex flex-col shrink-0 z-20 shadow-[1px_0_4px_rgba(0,0,0,0.02)]">
             <div className="h-12 border-b border-slate-200 flex items-center justify-between px-5 bg-white shrink-0">
-               <div className="flex items-center gap-2">
-                  <div className={`h-2 w-2 rounded-full ${globalStatus === 'running' ? 'bg-amber-500 animate-pulse' : 'bg-slate-300'}`} />
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Orkestrasi</span>
-               </div>
-               {globalStatus === 'running' && (
-                  <Button onClick={stopChain} variant="ghost" size="sm" className="h-7 px-2 text-[9px] font-bold text-rose-500 hover:bg-rose-50 border border-rose-100">
-                     <XCircle className="h-3 w-3 mr-1" /> Hentikan
+               <span className="text-[12px] font-bold text-slate-800 tracking-tight">Orkestrasi Agent</span>
+               <div className="flex items-center gap-1.5">
+                  <Button 
+                     onClick={stopChain} 
+                     disabled={globalStatus !== 'running'}
+                     variant="outline" 
+                     className="h-7 px-2 bg-slate-100 hover:bg-slate-200 border-none text-slate-600 text-[9px] font-bold tracking-widest uppercase transition-all"
+                  >
+                     <Pause className="h-3 w-3 mr-1" /> Jeda
                   </Button>
-               )}
+                  <Button 
+                     onClick={startFullChain} 
+                     disabled={globalStatus === 'running'}
+                     className="h-7 px-2 bg-slate-900 hover:bg-slate-800 text-white border-none text-[9px] font-bold tracking-widest uppercase transition-all"
+                  >
+                     Jalankan <Play className="h-3 w-3 ml-1 fill-current" />
+                  </Button>
+               </div>
             </div>
 
-            <div className="p-4 bg-white border-b border-slate-100">
-               <Button 
-                  onClick={startFullChain}
-                  disabled={globalStatus === 'running'}
-                  className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-[10px] uppercase tracking-wider h-10  border-none group"
-               >
-                  <Play className="h-3 w-3 mr-2 group-hover:translate-x-0.5 transition-transform" /> Eksekusi Semua Agen
-               </Button>
-            </div>
+            <div className="flex-1 overflow-y-auto custom-scrollbar relative p-6">
+               {/* Start Node */}
+               <div className="flex flex-col items-center mb-6 relative z-10">
+                  <div className="h-5 w-5 rounded-full bg-emerald-100 border-2 border-emerald-500 flex items-center justify-center shadow-sm">
+                     <div className="h-2 w-2 rounded-full bg-emerald-500" />
+                  </div>
+                  <span className="text-[9px] font-bold text-emerald-600 mt-1 uppercase tracking-widest">Start</span>
+               </div>
 
-            <div className="flex-1 overflow-y-auto custom-scrollbar relative">
-               <div className="absolute left-[39px] top-6 bottom-6 w-px bg-slate-200 z-0" />
-               <div className="p-4 space-y-4 relative z-10">
-                  {agents.map((agent) => {
+               <div className="space-y-0 relative z-10">
+                  {agents.map((agent, index) => {
                      const isActive = selectedAgentId === agent.id;
+                     const meta = AgentDisplayMeta[agent.id] || { nodeId: `AGT-0${index}`, subtitle: 'Processing node' };
+                     
+                     // Styling logic based on status and active state
+                     const isCompleted = agent.status === 'completed';
+                     const isRunning = agent.status === 'running';
+                     const isPaused = agent.status === 'stopped' || agent.status === 'paused';
+                     const isWaiting = agent.status === 'queued' || (!isCompleted && !isRunning && !isPaused);
+                     
+                     const cardBorder = isActive 
+                        ? 'border-emerald-500 shadow-sm bg-white' 
+                        : (isCompleted ? 'border-emerald-500 bg-white' 
+                        : (isWaiting ? 'border-slate-100 bg-slate-50/50 opacity-60' 
+                        : 'border-slate-200 bg-white'));
+                     
+                     const iconBg = (isActive || isCompleted || isRunning) ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-400';
+                     const badgeStyle = isCompleted ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
+                                        isRunning ? 'bg-blue-50 text-blue-700 border-blue-100 animate-pulse' :
+                                        isPaused ? 'bg-slate-100 text-slate-500 border-slate-200' :
+                                        'bg-slate-100 text-slate-400 border-slate-200';
+                     const badgeText = isPaused ? 'PAUSED' : isWaiting ? 'WAITING' : agent.status.toUpperCase();
 
-                     if (!isActive) {
-                        return (
+                     return (
+                        <div key={agent.id} className="relative">
                            <div 
-                              key={agent.id}
                               onClick={() => setSelectedAgentId(agent.id)}
                               className={`
-                                 group flex items-center justify-between p-3 rounded-sm border transition-all cursor-pointer bg-white relative overflow-hidden
-                                 ${agent.status === 'completed' ? 'border-slate-200 hover:border-slate-300 hover:shadow-sm' : 'border-slate-100 hover:border-slate-200'}
+                                 group flex flex-col p-4 rounded-sm border transition-all cursor-pointer relative overflow-hidden
+                                 ${cardBorder}
                               `}
                            >
-                              {agent.status === 'running' && (
+                              {isRunning && (
                                  <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-slate-100 overflow-hidden">
                                     <div className="h-full bg-blue-500 animate-pulse w-full origin-left" />
                                  </div>
                               )}
-                              <div className="flex items-center gap-3">
-                                 <div className={`h-8 w-8 rounded-sm border flex items-center justify-center transition-colors ${agent.status === 'completed' ? 'bg-emerald-50/50 text-emerald-500 border-emerald-100' : agent.status === 'running' ? 'bg-blue-50 text-blue-500 border-blue-100' : 'bg-slate-50 text-slate-400 border-slate-100'}`}>
-                                    <agent.icon className="h-4 w-4" />
+                              
+                              <div className="flex items-center justify-between mb-3">
+                                 <div className="flex items-center gap-2">
+                                    <div className={`h-6 w-6 rounded-sm flex items-center justify-center ${iconBg}`}>
+                                       <agent.icon className="h-3 w-3" />
+                                    </div>
+                                    <span className="text-[10px] font-black text-slate-400 font-mono tracking-widest">{meta.nodeId}</span>
                                  </div>
-                                 <div className="flex flex-col">
-                                    <h4 className={`text-[9px] font-black uppercase tracking-widest ${agent.status === 'completed' ? 'text-slate-700' : 'text-slate-400'}`}>{agent.name}</h4>
-                                    {agent.lastRunTimestamp && (
-                                       <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tight">{agent.lastRunTimestamp}</span>
-                                    )}
-                                 </div>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                 <div className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border ${agent.status === 'completed' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : agent.status === 'running' ? 'bg-blue-50 text-blue-700 border-blue-100 animate-pulse' : agent.status === 'stopped' ? 'bg-rose-50 text-rose-700 border-rose-100' : 'bg-slate-50 text-slate-400 border-slate-100'}`}>
-                                    {agent.status}
-                                 </div>
-                                 {agent.status === 'completed' && (
-                                    <button 
-                                       onClick={(e) => { e.stopPropagation(); setPreRunAgentId(agent.id); }}
-                                       className="h-6 w-6 rounded border border-slate-200 bg-white text-slate-400 hover:bg-slate-900 hover:text-white hover:border-slate-900 flex items-center justify-center transition-all opacity-0 group-hover:opacity-100"
-                                       title="Jalankan Ulang"
-                                    >
-                                       <RotateCcw className="h-3 w-3" />
-                                    </button>
-                                 )}
-                              </div>
-                           </div>
-                        );
-                     }
-
-                     return (
-                      <div 
-                         key={agent.id}
-                         onClick={() => setSelectedAgentId(agent.id)}
-                         className={`
-                            group relative flex flex-col p-5 rounded-sm border bg-white transition-all cursor-pointer overflow-hidden
-                            ${selectedAgentId === agent.id ? "border-slate-900  ring-1 ring-slate-900/5 -translate-y-0.5 shadow-sm" : "border-slate-200 hover:border-slate-300"}
-                         `}
-                      >
-                         <div className="flex items-start justify-between mb-4">
-                            <div className={`h-12 w-12 rounded-sm border flex items-center justify-center transition-all ${selectedAgentId === agent.id ? "bg-slate-900 text-white border-slate-900 shadow-slate-900/20" : "bg-white text-slate-400 border-slate-100"}`}>
-                               <agent.icon className="h-5 w-5" />
-                            </div>
-                            <div className="flex flex-col items-end gap-2">
-                              <div className={`
-                                   px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border
-                                   ${agent.status === 'completed' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 
-                                     agent.status === 'running' ? 'bg-blue-50 text-blue-700 border-blue-100 animate-pulse' : 
-                                     agent.status === 'stopped' ? 'bg-rose-50 text-rose-700 border-rose-100' :
-                                     'bg-slate-50 text-slate-400 border-slate-100'}
-                              `}>
-                                   {agent.status}
-                              </div>
-                              {agent.lastRunTimestamp && (
-                                 <span className="text-[8px] font-bold text-slate-300 uppercase tracking-tight">{agent.lastRunTimestamp}</span>
-                              )}
-                           </div>
-                        </div>
-
-                        <div className="space-y-1 mb-4">
-                           <h4 className={`text-[11px] font-black uppercase tracking-[0.15em] ${selectedAgentId === agent.id ? "text-slate-900" : "text-slate-500"}`}>{agent.name}</h4>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-50">
-                           {agent.status === 'running' ? (
-                              <Button 
-                                 onClick={(e) => { e.stopPropagation(); stopSingleAgent(agent.id); }}
-                                 variant="outline" 
-                                 className="col-span-2 h-10 bg-rose-50 hover:bg-rose-100 border-rose-100 text-rose-600 text-[10px] font-black uppercase tracking-[0.1em] rounded-sm transition-all"
-                              >
-                                 <XCircle className="h-4 w-4 mr-2" /> Hentikan Agen
-                              </Button>
-                           ) : (
-                              <>
-                                 <Button 
-                                    onClick={(e) => { e.stopPropagation(); setPreRunAgentId(agent.id); }}
-                                    className="h-10 bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-black uppercase tracking-[0.1em] rounded-sm shadow-[0_4px_12px_rgba(0,0,0,0.15)] transition-all hover:-translate-y-0.5 active:translate-y-0"
-                                 >
-                                    <Play className="h-3.5 w-3.5 mr-2 fill-current" /> {agent.runCount > 0 ? "Jalankan Ulang" : "Eksekusi"}
-                                 </Button>
-                                 <div className="flex gap-1.5">
-                                    <Button 
-                                       variant="outline" 
-                                       onClick={(e) => { e.stopPropagation(); setHistoryAgentId(agent.id); }}
-                                       className="flex-1 h-10 bg-white border-slate-200 text-slate-500 text-[10px] font-black uppercase tracking-[0.1em] rounded-sm hover:bg-slate-50 transition-colors"
-                                    >
-                                       <History className="h-4 w-4" />
-                                    </Button>
-                                     <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                           <Button 
-                                              variant="outline" 
-                                              onClick={(e) => e.stopPropagation()}
-                                              className={cn(
-                                                 "flex-1 h-10 border-slate-200 text-[10px] font-black uppercase tracking-[0.1em] rounded-sm transition-all",
-                                                 knowledgeAgentId === agent.id ? "bg-slate-900 text-emerald-400 border-slate-900 shadow-lg" : "bg-white text-slate-500 hover:bg-slate-50"
-                                              )}
-                                           >
-                                              <BookText className="h-4 w-4" />
-                                           </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent 
-                                           side="right" 
-                                           align="start" 
-                                           sideOffset={12}
-                                           className="w-[320px] p-0 border-slate-200 shadow-sm rounded-sm overflow-hidden animate-in fade-in zoom-in-95 duration-200" 
-                                           onClick={(e) => e.stopPropagation()}
+                                 <div className="flex items-center gap-3">
+                                    {(isCompleted || isPaused) ? (
+                                        <button 
+                                           onClick={(e) => { e.stopPropagation(); setPreRunAgentId(agent.id); }}
+                                           className="text-slate-400 hover:text-slate-900 transition-colors"
                                         >
-                                           <div className="bg-white">
-                                              <div className="p-4 border-b border-slate-50 bg-slate-50/30 flex items-center justify-between">
-                                                 <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Sumber Pengetahuan</h3>
-                                                 <span className="text-[9px] font-bold text-slate-400 bg-white px-2 py-0.5 border rounded-full">{evidenceFiles.length} Aset</span>
-                                              </div>
-                                              
-                                              <div className="max-h-[320px] overflow-y-auto p-2 custom-scrollbar">
-                                                 {batches.map(b => ({ ...b, files: evidenceFiles.filter(f => f.batch_id === b.id) })).filter(b => b.files.length > 0).map((batch) => {
-                                                    const filesInBatch = evidenceFiles.filter(f => f.batch_id === batch.id);
-                                                    const isExpanded = expandedKnowledgeFolders.includes(batch.id);
-                                                    const currentAgentSelection = localKnowledgeSelection[agent.id] || agent.knowledgeSelection || [];
-                                                    const selectedInBatch = filesInBatch.filter(f => currentAgentSelection.includes(f.id));
-                                                    const isBatchFullySelected = selectedInBatch.length === filesInBatch.length && filesInBatch.length > 0;
-                                                    const isBatchPartiallySelected = selectedInBatch.length > 0 && selectedInBatch.length < filesInBatch.length;
+                                           <Play className="h-3.5 w-3.5" />
+                                        </button>
+                                    ) : (
+                                       <Play className="h-3 w-3 text-slate-300" />
+                                    )}
+                                    <div className={`px-2 py-0.5 rounded-full text-[7px] font-black tracking-widest border ${badgeStyle}`}>
+                                       {badgeText}
+                                    </div>
+                                 </div>
+                              </div>
+                              
+                              <div className="flex flex-col">
+                                 <h4 className={`text-[12px] font-black tracking-tight mb-0.5 ${isWaiting ? 'text-slate-400' : 'text-slate-800'}`}>{agent.name}</h4>
+                                 <p className="text-[10px] font-medium text-slate-400 leading-snug">{meta.subtitle}</p>
+                              </div>
+                           </div>
 
-                                                    return (
-                                                       <div key={batch.id} className="mb-1">
-                                                          <div 
-                                                             className={cn(
-                                                                "flex items-center gap-2 p-2 rounded-sm hover:bg-slate-50 cursor-pointer transition-colors group",
-                                                                isExpanded ? "bg-slate-50/50" : ""
-                                                             )}
-                                                             onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                setExpandedKnowledgeFolders(prev => 
-                                                                   prev.includes(batch.id) ? prev.filter(id => id !== batch.id) : [...prev, batch.id]
-                                                                );
-                                                             }}
-                                                          >
-                                                              <div 
-                                                                 className={cn(
-                                                                    "h-4 w-4 rounded border flex items-center justify-center transition-all",
-                                                                    isBatchFullySelected ? "bg-slate-900 border-slate-900" : 
-                                                                    isBatchPartiallySelected ? "bg-slate-400 border-slate-400" : "bg-white border-slate-200"
-                                                                 )}
-                                                                 onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    const fileIds = filesInBatch.map(f => f.id);
-                                                                    setAgents(prev => prev.map(a => a.id === agent.id ? {
-                                                                       ...a,
-                                                                       knowledgeSelection: isBatchFullySelected 
-                                                                          ? a.knowledgeSelection?.filter(id => !fileIds.includes(id))
-                                                                          : [...new Set([...(a.knowledgeSelection || []), ...fileIds])]
-                                                                    } : a));
-                                                                 }}
-                                                              >
-                                                                 {isBatchFullySelected && <Check className="h-2.5 w-2.5 text-white stroke-[4]" />}
-                                                                 {isBatchPartiallySelected && <div className="h-0.5 w-2 bg-white" />}
-                                                              </div>
-                                                              <div className="flex items-center gap-2 flex-1 overflow-hidden">
-                                                                 <Folder className={cn("h-3.5 w-3.5", isExpanded ? "text-primary" : "text-slate-400")} />
-                                                                 <span className="text-[11px] font-bold text-slate-700 uppercase tracking-tight truncate">{batch.name}</span>
-                                                              </div>
-                                                              <ChevronRight className={cn("h-3 w-3 text-slate-300 transition-transform", isExpanded ? "rotate-90" : "")} />
-                                                          </div>
-
-                                                          {isExpanded && (
-                                                              <div className="ml-6 mt-1 border-l border-slate-100 pl-1 space-y-0.5">
-                                                                 {filesInBatch.map((file) => {
-                                                                    const isFileSelected = currentAgentSelection.includes(file.id);
-                                                                    return (
-                                                                       <div 
-                                                                          key={file.id}
-                                                                          onClick={(e) => {
-                                                                             e.stopPropagation();
-                                                                             setAgents(prev => prev.map(a => a.id === agent.id ? {
-                                                                                ...a,
-                                                                                knowledgeSelection: isFileSelected 
-                                                                                   ? a.knowledgeSelection?.filter(id => id !== file.id)
-                                                                                   : [...(a.knowledgeSelection || []), file.id]
-                                                                             } : a));
-                                                                          }}
-                                                                          className="flex items-center gap-2.5 p-1.5 hover:bg-slate-50 rounded-sm cursor-pointer transition-colors"
-                                                                       >
-                                                                          <div className={cn(
-                                                                             "h-3.5 w-3.5 rounded border flex items-center justify-center transition-all",
-                                                                             isFileSelected ? "bg-emerald-500 border-emerald-500" : "bg-white border-slate-200"
-                                                                          )}>
-                                                                             {isFileSelected && <Check className="h-2 w-2 text-white stroke-[4]" />}
-                                                                          </div>
-                                                                          <span className={cn("text-[10px] font-semibold truncate flex-1", isFileSelected ? "text-slate-900" : "text-slate-400")}>
-                                                                             {file.name}
-                                                                          </span>
-                                                                       </div>
-                                                                    );
-                                                                 })}
-                                                              </div>
-                                                          )}
-                                                       </div>
-                                                    );
-                                                 })}
-                                              </div>
-                                              
-                                              <div className="p-4 border-t border-slate-50 bg-slate-50/10">
-                                                 <div className="flex items-center justify-between mb-2">
-                                                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none">Muatan Aktif</span>
-                                                    <span className="text-[10px] font-black text-slate-900 tabular-nums">
-                                                       {(localKnowledgeSelection[agent.id] || []).filter(id => evidenceFiles.some(f => f.id === id)).length} / {evidenceFiles.length}
-                                                    </span>
-                                                 </div>
-                                                 <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden shadow-inner mb-4">
-                                                    <div 
-                                                       className="h-full bg-slate-900 transition-all duration-700 ease-out" 
-                                                       style={{ width: `${(((localKnowledgeSelection[agent.id] || []).filter(id => evidenceFiles.some(f => f.id === id)).length) / (evidenceFiles.length || 1)) * 100}%` }} 
-                                                    />
-                                                 </div>
-                                                 <Button
-                                                    onClick={(e) => {
-                                                       e.stopPropagation();
-                                                       handleSaveKnowledge(agent.id);
-                                                    }}
-                                                    disabled={JSON.stringify(localKnowledgeSelection[agent.id]) === JSON.stringify(agent.knowledgeSelection)}
-                                                    className="w-full h-9 bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-black uppercase tracking-widest rounded-sm disabled:opacity-30 transition-all"
-                                                 >
-                                                    Simpan Perubahan
-                                                 </Button>
-                                              </div>
-                                           </div>
-                                        </DropdownMenuContent>
-                                     </DropdownMenu>
-                                  </div>
-                              </>
+                           {/* Connector Line to Next Node */}
+                           {index < agents.length - 1 && (
+                              <div className="flex justify-center items-center h-8 relative">
+                                 {/* Solid line for path leading to/from active or completed, dashed for waiting/paused */}
+                                 <div className={`w-px h-full ${
+                                    (isCompleted || isRunning) ? 'bg-emerald-300' : 'border-l border-dashed border-slate-300'
+                                 }`} />
+                                 
+                                 <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 h-1.5 w-1.5 rotate-45 border-b border-r ${
+                                    (isCompleted || isRunning) ? 'border-emerald-400' : 'border-slate-300'
+                                 }`} />
+                              </div>
                            )}
                         </div>
-
-                        {agent.status === 'running' && (
-                           <div className="absolute bottom-0 left-0 right-0 h-1 bg-slate-100 overflow-hidden">
-                              <div className="h-full bg-blue-500 animate-pulse w-full origin-left" />
-                           </div>
-                        )}
-                     </div>
-                  );
+                     );
                   })}
+               </div>
+
+               {/* End Node */}
+               <div className="flex flex-col items-center mt-8 mb-4 relative z-10">
+                  <div className="h-5 w-5 rounded-full bg-slate-100 border-2 border-slate-300 flex items-center justify-center shadow-sm">
+                     <div className="h-2 w-2 rounded-full bg-slate-300" />
+                  </div>
+                  <span className="text-[9px] font-bold text-slate-400 mt-1 uppercase tracking-widest">End</span>
                </div>
             </div>
          </div>
