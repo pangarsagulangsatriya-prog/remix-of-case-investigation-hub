@@ -152,22 +152,22 @@ export function FileRow({ file, isSelected, onSelect, onMove, onDelete, onRename
                 {(!file.extraction_status || file.extraction_status === "unprocessed" || file.extraction_status === "waiting") ? (
                   <div className="flex w-fit items-center gap-1.5 px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-[9px] font-bold text-slate-600">
                     <div className="h-1.5 w-1.5 rounded-full bg-slate-400"></div>
-                    Menunggu
+                    WAITING
                   </div>
                 ) : file.extraction_status === "pending" ? (
                   <div className="flex w-fit items-center gap-1.5 px-2 py-0.5 rounded-full bg-blue-50 border border-blue-100 text-[9px] font-bold text-blue-600">
                     <Loader2 className="h-2 w-2 animate-spin" />
-                    Uploading
+                    UPLOADING
                   </div>
                 ) : file.extraction_status === "processing" ? (
                   <div className="flex w-fit items-center gap-1.5 px-2 py-0.5 rounded-full bg-purple-50 border border-purple-100 text-[9px] font-bold text-purple-700">
                     <Loader2 className="h-2 w-2 animate-spin" />
-                    Menganalisis
+                    PROCESSING
                   </div>
                 ) : file.extraction_status === "completed" ? (
                   <div className="flex w-fit items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-[9px] font-bold text-emerald-700">
                     <div className="h-1.5 w-1.5 rounded-full bg-emerald-500"></div>
-                    Teranalisis
+                    DONE
                   </div>
                 ) : file.extraction_status === "failed" ? (
                   <div 
@@ -177,7 +177,7 @@ export function FileRow({ file, isSelected, onSelect, onMove, onDelete, onRename
                     className="flex w-fit items-center gap-1.5 px-2 py-0.5 rounded-full bg-rose-50 border border-rose-200 text-[9px] font-bold text-rose-700 cursor-pointer hover:bg-rose-100"
                   >
                     {isFailedHovered ? <RefreshCw className="h-2 w-2 animate-spin-once" /> : <AlertTriangle className="h-2 w-2" />}
-                    {isFailedHovered ? "Coba Lagi" : "Error Analisis"}
+                    {isFailedHovered ? "RETRY" : "ERROR"}
                   </div>
                 ) : null}
               </div>
