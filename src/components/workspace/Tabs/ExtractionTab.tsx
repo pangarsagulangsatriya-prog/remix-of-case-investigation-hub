@@ -20,7 +20,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { FileRow, getFileIcon } from "../ExtractionTab/FileRow";
+import { FileRow, getFileIcon, hasCriticalIncident } from "../ExtractionTab/FileRow";
 import { AdaptiveSourcePreview } from "../ExtractionTab/PreviewComponents";
 import { 
   ImageExtractionConsole, 
@@ -135,6 +135,7 @@ export default function ExtractionTab() {
   };
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [filterCriticalOnly, setFilterCriticalOnly] = useState(false);
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [expandedBatches, setExpandedBatches] = useState<string[]>(["DOKUMEN", "GAMBAR", "AUDIO"]);
   const [hasInitializedExpansion, setHasInitializedExpansion] = useState(false);
@@ -397,7 +398,7 @@ export default function ExtractionTab() {
       f && f.name && f.type && (
         f.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         f.type.toLowerCase().includes(searchQuery.toLowerCase())
-      )
+      ) && (!filterCriticalOnly || hasCriticalIncident(f))
     );
 
     // Identify mandiri files to find the last one
@@ -442,7 +443,7 @@ export default function ExtractionTab() {
       }
       return f;
     });
-  }, [files, searchQuery, batches]);
+  }, [files, searchQuery, batches, filterCriticalOnly]);
 
   // Handlers
   const toggleBatch = (id: string) => {
@@ -827,9 +828,27 @@ export default function ExtractionTab() {
                     className="w-full h-9 bg-white border border-slate-200 rounded-md pl-9 pr-4 text-xs font-medium text-slate-700 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all outline-none shadow-sm"
                   />
                 </div>
-                <Button variant="outline" className="h-9 w-9 p-0 rounded-md border-slate-200 text-slate-500 hover:text-slate-900 bg-white shadow-sm shrink-0">
-                  <Filter className="h-4 w-4" />
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant={filterCriticalOnly ? "default" : "outline"} className={cn("h-9 w-9 p-0 rounded-md border-slate-200 shadow-sm shrink-0", filterCriticalOnly ? "bg-rose-500 hover:bg-rose-600 text-white border-rose-500" : "text-slate-500 hover:text-slate-900 bg-white")}>
+                      <Filter className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48 rounded-md shadow-lg border-slate-200">
+                    <DropdownMenuLabel className="text-[10px] uppercase text-slate-500 tracking-wider">Filter Berkas</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem 
+                      onClick={() => setFilterCriticalOnly(!filterCriticalOnly)} 
+                      className="text-[11px] font-bold py-2.5 cursor-pointer flex items-center justify-between"
+                    >
+                      <div className="flex items-center gap-2">
+                        <AlertTriangle className={cn("h-4 w-4", filterCriticalOnly ? "text-rose-500" : "text-slate-400")} /> 
+                        Temuan Penting
+                      </div>
+                      {filterCriticalOnly && <Check className="h-4 w-4 text-emerald-600" />}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
 
@@ -931,6 +950,10 @@ export default function ExtractionTab() {
             {/* 1. Real Folders (User Created) */}
             {batches.filter(b => b.type === "Folder").map((batch) => {
               const folderFiles = files.filter((f: any) => f.batch_id === batch.id);
+              const filteredFolderFiles = filteredFiles.filter((f: any) => f.batch_id === batch.id);
+              
+              if (filterCriticalOnly && filteredFolderFiles.length === 0) return null;
+
               const total = folderFiles.length;
               let metaSummary = "Belum ada isi";
               if (total > 0) {
@@ -1080,10 +1103,10 @@ export default function ExtractionTab() {
 
                 {expandedBatches.includes(batch.id) && (
                   <div className="bg-slate-50/30 shadow-[inset_0_2px_4px_rgba(0,0,0,0.01)] border-t border-slate-100">
-                    {files.filter((f: any) => f.batch_id === batch.id).length === 0 ? (
+                    {filteredFiles.filter((f: any) => f.batch_id === batch.id).length === 0 ? (
                       <div className="h-[44px] flex items-center px-12 text-[10px] font-medium text-slate-400 uppercase tracking-widest italic bg-white">FOLDER KOSONG</div>
                     ) : (
-                      files.filter((f: any) => f.batch_id === batch.id).map((file: any) => (
+                      filteredFiles.filter((f: any) => f.batch_id === batch.id).map((file: any) => (
                         <FileRow 
                           key={file.id} 
                           file={file} 
