@@ -904,7 +904,38 @@ export default function ExtractionTab() {
               </div>
                <div className="bg-white">
             {/* 1. Real Folders (User Created) */}
-            {batches.filter(b => b.type === "Folder").map((batch) => (
+            {batches.filter(b => b.type === "Folder").map((batch) => {
+              const folderFiles = files.filter((f: any) => f.batch_id === batch.id);
+              const total = folderFiles.length;
+              let metaSummary = "Belum ada isi";
+              if (total > 0) {
+                const isImage = (f: any) => f.type?.toLowerCase() === "image" || f.name?.toLowerCase()?.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/);
+                const isVideo = (f: any) => f.type?.toLowerCase() === "video" || f.name?.toLowerCase()?.match(/\.(mp4|webm|ogg|mov|m4v|avi|wmv)$/);
+                const isDoc = (f: any) => f.type?.toLowerCase() === "document" || f.name?.toLowerCase()?.match(/\.(pdf|doc|docx|txt|rtf|xls|xlsx|csv)$/);
+                
+                const images = folderFiles.filter(isImage).length;
+                const videos = folderFiles.filter(isVideo).length;
+                const docs = folderFiles.filter(isDoc).length;
+                
+                if (images === total) metaSummary = `Berisi ${total} gambar`;
+                else if (videos === total) metaSummary = `Berisi ${total} video`;
+                else if (docs === total) metaSummary = `Berisi ${total} dokumen`;
+                else metaSummary = `Berisi ${total} item`;
+              }
+              
+              let statusSummary = "Belum ada isi";
+              if (total > 0) {
+                const errorCount = folderFiles.filter((f: any) => f.extraction_status === "failed").length;
+                const analyzedCount = folderFiles.filter((f: any) => f.extraction_status === "completed").length;
+                const pendingCount = folderFiles.filter((f: any) => f.extraction_status === "pending" || f.extraction_status === "processing").length;
+                
+                if (errorCount > 0) statusSummary = "Ada file error";
+                else if (analyzedCount > 0) statusSummary = `${analyzedCount} dari ${total} teranalisis`;
+                else if (pendingCount > 0) statusSummary = "Sedang diproses";
+                else statusSummary = "Belum teranalisis";
+              }
+
+              return (
               <div key={batch.id} className="border-b border-slate-200">
                 <div 
                   onClick={() => toggleBatch(batch.id)}
@@ -930,9 +961,11 @@ export default function ExtractionTab() {
                     Folder Berkas
                   </div>
 
-                  {/* Col 2.5: Uploader */}
-                  <div className="text-[11px] text-slate-500 font-medium truncate">
-                    -
+                  {/* Col 2.5: Metadata Summary */}
+                  <div className="flex items-center gap-2 truncate">
+                    <div className="flex w-fit items-center px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-[9px] font-bold text-slate-500">
+                      {metaSummary}
+                    </div>
                   </div>
 
                   {/* Col 3: Date */}
@@ -940,9 +973,11 @@ export default function ExtractionTab() {
                     14 Okt 2023, 16:45
                   </div>
 
-                  {/* Col 4: Status AI */}
-                  <div className="text-[12px] text-slate-400 font-medium">
-                    -
+                  {/* Col 4: Status Data */}
+                  <div className="flex items-center shrink-0">
+                    <div className="flex w-fit items-center px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-[9px] font-bold text-slate-500">
+                      {statusSummary}
+                    </div>
                   </div>
                   
                   {/* Col 5: Actions */}
@@ -1019,7 +1054,8 @@ export default function ExtractionTab() {
                   </div>
                 )}
               </div>
-            ))}
+            );
+            })}
                 {(() => {
                   const mandiriFiles = filteredFiles.filter((f: any) => !batches.find(b => b.id === f.batch_id && b.type === "Folder"));
                   return mandiriFiles.map((file: any) => {
