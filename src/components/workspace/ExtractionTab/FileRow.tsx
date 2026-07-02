@@ -357,25 +357,27 @@ export function FileRow({ file, isSelected, onSelect, onMove, onDelete, onRename
                   Data CCR
                 </div>
               </TooltipTrigger>
-              <TooltipContent side="right" className="w-[280px] p-3 text-xs leading-relaxed bg-white border border-slate-200 shadow-lg rounded-lg">
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center gap-2 border-b border-slate-100 pb-2 mb-1">
-                    <div className="h-6 w-6 rounded bg-slate-100 flex items-center justify-center">
-                       <Database className="h-3 w-3 text-slate-600" />
+              <TooltipContent side="right" className="w-[260px] p-0 overflow-hidden bg-white border border-slate-200 shadow-xl rounded-lg">
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-3 p-3 pb-2 border-b border-slate-100 bg-slate-50/50">
+                    <div className="h-8 w-8 rounded-md bg-white border border-slate-200 shadow-sm flex items-center justify-center shrink-0">
+                       <Database className="h-4 w-4 text-slate-600" />
                     </div>
                     <div>
-                      <h4 className="font-bold text-slate-800 text-[11px] uppercase tracking-wide">Central Control Room</h4>
-                      <p className="text-[9px] font-medium text-slate-400">System Auto-Sync</p>
+                      <h4 className="font-bold text-slate-800 text-[12px] tracking-tight">Central Control Room</h4>
+                      <p className="text-[10px] font-medium text-slate-500">Otomatis dari Sistem</p>
                     </div>
                   </div>
-                  <p className="text-slate-600 text-[11px] leading-snug">
-                    Data ini otomatis disinkronisasi dari sistem <span className="font-semibold italic">dispatch</span> pusat.
-                  </p>
-                  <div className="bg-emerald-50 border border-emerald-100 rounded p-1.5 mt-1">
-                    <p className="text-[10px] font-medium text-emerald-700 flex items-center gap-1.5">
-                      <Check className="h-3 w-3" />
-                      Validitas Terverifikasi
+                  <div className="p-3 pt-2">
+                    <p className="text-slate-600 text-[11px] leading-relaxed mb-3">
+                      Data ini didapatkan langsung dari sistem kendali pusat. Bukti ini sudah pasti valid dan tidak bisa diubah.
                     </p>
+                    <div className="bg-emerald-50 border border-emerald-100 rounded-md p-2">
+                      <p className="text-[10px] font-bold text-emerald-700 flex items-center gap-1.5">
+                        <Check className="h-3.5 w-3.5" />
+                        Sudah Terverifikasi
+                      </p>
+                    </div>
                   </div>
                 </div>
               </TooltipContent>
