@@ -1181,9 +1181,20 @@ export default function AnalysisTab() {
                      <div className="bg-white flex-1 flex flex-col relative transition-all duration-300 origin-center overflow-hidden w-full h-full">
                         <div className="flex-1 flex flex-col relative overflow-hidden h-full">
                            {selectedAgent?.status === 'running' ? (
-                              <div className="flex flex-col items-center justify-center h-full text-center space-y-8 animate-pulse text-slate-300">
-                                 <Loader2 className="h-12 w-12 animate-spin" />
-                                 <span className="text-[20px] font-black uppercase tracking-[0.2em]">{selectedAgent.microStatus || "Memproses Matriks..."}</span>
+                              <div className="flex flex-col items-center justify-center h-full text-center space-y-8 bg-slate-50/50">
+                                 <div className="relative flex items-center justify-center">
+                                    <div className="absolute inset-0 bg-blue-500 blur-2xl opacity-20 animate-pulse rounded-full w-32 h-32" />
+                                    <div className="h-20 w-20 bg-white rounded-full border border-blue-100 shadow-xl flex items-center justify-center relative z-10">
+                                       <Loader2 className="h-10 w-10 text-blue-600 animate-spin" />
+                                    </div>
+                                 </div>
+                                 <div className="flex flex-col items-center space-y-3">
+                                    <span className="text-[20px] font-black uppercase tracking-[0.2em] text-slate-800">{selectedAgent.microStatus || "Memproses Matriks..."}</span>
+                                    <div className="flex items-center gap-2 px-4 py-1.5 bg-blue-50 border border-blue-200 rounded-full">
+                                       <Activity className="h-3.5 w-3.5 text-blue-600 animate-pulse" />
+                                       <span className="text-[10px] font-black text-blue-700 uppercase tracking-widest">AI Sedang Bekerja</span>
+                                    </div>
+                                 </div>
                               </div>
                            ) : !selectedAgent?.results ? (
                               <div className="flex flex-col h-full items-center justify-center text-center opacity-30 grayscale pointer-events-none space-y-6">
