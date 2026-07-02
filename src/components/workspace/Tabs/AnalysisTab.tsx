@@ -1055,20 +1055,67 @@ export default function AnalysisTab() {
             <div className="flex-1 overflow-y-auto custom-scrollbar relative">
                <div className="absolute left-[39px] top-6 bottom-6 w-px bg-slate-200 z-0" />
                <div className="p-4 space-y-4 relative z-10">
-                  {agents.map((agent) => (
-                     <div 
-                        key={agent.id}
-                        onClick={() => setSelectedAgentId(agent.id)}
-                        className={`
-                           group relative flex flex-col p-5 rounded-sm border bg-white transition-all cursor-pointer overflow-hidden
-                           ${selectedAgentId === agent.id ? "border-slate-900  ring-1 ring-slate-900/5 -translate-y-0.5" : "border-slate-200 hover:border-slate-300"}
-                        `}
-                     >
-                        <div className="flex items-start justify-between mb-4">
-                           <div className={`h-12 w-12 rounded-sm border flex items-center justify-center transition-all ${selectedAgentId === agent.id ? "bg-slate-900 text-white border-slate-900 shadow-slate-900/20" : "bg-white text-slate-400 border-slate-100"}`}>
-                              <agent.icon className="h-5 w-5" />
+                  {agents.map((agent) => {
+                     const isActive = selectedAgentId === agent.id;
+
+                     if (!isActive) {
+                        return (
+                           <div 
+                              key={agent.id}
+                              onClick={() => setSelectedAgentId(agent.id)}
+                              className={`
+                                 group flex items-center justify-between p-3 rounded-sm border transition-all cursor-pointer bg-white relative overflow-hidden
+                                 ${agent.status === 'completed' ? 'border-slate-200 hover:border-slate-300 hover:shadow-sm' : 'border-slate-100 hover:border-slate-200'}
+                              `}
+                           >
+                              {agent.status === 'running' && (
+                                 <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-slate-100 overflow-hidden">
+                                    <div className="h-full bg-blue-500 animate-pulse w-full origin-left" />
+                                 </div>
+                              )}
+                              <div className="flex items-center gap-3">
+                                 <div className={`h-8 w-8 rounded-sm border flex items-center justify-center transition-colors ${agent.status === 'completed' ? 'bg-emerald-50/50 text-emerald-500 border-emerald-100' : agent.status === 'running' ? 'bg-blue-50 text-blue-500 border-blue-100' : 'bg-slate-50 text-slate-400 border-slate-100'}`}>
+                                    <agent.icon className="h-4 w-4" />
+                                 </div>
+                                 <div className="flex flex-col">
+                                    <h4 className={`text-[9px] font-black uppercase tracking-widest ${agent.status === 'completed' ? 'text-slate-700' : 'text-slate-400'}`}>{agent.name}</h4>
+                                    {agent.lastRunTimestamp && (
+                                       <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tight">{agent.lastRunTimestamp}</span>
+                                    )}
+                                 </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                 <div className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border ${agent.status === 'completed' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : agent.status === 'running' ? 'bg-blue-50 text-blue-700 border-blue-100 animate-pulse' : agent.status === 'stopped' ? 'bg-rose-50 text-rose-700 border-rose-100' : 'bg-slate-50 text-slate-400 border-slate-100'}`}>
+                                    {agent.status}
+                                 </div>
+                                 {agent.status === 'completed' && (
+                                    <button 
+                                       onClick={(e) => { e.stopPropagation(); setPreRunAgentId(agent.id); }}
+                                       className="h-6 w-6 rounded border border-slate-200 bg-white text-slate-400 hover:bg-slate-900 hover:text-white hover:border-slate-900 flex items-center justify-center transition-all opacity-0 group-hover:opacity-100"
+                                       title="Jalankan Ulang"
+                                    >
+                                       <RotateCcw className="h-3 w-3" />
+                                    </button>
+                                 )}
+                              </div>
                            </div>
-                           <div className="flex flex-col items-end gap-2">
+                        );
+                     }
+
+                     return (
+                      <div 
+                         key={agent.id}
+                         onClick={() => setSelectedAgentId(agent.id)}
+                         className={`
+                            group relative flex flex-col p-5 rounded-sm border bg-white transition-all cursor-pointer overflow-hidden
+                            ${selectedAgentId === agent.id ? "border-slate-900  ring-1 ring-slate-900/5 -translate-y-0.5 shadow-sm" : "border-slate-200 hover:border-slate-300"}
+                         `}
+                      >
+                         <div className="flex items-start justify-between mb-4">
+                            <div className={`h-12 w-12 rounded-sm border flex items-center justify-center transition-all ${selectedAgentId === agent.id ? "bg-slate-900 text-white border-slate-900 shadow-slate-900/20" : "bg-white text-slate-400 border-slate-100"}`}>
+                               <agent.icon className="h-5 w-5" />
+                            </div>
+                            <div className="flex flex-col items-end gap-2">
                               <div className={`
                                    px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border
                                    ${agent.status === 'completed' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 
@@ -1264,7 +1311,8 @@ export default function AnalysisTab() {
                            </div>
                         )}
                      </div>
-                  ))}
+                  );
+                  })}
                </div>
             </div>
          </div>
