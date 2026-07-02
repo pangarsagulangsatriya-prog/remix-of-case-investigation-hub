@@ -1161,7 +1161,7 @@ export default function ExtractionTab() {
         </div>
       </div>
 
-      ) : activeFile ? (
+      {activeFile ? (
         <>
           <div className="flex-1 flex flex-col relative z-0 bg-white animate-in fade-in duration-500">
             <div className="h-12 border-b flex items-center justify-between px-6 shrink-0 bg-white">
