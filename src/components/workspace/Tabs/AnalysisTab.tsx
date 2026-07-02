@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { 
   Play, 
+  RotateCcw,
   Brain, 
   Clock, 
   AlertTriangle, 
