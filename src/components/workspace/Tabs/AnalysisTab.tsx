@@ -1065,11 +1065,17 @@ export default function AnalysisTab() {
                </div>
 
                {/* Start Node */}
-               <div className="flex flex-col items-center mb-6 relative z-10">
-                  <div className="h-5 w-5 rounded-full bg-emerald-100 border-2 border-emerald-500 flex items-center justify-center shadow-sm">
+               <div className="flex flex-col items-center mb-0 relative z-10">
+                  <div className="h-5 w-5 rounded-full bg-emerald-100 border-2 border-emerald-500 flex items-center justify-center shadow-sm hover:scale-110 transition-transform">
                      <div className="h-2 w-2 rounded-full bg-emerald-500" />
                   </div>
                   <span className="text-[9px] font-bold text-emerald-600 mt-1 uppercase tracking-widest">Start</span>
+               </div>
+               
+               {/* Connector Line from Start to First Node */}
+               <div className="flex justify-center items-center h-6 relative z-10">
+                  <div className="w-px h-full bg-emerald-300" />
+                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 h-1.5 w-1.5 rotate-45 border-b border-r border-emerald-400" />
                </div>
 
                <div className="space-y-0 relative z-10">
@@ -1085,9 +1091,10 @@ export default function AnalysisTab() {
                      
                      const cardBorder = isActive 
                         ? 'border-emerald-500 shadow-sm bg-white' 
+                        : (isRunning ? 'border-blue-400 ring-4 ring-blue-500/20 bg-white scale-[1.02] shadow-md z-10'
                         : (isCompleted ? 'border-emerald-500 bg-white' 
                         : (isWaiting ? 'border-slate-100 bg-slate-50/50 opacity-60' 
-                        : 'border-slate-200 bg-white'));
+                        : 'border-slate-200 bg-white')));
                      
                      const iconBg = (isActive || isCompleted || isRunning) ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-400';
                      const badgeStyle = isCompleted ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
@@ -1101,7 +1108,7 @@ export default function AnalysisTab() {
                            <div 
                               onClick={() => setSelectedAgentId(agent.id)}
                               className={`
-                                 group flex flex-col p-4 rounded-sm border transition-all cursor-pointer relative overflow-hidden
+                                 group flex flex-col p-4 rounded-sm border transition-all duration-300 cursor-pointer relative overflow-hidden
                                  ${cardBorder}
                               `}
                            >
@@ -1113,8 +1120,8 @@ export default function AnalysisTab() {
                               
                               <div className="flex items-center justify-between mb-3">
                                  <div className="flex items-center gap-2">
-                                    <div className={`h-6 w-6 rounded-sm flex items-center justify-center ${iconBg}`}>
-                                       <agent.icon className="h-3 w-3" />
+                                    <div className={`h-6 w-6 rounded-sm flex items-center justify-center transition-colors ${iconBg}`}>
+                                       <agent.icon className={`h-3 w-3 ${isRunning ? 'animate-bounce' : ''}`} />
                                     </div>
                                     <span className="text-[10px] font-black text-slate-400 font-mono tracking-widest">{meta.nodeId}</span>
                                  </div>
@@ -1124,44 +1131,42 @@ export default function AnalysisTab() {
                                            onClick={(e) => { e.stopPropagation(); setPreRunAgentId(agent.id); }}
                                            className="text-slate-400 hover:text-slate-900 transition-colors"
                                         >
-                                           <Play className="h-3.5 w-3.5" />
+                                           <Play className="h-3.5 w-3.5 hover:scale-110 transition-transform" />
                                         </button>
                                     ) : (
-                                       <Play className="h-3 w-3 text-slate-300" />
+                                       <Play className={`h-3 w-3 text-slate-300 ${isRunning ? 'text-blue-400 animate-pulse' : ''}`} />
                                     )}
-                                    <div className={`px-2 py-0.5 rounded-full text-[7px] font-black tracking-widest border ${badgeStyle}`}>
+                                    <div className={`px-2 py-0.5 rounded-full text-[7px] font-black tracking-widest border transition-colors ${badgeStyle}`}>
                                        {badgeText}
                                     </div>
                                  </div>
                               </div>
                               
                               <div className="flex flex-col">
-                                 <h4 className={`text-[12px] font-black tracking-tight mb-0.5 ${isWaiting ? 'text-slate-400' : 'text-slate-800'}`}>{agent.name}</h4>
+                                 <h4 className={`text-[12px] font-black tracking-tight mb-0.5 transition-colors ${isWaiting ? 'text-slate-400' : 'text-slate-800'}`}>{agent.name}</h4>
                                  <p className="text-[10px] font-medium text-slate-400 leading-snug">{meta.subtitle}</p>
                               </div>
                            </div>
 
-                           {/* Connector Line to Next Node */}
-                           {index < agents.length - 1 && (
-                              <div className="flex justify-center items-center h-8 relative">
-                                 {/* Solid line for path leading to/from active or completed, dashed for waiting/paused */}
-                                 <div className={`w-px h-full ${
-                                    (isCompleted || isRunning) ? 'bg-emerald-300' : 'border-l border-dashed border-slate-300'
-                                 }`} />
-                                 
-                                 <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 h-1.5 w-1.5 rotate-45 border-b border-r ${
-                                    (isCompleted || isRunning) ? 'border-emerald-400' : 'border-slate-300'
-                                 }`} />
-                              </div>
-                           )}
+                           {/* Connector Line to Next Node (always render to connect to the next one or End node) */}
+                           <div className="flex justify-center items-center h-8 relative">
+                              {/* Solid line for path leading to/from active or completed, dashed for waiting/paused */}
+                              <div className={`w-px h-full transition-colors ${
+                                 (isCompleted || isRunning) ? 'bg-emerald-300' : 'border-l border-dashed border-slate-300'
+                              }`} />
+                              
+                              <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 h-1.5 w-1.5 rotate-45 border-b border-r transition-colors ${
+                                 (isCompleted || isRunning) ? 'border-emerald-400' : 'border-slate-300'
+                              }`} />
+                           </div>
                         </div>
                      );
                   })}
                </div>
 
                {/* End Node */}
-               <div className="flex flex-col items-center mt-8 mb-4 relative z-10">
-                  <div className="h-5 w-5 rounded-full bg-slate-100 border-2 border-slate-300 flex items-center justify-center shadow-sm">
+               <div className="flex flex-col items-center mt-0 mb-4 relative z-10">
+                  <div className="h-5 w-5 rounded-full bg-slate-100 border-2 border-slate-300 flex items-center justify-center shadow-sm hover:scale-110 transition-transform">
                      <div className="h-2 w-2 rounded-full bg-slate-300" />
                   </div>
                   <span className="text-[9px] font-bold text-slate-400 mt-1 uppercase tracking-widest">End</span>
