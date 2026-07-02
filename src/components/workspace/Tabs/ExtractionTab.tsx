@@ -833,45 +833,47 @@ export default function ExtractionTab() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2 shrink-0">
-               <div className="flex items-center bg-white border border-slate-200 rounded-[6px] divide-x divide-slate-200 shadow-sm overflow-hidden shrink-0">
-                  <div className="flex flex-col items-center justify-center py-1.5 px-3 min-w-[75px] bg-white">
-                    <span className="text-[15px] font-black text-rose-600 leading-none mb-0.5">
-                      {1 + batches.filter(b => b.type === "Folder").length + filteredFiles.filter((f: any) => !batches.find(b => b.id === f.batch_id && b.type === "Folder")).length}
-                    </span>
-                    <span className="text-[8px] font-bold text-slate-400 uppercase tracking-[0.15em] leading-none">
-                      Total
-                    </span>
-                  </div>
-                  <div className="flex flex-col items-center justify-center py-1.5 px-3 min-w-[75px] bg-white">
-                    <span className="text-[15px] font-black text-slate-800 leading-none mb-0.5">
-                      1
-                    </span>
-                    <span className="text-[8px] font-bold text-slate-400 uppercase tracking-[0.15em] leading-none">
-                      Utama
-                    </span>
-                  </div>
-                  <div className="flex flex-col items-center justify-center py-1.5 px-3 min-w-[75px] bg-white">
-                    <span className="text-[15px] font-black text-[#0f62fe] leading-none mb-0.5">
-                      {batches.filter(b => b.type === "Folder").length + filteredFiles.filter((f: any) => !batches.find(b => b.id === f.batch_id && b.type === "Folder")).length}
-                    </span>
-                    <span className="text-[8px] font-bold text-slate-400 uppercase tracking-[0.15em] leading-none">
-                      Pendukung
-                    </span>
-                  </div>
-               </div>
-               <button 
-                onClick={toggleAll}
-                title={isAllExpanded ? "Collapse All Folders" : "Expand All Folders"}
-                className="p-1.5 hover:bg-slate-50 hover:shadow-sm rounded-[4px] border border-slate-200 text-slate-500 hover:text-slate-900 transition-all bg-white flex items-center justify-center shrink-0 h-9 w-9"
-               >
-                 {isAllExpanded ? (
-                   <FolderOpen className="h-4 w-4" />
-                 ) : (
-                   <Folder className="h-4 w-4" />
-                 )}
-               </button>
-            </div>
+            {!activeFile && (
+              <div className="flex items-center gap-2 shrink-0">
+                 <div className="flex items-center bg-white border border-slate-200 rounded-[6px] divide-x divide-slate-200 shadow-sm overflow-hidden shrink-0">
+                    <div className="flex flex-col items-center justify-center py-1.5 px-3 min-w-[75px] bg-white">
+                      <span className="text-[15px] font-black text-rose-600 leading-none mb-0.5">
+                        {1 + batches.filter(b => b.type === "Folder").length + filteredFiles.filter((f: any) => !batches.find(b => b.id === f.batch_id && b.type === "Folder")).length}
+                      </span>
+                      <span className="text-[8px] font-bold text-slate-400 uppercase tracking-[0.15em] leading-none">
+                        Total
+                      </span>
+                    </div>
+                    <div className="flex flex-col items-center justify-center py-1.5 px-3 min-w-[75px] bg-white">
+                      <span className="text-[15px] font-black text-slate-800 leading-none mb-0.5">
+                        1
+                      </span>
+                      <span className="text-[8px] font-bold text-slate-400 uppercase tracking-[0.15em] leading-none">
+                        Utama
+                      </span>
+                    </div>
+                    <div className="flex flex-col items-center justify-center py-1.5 px-3 min-w-[75px] bg-white">
+                      <span className="text-[15px] font-black text-[#0f62fe] leading-none mb-0.5">
+                        {batches.filter(b => b.type === "Folder").length + filteredFiles.filter((f: any) => !batches.find(b => b.id === f.batch_id && b.type === "Folder")).length}
+                      </span>
+                      <span className="text-[8px] font-bold text-slate-400 uppercase tracking-[0.15em] leading-none">
+                        Pendukung
+                      </span>
+                    </div>
+                 </div>
+                 <button 
+                  onClick={toggleAll}
+                  title={isAllExpanded ? "Collapse All Folders" : "Expand All Folders"}
+                  className="p-1.5 hover:bg-slate-50 hover:shadow-sm rounded-[4px] border border-slate-200 text-slate-500 hover:text-slate-900 transition-all bg-white flex items-center justify-center shrink-0 h-9 w-9"
+                 >
+                   {isAllExpanded ? (
+                     <FolderOpen className="h-4 w-4" />
+                   ) : (
+                     <Folder className="h-4 w-4" />
+                   )}
+                 </button>
+              </div>
+            )}
           </div>
         <div id="tour-step-4-groups" className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar bg-white relative">
           {/* Table Header removed per user request */}
