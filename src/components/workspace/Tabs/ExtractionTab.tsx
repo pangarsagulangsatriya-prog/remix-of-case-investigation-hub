@@ -935,93 +935,122 @@ export default function ExtractionTab() {
                 else statusSummary = "Belum teranalisis";
               }
 
+              const renderFolderDropdown = () => (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                    <button className={cn("hover:bg-slate-200 rounded-md text-slate-500 transition-all shrink-0", activeFile ? "p-1" : "p-1.5")}>
+                      <MoreVertical className={activeFile ? "h-3.5 w-3.5" : "h-4 w-4"} />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48 rounded-[6px]">
+                    <DropdownMenuLabel className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2 py-1.5">Aksi Folder</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => {
+                      setFolderToRename(batch);
+                      setRenameValue(batch.name);
+                      setIsRenameFolderModalOpen(true);
+                    }} className="text-[11px] font-bold py-2 rounded-[4px]">
+                       <Pencil className="h-3.5 w-3.5 mr-2 text-slate-400" /> Ubah Nama
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => {
+                       const isAnalysisActive = localStorage.getItem(`analysis_running_${caseId}`) === "true";
+                       if (isAnalysisActive) {
+                         toast.warning("Folder tidak dapat dihapus karena analisis AI sedang berjalan.");
+                         return;
+                       }
+                       const hasRunningFiles = folderFiles.some((f: any) => f.extraction_status === "pending" || f.extraction_status === "processing");
+                       if (hasRunningFiles) {
+                         toast.warning("Folder tidak dapat dihapus karena terdapat file yang sedang diproses.");
+                         return;
+                       }
+                       setDeleteFolderTarget(batch);
+                    }} 
+                    className={cn(
+                       "text-rose-600 focus:text-rose-600 text-[11px] font-bold py-2 rounded-[4px]",
+                       (folderFiles.some((f: any) => f.extraction_status === "pending" || f.extraction_status === "processing") || (localStorage.getItem(`analysis_running_${caseId}`) === "true")) && "text-slate-400 focus:text-slate-400 opacity-60"
+                    )}>
+                       <Trash2 className="h-3.5 w-3.5 mr-2" /> Hapus Folder
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              );
+
               return (
               <div key={batch.id} className="border-b border-slate-200">
                 <div 
                   onClick={() => toggleBatch(batch.id)}
                   className={cn(
-                    "grid grid-cols-[minmax(250px,_1fr)_150px_160px_140px_130px_60px] gap-4 items-center px-4 py-2 min-h-[44px] hover:bg-slate-200/50 cursor-pointer transition-all group/header",
+                    activeFile ? "flex items-center gap-2.5 px-3 py-2 min-h-[44px]" : "grid grid-cols-[minmax(250px,_1fr)_150px_160px_140px_130px_60px] gap-4 items-center px-4 py-2 min-h-[44px]",
+                    "hover:bg-slate-200/50 cursor-pointer transition-all group/header",
                     expandedBatches.includes(batch.id) ? "bg-slate-100/60 shadow-inner" : "bg-slate-50/80"
                   )}
                 >
-                  {/* Col 1: Name and Icon */}
-                  <div className="flex items-center gap-3 min-w-0">
-                    <ChevronRight className={cn(
-                      "h-4 w-4 text-slate-400 transition-transform duration-200 shrink-0",
-                      expandedBatches.includes(batch.id) ? "rotate-90" : ""
-                    )} />
-                    <div className="h-7 w-7 rounded-md bg-indigo-50 border border-indigo-100 flex items-center justify-center shrink-0">
-                      <Folder className="h-3.5 w-3.5 text-indigo-500" />
-                    </div>
-                    <span className="text-[12px] font-medium text-slate-800 truncate" title={batch.name}>{batch.name}</span>
-                  </div>
+                  {activeFile ? (
+                    <>
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <ChevronRight className={cn(
+                          "h-3.5 w-3.5 text-slate-400 transition-transform duration-200 shrink-0",
+                          expandedBatches.includes(batch.id) ? "rotate-90" : ""
+                        )} />
+                        <div className="h-6 w-6 rounded-md bg-indigo-50 border border-indigo-100 flex items-center justify-center shrink-0">
+                          <Folder className="h-3 w-3 text-indigo-500" />
+                        </div>
+                        <span className="text-[11px] font-bold text-slate-800 truncate" title={batch.name}>{batch.name}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <div className="flex w-fit items-center px-2 py-0.5 rounded-full bg-slate-200/50 text-[9px] font-bold text-slate-500">
+                          {total}
+                        </div>
+                        <div className="flex items-center justify-center shrink-0 transition-opacity opacity-0 group-hover/header:opacity-100">
+                          {renderFolderDropdown()}
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {/* Col 1: Name and Icon */}
+                      <div className="flex items-center gap-3 min-w-0">
+                        <ChevronRight className={cn(
+                          "h-4 w-4 text-slate-400 transition-transform duration-200 shrink-0",
+                          expandedBatches.includes(batch.id) ? "rotate-90" : ""
+                        )} />
+                        <div className="h-7 w-7 rounded-md bg-indigo-50 border border-indigo-100 flex items-center justify-center shrink-0">
+                          <Folder className="h-3.5 w-3.5 text-indigo-500" />
+                        </div>
+                        <span className="text-[12px] font-medium text-slate-800 truncate" title={batch.name}>{batch.name}</span>
+                      </div>
 
-                  {/* Col 2: Type */}
-                  <div className="text-[11px] text-slate-500 font-medium truncate">
-                    Folder Berkas
-                  </div>
+                      {/* Col 2: Type */}
+                      <div className="text-[11px] text-slate-500 font-medium truncate">
+                        Folder Berkas
+                      </div>
 
-                  {/* Col 2.5: Metadata Summary */}
-                  <div className="flex items-center gap-2 truncate">
-                    <div className="flex w-fit items-center px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-[9px] font-bold text-slate-500">
-                      {metaSummary}
-                    </div>
-                  </div>
+                      {/* Col 2.5: Metadata Summary */}
+                      <div className="flex items-center gap-2 truncate">
+                        <div className="flex w-fit items-center px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-[9px] font-bold text-slate-500">
+                          {metaSummary}
+                        </div>
+                      </div>
 
-                  {/* Col 3: Date */}
-                  <div className="text-[11px] text-slate-500 font-medium">
-                    14 Okt 2023, 16:45
-                  </div>
+                      {/* Col 3: Date */}
+                      <div className="text-[11px] text-slate-500 font-medium">
+                        14 Okt 2023, 16:45
+                      </div>
 
-                  {/* Col 4: Status Data */}
-                  <div className="flex items-center shrink-0">
-                    <div className="flex w-fit items-center px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-[9px] font-bold text-slate-500">
-                      {statusSummary}
-                    </div>
-                  </div>
-                  
-                  {/* Col 5: Actions */}
-                  <div className="flex items-center justify-center shrink-0 transition-opacity opacity-0 group-hover/header:opacity-100">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                        <button className="p-1.5 hover:bg-slate-200 rounded-md text-slate-500 transition-all shrink-0">
-                          <MoreVertical className="h-4 w-4" />
-                        </button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-48 rounded-[6px]">
-                        <DropdownMenuLabel className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2 py-1.5">Aksi Folder</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => {
-                          setFolderToRename(batch);
-                          setRenameValue(batch.name);
-                          setIsRenameFolderModalOpen(true);
-                        }} className="text-[11px] font-bold py-2 rounded-[4px]">
-                           <Pencil className="h-3.5 w-3.5 mr-2 text-slate-400" /> Ubah Nama
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => {
-                           const isAnalysisActive = localStorage.getItem(`analysis_running_${caseId}`) === "true";
-                           if (isAnalysisActive) {
-                             toast.warning("Folder tidak dapat dihapus karena analisis AI sedang berjalan.");
-                             return;
-                           }
-                           const folderFiles = files.filter((f: any) => f.batch_id === batch.id);
-                           const hasRunningFiles = folderFiles.some((f: any) => f.extraction_status === "pending" || f.extraction_status === "processing");
-                           if (hasRunningFiles) {
-                             toast.warning("Folder tidak dapat dihapus karena terdapat file yang sedang diproses.");
-                             return;
-                           }
-                           setDeleteFolderTarget(batch);
-                        }} 
-                        className={cn(
-                           "text-rose-600 focus:text-rose-600 text-[11px] font-bold py-2 rounded-[4px]",
-                           (files.filter((f: any) => f.batch_id === batch.id).some((f: any) => f.extraction_status === "pending" || f.extraction_status === "processing") || (localStorage.getItem(`analysis_running_${caseId}`) === "true")) && "text-slate-400 focus:text-slate-400 opacity-60"
-                        )}>
-                           <Trash2 className="h-3.5 w-3.5 mr-2" /> Hapus Folder
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
+                      {/* Col 4: Status Data */}
+                      <div className="flex items-center shrink-0">
+                        <div className="flex w-fit items-center px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-[9px] font-bold text-slate-500">
+                          {statusSummary}
+                        </div>
+                      </div>
+                      
+                      {/* Col 5: Actions */}
+                      <div className="flex items-center justify-center shrink-0 transition-opacity opacity-0 group-hover/header:opacity-100">
+                        {renderFolderDropdown()}
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 {expandedBatches.includes(batch.id) && (
@@ -1035,7 +1064,7 @@ export default function ExtractionTab() {
                           file={file} 
                           isSelected={selectedFile?.id === file.id}
                           onSelect={() => setSelectedFile(selectedFile?.id === file.id ? null : file)}
-                          onMove={handleMoveFile}
+                          onMove={(fileId: string, newBatchId: string | null) => handleMoveFile(fileId, newBatchId)}
                           onDelete={() => { setSelectedFile(file); setIsDeleteModalOpen(true); }}
                           onRerun={(f: any) => {
                             setFileToRerun(f);
@@ -1048,6 +1077,7 @@ export default function ExtractionTab() {
                           batches={batches}
                           isIndented
                           onHoverChange={setHoveredFile}
+                          compact={!!activeFile}
                         />
                       ))
                     )}
@@ -1065,7 +1095,7 @@ export default function ExtractionTab() {
                         file={file} 
                         isSelected={selectedFile?.id === file.id}
                         onSelect={() => setSelectedFile(selectedFile?.id === file.id ? null : file)}
-                        onMove={handleMoveFile}
+                        onMove={(fileId: string, newBatchId: string | null) => handleMoveFile(fileId, newBatchId)}
                         onDelete={() => { setSelectedFile(file); setIsDeleteModalOpen(true); }}
                         onRerun={(f: any) => {
                           setFileToRerun(f);
@@ -1077,6 +1107,7 @@ export default function ExtractionTab() {
                         }}
                         batches={batches}
                         onHoverChange={setHoveredFile}
+                        compact={!!activeFile}
                       />
                     );
                   });
