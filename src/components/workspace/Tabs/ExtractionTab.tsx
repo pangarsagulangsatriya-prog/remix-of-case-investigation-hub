@@ -6,7 +6,7 @@ import {
   Folder, Folders, MoreVertical, Pencil, Trash2, Loader2, CheckCircle2, 
   Box, Upload, ChevronLeft, ChevronRight as ChevronRightIcon, 
   Cpu, ChevronsDown, ChevronsUp, AlertCircle, RefreshCw, FolderOpen,
-  Dices, PowerOff, Database, FileText, Filter
+  Dices, PowerOff, Database, FileText, Filter, AlertTriangle, Check
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
