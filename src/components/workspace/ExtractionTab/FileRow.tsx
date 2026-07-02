@@ -305,9 +305,16 @@ export function FileRow({ file, isSelected, onSelect, onMove, onDelete, onRename
           </div>
           
           <div className="flex-1 min-w-0 flex flex-col justify-center">
-            <p className={cn("text-[11px] truncate leading-tight transition-all", isSelected ? "font-bold text-indigo-900" : "font-semibold text-slate-800")}>
+            <p className={cn("text-[11px] truncate leading-tight transition-all", isSelected ? "font-bold text-indigo-900 mb-0.5" : "font-semibold text-slate-800")}>
               {file.name}
             </p>
+            {isSelected && (
+              <div className="text-[9px] font-medium text-slate-400 flex items-center gap-1.5 uppercase tracking-wide">
+                <span>{formatSize(file.size)}</span>
+                <span className="text-[6px]">&bull;</span>
+                <span>{formatDate(file.created_at).split(',')[0]}</span>
+              </div>
+            )}
           </div>
           
           <div className="flex items-center gap-1 shrink-0">
