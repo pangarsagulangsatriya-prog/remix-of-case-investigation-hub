@@ -759,17 +759,40 @@ export default function ExtractionTab() {
     prevStatusMap.current[activeFile.id] = currStatus;
   }, [activeFile]);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && selectedFile) {
+        setSelectedFile(null);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedFile]);
+
   if (isLoading) return <div className="p-8 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Loading Evidence...</div>;
 
   return (
-    <div className="flex h-full bg-[#f0f2f4] overflow-hidden">
+    <div className="flex h-full bg-[#f0f2f4] overflow-hidden transition-all duration-500 ease-out">
       <div className={cn(
-        "border-r border-slate-200 bg-white flex flex-col shrink-0 z-10 shadow-[1px_0_10px_rgba(0,0,0,0.02)] transition-all duration-300",
+        "border-r border-slate-200 bg-white flex flex-col shrink-0 z-10 shadow-[1px_0_10px_rgba(0,0,0,0.02)] transition-all duration-500 ease-out",
         activeFile ? "w-[320px]" : "flex-1"
       )}>
-        <div className="p-5 shrink-0 bg-white">
-          <div className="flex flex-wrap items-center justify-between gap-3 w-full">
-            <div className="flex items-center gap-3 flex-1 min-w-[200px]">
+        {activeFile && (
+          <div className="px-5 pt-4 pb-2 shrink-0 bg-white border-b border-slate-100 flex items-center justify-between">
+            <span className="text-[11px] font-bold text-slate-700 uppercase tracking-widest">Reviewing Evidence</span>
+            <Button 
+              variant="ghost" 
+              onClick={() => setSelectedFile(null)} 
+              className="h-7 px-2 text-[10px] font-bold text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+            >
+              <ChevronLeft className="h-3 w-3 mr-1" />
+              BACK
+            </Button>
+          </div>
+        )}
+        <div className={cn("shrink-0 bg-white transition-all duration-500 ease-out", activeFile ? "p-3 border-b border-slate-200" : "p-5")}>
+          <div className={cn("flex flex-wrap items-center gap-3 w-full", activeFile ? "justify-between" : "justify-between")}>
+            <div className={cn("flex items-center gap-3 min-w-[200px]", activeFile ? "w-full" : "flex-1")}>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button 
@@ -1138,13 +1161,9 @@ export default function ExtractionTab() {
         </div>
       </div>
 
-      {(activeFile && (activeFile.extraction_status === "processing" || activeFile.extraction_status === "pending" || successFileId === activeFile.id)) ? (
-         <div className="flex-1 flex flex-col relative z-0 bg-white">
-           <EvidencePreparationExperience file={activeFile} isSuccess={successFileId === activeFile.id} />
-         </div>
       ) : activeFile ? (
         <>
-          <div className="flex-1 flex flex-col relative z-0 bg-white">
+          <div className="flex-1 flex flex-col relative z-0 bg-white animate-in fade-in duration-500">
             <div className="h-12 border-b flex items-center justify-between px-6 shrink-0 bg-white">
               <div className="flex items-center gap-4">
                  <div className="flex items-center gap-1 border-r pr-4 border-slate-100">
@@ -1152,15 +1171,47 @@ export default function ExtractionTab() {
                     <button onClick={goToNext} className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-900 transition-all disabled:opacity-30"><ChevronRightIcon className="h-4 w-4" /></button>
                  </div>
                  <div className="flex items-center gap-2">
-                    <div className="h-7 w-7 bg-slate-100 rounded flex items-center justify-center border shadow-inner">
+                    <div className="h-7 w-7 bg-slate-100 rounded flex items-center justify-center border shadow-inner shrink-0">
                        {getFileIcon(activeFile.type)}
                     </div>
-                    <h2 className="text-sm font-medium text-slate-900 tracking-tight">{activeFile.name}</h2>
+                    <h2 className="text-sm font-medium text-slate-900 tracking-tight truncate max-w-[400px]" title={activeFile.name}>{activeFile.name}</h2>
                  </div>
               </div>
-        </div>
+              <Button variant="ghost" size="sm" onClick={() => setSelectedFile(null)} className="h-8 px-2 text-slate-400 hover:text-slate-800 hover:bg-slate-100">
+                <X className="h-4 w-4 mr-1.5" />
+                <span className="text-[10px] font-bold uppercase tracking-widest">Close</span>
+              </Button>
+            </div>
 
-         <div id="tour-step-6-preview" className="flex-1 overflow-auto bg-[#f0f2f4] p-6 flex flex-col items-center custom-scrollbar" style={{ minWidth: 0 }}>
+            {(activeFile.extraction_status === "processing" || activeFile.extraction_status === "pending" || successFileId === activeFile.id) ? (
+               <div className="flex-1 flex flex-col items-center justify-center bg-[#f0f2f4] p-6 relative overflow-hidden">
+                 <div className="absolute inset-0 flex flex-col">
+                    <EvidencePreparationExperience file={activeFile} isSuccess={successFileId === activeFile.id} />
+                 </div>
+               </div>
+            ) : activeFile.extraction_status === "failed" ? (
+               <div className="flex-1 flex flex-col items-center justify-center bg-[#f0f2f4] p-6">
+                  <div className="bg-white p-8 rounded-lg shadow-sm border border-slate-200 flex flex-col items-center text-center max-w-md">
+                     <AlertCircle className="h-10 w-10 text-rose-500 mb-4" />
+                     <h3 className="text-sm font-bold text-slate-800 mb-2">Preview Failed</h3>
+                     <p className="text-xs text-slate-500 mb-6 leading-relaxed">
+                       We couldn't process this evidence for preview. The AI analysis engine might have timed out or encountered an unreadable format.
+                     </p>
+                     <div className="flex gap-3 w-full">
+                       <Button onClick={() => window.open(activeFile.url, '_blank')} variant="outline" className="flex-1 text-xs h-9 border-slate-200 text-slate-600 hover:bg-slate-50">
+                         Open Raw File
+                       </Button>
+                       <Button onClick={() => {
+                          setFileToRerun(activeFile);
+                          setIsRerunModalOpen(true);
+                       }} className="flex-1 text-xs h-9 bg-slate-900 hover:bg-slate-800 text-white shadow-sm">
+                         <RefreshCw className="h-3.5 w-3.5 mr-2" /> Retry Analysis
+                       </Button>
+                     </div>
+                  </div>
+               </div>
+            ) : (
+             <div id="tour-step-6-preview" className="flex-1 overflow-auto bg-[#f0f2f4] p-6 flex flex-col items-center custom-scrollbar" style={{ minWidth: 0 }}>
              <div className={`w-full flex ${(activeFile?.type === "Image" || activeFile?.type === "Document") ? "max-w-5xl h-full items-center justify-center" : "max-w-5xl items-start justify-center pt-4"}`}>
                  <AdaptiveSourcePreview 
                     file={activeFile} 
@@ -1178,7 +1229,8 @@ export default function ExtractionTab() {
                     audioRef={audioRef}
                   />
             </div>
-         </div>
+          </div>
+         )}
       </div>
 
       {!(activeFile.type?.toLowerCase() === "case-metadata") && (

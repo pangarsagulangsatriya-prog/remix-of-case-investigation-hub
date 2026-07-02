@@ -3,7 +3,8 @@ import { useParams } from "react-router-dom";
 import { 
   Pencil, Trash2, MoreVertical, Folder, FileText, 
   Image as ImageIcon, Mic as AudioIcon, Video as VideoIcon, 
-  FileCode, Box, RefreshCw, Loader2, Check, AlertCircle, X, Clock, AlertTriangle, Database, User
+  FileCode, Box, RefreshCw, Loader2, Check, AlertCircle, X, Clock, AlertTriangle, Database, User,
+  ChevronRight, GripVertical
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -284,10 +285,16 @@ export function FileRow({ file, isSelected, onSelect, onMove, onDelete, onRename
       onClick={onSelect}
       onMouseEnter={() => onHoverChange && onHoverChange(file)}
       onMouseLeave={() => onHoverChange && onHoverChange(null)}
+      draggable={!compact}
+      onDragStart={(e) => {
+        e.dataTransfer.setData('text/plain', file.id);
+        e.dataTransfer.effectAllowed = 'move';
+        // Optional: set custom drag image
+      }}
       className={cn(
         compact ? "flex items-center gap-2.5 px-3 py-2 min-h-[52px]" : "grid grid-cols-[minmax(250px,_1fr)_150px_160px_140px_130px_60px] gap-4 items-center px-4 py-1.5 min-h-[40px]",
         "border-b border-slate-200 cursor-pointer transition-all relative group bg-white",
-        isSelected ? "bg-slate-50/70 shadow-[inset_3px_0_0_#0f62fe]" : "hover:bg-slate-50/50",
+        isSelected ? "bg-indigo-50/50 shadow-[inset_2px_0_0_#6366f1]" : "hover:bg-slate-100/60",
         isIndented && compact ? "pl-7" : ""
       )}
     >
@@ -298,7 +305,7 @@ export function FileRow({ file, isSelected, onSelect, onMove, onDelete, onRename
           </div>
           
           <div className="flex-1 min-w-0 flex flex-col justify-center">
-            <p className="text-[11px] font-semibold text-slate-800 truncate leading-tight mb-0.5">
+            <p className={cn("text-[11px] truncate leading-tight mb-0.5 transition-all", isSelected ? "font-bold text-indigo-900" : "font-semibold text-slate-800")}>
               {file.name}
             </p>
             <div className="text-[9px] font-medium text-slate-400 flex items-center gap-1.5 uppercase tracking-wide">
@@ -316,7 +323,12 @@ export function FileRow({ file, isSelected, onSelect, onMove, onDelete, onRename
       ) : (
         <>
           {/* Col 1: Name and Icon */}
-      <div className={cn("flex items-center gap-3 min-w-0", isIndented ? "pl-8" : "")}>
+      <div className={cn("flex items-center gap-3 min-w-0 relative", isIndented ? "pl-8" : "")}>
+        {!compact && (
+           <div className={cn("absolute top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-slate-300 hover:text-slate-600 cursor-grab active:cursor-grabbing", isIndented ? "left-2" : "-left-4")}>
+              <GripVertical className="h-4 w-4" />
+           </div>
+        )}
         <div className="h-7 w-7 rounded-md bg-slate-100 flex items-center justify-center shrink-0">
           {getFileIcon(file.type, file.name)}
         </div>
@@ -324,9 +336,16 @@ export function FileRow({ file, isSelected, onSelect, onMove, onDelete, onRename
           <TooltipProvider delayDuration={500}>
             <Tooltip>
               <TooltipTrigger asChild>
-                <p className="text-[12px] font-medium text-slate-800 truncate leading-none mb-0.5">
-                  {file.name}
-                </p>
+                <div className="flex items-center gap-2">
+                  <p className={cn("text-[12px] truncate leading-none mb-0.5 transition-all", isSelected ? "font-bold text-indigo-900" : "font-medium text-slate-800")}>
+                    {file.name}
+                  </p>
+                  {!compact && !isSelected && (
+                    <span className="text-[10px] font-bold text-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity bg-indigo-50 px-1.5 py-0.5 rounded flex items-center gap-1 shrink-0">
+                      Review <ChevronRight className="h-3 w-3" />
+                    </span>
+                  )}
+                </div>
               </TooltipTrigger>
               <TooltipContent side="top" className="bg-slate-900 text-[10px] text-white px-2 py-1">
                 {file.name}
