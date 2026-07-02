@@ -357,8 +357,27 @@ export function FileRow({ file, isSelected, onSelect, onMove, onDelete, onRename
                   Data CCR
                 </div>
               </TooltipTrigger>
-              <TooltipContent side="right" className="max-w-[250px] p-3 text-xs leading-relaxed bg-white text-slate-700 border-slate-200 shadow-md">
-                <p><strong>CCR (Central Control Room)</strong> adalah pusat kendali operasi. Data ini otomatis disinkronisasi dari sistem _dispatch_ pusat dan dianggap valid sebagai bukti utama investigasi.</p>
+              <TooltipContent side="right" className="w-[280px] p-3 text-xs leading-relaxed bg-white border border-slate-200 shadow-lg rounded-lg">
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-2 border-b border-slate-100 pb-2 mb-1">
+                    <div className="h-6 w-6 rounded bg-slate-100 flex items-center justify-center">
+                       <Database className="h-3 w-3 text-slate-600" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-slate-800 text-[11px] uppercase tracking-wide">Central Control Room</h4>
+                      <p className="text-[9px] font-medium text-slate-400">System Auto-Sync</p>
+                    </div>
+                  </div>
+                  <p className="text-slate-600 text-[11px] leading-snug">
+                    Data ini otomatis disinkronisasi dari sistem <span className="font-semibold italic">dispatch</span> pusat.
+                  </p>
+                  <div className="bg-emerald-50 border border-emerald-100 rounded p-1.5 mt-1">
+                    <p className="text-[10px] font-medium text-emerald-700 flex items-center gap-1.5">
+                      <Check className="h-3 w-3" />
+                      Validitas Terverifikasi
+                    </p>
+                  </div>
+                </div>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
