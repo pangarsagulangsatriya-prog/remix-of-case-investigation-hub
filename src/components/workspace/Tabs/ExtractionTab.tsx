@@ -1049,11 +1049,8 @@ export default function ExtractionTab() {
                              <div className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-rose-500 border border-white shadow-sm" title="Berisi Temuan Penting" />
                           )}
                         </div>
-                        <span className={cn("text-[11px] truncate flex items-center gap-1.5", folderFiles.some((f: any) => hasCriticalIncident(f)) ? "font-bold text-slate-800" : "font-bold text-slate-800")} title={batch.name}>
+                        <span className="text-[11px] font-bold text-slate-800 truncate" title={batch.name}>
                           {batch.name}
-                          {folderFiles.some((f: any) => hasCriticalIncident(f)) && (
-                            <AlertTriangle className="h-2.5 w-2.5 text-rose-500 shrink-0" />
-                          )}
                         </span>
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
@@ -1078,15 +1075,12 @@ export default function ExtractionTab() {
                              <div className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-rose-500 border-2 border-white shadow-sm" title="Berisi Temuan Penting" />
                           )}
                         </div>
-                        <span className={cn("text-[12px] truncate", folderFiles.some((f: any) => hasCriticalIncident(f)) ? "font-bold text-slate-800" : "font-medium text-slate-800")} title={batch.name}>{batch.name}</span>
+                        <span className="text-[12px] font-medium text-slate-800 truncate" title={batch.name}>{batch.name}</span>
                       </div>
 
                       {/* Col 2: Type */}
-                      <div className="text-[11px] text-slate-500 font-medium truncate flex items-center gap-1.5">
+                      <div className="text-[11px] text-slate-500 font-medium truncate">
                         Folder Berkas
-                        {folderFiles.some((f: any) => hasCriticalIncident(f)) && (
-                          <AlertTriangle className="h-3 w-3 text-rose-500 shrink-0" />
-                        )}
                       </div>
 
                       {/* Col 2.5: Metadata Summary */}

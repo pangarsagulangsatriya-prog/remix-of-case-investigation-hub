@@ -336,11 +336,8 @@ export function FileRow({ file, isSelected, onSelect, onMove, onDelete, onRename
           </div>
           
           <div className="flex-1 min-w-0 flex flex-col justify-center">
-            <p className={cn("text-[11px] truncate leading-tight transition-all mb-0.5 flex items-center gap-1.5", isSelected ? "font-bold text-indigo-900" : "font-semibold text-slate-800")}>
+            <p className={cn("text-[11px] truncate leading-tight transition-all mb-0.5", isSelected ? "font-bold text-indigo-900" : "font-semibold text-slate-800")}>
               {file.name}
-              {hasCriticalIncident(file) && (
-                 <AlertTriangle className="h-3 w-3 text-rose-500 shrink-0" />
-              )}
             </p>
             {isSelected && (
               <div className="text-[9px] font-medium text-slate-400 flex items-center gap-1.5 uppercase tracking-wide">
@@ -376,14 +373,8 @@ export function FileRow({ file, isSelected, onSelect, onMove, onDelete, onRename
             <Tooltip>
               <TooltipTrigger asChild>
                 <div className="flex items-center gap-2">
-                  <p className={cn("text-[12px] truncate leading-none mb-0.5 transition-all flex items-center gap-1.5", isSelected ? "font-bold text-indigo-900" : "font-medium text-slate-800")}>
+                  <p className={cn("text-[12px] truncate leading-none mb-0.5 transition-all", isSelected ? "font-bold text-indigo-900" : "font-medium text-slate-800")}>
                     {file.name}
-                    {hasCriticalIncident(file) && (
-                       <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-rose-50 border border-rose-100 text-rose-600 text-[9px] font-black uppercase tracking-widest shrink-0">
-                         <AlertTriangle className="h-2.5 w-2.5" />
-                         Temuan Penting
-                       </span>
-                    )}
                   </p>
                   {!compact && !isSelected && (
                     <span className="text-[10px] font-bold text-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity bg-indigo-50 px-1.5 py-0.5 rounded flex items-center gap-1 shrink-0">
