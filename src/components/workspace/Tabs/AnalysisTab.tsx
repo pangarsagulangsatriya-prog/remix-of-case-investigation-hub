@@ -742,7 +742,7 @@ export default function AnalysisTab() {
   const [activeEvidenceType, setActiveEvidenceType] = useState('audio_diarization');
   const [expandedFolders, setExpandedFolders] = useState<string[]>(['audio', 'document']);
   const [execMode, setExecMode] = useState<"idle" | "full" | "manual">("idle");
-  const [globalStatus, setGlobalStatus] = useState<"idle" | "running" | "blocked" | "completed" | "stopped" | "failed">("idle");
+  const [globalStatus, setGlobalStatus] = useState<"idle" | "running" | "blocked" | "completed" | "stopped" | "failed" | "paused">("idle");
   const [chainQueue, setChainQueue] = useState<string[]>([]);
   const [activeTask, setActiveTask] = useState<string | null>(null);
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
@@ -941,25 +941,29 @@ export default function AnalysisTab() {
       });
 
       setTimeout(() => {
-        const d = new Date();
         setAgents(prev => {
           const a = prev.find(x => x.id === nextId);
           if (a?.status === 'running') {
+            // Success: complete it and advance queue
+            setTimeout(() => {
+               setChainQueue(q => q[0] === nextId ? q.slice(1) : q);
+               setActiveTask(null);
+            }, 0);
             return prev.map(x => x.id === nextId ? { 
               ...x, 
               status: 'completed', 
-              lastRunTimestamp: d.toLocaleTimeString(),
-              lastUpdatedTimestamp: d.toLocaleTimeString(),
+              lastRunTimestamp: new Date().toLocaleTimeString(),
+              lastUpdatedTimestamp: new Date().toLocaleTimeString(),
               confidence: (85 + Math.floor(Math.random() * 10)) + "%",
               dependencyState: 'Resolved',
               microStatus: 'Synthesis complete.'
             } : x);
+          } else if (a?.status === 'paused') {
+            // Paused: clear active task so it can be picked up again on resume
+            setTimeout(() => setActiveTask(null), 0);
           }
           return prev;
         });
-
-        setChainQueue(q => q.slice(1));
-        setActiveTask(null);
       }, 4000);
     } else if (globalStatus === 'running' && chainQueue.length === 0 && !activeTask) {
       setGlobalStatus('completed');
@@ -1030,9 +1034,19 @@ export default function AnalysisTab() {
     setChainQueue(["fact", "actor", "peepo", "ipls", "prev"]);
   };
 
+  const pauseChain = () => {
+    setGlobalStatus("paused");
+    setAgents(prev => prev.map(a => a.status === 'running' ? { ...a, status: 'paused' } : a));
+  };
+
+  const resumeChain = () => {
+    setGlobalStatus("running");
+    setAgents(prev => prev.map(a => a.status === 'paused' ? { ...a, status: 'running' } : a));
+  };
+
   const stopChain = () => {
     setGlobalStatus("stopped");
-    setAgents(prev => prev.map(a => a.status === 'queued' || a.status === 'running' ? { ...a, status: 'cancelled' } : a));
+    setAgents(prev => prev.map(a => a.status === 'queued' || a.status === 'running' || a.status === 'paused' ? { ...a, status: 'stopped' } : a));
     setChainQueue([]);
     setActiveTask(null);
   };
@@ -1040,42 +1054,77 @@ export default function AnalysisTab() {
   return (
     <div className="flex h-full bg-[#f0f2f4] overflow-hidden animate-in fade-in duration-500">
          <div className="w-[320px] border-r border-slate-200 bg-slate-50 flex flex-col shrink-0 z-20 shadow-[1px_0_4px_rgba(0,0,0,0.02)]">
-            <div className="flex-1 overflow-y-auto custom-scrollbar relative p-6 bg-[radial-gradient(#cbd5e1_1px,transparent_1px)] [background-size:16px_16px]">
-               
-               {/* Floating Actions */}
-               <div className="sticky top-0 right-0 z-50 flex justify-end gap-2 mb-4 -mt-2 -mr-2">
-                  <Button 
-                     onClick={stopChain} 
-                     disabled={globalStatus !== 'running'}
-                     size="icon"
-                     title="Jeda / Hentikan"
-                     className="h-8 w-8 rounded-full bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 shadow-sm transition-all"
-                  >
-                     <Pause className="h-4 w-4" />
-                  </Button>
-                  <Button 
-                     onClick={startFullChain} 
-                     disabled={globalStatus === 'running'}
-                     size="icon"
-                     title="Jalankan Semua Agen"
-                     className="h-8 w-8 rounded-full bg-slate-900 hover:bg-slate-800 text-white shadow-md transition-all"
-                  >
-                     <Play className="h-4 w-4 fill-current ml-0.5" />
-                  </Button>
+            
+            {/* Header Control Area */}
+            <div className="h-[72px] border-b border-slate-200 bg-white px-5 py-4 flex items-center justify-between shrink-0 shadow-sm z-30">
+               <div className="flex flex-col">
+                  <span className="text-[12px] font-black text-slate-800 tracking-tight uppercase">Orkestrasi Agen</span>
+                  <span className="text-[9px] font-medium text-slate-400">Pipeline analisis investigasi</span>
                </div>
+               
+               {/* Controls Toolbar */}
+               <div className="flex items-center gap-1.5">
+                  {(globalStatus === 'idle' || globalStatus === 'completed' || globalStatus === 'stopped') && (
+                     <Button 
+                        onClick={startFullChain} 
+                        size="sm"
+                        title="Start All Agents"
+                        className="h-7 px-3 bg-slate-900 hover:bg-slate-800 text-white rounded text-[10px] font-bold tracking-widest shadow-sm transition-all flex items-center gap-1.5"
+                     >
+                        <Play className="h-3 w-3 fill-current" />
+                        START ALL
+                     </Button>
+                  )}
+
+                  {globalStatus === 'running' && (
+                     <Button 
+                        onClick={pauseChain} 
+                        size="icon"
+                        title="Pause Execution"
+                        className="h-7 w-7 rounded bg-amber-50 hover:bg-amber-100 text-amber-600 border border-amber-200 transition-all shadow-sm"
+                     >
+                        <Pause className="h-3 w-3 fill-current" />
+                     </Button>
+                  )}
+
+                  {globalStatus === 'paused' && (
+                     <Button 
+                        onClick={resumeChain} 
+                        size="icon"
+                        title="Resume Execution"
+                        className="h-7 w-7 rounded bg-emerald-50 hover:bg-emerald-100 text-emerald-600 border border-emerald-200 transition-all shadow-sm"
+                     >
+                        <Play className="h-3 w-3 fill-current" />
+                     </Button>
+                  )}
+
+                  {(globalStatus === 'running' || globalStatus === 'paused') && (
+                     <Button 
+                        onClick={stopChain} 
+                        size="icon"
+                        title="Stop Execution"
+                        className="h-7 w-7 rounded bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 transition-all shadow-sm"
+                     >
+                        <X className="h-4 w-4" />
+                     </Button>
+                  )}
+               </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto custom-scrollbar relative p-6 bg-slate-50/50">
 
                {/* Start Node */}
                <div className="flex flex-col items-center mb-0 relative z-10">
-                  <div className="h-5 w-5 rounded-full bg-emerald-100 border-2 border-emerald-500 flex items-center justify-center shadow-sm hover:scale-110 transition-transform">
-                     <div className="h-2 w-2 rounded-full bg-emerald-500" />
+                  <div className={`h-5 w-5 rounded-full border-2 flex items-center justify-center shadow-sm transition-all ${globalStatus !== 'idle' ? 'bg-emerald-100 border-emerald-500' : 'bg-slate-100 border-slate-300'}`}>
+                     <div className={`h-2 w-2 rounded-full ${globalStatus !== 'idle' ? 'bg-emerald-500' : 'bg-slate-300'}`} />
                   </div>
-                  <span className="text-[9px] font-bold text-emerald-600 mt-1 uppercase tracking-widest">Start</span>
+                  <span className={`text-[9px] font-bold mt-1 uppercase tracking-widest ${globalStatus !== 'idle' ? 'text-emerald-600' : 'text-slate-400'}`}>Start</span>
                </div>
                
                {/* Connector Line from Start to First Node */}
                <div className="flex justify-center items-center h-6 relative z-10">
-                  <div className="w-px h-full bg-emerald-300" />
-                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 h-1.5 w-1.5 rotate-45 border-b border-r border-emerald-400" />
+                  <div className={`h-full transition-all ${globalStatus !== 'idle' ? 'w-[2px] bg-emerald-300' : 'w-px border-l-2 border-dashed border-slate-200'}`} />
+                  <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 h-1.5 w-1.5 rotate-45 border-b-2 border-r-2 transition-all ${globalStatus !== 'idle' ? 'border-emerald-400' : 'border-slate-300'}`} />
                </div>
 
                <div className="space-y-0 relative z-10">
@@ -1083,25 +1132,33 @@ export default function AnalysisTab() {
                      const isActive = selectedAgentId === agent.id;
                      const meta = AgentDisplayMeta[agent.id] || { nodeId: `AGT-0${index}`, subtitle: 'Processing node' };
                      
-                     // Styling logic based on status and active state
+                     // State booleans
                      const isCompleted = agent.status === 'completed';
                      const isRunning = agent.status === 'running';
-                     const isPaused = agent.status === 'stopped' || agent.status === 'paused';
-                     const isWaiting = agent.status === 'queued' || (!isCompleted && !isRunning && !isPaused);
+                     const isPaused = agent.status === 'paused';
+                     const isStopped = agent.status === 'stopped' || agent.status === 'cancelled';
+                     const isWaiting = agent.status === 'queued' || (!isCompleted && !isRunning && !isPaused && !isStopped);
                      
-                     const cardBorder = isActive 
-                        ? 'border-emerald-500 shadow-sm bg-white' 
-                        : (isRunning ? 'border-blue-400 ring-4 ring-blue-500/20 bg-white scale-[1.02] shadow-md z-10'
-                        : (isCompleted ? 'border-emerald-500 bg-white' 
-                        : (isWaiting ? 'border-slate-100 bg-slate-50/50 opacity-60' 
-                        : 'border-slate-200 bg-white')));
+                     // Enterprise Styling
+                     const cardBorder = isRunning ? 'border-blue-400 ring-4 ring-blue-500/10 bg-white scale-[1.02] shadow-md z-20' :
+                                        isPaused ? 'border-amber-400 ring-2 ring-amber-500/20 bg-white shadow-sm z-10' :
+                                        isCompleted ? (isActive ? 'border-emerald-400 bg-white shadow-sm' : 'border-slate-200 bg-slate-50/50 hover:bg-white') :
+                                        isStopped ? 'border-rose-200 bg-slate-50 opacity-60' :
+                                        isActive ? 'border-slate-400 bg-white shadow-sm' : 'border-slate-200 bg-white opacity-70 hover:opacity-100';
                      
-                     const iconBg = (isActive || isCompleted || isRunning) ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-400';
-                     const badgeStyle = isCompleted ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
-                                        isRunning ? 'bg-blue-50 text-blue-700 border-blue-100 animate-pulse' :
-                                        isPaused ? 'bg-slate-100 text-slate-500 border-slate-200' :
-                                        'bg-slate-100 text-slate-400 border-slate-200';
-                     const badgeText = isPaused ? 'PAUSED' : isWaiting ? 'WAITING' : agent.status.toUpperCase();
+                     const iconBg = isRunning ? 'bg-blue-50 text-blue-600' :
+                                    isPaused ? 'bg-amber-50 text-amber-600' :
+                                    isCompleted ? 'bg-emerald-50 text-emerald-600' :
+                                    isStopped ? 'bg-rose-50 text-rose-500' :
+                                    'bg-slate-100 text-slate-400';
+                                    
+                     const badgeStyle = isRunning ? 'bg-blue-50 text-blue-700 border-blue-200 animate-pulse' :
+                                        isPaused ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                                        isCompleted ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                                        isStopped ? 'bg-rose-50 text-rose-700 border-rose-200' :
+                                        'bg-slate-100 text-slate-500 border-slate-200';
+                                        
+                     const badgeText = isPaused ? 'PAUSED' : isWaiting ? 'WAITING' : isStopped ? 'STOPPED' : agent.status.toUpperCase();
 
                      return (
                         <div key={agent.id} className="relative">
@@ -1125,38 +1182,36 @@ export default function AnalysisTab() {
                                     </div>
                                     <span className="text-[10px] font-black text-slate-400 font-mono tracking-widest">{meta.nodeId}</span>
                                  </div>
-                                 <div className="flex items-center gap-3">
-                                    {(isCompleted || isPaused) ? (
-                                        <button 
-                                           onClick={(e) => { e.stopPropagation(); setPreRunAgentId(agent.id); }}
-                                           className="text-slate-400 hover:text-slate-900 transition-colors"
-                                        >
-                                           <Play className="h-3.5 w-3.5 hover:scale-110 transition-transform" />
-                                        </button>
-                                    ) : (
-                                       <Play className={`h-3 w-3 text-slate-300 ${isRunning ? 'text-blue-400 animate-pulse' : ''}`} />
+                                 <div className="flex items-center gap-2">
+                                    {isCompleted && (
+                                       <button 
+                                          onClick={(e) => { e.stopPropagation(); runSingleAgent(agent.id, true); }}
+                                          title="Rerun Node"
+                                          className="h-5 w-5 rounded flex items-center justify-center text-slate-400 hover:bg-slate-100 hover:text-slate-700 opacity-0 group-hover:opacity-100 transition-all"
+                                       >
+                                          <Play className="h-2.5 w-2.5" />
+                                       </button>
                                     )}
-                                    <div className={`px-2 py-0.5 rounded-full text-[7px] font-black tracking-widest border transition-colors ${badgeStyle}`}>
+                                    <div className={`px-2 py-0.5 rounded text-[8px] font-black tracking-widest border transition-colors ${badgeStyle}`}>
                                        {badgeText}
                                     </div>
                                  </div>
                               </div>
                               
                               <div className="flex flex-col">
-                                 <h4 className={`text-[12px] font-black tracking-tight mb-0.5 transition-colors ${isWaiting ? 'text-slate-400' : 'text-slate-800'}`}>{agent.name}</h4>
+                                 <h4 className={`text-[12px] font-black tracking-tight mb-0.5 transition-colors ${(isWaiting || isStopped) ? 'text-slate-500' : 'text-slate-800'}`}>{agent.name}</h4>
                                  <p className="text-[10px] font-medium text-slate-400 leading-snug">{meta.subtitle}</p>
                               </div>
                            </div>
 
-                           {/* Connector Line to Next Node (always render to connect to the next one or End node) */}
+                           {/* Connector Line to Next Node */}
                            <div className="flex justify-center items-center h-8 relative">
-                              {/* Solid line for path leading to/from active or completed, dashed for waiting/paused */}
-                              <div className={`w-px h-full transition-colors ${
-                                 (isCompleted || isRunning) ? 'bg-emerald-300' : 'border-l border-dashed border-slate-300'
+                              <div className={`h-full transition-colors ${
+                                 isCompleted ? 'w-[2px] bg-emerald-300' : 'w-px border-l-2 border-dashed border-slate-200'
                               }`} />
                               
-                              <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 h-1.5 w-1.5 rotate-45 border-b border-r transition-colors ${
-                                 (isCompleted || isRunning) ? 'border-emerald-400' : 'border-slate-300'
+                              <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 h-1.5 w-1.5 rotate-45 border-b-2 border-r-2 transition-colors ${
+                                 isCompleted ? 'border-emerald-400' : 'border-slate-300'
                               }`} />
                            </div>
                         </div>
@@ -1166,10 +1221,10 @@ export default function AnalysisTab() {
 
                {/* End Node */}
                <div className="flex flex-col items-center mt-0 mb-4 relative z-10">
-                  <div className="h-5 w-5 rounded-full bg-slate-100 border-2 border-slate-300 flex items-center justify-center shadow-sm hover:scale-110 transition-transform">
-                     <div className="h-2 w-2 rounded-full bg-slate-300" />
+                  <div className={`h-5 w-5 rounded-full border-2 flex items-center justify-center shadow-sm transition-all ${globalStatus === 'completed' ? 'bg-slate-800 border-slate-800' : 'bg-slate-100 border-slate-300'}`}>
+                     <div className={`h-2 w-2 rounded-full ${globalStatus === 'completed' ? 'bg-white' : 'bg-slate-300'}`} />
                   </div>
-                  <span className="text-[9px] font-bold text-slate-400 mt-1 uppercase tracking-widest">End</span>
+                  <span className={`text-[9px] font-bold mt-1 uppercase tracking-widest ${globalStatus === 'completed' ? 'text-slate-800' : 'text-slate-400'}`}>End</span>
                </div>
             </div>
          </div>
