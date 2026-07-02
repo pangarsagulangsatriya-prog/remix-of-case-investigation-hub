@@ -1027,7 +1027,7 @@ export default function AnalysisTab() {
         status: 'queued', 
         dependencyState: a.dependencies.length === 0 ? 'Ready' : `Wait: ${a.dependencies[0]}`
     })));
-    setChainQueue(["fact", "peepo", "ipls", "prev"]);
+    setChainQueue(["fact", "actor", "peepo", "ipls", "prev"]);
   };
 
   const stopChain = () => {
