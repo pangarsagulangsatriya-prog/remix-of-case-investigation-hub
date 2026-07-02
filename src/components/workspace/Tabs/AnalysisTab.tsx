@@ -1040,28 +1040,30 @@ export default function AnalysisTab() {
   return (
     <div className="flex h-full bg-[#f0f2f4] overflow-hidden animate-in fade-in duration-500">
          <div className="w-[320px] border-r border-slate-200 bg-slate-50 flex flex-col shrink-0 z-20 shadow-[1px_0_4px_rgba(0,0,0,0.02)]">
-            <div className="h-12 border-b border-slate-200 flex items-center justify-between px-5 bg-white shrink-0">
-               <span className="text-[12px] font-bold text-slate-800 tracking-tight">Orkestrasi Agent</span>
-               <div className="flex items-center gap-1.5">
+            <div className="flex-1 overflow-y-auto custom-scrollbar relative p-6 bg-[radial-gradient(#cbd5e1_1px,transparent_1px)] [background-size:16px_16px]">
+               
+               {/* Floating Actions */}
+               <div className="sticky top-0 right-0 z-50 flex justify-end gap-2 mb-4 -mt-2 -mr-2">
                   <Button 
                      onClick={stopChain} 
                      disabled={globalStatus !== 'running'}
-                     variant="outline" 
-                     className="h-7 px-2 bg-slate-100 hover:bg-slate-200 border-none text-slate-600 text-[9px] font-bold tracking-widest uppercase transition-all"
+                     size="icon"
+                     title="Jeda / Hentikan"
+                     className="h-8 w-8 rounded-full bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 shadow-sm transition-all"
                   >
-                     <Pause className="h-3 w-3 mr-1" /> Jeda
+                     <Pause className="h-4 w-4" />
                   </Button>
                   <Button 
                      onClick={startFullChain} 
                      disabled={globalStatus === 'running'}
-                     className="h-7 px-2 bg-slate-900 hover:bg-slate-800 text-white border-none text-[9px] font-bold tracking-widest uppercase transition-all"
+                     size="icon"
+                     title="Jalankan Semua Agen"
+                     className="h-8 w-8 rounded-full bg-slate-900 hover:bg-slate-800 text-white shadow-md transition-all"
                   >
-                     Jalankan <Play className="h-3 w-3 ml-1 fill-current" />
+                     <Play className="h-4 w-4 fill-current ml-0.5" />
                   </Button>
                </div>
-            </div>
 
-            <div className="flex-1 overflow-y-auto custom-scrollbar relative p-6">
                {/* Start Node */}
                <div className="flex flex-col items-center mb-6 relative z-10">
                   <div className="h-5 w-5 rounded-full bg-emerald-100 border-2 border-emerald-500 flex items-center justify-center shadow-sm">
