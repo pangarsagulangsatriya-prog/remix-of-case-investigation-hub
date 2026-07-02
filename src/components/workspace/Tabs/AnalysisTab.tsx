@@ -1058,8 +1058,8 @@ export default function AnalysisTab() {
             {/* Header Control Area */}
             <div className="h-[72px] border-b border-slate-200 bg-white px-5 py-4 flex items-center justify-between shrink-0 shadow-sm z-30">
                <div className="flex flex-col">
-                  <span className="text-[12px] font-black text-slate-800 tracking-tight uppercase">Orkestrasi Agen</span>
-                  <span className="text-[9px] font-medium text-slate-400">Pipeline analisis investigasi</span>
+                  <span className="text-[13px] font-black text-slate-900 tracking-tight uppercase">Orkestrasi Agen</span>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">Pipeline Investigasi</span>
                </div>
                
                {/* Controls Toolbar */}
@@ -1069,7 +1069,7 @@ export default function AnalysisTab() {
                         onClick={startFullChain} 
                         size="sm"
                         title="Start All Agents"
-                        className="h-7 px-3 bg-slate-900 hover:bg-slate-800 text-white rounded text-[10px] font-bold tracking-widest shadow-sm transition-all flex items-center gap-1.5"
+                        className="h-7 px-4 bg-slate-900 hover:bg-black text-white rounded-none border border-slate-900 text-[10px] font-black tracking-widest shadow-none transition-all flex items-center gap-1.5"
                      >
                         <Play className="h-3 w-3 fill-current" />
                         START ALL
@@ -1081,7 +1081,7 @@ export default function AnalysisTab() {
                         onClick={pauseChain} 
                         size="icon"
                         title="Pause Execution"
-                        className="h-7 w-7 rounded bg-amber-50 hover:bg-amber-100 text-amber-600 border border-amber-200 transition-all shadow-sm"
+                        className="h-7 w-7 rounded-none bg-white hover:bg-amber-50 text-slate-900 border-2 border-slate-900 transition-all shadow-none"
                      >
                         <Pause className="h-3 w-3 fill-current" />
                      </Button>
@@ -1092,7 +1092,7 @@ export default function AnalysisTab() {
                         onClick={resumeChain} 
                         size="icon"
                         title="Resume Execution"
-                        className="h-7 w-7 rounded bg-emerald-50 hover:bg-emerald-100 text-emerald-600 border border-emerald-200 transition-all shadow-sm"
+                        className="h-7 w-7 rounded-none bg-slate-900 hover:bg-black text-white border-2 border-slate-900 transition-all shadow-none"
                      >
                         <Play className="h-3 w-3 fill-current" />
                      </Button>
@@ -1103,7 +1103,7 @@ export default function AnalysisTab() {
                         onClick={stopChain} 
                         size="icon"
                         title="Stop Execution"
-                        className="h-7 w-7 rounded bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 transition-all shadow-sm"
+                        className="h-7 w-7 rounded-none bg-white hover:bg-rose-50 text-slate-900 border-2 border-slate-900 transition-all shadow-none ml-1"
                      >
                         <X className="h-4 w-4" />
                      </Button>
@@ -1111,20 +1111,20 @@ export default function AnalysisTab() {
                </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto custom-scrollbar relative p-6 bg-slate-50/50">
+            <div className="flex-1 overflow-y-auto custom-scrollbar relative p-6 bg-white bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:16px_16px]">
 
                {/* Start Node */}
                <div className="flex flex-col items-center mb-0 relative z-10">
-                  <div className={`h-5 w-5 rounded-full border-2 flex items-center justify-center shadow-sm transition-all ${globalStatus !== 'idle' ? 'bg-emerald-100 border-emerald-500' : 'bg-slate-100 border-slate-300'}`}>
-                     <div className={`h-2 w-2 rounded-full ${globalStatus !== 'idle' ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+                  <div className={`h-6 w-6 rounded-none border-2 flex items-center justify-center shadow-sm transition-all ${globalStatus !== 'idle' ? 'bg-slate-900 border-slate-900' : 'bg-white border-slate-300'}`}>
+                     <div className={`h-2 w-2 rounded-none ${globalStatus !== 'idle' ? 'bg-emerald-400' : 'bg-slate-300'}`} />
                   </div>
-                  <span className={`text-[9px] font-bold mt-1 uppercase tracking-widest ${globalStatus !== 'idle' ? 'text-emerald-600' : 'text-slate-400'}`}>Start</span>
+                  <span className={`text-[9px] font-black mt-1.5 uppercase tracking-widest ${globalStatus !== 'idle' ? 'text-slate-900' : 'text-slate-500'}`}>Start</span>
                </div>
                
                {/* Connector Line from Start to First Node */}
                <div className="flex justify-center items-center h-6 relative z-10">
-                  <div className={`h-full transition-all ${globalStatus !== 'idle' ? 'w-[2px] bg-emerald-300' : 'w-px border-l-2 border-dashed border-slate-200'}`} />
-                  <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 h-1.5 w-1.5 rotate-45 border-b-2 border-r-2 transition-all ${globalStatus !== 'idle' ? 'border-emerald-400' : 'border-slate-300'}`} />
+                  <div className={`h-full transition-all ${globalStatus !== 'idle' ? 'w-[2px] bg-slate-900' : 'w-[2px] border-l-2 border-dashed border-slate-300'}`} />
+                  <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 h-2 w-2 rotate-45 border-b-2 border-r-2 transition-all ${globalStatus !== 'idle' ? 'border-slate-900' : 'border-slate-300'}`} />
                </div>
 
                <div className="space-y-0 relative z-10">
@@ -1139,24 +1139,24 @@ export default function AnalysisTab() {
                      const isStopped = agent.status === 'stopped' || agent.status === 'cancelled';
                      const isWaiting = agent.status === 'queued' || (!isCompleted && !isRunning && !isPaused && !isStopped);
                      
-                     // Enterprise Styling
-                     const cardBorder = isRunning ? 'border-blue-400 ring-4 ring-blue-500/10 bg-white scale-[1.02] shadow-md z-20' :
-                                        isPaused ? 'border-amber-400 ring-2 ring-amber-500/20 bg-white shadow-sm z-10' :
-                                        isCompleted ? (isActive ? 'border-emerald-400 bg-white shadow-sm' : 'border-slate-200 bg-slate-50/50 hover:bg-white') :
-                                        isStopped ? 'border-rose-200 bg-slate-50 opacity-60' :
-                                        isActive ? 'border-slate-400 bg-white shadow-sm' : 'border-slate-200 bg-white opacity-70 hover:opacity-100';
+                     // Brutalist Enterprise Styling
+                     const cardBorder = isRunning ? 'border-2 border-slate-900 border-l-[6px] border-l-blue-600 bg-white shadow-[0_4px_12px_rgba(0,0,0,0.08)] scale-[1.02] z-20' :
+                                        isPaused ? 'border-2 border-slate-900 border-l-[6px] border-l-amber-500 bg-white shadow-sm z-10' :
+                                        isCompleted ? (isActive ? 'border-2 border-slate-900 border-l-[6px] border-l-emerald-500 bg-white shadow-sm' : 'border-2 border-slate-300 border-l-[6px] border-l-emerald-500 bg-white hover:border-slate-400') :
+                                        isStopped ? 'border-2 border-slate-300 border-l-[6px] border-l-rose-500 bg-white opacity-90' :
+                                        isActive ? 'border-2 border-slate-900 bg-white shadow-sm' : 'border-2 border-slate-200 bg-white hover:border-slate-300';
                      
-                     const iconBg = isRunning ? 'bg-blue-50 text-blue-600' :
-                                    isPaused ? 'bg-amber-50 text-amber-600' :
-                                    isCompleted ? 'bg-emerald-50 text-emerald-600' :
-                                    isStopped ? 'bg-rose-50 text-rose-500' :
-                                    'bg-slate-100 text-slate-400';
+                     const iconBg = isRunning ? 'bg-blue-100 text-blue-700' :
+                                    isPaused ? 'bg-amber-100 text-amber-700' :
+                                    isCompleted ? 'bg-emerald-100 text-emerald-700' :
+                                    isStopped ? 'bg-rose-100 text-rose-700' :
+                                    'bg-slate-100 text-slate-500';
                                     
-                     const badgeStyle = isRunning ? 'bg-blue-50 text-blue-700 border-blue-200 animate-pulse' :
-                                        isPaused ? 'bg-amber-50 text-amber-700 border-amber-200' :
-                                        isCompleted ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                                        isStopped ? 'bg-rose-50 text-rose-700 border-rose-200' :
-                                        'bg-slate-100 text-slate-500 border-slate-200';
+                     const badgeStyle = isRunning ? 'bg-blue-600 text-white border-blue-700 animate-pulse' :
+                                        isPaused ? 'bg-amber-500 text-white border-amber-600' :
+                                        isCompleted ? 'bg-emerald-500 text-white border-emerald-600' :
+                                        isStopped ? 'bg-rose-500 text-white border-rose-600' :
+                                        'bg-slate-100 text-slate-600 border-slate-300';
                                         
                      const badgeText = isPaused ? 'PAUSED' : isWaiting ? 'WAITING' : isStopped ? 'STOPPED' : agent.status.toUpperCase();
 
@@ -1165,53 +1165,61 @@ export default function AnalysisTab() {
                            <div 
                               onClick={() => setSelectedAgentId(agent.id)}
                               className={`
-                                 group flex flex-col p-4 rounded-sm border transition-all duration-300 cursor-pointer relative overflow-hidden
+                                 group flex flex-col p-4 rounded-none transition-all duration-300 cursor-pointer relative overflow-hidden
                                  ${cardBorder}
                               `}
                            >
+                              {/* Running Glow/Pulse Bar */}
                               {isRunning && (
-                                 <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-slate-100 overflow-hidden">
-                                    <div className="h-full bg-blue-500 animate-pulse w-full origin-left" />
+                                 <div className="absolute top-0 left-0 right-0 h-[2px] bg-slate-100 overflow-hidden">
+                                    <div className="h-full bg-blue-600 animate-pulse w-full origin-left" />
                                  </div>
                               )}
                               
                               <div className="flex items-center justify-between mb-3">
-                                 <div className="flex items-center gap-2">
-                                    <div className={`h-6 w-6 rounded-sm flex items-center justify-center transition-colors ${iconBg}`}>
-                                       <agent.icon className={`h-3 w-3 ${isRunning ? 'animate-bounce' : ''}`} />
+                                 <div className="flex items-center gap-2.5">
+                                    <div className={`h-7 w-7 rounded-none flex items-center justify-center transition-colors ${iconBg}`}>
+                                       <agent.icon className={`h-3.5 w-3.5 ${isRunning ? 'animate-bounce' : ''}`} />
                                     </div>
-                                    <span className="text-[10px] font-black text-slate-400 font-mono tracking-widest">{meta.nodeId}</span>
+                                    <span className={`text-[11px] font-black font-mono tracking-wider ${isActive || isRunning || isCompleted ? 'text-slate-800' : 'text-slate-500'}`}>{meta.nodeId}</span>
                                  </div>
                                  <div className="flex items-center gap-2">
                                     {isCompleted && (
                                        <button 
                                           onClick={(e) => { e.stopPropagation(); runSingleAgent(agent.id, true); }}
                                           title="Rerun Node"
-                                          className="h-5 w-5 rounded flex items-center justify-center text-slate-400 hover:bg-slate-100 hover:text-slate-700 opacity-0 group-hover:opacity-100 transition-all"
+                                          className="h-6 w-6 rounded-none flex items-center justify-center border border-slate-200 text-slate-500 hover:bg-slate-900 hover:text-white hover:border-slate-900 opacity-0 group-hover:opacity-100 transition-all"
                                        >
-                                          <Play className="h-2.5 w-2.5" />
+                                          <Play className="h-3 w-3" />
                                        </button>
                                     )}
-                                    <div className={`px-2 py-0.5 rounded text-[8px] font-black tracking-widest border transition-colors ${badgeStyle}`}>
+                                    <div className={`px-2 py-0.5 rounded-none text-[9px] font-black tracking-widest border transition-colors shadow-sm ${badgeStyle}`}>
                                        {badgeText}
                                     </div>
                                  </div>
                               </div>
                               
                               <div className="flex flex-col">
-                                 <h4 className={`text-[12px] font-black tracking-tight mb-0.5 transition-colors ${(isWaiting || isStopped) ? 'text-slate-500' : 'text-slate-800'}`}>{agent.name}</h4>
-                                 <p className="text-[10px] font-medium text-slate-400 leading-snug">{meta.subtitle}</p>
+                                 <h4 className="text-[13px] font-black tracking-tight mb-1 text-slate-900 uppercase">{agent.name}</h4>
+                                 <p className="text-[11px] font-medium text-slate-500 leading-snug">{meta.subtitle}</p>
                               </div>
                            </div>
 
                            {/* Connector Line to Next Node */}
-                           <div className="flex justify-center items-center h-8 relative">
+                           <div className="flex justify-center items-center h-9 relative">
+                              {/* If current is completed, the line is solid. If current is running, line is dashed but moving? 
+                                  Let's keep it simple: solid black if completed, dashed if anything else. 
+                                  Wait, if it's running, maybe a blue line? The user said running connector is animated line. */}
                               <div className={`h-full transition-colors ${
-                                 isCompleted ? 'w-[2px] bg-emerald-300' : 'w-px border-l-2 border-dashed border-slate-200'
+                                 isCompleted ? 'w-[2px] bg-slate-900' : 
+                                 isRunning ? 'w-[2px] border-l-2 border-dashed border-blue-400 animate-pulse' : 
+                                 'w-[2px] border-l-2 border-dashed border-slate-300'
                               }`} />
                               
-                              <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 h-1.5 w-1.5 rotate-45 border-b-2 border-r-2 transition-colors ${
-                                 isCompleted ? 'border-emerald-400' : 'border-slate-300'
+                              <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 h-2 w-2 rotate-45 border-b-2 border-r-2 transition-colors ${
+                                 isCompleted ? 'border-slate-900' : 
+                                 isRunning ? 'border-blue-400' : 
+                                 'border-slate-300'
                               }`} />
                            </div>
                         </div>
@@ -1220,11 +1228,11 @@ export default function AnalysisTab() {
                </div>
 
                {/* End Node */}
-               <div className="flex flex-col items-center mt-0 mb-4 relative z-10">
-                  <div className={`h-5 w-5 rounded-full border-2 flex items-center justify-center shadow-sm transition-all ${globalStatus === 'completed' ? 'bg-slate-800 border-slate-800' : 'bg-slate-100 border-slate-300'}`}>
-                     <div className={`h-2 w-2 rounded-full ${globalStatus === 'completed' ? 'bg-white' : 'bg-slate-300'}`} />
+               <div className="flex flex-col items-center mt-0 mb-8 relative z-10">
+                  <div className={`h-6 w-6 rounded-none border-2 flex items-center justify-center shadow-sm transition-all ${globalStatus === 'completed' ? 'bg-slate-900 border-slate-900' : 'bg-white border-slate-300'}`}>
+                     <div className={`h-2.5 w-2.5 rounded-none ${globalStatus === 'completed' ? 'bg-emerald-400' : 'bg-slate-300'}`} />
                   </div>
-                  <span className={`text-[9px] font-bold mt-1 uppercase tracking-widest ${globalStatus === 'completed' ? 'text-slate-800' : 'text-slate-400'}`}>End</span>
+                  <span className={`text-[10px] font-black mt-1.5 uppercase tracking-widest ${globalStatus === 'completed' ? 'text-slate-900' : 'text-slate-500'}`}>End</span>
                </div>
             </div>
          </div>
