@@ -22,6 +22,19 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
+const DUMMY_USERS = [
+  { name: "Rudi Heryanto", avatar: "https://randomuser.me/api/portraits/men/32.jpg" },
+  { name: "Siti Aminah", avatar: "https://randomuser.me/api/portraits/women/44.jpg" },
+  { name: "Budi Santoso", avatar: "https://randomuser.me/api/portraits/men/45.jpg" },
+  { name: "Dewi Lestari", avatar: "https://randomuser.me/api/portraits/women/68.jpg" },
+  { name: "Agus Pratama", avatar: "https://randomuser.me/api/portraits/men/22.jpg" },
+  { name: "Lina Marlina", avatar: "https://randomuser.me/api/portraits/women/33.jpg" },
+];
+
+const getDummyUser = (id: string = "") => {
+  const sum = id.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  return DUMMY_USERS[sum % DUMMY_USERS.length];
+};
 
 export const getFileIcon = (type: string, name: string = "") => {
   const lowerType = type?.toLowerCase();
@@ -188,12 +201,17 @@ export function FileRow({ file, isSelected, onSelect, onMove, onDelete, onRename
             </Tooltip>
           </TooltipProvider>
         ) : (
-          <div className="flex items-center gap-1.5 text-[11px] font-medium text-slate-600">
-            <div className="h-5 w-5 rounded-full overflow-hidden shrink-0 border border-slate-200 bg-slate-50">
-              <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=RudiHeryanto&backgroundColor=f8fafc" alt="Rudi Heryanto" className="h-full w-full object-cover" />
-            </div>
-            <span className="truncate font-semibold">Rudi Heryanto</span>
-          </div>
+          (() => {
+            const dummyUser = getDummyUser(file?.id || file?.name || "default");
+            return (
+              <div className="flex items-center gap-1.5 text-[11px] font-medium text-slate-600">
+                <div className="h-5 w-5 rounded-full overflow-hidden shrink-0 border border-slate-200 bg-slate-50">
+                  <img src={dummyUser.avatar} alt={dummyUser.name} className="h-full w-full object-cover" />
+                </div>
+                <span className="truncate font-semibold">{dummyUser.name}</span>
+              </div>
+            );
+          })()
         )}
       </div>
 
