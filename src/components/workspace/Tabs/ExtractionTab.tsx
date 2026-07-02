@@ -393,56 +393,58 @@ export default function ExtractionTab() {
   const filteredFiles = useMemo(() => {
     if (!files || !Array.isArray(files)) return [];
     
-    // Filter matching files first
-    const matched = files.filter((f: any) => 
+    // Identify mandiri files to find the last one
+    const mandiriIds = files
+      .filter((f: any) => !batches.find(b => b.id === f.batch_id && b.type === "Folder"))
+      .map((f: any) => f.id);
+    const lastMandiriId = mandiriIds[mandiriIds.length - 1];
+
+    // First map to inject mock data
+    const mockAppliedFiles = files.map((f: any) => {
+      let mockedFile = { ...f };
+
+      // Inject contains_critical_incident for specific demo files
+      if (mockedFile.name.includes("adas_20241105013218") || mockedFile.name.includes("TC-4007-rebah")) {
+        mockedFile.metadata = {
+          ...(mockedFile.metadata || {}),
+          contains_critical_incident: true
+        };
+      }
+
+      // Hardcode demo simulation: always fail these files unless currently retrying/processing
+      if (mockedFile.extraction_status !== "pending" && mockedFile.extraction_status !== "processing") {
+        if (mockedFile.id === lastMandiriId && mockedFile.extraction_status === "completed") {
+          mockedFile.extraction_status = "failed";
+          mockedFile.metadata = {
+            ...(mockedFile.metadata || {}),
+            error_message: "Analysis engine timeout (504)"
+          };
+        }
+        if (mockedFile.name.includes("WhatsApp Image")) {
+          mockedFile.extraction_status = "failed";
+          mockedFile.metadata = {
+            ...(mockedFile.metadata || {}),
+            error_message: "Failed to upload evidence payload. Connection lost during chunk upload (408)."
+          };
+        }
+        if (mockedFile.name.includes("ChatGPT Image")) {
+          mockedFile.extraction_status = "failed";
+          mockedFile.metadata = {
+            ...(mockedFile.metadata || {}),
+            error_message: "Analysis engine timeout or connection reset by peer (504)."
+          };
+        }
+      }
+      return mockedFile;
+    });
+
+    // Then filter matching files
+    return mockAppliedFiles.filter((f: any) => 
       f && f.name && f.type && (
         f.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         f.type.toLowerCase().includes(searchQuery.toLowerCase())
       ) && (!filterCriticalOnly || hasCriticalIncident(f))
     );
-
-    // Identify mandiri files to find the last one
-    const mandiriIds = matched
-      .filter((f: any) => !batches.find(b => b.id === f.batch_id && b.type === "Folder"))
-      .map((f: any) => f.id);
-    const lastMandiriId = mandiriIds[mandiriIds.length - 1];
-
-    return matched.map((f: any) => {
-      // Hardcode demo simulation: always fail these files unless currently retrying/processing
-      if (f.extraction_status !== "pending" && f.extraction_status !== "processing") {
-        if (f.id === lastMandiriId && f.extraction_status === "completed") {
-          return {
-            ...f,
-            extraction_status: "failed",
-            metadata: {
-              ...(f.metadata || {}),
-              error_message: "Analysis engine timeout (504)"
-            }
-          };
-        }
-        if (f.name.includes("WhatsApp Image")) {
-          return {
-            ...f,
-            extraction_status: "failed",
-            metadata: {
-              ...(f.metadata || {}),
-              error_message: "Failed to upload evidence payload. Connection lost during chunk upload (408)."
-            }
-          };
-        }
-        if (f.name.includes("ChatGPT Image")) {
-          return {
-            ...f,
-            extraction_status: "failed",
-            metadata: {
-              ...(f.metadata || {}),
-              error_message: "Analysis engine timeout or connection reset by peer (504)."
-            }
-          };
-        }
-      }
-      return f;
-    });
   }, [files, searchQuery, batches, filterCriticalOnly]);
 
   // Handlers
@@ -1041,10 +1043,18 @@ export default function ExtractionTab() {
                           "h-3.5 w-3.5 text-slate-400 transition-transform duration-200 shrink-0",
                           expandedBatches.includes(batch.id) ? "rotate-90" : ""
                         )} />
-                        <div className="h-6 w-6 rounded-md bg-indigo-50 border border-indigo-100 flex items-center justify-center shrink-0">
+                        <div className="h-6 w-6 rounded-md bg-indigo-50 border border-indigo-100 flex items-center justify-center shrink-0 relative">
                           <Folder className="h-3 w-3 text-indigo-500" />
+                          {folderFiles.some((f: any) => hasCriticalIncident(f)) && (
+                             <div className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-rose-500 border border-white shadow-sm" title="Berisi Temuan Penting" />
+                          )}
                         </div>
-                        <span className="text-[11px] font-bold text-slate-800 truncate" title={batch.name}>{batch.name}</span>
+                        <span className={cn("text-[11px] truncate flex items-center gap-1.5", folderFiles.some((f: any) => hasCriticalIncident(f)) ? "font-bold text-slate-800" : "font-bold text-slate-800")} title={batch.name}>
+                          {batch.name}
+                          {folderFiles.some((f: any) => hasCriticalIncident(f)) && (
+                            <AlertTriangle className="h-2.5 w-2.5 text-rose-500 shrink-0" />
+                          )}
+                        </span>
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
                         <div className="flex w-fit items-center px-2 py-0.5 rounded-full bg-slate-200/50 text-[9px] font-bold text-slate-500">
@@ -1057,21 +1067,26 @@ export default function ExtractionTab() {
                     </>
                   ) : (
                     <>
-                      {/* Col 1: Name and Icon */}
                       <div className="flex items-center gap-3 min-w-0">
                         <ChevronRight className={cn(
                           "h-4 w-4 text-slate-400 transition-transform duration-200 shrink-0",
                           expandedBatches.includes(batch.id) ? "rotate-90" : ""
                         )} />
-                        <div className="h-7 w-7 rounded-md bg-indigo-50 border border-indigo-100 flex items-center justify-center shrink-0">
+                        <div className="h-7 w-7 rounded-md bg-indigo-50 border border-indigo-100 flex items-center justify-center shrink-0 relative">
                           <Folder className="h-3.5 w-3.5 text-indigo-500" />
+                          {folderFiles.some((f: any) => hasCriticalIncident(f)) && (
+                             <div className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-rose-500 border-2 border-white shadow-sm" title="Berisi Temuan Penting" />
+                          )}
                         </div>
-                        <span className="text-[12px] font-medium text-slate-800 truncate" title={batch.name}>{batch.name}</span>
+                        <span className={cn("text-[12px] truncate", folderFiles.some((f: any) => hasCriticalIncident(f)) ? "font-bold text-slate-800" : "font-medium text-slate-800")} title={batch.name}>{batch.name}</span>
                       </div>
 
                       {/* Col 2: Type */}
-                      <div className="text-[11px] text-slate-500 font-medium truncate">
+                      <div className="text-[11px] text-slate-500 font-medium truncate flex items-center gap-1.5">
                         Folder Berkas
+                        {folderFiles.some((f: any) => hasCriticalIncident(f)) && (
+                          <AlertTriangle className="h-3 w-3 text-rose-500 shrink-0" />
+                        )}
                       </div>
 
                       {/* Col 2.5: Metadata Summary */}

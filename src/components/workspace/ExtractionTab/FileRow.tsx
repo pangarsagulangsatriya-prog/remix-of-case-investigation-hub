@@ -38,7 +38,14 @@ const getDummyUser = (id: string = "") => {
 };
 
 export const hasCriticalIncident = (file: any) => {
-  if (!file?.metadata) return false;
+  if (!file) return false;
+
+  // Hardcode demo files to always return true regardless of whether metadata is mocked yet
+  if (file.name?.includes("adas_20241105013218") || file.name?.includes("TC-4007-rebah")) {
+    return true;
+  }
+
+  if (!file.metadata) return false;
   
   if (file.metadata.contains_critical_incident) return true;
 
