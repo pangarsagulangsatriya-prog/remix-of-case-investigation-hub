@@ -600,11 +600,59 @@ const initialAgentsState: AgentState[] = [
      history: [],
      backendCapabilities: { canPause: true, canResume: true, canStop: true, canRerun: true },
      results: {
-        layers: [
-           { id: 1, title: "Hardware/Equipment Barriers", items: [{ id: 'l1-1', label: "Vibration sensors functional but delayed", status: "non-conformity" }] },
-           { id: 2, title: "Procedural Barriers", items: [{ id: 'l2-1', label: "Checklist 404 not followed by operator", status: "rootcause" }] },
-           { id: 3, title: "Personnel Barriers", items: [{ id: 'l3-1', label: "Competency certified for current role", status: "conformity" }] }
-        ]
+         layers: [
+            { 
+               id: 1, 
+               title: "Organization's Roles & Responsibilities", 
+               items: [
+                  { id: 'l1-1', label: "HIRA", status: "", originalIndex: 1 },
+                  { id: 'l1-2', label: "SOP (Policy, Procedure, IK, Std & form)", status: "improvement", originalIndex: 2, description: "Pada form PM Check LV sudah terdapat item pengecekan nut roda, namun belum mendetail terkait poin wheel nut indicator" },
+                  { id: 'l1-3', label: "Do's & Don'ts Policy", status: "", originalIndex: 3 },
+                  { id: 'l1-4', label: "26 High Risk Activity", status: "", originalIndex: 4 },
+                  { id: 'l1-5', label: "Golden Rules", status: "", originalIndex: 5 },
+                  { id: 'l1-6', label: "Personal Permit (ID/ SIMPER/ KIMPER)", status: "", originalIndex: 6 }
+               ] 
+            },
+            { 
+               id: 2, 
+               title: "Plan Readiness", 
+               items: [
+                  { id: 'l2-1', label: "JSA", status: "", originalIndex: 1 },
+                  { id: 'l2-2', label: "Rencana kerja (weekly-up plan)/Plan Maintenance System", status: "", originalIndex: 2 },
+                  { id: 'l2-3', label: "Emergency Preparedness", status: "", originalIndex: 3 },
+                  { id: 'l2-9', label: "Maintenance", status: "non-conformity", originalIndex: 9, description: "Belum ada penentuan lifetime penggunaan terkait Nut Tyre pada LV" },
+                  { id: 'l2-12', label: "Incident Investigation & Reporting", status: "non-conformity", originalIndex: 12, description: "Retorque tidak berjalan konsisten sesuai dengan rekomendasi insiden sebelumnya" }
+               ] 
+            },
+            { 
+               id: 3, 
+               title: "Work Readiness and Monitoring", 
+               items: [
+                  { id: 'l3-1', label: "P5M/Safety Briefing", status: "", originalIndex: 1 },
+                  { id: 'l3-2', label: "DOP", status: "", originalIndex: 2 },
+                  { id: 'l3-3', label: "P2H (incl. emergency equipment)", status: "rootcause", originalIndex: 3, description: "Sdr. Rico tidak mendeteksi adanya bolt yang sudah terlepas pada tyre depan sebelah kiri LV BM 391" },
+                  { id: 'l3-10', label: "Pelaksanaan Pekerjaan Sesuai SOP", status: "rootcause", originalIndex: 10, description: "Sdr. Mulyanto mengetahui adanya deviasi terkait P2H (Wheel Nut Indicator kurang) namun tidak melakukan verifikasi dengan baik" }
+               ] 
+            },
+            { 
+               id: 4, 
+               title: "Preventive Defense", 
+               items: [
+                  { id: 'l4-1', label: "Fatigue Alarm", status: "", originalIndex: 1 },
+                  { id: 'l4-4', label: "In Cabin Camera", status: "non-conformity", originalIndex: 4, description: "Sudah terdapat DMS pada unit LV BM 391 namun hasil rekaman tidak dapat di akses / di download dikarenakan device MDVR error" },
+                  { id: 'l4-6', label: "GPS (posisi dan kecepatan)", status: "non-conformity", originalIndex: 6, description: "Sudah terdapat GPS pada unit LV BM 391 namun hasil historical tracking tidak update dikarenakan kabel ground terputus" }
+               ] 
+            },
+            { 
+               id: 5, 
+               title: "Contact Defense", 
+               items: [
+                  { id: 'l5-1', label: "APD", status: "", originalIndex: 1 },
+                  { id: 'l5-2', label: "Guarding/cover benda berputar dan titik jepit", status: "", originalIndex: 2 },
+                  { id: 'l5-3', label: "Tanggul", status: "", originalIndex: 3 }
+               ] 
+            }
+         ]
      }
   },
   { 
@@ -620,16 +668,23 @@ const initialAgentsState: AgentState[] = [
      history: [],
      backendCapabilities: { canPause: true, canResume: true, canStop: true, canRerun: true },
      results: {
-        root_cause_actions: [
-           { id: 'rc-1', no: 1, layer: "II", hierarchy: "Administrative", action: "Retraining on Checklist 404", pic: "Training Dept", due_date: "2026-05-01", status: "OPEN" }
-        ],
-        non_conformity_actions: [
-           { id: 'nc-1', no: 2, layer: "I", hierarchy: "Engineering", action: "Recalibrate vibration sensors", pic: "Maint Dept", due_date: "2026-04-25", status: "PROGRESS" }
-        ],
-        improvement_actions: [
-           { id: 'imp-1', no: 3, layer: "V", hierarchy: "Organisational", action: "Review staffing levels", pic: "HR Site", due_date: "2026-06-01", status: "OPEN" }
-        ]
-     }
+         actions: [
+            { no: 1, layer: "IV.4", hierarchy: "Adm", action: "Perbaikan DMS LV BM 391", pic: "Bimo", due_date: "19 - 10 - 2025", status: "Closed", type: "nc" },
+            { no: 2, layer: "IV.4", hierarchy: "Adm", action: "Identifikasi seluruh DMS untuk memastikan fungsi MDVR berjalan dengan baik", pic: "Bimo", due_date: "19 - 10 - 2025", status: "Open", type: "nc" },
+            { no: 3, layer: "IV.6", hierarchy: "Adm", action: "Perbaikan GPS LV BM 391", pic: "Bimo", due_date: "19 - 10 - 2025", status: "Closed", type: "nc" },
+            { no: 4, layer: "IV.6", hierarchy: "Adm", action: "Identifikasi seluruh GPS untuk memastikan fungsi berjalan dengan baik", pic: "Bimo", due_date: "19 - 10 - 2025", status: "Open", type: "nc" },
+            { no: 5, layer: "III.3", hierarchy: "Adm", action: "Pemberian sanksi administrasi kepada Sdr. Rico", pic: "Muh Faishal", due_date: "18 - 10 - 2025", status: "Closed", type: "rc" },
+            { no: 6, layer: "III.3", hierarchy: "Adm", action: "Campaign terkait P2H yang baik dan benar", pic: "Adi Sucipto", due_date: "19 - 10 - 2025", status: "Closed", type: "rc" },
+            { no: 7, layer: "III.3", hierarchy: "Adm", action: "Melakukan RSCS oleh security / FS terkait kualitas P2H pada saat unit dioperasikan", pic: "Sonar H", due_date: "21 - 10 - 2025", status: "Closed", type: "rc" },
+            { no: 8, layer: "III.3", hierarchy: "Adm", action: "Menyerahkan P2H kepada team security dan melakukan verifikasi P2H oleh vendor LV jika terdapat temuan", pic: "Sonar H", due_date: "19 - 10 - 2025", status: "Closed", type: "rc" },
+            { no: 9, layer: "III.10", hierarchy: "Adm", action: "Pemberian surat teguran kepada Sdr. Mulyanto", pic: "Muh Faisal", due_date: "18 - 10 - 2025", status: "Closed", type: "rc" },
+            { no: 10, layer: "II.12", hierarchy: "Adm", action: "Pelaksanaan retorque LV H+1 setelah PM check LV", pic: "Sonar H", due_date: "21 - 10 - 2025", status: "Closed", type: "nc" },
+            { no: 11, layer: "II.9", hierarchy: "Rek Eng", action: "Trial penggunaan Wheel Nut Indicator Connecting", pic: "Sonar H", due_date: "15 - 11 - 2025", status: "Open", type: "nc" },
+            { no: 12, layer: "II.9", hierarchy: "Adm", action: "Melakukan pengecekan nut tyre dan wheel nut indicator pada LV yang beroperasi", pic: "Sonar H", due_date: "13 - 10 - 2025", status: "Closed", type: "nc" },
+            { no: 13, layer: "II.9 & I.2", hierarchy: "Adm", action: "Membuat prosedur penggantian wheel nut dan pelaksanaan retorque (penegasan pelaksanaan dan penetapan tempat untuk pelaksanaan retorque)", pic: "Sonar H", due_date: "30 - 11 - 2025", status: "Open", type: "imp" },
+            { no: 14, layer: "I.2", hierarchy: "Adm", action: "Melakukan revisi form PM Check Final LV dengan menambahkan detail pengecekan wheel nut indicator", pic: "Sonar H", due_date: "31 - 10 - 2025", status: "Closed", type: "imp" }
+         ]
+      }
   }
 ];
 
@@ -1483,85 +1538,164 @@ export default function AnalysisTab() {
                                                selectedActorId={selectedRowId}
                                             />
                                          ) : selectedAgentId === 'ipls' ? (
-                                            <div className="flex flex-col h-full bg-slate-50/10 animate-in fade-in duration-500 overflow-hidden">
-                                               <div className="h-12 flex items-center justify-between px-5 border-b border-slate-200 bg-white shrink-0">
-                                                  <div className="flex items-center gap-2">
-                                                     <div className="h-2 w-2 rounded-full bg-[#8ba861]" />
-                                                     <h2 className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Lembar Lapisan Profil Terintegrasi (IPLS)</h2>
-                                                  </div>
-                                                  <div className="flex items-center gap-2">
-                                                     <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse" />
-                                                     <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Audit Defensif Selesai</span>
-                                                  </div>
+                                            <div className="flex flex-col h-full bg-white animate-in fade-in duration-500 overflow-hidden">
+                                               {/* Title Bar */}
+                                               <div className="px-6 py-4 flex flex-col shrink-0">
+                                                  <h2 className="text-xl font-bold text-slate-800">IPLS - BUMA LMO - NM LV BM 391</h2>
                                                </div>
                                                
-                                               <div className="flex-1 overflow-auto p-6 scrollbar-thin">
-                                                  <div className="max-w-[1400px] mx-auto space-y-8 pb-12">
-                                                     {(selectedAgent?.results?.layers || []).map((layer: any) => (
-                                                        <div key={layer.id} className="space-y-3">
-                                                           <div className="flex items-center gap-3">
-                                                              <span className="px-2.5 py-1 rounded text-[9px] font-black text-white uppercase tracking-widest bg-slate-900">
-                                                                 Layer {["I", "II", "III", "IV", "V"][layer.id - 1]}: {layer.title}
-                                                              </span>
-                                                              <div className="h-px flex-1 bg-slate-200" />
-                                                           </div>
-                                                           <div className="bg-white border-l border-t border-slate-200 overflow-hidden shadow-sm">
-                                                              <table className="w-full text-left border-collapse">
-                                                                 <thead>
-                                                                    <tr className="bg-slate-50/80">
-                                                                       <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest w-24 border-r border-b border-slate-200 bg-slate-50/30">STATUS</th>
-                                                                       <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest border-r border-b border-slate-200 bg-slate-50/30">Poin Audit Defensif</th>
-                                                                       <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest w-32 border-r border-b border-slate-200 bg-slate-50/30">Keterlacakan</th>
-                                                                    </tr>
-                                                                 </thead>
-                                                                 <tbody>
-                                                                    {layer.items.map((item: any, idx: number) => {
-                                                                       const isSelected = selectedRowId === item.id;
-                                                                       return (
-                                                                          <tr 
-                                                                             key={item.id || idx} 
-                                                                             onClick={() => handleSelectRow(item.id)}
-                                                                             className={cn(
-                                                                                "group transition-all cursor-pointer",
-                                                                                isSelected ? "bg-slate-100/80" : "hover:bg-slate-50/50"
-                                                                             )}
-                                                                          >
-                                                                             <td className="px-5 py-4 align-top border-r border-b border-slate-200">
-                                                                                <div className="flex justify-center">
-                                                                                   {item.status === 'rootcause' ? (
-                                                                                      <div className="h-4 w-4 rounded-full border-2 border-red-500 flex items-center justify-center">
-                                                                                         <div className="h-1.5 w-1.5 rounded-full bg-red-500" />
-                                                                                      </div>
-                                                                                   ) : item.status === 'non-conformity' ? (
-                                                                                      <div className="h-4 w-4 rounded-full border-2 border-amber-500 flex items-center justify-center">
-                                                                                         <div className="h-1.5 w-1.5 rounded-full bg-amber-500" />
-                                                                                      </div>
-                                                                                   ) : (
-                                                                                      <div className="h-4 w-4 rounded-full border-2 border-emerald-500 flex items-center justify-center">
-                                                                                         <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                                                                                      </div>
-                                                                                   )}
+                                               <div className="flex-1 overflow-auto px-4 pb-6 scrollbar-thin">
+                                                  <div className="min-w-[1000px] flex w-full">
+                                                     {/* Side Labels */}
+                                                     <div className="w-8 flex flex-col shrink-0 items-center justify-start pt-16">
+                                                        <div className="rotate-[-90deg] font-black text-[11px] text-slate-800 tracking-widest w-20 text-center mb-40">Scope</div>
+                                                        <div className="rotate-[-90deg] font-black text-[11px] text-slate-800 tracking-widest w-20 text-center mt-10">Activity</div>
+                                                     </div>
+
+                                                     {/* Main Content Area */}
+                                                     <div className="flex-1 flex flex-col">
+                                                        {/* Header bar */}
+                                                        <div className="relative h-8 bg-[#a3a6aa] flex items-center justify-center w-full mb-3 ml-2">
+                                                           <div className="absolute -left-4 top-0 w-0 h-0 border-y-[16px] border-y-transparent border-r-[16px] border-r-[#a3a6aa]"></div>
+                                                           <span className="text-white font-bold text-sm tracking-wide">Sistem Bekerja Selamat</span>
+                                                        </div>
+
+                                                        {/* Columns Grid */}
+                                                        <div className="grid grid-cols-5 gap-1.5 ml-2">
+                                                           {(selectedAgent?.results?.layers || []).map((layer: any, colIdx: number) => (
+                                                              <div key={layer.id} className="flex flex-col h-full">
+                                                                 {/* Layer Header */}
+                                                                 <div className="text-center font-bold text-[12px] mb-1 italic text-slate-800">
+                                                                    Layer {["I", "II", "III", "IV", "V"][colIdx]}
+                                                                 </div>
+                                                                 {/* Title Box */}
+                                                                 <div className="bg-[#f2f2f2] h-14 flex items-center justify-center text-center p-2 mb-1">
+                                                                    <span className="text-[10px] font-bold text-slate-800 leading-tight">{layer.title}</span>
+                                                                 </div>
+                                                                 {/* Content Box */}
+                                                                 <div className="bg-[#cae2b7] flex-1 p-3">
+                                                                    <ul className="space-y-1">
+                                                                       {layer.items.map((item: any, idx: number) => {
+                                                                          const num = item.originalIndex || (idx + 1);
+                                                                          let circleColor = "";
+                                                                          if (item.status === 'rootcause') circleColor = "border-red-500 text-slate-900";
+                                                                          else if (item.status === 'non-conformity') circleColor = "border-amber-400 text-slate-900";
+                                                                          else if (item.status === 'improvement') circleColor = "border-emerald-500 text-slate-900";
+
+                                                                          return (
+                                                                             <li key={item.id} className="flex items-start gap-1.5 text-[9px] text-slate-800">
+                                                                                <div className={`w-4 h-4 shrink-0 flex items-center justify-center rounded-full border-[2px] font-bold ${circleColor ? circleColor : 'border-transparent'}`}>
+                                                                                   {num}.
                                                                                 </div>
-                                                                             </td>
-                                                                             <td className="px-5 py-4 align-top border-r border-b border-slate-200">
-                                                                                <p className={cn(
-                                                                                   "text-[11px] font-bold leading-relaxed pr-8",
-                                                                                   isSelected ? "text-slate-900" : "text-slate-700"
-                                                                                )}>
-                                                                                   {item.label}
-                                                                                </p>
-                                                                             </td>
-                                                                             <td className="px-5 py-4 align-top border-r border-b border-slate-200 text-center">
-                                                                                <Search className={cn("h-3.5 w-3.5 mx-auto", isSelected ? "text-slate-900" : "text-slate-300")} />
-                                                                             </td>
-                                                                          </tr>
-                                                                       );
-                                                                    })}
-                                                                 </tbody>
-                                                              </table>
+                                                                                <span className="pt-[2px] leading-snug font-medium">{item.label}</span>
+                                                                             </li>
+                                                                          );
+                                                                       })}
+                                                                    </ul>
+                                                                 </div>
+                                                              </div>
+                                                           ))}
+                                                        </div>
+                                                        
+                                                        {/* Legend */}
+                                                        <div className="flex items-center gap-6 mt-4 ml-2 border-t border-slate-200 pt-4">
+                                                           <div className="bg-[#091b4c] text-white text-[11px] font-bold px-8 py-1.5 rounded-sm uppercase tracking-wide">
+                                                              Legend
+                                                           </div>
+                                                           <div className="flex items-center gap-6 text-[11px] font-bold text-slate-800">
+                                                              <div className="flex items-center gap-2">
+                                                                 <div className="w-4 h-4 rounded-full border-[2.5px] border-red-500"></div>
+                                                                 <span>Rootcause</span>
+                                                              </div>
+                                                              <div className="flex items-center gap-2">
+                                                                 <div className="w-4 h-4 rounded-full border-[2.5px] border-amber-400"></div>
+                                                                 <span>Non Confirmity</span>
+                                                              </div>
+                                                              <div className="flex items-center gap-2">
+                                                                 <div className="w-4 h-4 rounded-full border-[2.5px] border-emerald-500"></div>
+                                                                 <span>Improvement</span>
+                                                              </div>
                                                            </div>
                                                         </div>
-                                                     ))}
+
+                                                        {/* Section 4: Analisa Kejadian */}
+                                                        <div className="mt-8 mb-4 ml-2">
+                                                           <h3 className="font-bold text-[14px] text-slate-900 mb-0.5">4. Analisa Kejadian</h3>
+                                                           <h4 className="font-bold text-[14px] text-slate-900 mb-2">IPLS &ndash; BUMA LMO &ndash; NM LV BM 391</h4>
+                                                           
+                                                           {/* Header bar */}
+                                                           <div className="relative h-6 bg-[#a3a6aa] flex items-center justify-center w-full mb-3">
+                                                              <div className="absolute -left-3 top-0 w-0 h-0 border-y-[12px] border-y-transparent border-r-[12px] border-r-[#a3a6aa]"></div>
+                                                              <span className="text-white font-bold text-xs tracking-wide">Investigation</span>
+                                                           </div>
+
+                                                           {/* Columns Grid */}
+                                                           <div className="grid grid-cols-5 gap-3">
+                                                              {(selectedAgent?.results?.layers || []).map((layer: any, colIdx: number) => {
+                                                                 const findingItems = layer.items.filter((i: any) => i.status);
+                                                                 return (
+                                                                    <div key={layer.id} className="flex flex-col h-full border-r border-dashed border-slate-300 last:border-r-0 pr-3 min-h-[150px]">
+                                                                       {/* Layer Header */}
+                                                                       <div className="text-center font-bold text-[12px] mb-3 italic text-slate-800">
+                                                                          Layer {["I", "II", "III", "IV", "V"][colIdx]}
+                                                                       </div>
+                                                                       
+                                                                       {/* Findings */}
+                                                                       <div className="flex-1 space-y-4">
+                                                                          {findingItems.map((item: any) => {
+                                                                             const num = item.originalIndex || 0;
+                                                                             let bgColor = "";
+                                                                             let textColor = "text-slate-900";
+                                                                             if (item.status === 'rootcause') {
+                                                                                bgColor = "bg-red-600 border-red-600";
+                                                                                textColor = "text-white";
+                                                                             } else if (item.status === 'non-conformity') {
+                                                                                bgColor = "bg-[#ffc000] border-[#ffc000]";
+                                                                             } else if (item.status === 'improvement') {
+                                                                                bgColor = "bg-[#00c950] border-[#00c950]";
+                                                                             }
+
+                                                                             return (
+                                                                                <div key={item.id} className="flex flex-col">
+                                                                                   <div className={`text-[10px] font-bold text-center py-1.5 px-2 rounded-sm border shadow-sm mb-1.5 ${bgColor} ${textColor}`}>
+                                                                                      {num}. {item.label}
+                                                                                   </div>
+                                                                                   {item.description && (
+                                                                                      <p className="text-[9px] text-slate-700 leading-[1.4] font-medium text-justify">
+                                                                                         {item.description}
+                                                                                      </p>
+                                                                                   )}
+                                                                                </div>
+                                                                             );
+                                                                          })}
+                                                                       </div>
+                                                                    </div>
+                                                                 );
+                                                              })}
+                                                           </div>
+
+                                                           {/* Legend 2 */}
+                                                           <div className="flex items-center gap-6 mt-6 pt-4 border-t border-slate-200">
+                                                              <div className="bg-[#091b4c] text-white text-[11px] font-bold px-8 py-1.5 rounded-sm uppercase tracking-wide">
+                                                                 Legend
+                                                              </div>
+                                                              <div className="flex items-center gap-6 text-[11px] font-bold text-slate-800">
+                                                                 <div className="flex items-center gap-2">
+                                                                    <div className="w-5 h-3 rounded-sm bg-red-400 border border-red-500"></div>
+                                                                    <span>Rootcause</span>
+                                                                 </div>
+                                                                 <div className="flex items-center gap-2">
+                                                                    <div className="w-5 h-3 rounded-sm bg-[#ffc000] border border-amber-500"></div>
+                                                                    <span>Non Confirmity</span>
+                                                                 </div>
+                                                                 <div className="flex items-center gap-2">
+                                                                    <div className="w-5 h-3 rounded-sm bg-[#00c950] border border-emerald-600"></div>
+                                                                    <span>Improvement</span>
+                                                                 </div>
+                                                              </div>
+                                                           </div>
+                                                        </div>
+                                                     </div>
                                                   </div>
                                                </div>
                                             </div>
@@ -1578,86 +1712,69 @@ export default function AnalysisTab() {
                                                   </div>
                                                </div>
                                                
-                                               <div className="flex-1 overflow-auto p-6 scrollbar-thin">
-                                                  <div className="max-w-[1600px] mx-auto space-y-10 pb-12">
-                                                     {[
-                                                        { id: 'root', title: 'Tindakan Akar Masalah', color: 'bg-red-500', data: selectedAgent?.results?.root_cause_actions },
-                                                        { id: 'nc', title: 'Tindakan Ketidaksesuaian', color: 'bg-amber-500', data: selectedAgent?.results?.non_conformity_actions },
-                                                        { id: 'imp', title: 'Tindakan Perbaikan', color: 'bg-emerald-500', data: selectedAgent?.results?.improvement_actions },
-                                                     ].map((section) => (
-                                                        <div key={section.id} className="space-y-3">
-                                                           <div className="flex items-center gap-3">
-                                                              <span className={cn("px-2.5 py-1 rounded text-[9px] font-black text-white uppercase tracking-widest", section.color)}>
-                                                                 {section.title}
-                                                              </span>
-                                                              <div className="h-px flex-1 bg-slate-200" />
-                                                           </div>
-                                                           <div className="bg-white border-l border-t border-slate-200 overflow-hidden shadow-sm">
-                                                              <table className="w-full text-left border-collapse">
-                                                                 <thead>
-                                                                    <tr className="bg-slate-50/80">
-                                                                       <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest w-12 border-r border-b border-slate-200 bg-slate-50/30">NO</th>
-                                                                       <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest w-24 border-r border-b border-slate-200 bg-slate-50/30">LAYER</th>
-                                                                       <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest w-32 border-r border-b border-slate-200 bg-slate-50/30">CONTROL</th>
-                                                                       <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest border-r border-b border-slate-200 bg-slate-50/30">Tindakan Pencegahan</th>
-                                                                       <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest w-32 border-r border-b border-slate-200 bg-slate-50/30">PIC</th>
-                                                                       <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest w-24 border-r border-b border-slate-200 bg-slate-50/30">DUE DATE</th>
-                                                                       <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest w-24 border-b border-slate-200 bg-slate-50/30 text-center">STATUS</th>
+                                               <div className="flex-1 overflow-auto p-8 scrollbar-thin">
+                                                  <div className="max-w-[1400px] mx-auto pb-12">
+                                                     <h3 className="font-bold text-[14px] text-slate-900 mb-0.5">5. Tindakan Perbaikan dan Pencegahan Insiden NM LV BM 391</h3>
+                                                     <div className="h-[2px] w-[50%] bg-[#8ba861] mb-4 mt-1"></div>
+                                                     <div className="bg-white border border-slate-400">
+                                                        <table className="w-full text-left border-collapse">
+                                                           <thead>
+                                                              <tr className="bg-[#8ba861]">
+                                                                 <th className="px-2 py-3 text-[10px] font-bold text-slate-900 text-center border-r border-b border-slate-400 w-10">NO</th>
+                                                                 <th className="px-2 py-3 text-[10px] font-bold text-slate-900 text-center border-r border-b border-slate-400 w-20">LAYER</th>
+                                                                 <th className="px-2 py-3 text-[10px] font-bold text-slate-900 text-center border-r border-b border-slate-400 w-24">HIRARKI<br/>KONTROL</th>
+                                                                 <th className="px-4 py-3 text-[10px] font-bold text-slate-900 text-center border-r border-b border-slate-400">TINDAKAN PERBAIKAN DAN PENCEGAHAN</th>
+                                                                 <th className="px-2 py-3 text-[10px] font-bold text-slate-900 text-center border-r border-b border-slate-400 w-32">PIC</th>
+                                                                 <th className="px-2 py-3 text-[10px] font-bold text-slate-900 text-center border-r border-b border-slate-400 w-28">DUE DATE</th>
+                                                                 <th className="px-2 py-3 text-[10px] font-bold text-slate-900 text-center border-b border-slate-400 w-24">STATUS</th>
+                                                              </tr>
+                                                           </thead>
+                                                           <tbody>
+                                                              {(selectedAgent?.results?.actions || []).map((item: any, idx: number) => {
+                                                                 let layerBg = "bg-white";
+                                                                 let layerText = "text-slate-900";
+                                                                 if (item.type === 'rc') {
+                                                                    layerBg = "bg-red-500";
+                                                                 } else if (item.type === 'nc') {
+                                                                    layerBg = "bg-[#ffc000]";
+                                                                 } else if (item.type === 'imp') {
+                                                                    layerBg = "bg-[#00c950]";
+                                                                 }
+
+                                                                 let statusBg = "bg-white";
+                                                                 if (item.status === 'Closed') {
+                                                                    statusBg = "bg-[#00c950]";
+                                                                 }
+
+                                                                 return (
+                                                                    <tr key={idx} className="hover:bg-slate-50/50">
+                                                                       <td className="px-2 py-2 border-r border-b border-slate-400 text-center text-[10px] text-slate-800 bg-white">
+                                                                          {item.no}
+                                                                       </td>
+                                                                       <td className={`px-2 py-2 border-r border-b border-slate-400 text-center text-[10px] ${layerBg} ${layerText}`}>
+                                                                          {item.layer}
+                                                                       </td>
+                                                                       <td className={`px-2 py-2 border-r border-b border-slate-400 text-center text-[10px] ${layerBg} ${layerText}`}>
+                                                                          {item.hierarchy}
+                                                                       </td>
+                                                                       <td className="px-3 py-2 border-r border-b border-slate-400 text-[10px] leading-snug bg-white text-slate-800">
+                                                                          {item.action}
+                                                                       </td>
+                                                                       <td className="px-2 py-2 border-r border-b border-slate-400 text-center text-[10px] text-slate-800 bg-white">
+                                                                          {item.pic}
+                                                                       </td>
+                                                                       <td className="px-2 py-2 border-r border-b border-slate-400 text-center text-[10px] text-slate-800 bg-white whitespace-nowrap">
+                                                                          {item.due_date}
+                                                                       </td>
+                                                                       <td className={`px-2 py-2 border-b border-slate-400 text-center text-[10px] font-bold text-slate-900 ${statusBg}`}>
+                                                                          {item.status}
+                                                                       </td>
                                                                     </tr>
-                                                                 </thead>
-                                                                 <tbody>
-                                                                    {(section.data || []).map((item: any, idx: number) => {
-                                                                       const isSelected = selectedRowId === item.id;
-                                                                       return (
-                                                                          <tr 
-                                                                             key={item.id || idx} 
-                                                                             onClick={() => handleSelectRow(item.id)}
-                                                                             className={cn(
-                                                                                "group transition-all cursor-pointer",
-                                                                                isSelected ? "bg-slate-100/80" : "hover:bg-slate-50/50"
-                                                                             )}
-                                                                          >
-                                                                             <td className="px-5 py-4 align-top border-r border-b border-slate-200 text-center text-[11px] font-mono font-black text-slate-400">
-                                                                                {item.no}
-                                                                             </td>
-                                                                             <td className="px-5 py-4 align-top border-r border-b border-slate-200 text-center text-[10px] font-black text-slate-500 uppercase">
-                                                                                {item.layer}
-                                                                             </td>
-                                                                             <td className="px-5 py-4 align-top border-r border-b border-slate-200 text-center text-[10px] font-black text-slate-900 uppercase tracking-tighter">
-                                                                                {item.hierarchy}
-                                                                             </td>
-                                                                             <td className="px-5 py-4 align-top border-r border-b border-slate-200">
-                                                                                <p className={cn(
-                                                                                   "text-[11px] font-bold leading-relaxed pr-8 uppercase tracking-tight",
-                                                                                   isSelected ? "text-slate-900" : "text-slate-700"
-                                                                                )}>
-                                                                                   {item.action}
-                                                                                </p>
-                                                                             </td>
-                                                                             <td className="px-5 py-4 align-top border-r border-b border-slate-200 text-center text-[10px] font-bold text-slate-600">
-                                                                                {item.pic}
-                                                                             </td>
-                                                                             <td className="px-5 py-4 align-top border-r border-b border-slate-200 text-center text-[10px] font-mono text-slate-500">
-                                                                                {item.due_date}
-                                                                             </td>
-                                                                             <td className="p-0 border-b border-slate-200">
-                                                                                <div className={cn(
-                                                                                   "h-12 flex items-center justify-center text-[9px] font-black tracking-widest uppercase",
-                                                                                   item.status === 'OPEN' ? "bg-red-50 text-red-600" :
-                                                                                   item.status === 'PROGRESS' ? "bg-amber-50 text-amber-600" :
-                                                                                   "bg-emerald-50 text-emerald-600"
-                                                                                )}>
-                                                                                   {item.status}
-                                                                                </div>
-                                                                             </td>
-                                                                          </tr>
-                                                                       );
-                                                                    })}
-                                                                 </tbody>
-                                                              </table>
-                                                           </div>
-                                                        </div>
-                                                     ))}
+                                                                 );
+                                                              })}
+                                                           </tbody>
+                                                        </table>
+                                                     </div>
                                                   </div>
                                                </div>
                                             </div>
