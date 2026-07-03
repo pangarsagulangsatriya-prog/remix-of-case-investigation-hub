@@ -2040,10 +2040,10 @@ const FactFlowView: React.FC = () => {
   ];
 
   const bottomNodes = [
-    { time: "12.13 Wita", color: "#00b050", text: "Team ERG keluar dari\nbasecamp dan menanyakan\nproblem apa yang terjadi\nkemudian melaporkan ke CCR" },
-    { time: "12.12 Wita", color: "#00b050", text: "Setelah BM 391 berhenti Sdr\nSyafarudin keluar untuk\nmengambil roda dan sdr rico\nmengambil safety cone dan\nwheel chock" },
-    { time: "12.10 Wita", color: "#ff0000", text: "Sdr Rico memasuki KM 12 muatan\nmerasa ada getaran pada steering\ndan beberapa detik kemudian tyre\nkiri depan dari BM 391 terlepas\ndan Sdr rico mengarahkan unit ke\ntepi jalan sebelah kiri" },
     { time: "12.05 Wita", color: "#ffcc00", text: "Sdr Rico dan Syafarudin\nmeninggalkan pitstop SGE BUMA 2\nmenuju Masjid KM 7 menggunakan\nLV BM 391 karena bus pengantaran\nsudah tidak ada di lokasi" },
+    { time: "12.10 Wita", color: "#ff0000", text: "Sdr Rico memasuki KM 12 muatan\nmerasa ada getaran pada steering\ndan beberapa detik kemudian tyre\nkiri depan dari BM 391 terlepas\ndan Sdr rico mengarahkan unit ke\ntepi jalan sebelah kiri" },
+    { time: "12.12 Wita", color: "#00b050", text: "Setelah BM 391 berhenti Sdr\nSyafarudin keluar untuk\nmengambil roda dan sdr rico\nmengambil safety cone dan\nwheel chock" },
+    { time: "12.13 Wita", color: "#00b050", text: "Team ERG keluar dari\nbasecamp dan menanyakan\nproblem apa yang terjadi\nkemudian melaporkan ke CCR" },
   ];
 
   // Layout constants
@@ -2067,7 +2067,7 @@ const FactFlowView: React.FC = () => {
 
   return (
     <div className="w-full h-full overflow-auto bg-white p-10 flex justify-center">
-      <div className="w-full max-w-[1100px]">
+      <div className="w-[1060px] shrink-0">
         {/* Title */}
         <div className="mb-8">
           <p className="text-[15px] font-black text-slate-900">1. OVERVIEW NM LV BM 391</p>
@@ -2082,10 +2082,9 @@ const FactFlowView: React.FC = () => {
         </div>
 
         {/* SVG diagram */}
-        <div className="relative w-full" style={{ height: `${svgH + 320}px` }}>
+        <div className="relative w-full" style={{ height: '420px' }}>
           <svg
-            viewBox={`0 0 ${W} ${svgH}`}
-            width="100%"
+            width={W}
             height={svgH}
             className="absolute top-0 left-0"
             style={{ overflow: 'visible' }}
@@ -2166,12 +2165,11 @@ const FactFlowView: React.FC = () => {
 
           {/* Top node labels (below circles) */}
           {topNodes.map((node, i) => {
-            const pct = (topX(i) / W) * 100;
             return (
               <div
                 key={`tl-${i}`}
                 className="absolute flex flex-col items-center"
-                style={{ left: `${pct}%`, top: `${nodeY + 20}px`, transform: 'translateX(-50%)', width: '130px' }}
+                style={{ left: `${topX(i)}px`, top: `${nodeY + 20}px`, transform: 'translateX(-50%)', width: '130px' }}
               >
                 <p className="font-bold text-[11px] mb-1 text-slate-900 text-center">{node.time}</p>
                 <p className="text-[9.5px] whitespace-pre-line text-slate-800 leading-[1.4] text-center">{node.text}</p>
@@ -2179,14 +2177,13 @@ const FactFlowView: React.FC = () => {
             );
           })}
 
-          {/* Bottom node labels (above circles) */}
+          {/* Bottom node labels (below circles) */}
           {bottomNodes.map((node, i) => {
-            const pct = (bottomX(i) / W) * 100;
             return (
               <div
                 key={`bl-${i}`}
                 className="absolute flex flex-col items-center"
-                style={{ left: `${pct}%`, top: `${bottomY + 20}px`, transform: 'translateX(-50%)', width: '150px' }}
+                style={{ left: `${bottomX(i)}px`, top: `${bottomY + 20}px`, transform: 'translateX(-50%)', width: '150px' }}
               >
                 <p className="font-bold text-[11px] mb-1 text-slate-900 text-center">{node.time}</p>
                 <p className="text-[9.5px] whitespace-pre-line text-slate-800 leading-[1.4] text-center">{node.text}</p>
@@ -2196,8 +2193,8 @@ const FactFlowView: React.FC = () => {
 
           {/* PASKA KONTAK / KONTAK badges (placed around the bottom line) */}
           <div
-            className="absolute flex items-center gap-6"
-            style={{ top: `${bottomY - 36}px`, left: '4%', right: '4%', justifyContent: 'space-between' }}
+            className="absolute flex items-center gap-6 w-full px-[60px]"
+            style={{ top: `${bottomY - 46}px`, justifyContent: 'space-between' }}
           >
             <div className="bg-[#00b050] px-8 py-1.5 text-slate-900 font-bold text-[12px]">
               PASKA KONTAK
