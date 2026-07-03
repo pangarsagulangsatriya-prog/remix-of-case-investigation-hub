@@ -2040,77 +2040,172 @@ const FactFlowView: React.FC = () => {
   ];
 
   const bottomNodes = [
-    { time: "12.05 Wita", color: "#ffcc00", text: "Sdr Rico dan Syafarudin\nmeninggalkan pitstop SGE BUMA 2\nmenuju Masjid KM 7 menggunakan\nLV BM 391 karena bus pengantaran\nsudah tidak ada di lokasi" },
-    { time: "12.10 Wita", color: "#ff0000", text: "Sdr Rico memasuki KM 12 muatan\nmerasa ada getaran pada steering dan\nbeberapa detik kemudian tyre kiri\ndepan dari BM 391 terlepas dan Sdr\nrico mengarahkan unit ke tepi jalan\nsebelah kiri" },
-    { time: "12.12 Wita", color: "#00b050", text: "Setelah BM 391 berhenti Sdr\nSyafarudin keluar untuk\nmengambil roda dan sdr rico\nmengambil safety cone dan wheel\nchock" },
     { time: "12.13 Wita", color: "#00b050", text: "Team ERG keluar dari\nbasecamp dan menanyakan\nproblem apa yang terjadi\nkemudian melaporkan ke CCR" },
+    { time: "12.12 Wita", color: "#00b050", text: "Setelah BM 391 berhenti Sdr\nSyafarudin keluar untuk\nmengambil roda dan sdr rico\nmengambil safety cone dan\nwheel chock" },
+    { time: "12.10 Wita", color: "#ff0000", text: "Sdr Rico memasuki KM 12 muatan\nmerasa ada getaran pada steering\ndan beberapa detik kemudian tyre\nkiri depan dari BM 391 terlepas\ndan Sdr rico mengarahkan unit ke\ntepi jalan sebelah kiri" },
+    { time: "12.05 Wita", color: "#ffcc00", text: "Sdr Rico dan Syafarudin\nmeninggalkan pitstop SGE BUMA 2\nmenuju Masjid KM 7 menggunakan\nLV BM 391 karena bus pengantaran\nsudah tidak ada di lokasi" },
   ];
+
+  // Layout constants
+  const W = 1060;
+  const nodeY = 40;           // center Y of top circles
+  const bottomY = 280;        // center Y of bottom circles
+  const nodeCount = topNodes.length;
+  const bottomCount = bottomNodes.length;
+  const leftPad = 60;
+  const rightPad = 60;
+  const topSpacing = (W - leftPad - rightPad) / (nodeCount - 1);
+  const bottomSpacing = (W - leftPad - rightPad) / (bottomCount - 1);
+
+  const topX = (i: number) => leftPad + i * topSpacing;
+  // bottom row goes right to left (last node is rightmost)
+  const bottomX = (i: number) => W - rightPad - i * bottomSpacing;
+
+  const svgH = bottomY + 40;
+
+  const arrowSize = 8;
 
   return (
     <div className="w-full h-full overflow-auto bg-white p-10 flex justify-center">
       <div className="w-full max-w-[1100px]">
         {/* Title */}
-        <div className="mb-10">
+        <div className="mb-8">
           <p className="text-[15px] font-black text-slate-900">1. OVERVIEW NM LV BM 391</p>
           <p className="text-[14px] font-bold text-slate-900 border-b-[3px] border-teal-700 pb-1 inline-block mt-0.5">A. Kronologis Incident</p>
         </div>
 
         {/* PRA KONTAK Banner */}
-        <div className="flex justify-center mb-6">
-          <div className="bg-[#ffcc00] px-16 py-2 text-slate-900 font-bold text-[13px] shadow-sm">
+        <div className="flex justify-center mb-4">
+          <div className="bg-[#ffcc00] px-16 py-2 text-slate-900 font-bold text-[13px]">
             PRA KONTAK 10 Oktober 2025
           </div>
         </div>
 
-        {/* TOP ROW */}
-        <div className="relative flex justify-between items-start px-8 mb-2">
-          {/* Dashed horizontal line */}
-          <div className="absolute top-4 left-16 right-16 border-t-[2.5px] border-dashed border-slate-800 z-0" />
-          {/* Arrow right */}
-          <div className="absolute top-[9px] right-[60px] w-3 h-3 border-t-[2.5px] border-r-[2.5px] border-slate-800 rotate-45 z-10" />
-          {/* Vertical drop line on the right */}
-          <div className="absolute top-4 right-[64px] bottom-[-120px] border-r-[2.5px] border-dashed border-slate-800 z-0" />
+        {/* SVG diagram */}
+        <div className="relative w-full" style={{ height: `${svgH + 320}px` }}>
+          <svg
+            viewBox={`0 0 ${W} ${svgH}`}
+            width="100%"
+            height={svgH}
+            className="absolute top-0 left-0"
+            style={{ overflow: 'visible' }}
+          >
+            <defs>
+              <marker id="arrow-right" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+                <polygon points="0 0, 10 3.5, 0 7" fill="#1e293b" />
+              </marker>
+              <marker id="arrow-left" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto">
+                <polygon points="10 0, 0 3.5, 10 7" fill="#1e293b" />
+              </marker>
+              <marker id="arrow-down" markerWidth="7" markerHeight="10" refX="3.5" refY="10" orient="auto">
+                <polygon points="0 0, 3.5 10, 7 0" fill="#1e293b" />
+              </marker>
+            </defs>
 
-          {topNodes.map((node, i) => (
-            <div key={i} className="flex flex-col items-center w-[140px] shrink-0 relative z-10">
-              <div className="w-8 h-8 rounded-full mb-3 border-[3px] border-white shadow-md" style={{ backgroundColor: '#ffcc00' }} />
-              <div className="text-center">
-                <p className="font-bold text-[11px] mb-1 text-slate-900">{node.time}</p>
-                <p className="text-[9.5px] whitespace-pre-line text-slate-800 leading-[1.4]">{node.text}</p>
+            {/* Top horizontal dashed line with right arrow */}
+            <line
+              x1={topX(0)}
+              y1={nodeY}
+              x2={topX(nodeCount - 1) - arrowSize}
+              y2={nodeY}
+              stroke="#1e293b"
+              strokeWidth="2.5"
+              strokeDasharray="6,5"
+              markerEnd="url(#arrow-right)"
+            />
+
+            {/* Vertical drop line from top-right to bottom-right */}
+            <line
+              x1={topX(nodeCount - 1)}
+              y1={nodeY}
+              x2={topX(nodeCount - 1)}
+              y2={bottomY}
+              stroke="#1e293b"
+              strokeWidth="2.5"
+              strokeDasharray="6,5"
+            />
+
+            {/* Bottom horizontal dashed line with left arrow (right to left) */}
+            <line
+              x1={bottomX(0)}
+              y1={bottomY}
+              x2={bottomX(bottomCount - 1) + arrowSize}
+              y2={bottomY}
+              stroke="#1e293b"
+              strokeWidth="2.5"
+              strokeDasharray="6,5"
+              markerEnd="url(#arrow-left)"
+            />
+
+            {/* Top node circles */}
+            {topNodes.map((_, i) => (
+              <circle
+                key={`tc-${i}`}
+                cx={topX(i)}
+                cy={nodeY}
+                r={14}
+                fill="#ffcc00"
+                stroke="white"
+                strokeWidth="3"
+              />
+            ))}
+
+            {/* Bottom node circles */}
+            {bottomNodes.map((node, i) => (
+              <circle
+                key={`bc-${i}`}
+                cx={bottomX(i)}
+                cy={bottomY}
+                r={14}
+                fill={node.color}
+                stroke="white"
+                strokeWidth="3"
+              />
+            ))}
+          </svg>
+
+          {/* Top node labels (below circles) */}
+          {topNodes.map((node, i) => {
+            const pct = (topX(i) / W) * 100;
+            return (
+              <div
+                key={`tl-${i}`}
+                className="absolute flex flex-col items-center"
+                style={{ left: `${pct}%`, top: `${nodeY + 20}px`, transform: 'translateX(-50%)', width: '130px' }}
+              >
+                <p className="font-bold text-[11px] mb-1 text-slate-900 text-center">{node.time}</p>
+                <p className="text-[9.5px] whitespace-pre-line text-slate-800 leading-[1.4] text-center">{node.text}</p>
               </div>
-            </div>
-          ))}
-        </div>
+            );
+          })}
 
-        {/* Spacer for bottom row offset */}
-        <div className="h-20" />
-
-        {/* BOTTOM BADGES */}
-        <div className="flex justify-between items-center mb-6 px-8">
-          <div className="bg-[#00b050] px-10 py-2 text-slate-900 font-bold text-[13px] shadow-sm text-center">
-            PASKA KONTAK
-          </div>
-          <div className="bg-[#ff0000] px-10 py-2 text-white font-bold text-[13px] shadow-sm text-center">
-            KONTAK
-          </div>
-        </div>
-
-        {/* BOTTOM ROW (right to left) */}
-        <div className="relative flex flex-row-reverse justify-end items-start gap-4 px-8">
-          {/* Dashed horizontal line */}
-          <div className="absolute top-4 left-[200px] right-16 border-t-[2.5px] border-dashed border-slate-800 z-0" />
-          {/* Arrow left */}
-          <div className="absolute top-[9px] left-[194px] w-3 h-3 border-b-[2.5px] border-l-[2.5px] border-slate-800 -rotate-45 z-10" />
-
-          {bottomNodes.map((node, i) => (
-            <div key={i} className="flex flex-col items-center w-[200px] shrink-0 relative z-10">
-              <div className="w-8 h-8 rounded-full mb-3 border-[3px] border-white shadow-md" style={{ backgroundColor: node.color }} />
-              <div className="text-center">
-                <p className="font-bold text-[11px] mb-1 text-slate-900">{node.time}</p>
-                <p className="text-[9.5px] whitespace-pre-line text-slate-800 leading-[1.4]">{node.text}</p>
+          {/* Bottom node labels (above circles) */}
+          {bottomNodes.map((node, i) => {
+            const pct = (bottomX(i) / W) * 100;
+            return (
+              <div
+                key={`bl-${i}`}
+                className="absolute flex flex-col items-center"
+                style={{ left: `${pct}%`, top: `${bottomY + 20}px`, transform: 'translateX(-50%)', width: '150px' }}
+              >
+                <p className="font-bold text-[11px] mb-1 text-slate-900 text-center">{node.time}</p>
+                <p className="text-[9.5px] whitespace-pre-line text-slate-800 leading-[1.4] text-center">{node.text}</p>
               </div>
+            );
+          })}
+
+          {/* PASKA KONTAK / KONTAK badges (placed around the bottom line) */}
+          <div
+            className="absolute flex items-center gap-6"
+            style={{ top: `${bottomY - 36}px`, left: '4%', right: '4%', justifyContent: 'space-between' }}
+          >
+            <div className="bg-[#00b050] px-8 py-1.5 text-slate-900 font-bold text-[12px]">
+              PASKA KONTAK
             </div>
-          ))}
+            <div className="bg-[#ff0000] px-8 py-1.5 text-white font-bold text-[12px]">
+              KONTAK
+            </div>
+          </div>
         </div>
       </div>
     </div>
