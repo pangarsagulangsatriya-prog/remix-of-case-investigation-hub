@@ -102,6 +102,39 @@ const initialAgentsState: AgentState[] = [
      backendCapabilities: { canPause: false, canResume: false, canStop: true, canRerun: true },
      knowledgeSelection: ['Audio Recording', 'Internal Document', 'External Document', 'Photos & Media'],
      results: {
+         tableData: {
+            title: "TANGGAL, 24 November 2025\nPT MTN-SMO LV MTN-442 Rebah di Jalan Agathis KM 14-500",
+            columns: [
+               {
+                  time: "04.30 – 08.04 WITA",
+                  phase: "Pra Kontak",
+                  paragraphs: [
+                     "Sdr Farihin bangun Pukul 04:30 WITA kemudian melakukan persiapan turun kerja. Sebelum mengarah ke parkiran manhaul, Sdr. Farihin membawa lauk dari mess setelah itu berjalan menuju parkiran manhaul.",
+                     "Sekitar Pukul 05:45 WITA Sdr. Farihin tiba di KM 12 melakukan Finger kemudian lanjut Job Pending dengan pengawas shift sebelumnya dan persiapan P5M awal shift 1. P5M di pimpin Sdr. Akbar materi terkait Fatigue dan Speakup jika menemukan bahaya.",
+                     "Pukul 06:00 WITA Sdr. Farihin melakukan pengantaran Operator menuju arah ROM utara sebanyak 2x trip pengantaran. Kemudian Pukul 07:00 Sdr. Farihin menuju ke KM 12 dan bertemu Sdr Yusuf untuk mengambil 3 kotak MK & pengarahan JOB. Sdr. Farihin mendapatkan Job pekerjaan penimbunan Jl Hauling KM 13. Setelah itu Sdr. Farihin mengarah menuju ke KM 13 untuk melakukan inspeksi kerja, Sesampainya di KM 13 Sdr Farihin berhenti di area kupingan (rest area) dan setelah selesai melakukan inspeksi area kerja Sdr Farihin lanjut sarapan dengan bekal lauk dari Mess.",
+                     "Pada sekitar Pukul 08:04 WITA Sdr. Farihin mendapatkan telfon bahwa unit TR yang akan di Escort di Simp ROM Utara ready, kemudian Sdr. Farihin menghentikan aktivitas makannya dan melanjutkan perjalanan menuju Simp ROM Utara"
+                  ]
+               },
+               {
+                  time: "08.04 – 08.10 WITA",
+                  phase: "Kontak",
+                  paragraphs: [
+                     "Didalam perjalanan menuju Simp ROM Utara, di KM 14-500 Sdr. Farihin masih merasa ingin menyicipi lauk yang tadi di sempat di makannya sehingga Sdr Farihin melakukan aktivitas lain saat mengoperasikan unit (Menyendok lauk yag disimpan di sebelah kirinya dengan menggunakan tangan kanan dan fokus pandangan mengarah ke wadah lauk).",
+                     "Perlahan unit LV MTN-442 yang di operasikan Sdr. Farihin mengarah ke arah kiri, Tyre kiri LV MTN-442 menaiki tanggul dan Sdr. Farihin coba menyeimbangkan unit dengan steering ke sisi kanan namun LV akhirnya rebah ke arah kanan. Sdr. Farihin kemudian melepas Seatbelt yang digunakan, mematikan Engine dan keluar dari unit melalui pintu bagian kiri dengan cara memanjat."
+                  ]
+               },
+               {
+                  time: "08.010 – 08.20 WITA",
+                  phase: "Pasca Kontak",
+                  paragraphs: [
+                     "Beriringan di belakang unit LV MTN 442 unit TC 4042 (Sdr Andika), Melihat kejadian tersebut Sdr Andika menginformasikan kepada Sdr Yusuf (Spv) untuk datang menuju KM 14.",
+                     "Kemudian Sdr Andika menghentikan unit TC 4042 di depan unit LV MTN 442 dan Sdr Andika turun untuk memastikan kondisi Sdr Farihin.",
+                     "Setibanya di Lokasi Sdr. Yusuf melihat area sekitar memastikan kondisi Sdr. Farihin dan langsung menghubungi CCR PT Berau Coal pada pukul 08.20 WITA.",
+                     "TIM ERG tiba dilokasi dan melakukan penanganan tidak lama kemudian di susul Tim HSE MTN untuk pengambilan data lapangan."
+                  ]
+               }
+            ]
+         },
         ringkasan: {
            tanggal: "05 November 2024",
            jam: "22:15 - 01:35",
@@ -1433,8 +1466,9 @@ export default function AnalysisTab() {
                               <div className="flex-1 animate-in fade-in duration-500 overflow-hidden">
                                  {slides[activeSlide]?.type === 'chronology_module' ? (
                                     <FactChronologyModule 
-                                       initialItems={slides[activeSlide]?.content?.items || []}
-                                       metadata={slides[activeSlide]?.content?.metadata}
+                                       initialItems={selectedAgent.results?.chronology_items || []}
+                                       metadata={selectedAgent.results?.ringkasan}
+                                       tableData={selectedAgent.results?.tableData}
                                        viewMode={factViewMode}
                                        onViewModeChange={setFactViewMode}
                                        selectedItemId={selectedRowId || undefined}

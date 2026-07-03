@@ -186,6 +186,7 @@ interface FactChronologyModuleProps {
   onViewModeChange?: (mode: 'slide' | 'default') => void;
   onSelectItem?: (itemId: string | null) => void;
   selectedItemId?: string | null;
+  tableData?: any;
 }
 
 const PHASE_CONFIG = {
@@ -230,10 +231,12 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
   viewMode: controlledViewMode,
   onViewModeChange,
   onSelectItem,
-  selectedItemId: controlledSelectedItemId
+  selectedItemId: controlledSelectedItemId,
+  tableData
 }) => {
   const [items, setItems] = useState<ChronologyItem[]>(initialItems);
   const [internalSelectedItemId, setInternalSelectedItemId] = useState<string | null>(null);
+  const [displayFormat, setDisplayFormat] = useState<'timeline' | 'table'>('timeline');
   
   React.useEffect(() => {
     setItems(initialItems);
@@ -309,21 +312,50 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
     )}>
       <div className="flex-1 flex flex-col min-w-0 h-full relative">
 
+        <div className="flex-none px-6 py-4 border-b border-slate-200 bg-white flex justify-between items-center z-10 shadow-sm">
+           <h3 className="text-sm font-bold text-slate-800">Fakta & Kronologi</h3>
+           <div className="flex bg-slate-100 rounded-lg p-1 border border-slate-200">
+              <button
+                 onClick={() => setDisplayFormat('timeline')}
+                 className={cn(
+                    "px-4 py-1.5 text-[11px] font-bold uppercase tracking-wider rounded-md transition-all flex items-center gap-2",
+                    displayFormat === 'timeline' ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
+                 )}
+              >
+                 <History className="h-3.5 w-3.5" />
+                 Timeline
+              </button>
+              <button
+                 onClick={() => setDisplayFormat('table')}
+                 className={cn(
+                    "px-4 py-1.5 text-[11px] font-bold uppercase tracking-wider rounded-md transition-all flex items-center gap-2",
+                    displayFormat === 'table' ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
+                 )}
+              >
+                 <TableIcon className="h-3.5 w-3.5" />
+                 Table
+              </button>
+           </div>
+        </div>
 
         <div className="flex-1 overflow-hidden">
-            <FactDefaultView 
-              items={items} 
-              groupedItems={groupedItems}
-              editingId={editingId}
-              editBuffer={editBuffer}
-              setEditBuffer={setEditBuffer}
-              onEdit={handleEdit}
-              onSave={handleSaveEdit}
-              onCancel={handleCancelEdit}
-              metadata={metadata}
-              selectedItemId={selectedItemId}
-              onSelectItem={setSelectedItemId}
-            />
+            {displayFormat === 'timeline' ? (
+               <FactDefaultView 
+                 items={items} 
+                 groupedItems={groupedItems}
+                 editingId={editingId}
+                 editBuffer={editBuffer}
+                 setEditBuffer={setEditBuffer}
+                 onEdit={handleEdit}
+                 onSave={handleSaveEdit}
+                 onCancel={handleCancelEdit}
+                 metadata={metadata}
+                 selectedItemId={selectedItemId}
+                 onSelectItem={setSelectedItemId}
+               />
+            ) : (
+               <FactTableView tableData={tableData} />
+            )}
         </div>
 
         {/* Sync Button Removed */}
@@ -1921,3 +1953,68 @@ const FactDefaultView: React.FC<{
   );
 };
 
+const FactTableView: React.FC<{ tableData: any }> = ({ tableData }) => {
+  if (!tableData) return (
+     <div className="flex-1 flex items-center justify-center text-slate-400 bg-white h-full w-full">
+        No table data available
+     </div>
+  );
+  return (
+    <div className="w-full h-full overflow-auto bg-slate-50 p-8 flex justify-center">
+      <div className="w-full max-w-[1300px] bg-white border border-slate-300 shadow-sm p-8 pb-16 h-fit shrink-0">
+        {/* Header */}
+        <div className="flex justify-between items-start mb-6">
+          <div className="whitespace-pre-line text-[15px] font-black text-slate-900 leading-tight">
+            {tableData.title}
+          </div>
+          {/* Legend */}
+          <div className="flex items-center gap-4 text-[10px] font-bold">
+            <div className="flex items-center gap-2">
+              <div className="w-10 h-4 bg-[#ffff99] border border-slate-500"></div>
+              <span>PRA-KONTAK</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-10 h-4 bg-[#ff3333] border border-slate-500"></div>
+              <span>KONTAK</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-10 h-4 bg-[#00b0f0] border border-slate-500"></div>
+              <span>PASCA KONTAK</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Table */}
+        <div className="border border-slate-400">
+          <div className="grid grid-cols-3 divide-x divide-slate-400">
+            {tableData.columns.map((col: any, idx: number) => {
+              let bg = "";
+              if (idx === 0) bg = "bg-[#ffff99]";
+              else if (idx === 1) bg = "bg-[#ff3333]";
+              else bg = "bg-[#00b0f0]";
+              
+              return (
+                <div key={idx} className="flex flex-col">
+                  {/* Time */}
+                  <div className="text-center py-2 font-bold text-[12px] border-b border-slate-400 text-slate-900">
+                    {col.time}
+                  </div>
+                  {/* Phase */}
+                  <div className={`text-center py-2 font-bold text-[13px] border-b border-slate-400 text-slate-900 ${bg}`}>
+                    {col.phase}
+                  </div>
+                  {/* Body */}
+                  <div className="p-4 flex-1 space-y-4 text-[11px] leading-relaxed text-slate-800 text-justify">
+                    {col.paragraphs.map((p: string, pIdx: number) => (
+                      <p key={pIdx}>{p}</p>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
