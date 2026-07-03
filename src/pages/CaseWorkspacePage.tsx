@@ -12,6 +12,7 @@ import { Loader2, ArrowLeft, ChevronLeft, ChevronRight, Clock, AlertTriangle, Pe
 import { TourProvider, useTour } from '@/components/workspace/TourContext';
 import { ProductTourOverlay } from '@/components/workspace/ProductTourOverlay';
 import { supabase } from "@/lib/supabase";
+import { cn } from "@/lib/utils";
 
 // Modular Tab Components (Lazy Loaded)
 const ExtractionTab = React.lazy(() => import("@/components/workspace/Tabs/ExtractionTab"));
@@ -103,6 +104,19 @@ function CaseWorkspaceInner() {
   const runningFiles = evidenceFiles.filter(f => f.extraction_status === "pending" || f.extraction_status === "processing");
   const isAnalysisActive = localStorage.getItem(`analysis_running_${caseId}`) === "true";
   const isProcessingActive = runningFiles.length > 0 || isAnalysisActive;
+
+  // AI Progress Sync (matching CaseListPage)
+  const aiSteps = [
+    { step: "Ekstraksi Data Bukti", done: true }, // Default true for mock consistency
+    { step: "Analisis Fact & Cronology", done: caseData?.status !== "draft" },
+    { step: "Analisis Aktor", done: caseData?.status !== "draft" },
+    { step: "Analisis PEEPO", done: caseData?.status !== "draft" && caseData?.status !== "in_progress" },
+    { step: "Analisis IPLS", done: caseData?.status !== "draft" && caseData?.status !== "in_progress" },
+    { step: "Analisis Prevention", done: (caseData?.reports_count ?? 0) > 0 || caseData?.status === "approved" || caseData?.status === "closed" },
+    { step: "Submit AI value", done: caseData?.status === "approved" || caseData?.status === "closed" },
+  ];
+  const aiCompletedCount = aiSteps.filter(s => s.done).length;
+  const aiProgressPercent = Math.round((aiCompletedCount / aiSteps.length) * 100);
 
   const handleDeleteCase = async () => {
     if (isProcessingActive) {
@@ -354,7 +368,23 @@ function CaseWorkspaceInner() {
               <div className="flex-1 min-w-[300px] max-w-[500px] flex flex-col items-start">
 
                 <div className="flex-1 w-full">
-                  <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">CASE TITLE</div>
+                  {/* Top Row: ID, Date, Investigation Status */}
+                  <div className="flex items-center gap-2 mb-1.5 text-[9px] font-bold tracking-wider uppercase">
+                    <span className="text-slate-500 font-mono bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                      {caseData?.id?.substring(0, 8) || "N/A"}
+                    </span>
+                    <div className="h-1 w-1 rounded-full bg-slate-300 hidden md:block mx-1"></div>
+                    <div className="flex items-center gap-1.5 text-slate-400">
+                      <Clock className="h-3 w-3" />
+                      {caseData?.created_at ? new Date(caseData.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Date Unknown'}
+                    </div>
+                    <div className="h-1 w-1 rounded-full bg-slate-300 hidden md:block mx-1"></div>
+                    <div className="flex items-center gap-1.5 text-slate-700 font-black">
+                      {caseData?.investigation_status || "INVESTIGASI"}
+                    </div>
+                  </div>
+
+                  {/* Middle Row: Title Area */}
                   {isEditingTitle ? (
                     <div className="flex items-center gap-2">
                       <input
@@ -395,54 +425,45 @@ function CaseWorkspaceInner() {
                     </div>
                   )}
                   
-                  <div className="mt-1 flex flex-wrap items-center gap-2 text-[9px] font-bold text-slate-400 tracking-wider uppercase">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-slate-600 font-mono tracking-widest bg-slate-100 px-1.5 py-0.5 rounded">{caseData?.id?.substring(0, 8) || "N/A"}</span>
+                  {/* Bottom Row: AI Status and Progress */}
+                  <div className="mt-1 flex items-center gap-2 relative z-50">
+                    <StatusChip status={caseData?.ai_status || "belum_mulai"} />
+                    <div 
+                      onClick={() => setShowAIProgress(!showAIProgress)}
+                      className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-full px-2 py-0.5 cursor-pointer hover:bg-slate-100 hover:border-emerald-200 transition-all group"
+                    >
+                       <Sparkles className="h-3 w-3 text-emerald-500 group-hover:text-emerald-600" />
+                       <div className="w-16 h-1 bg-slate-200 rounded-full overflow-hidden">
+                          <div className="h-full bg-emerald-500 rounded-full transition-all duration-300" style={{width: `${aiProgressPercent}%`}}></div>
+                       </div>
+                       <span className="text-[9px] font-bold text-slate-600 group-hover:text-emerald-700">{aiProgressPercent}%</span>
                     </div>
                     
-                    <div className="flex items-center gap-1.5">
-                      <Clock className="h-3 w-3" />
-                      {caseData?.created_at ? new Date(caseData.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Date Unknown'}
-                    </div>
-                    <div className="h-1 w-1 rounded-full bg-slate-300 hidden md:block"></div>
-                    
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] font-black text-slate-700">{caseData?.investigation_status || "INVESTIGASI"}</span>
-                    </div>
-                    
-                    <div className="flex items-center gap-1.5 ml-1">
-                      <StatusChip status={caseData?.ai_status || "belum_mulai"} />
-                    </div>
-
-                    <div className="h-1 w-1 rounded-full bg-slate-300 hidden md:block ml-1"></div>
-
-                    <div className="relative flex items-center gap-1.5 ml-1">
-                      <div 
-                        onClick={() => setShowAIProgress(!showAIProgress)}
-                        className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-full px-2 py-0.5 cursor-pointer hover:bg-slate-100 hover:border-emerald-200 transition-all group"
-                      >
-                         <Sparkles className="h-3 w-3 text-emerald-500 group-hover:text-emerald-600" />
-                         <div className="w-16 h-1 bg-slate-200 rounded-full overflow-hidden">
-                            <div className="h-full bg-emerald-500 rounded-full" style={{width: '85%'}}></div>
-                         </div>
-                         <span className="text-[9px] font-bold text-slate-600 group-hover:text-emerald-700">85%</span>
-                      </div>
-                      
-                      {showAIProgress && (
-                         <div className="absolute top-full mt-2 left-0 bg-white border border-slate-200 rounded-lg shadow-xl p-4 w-64 z-50">
-                            <div className="flex items-center justify-between mb-3 border-b border-slate-100 pb-2">
-                               <div className="text-[10px] font-black text-slate-600 uppercase tracking-widest">AI Progress Details</div>
-                               <button onClick={() => setShowAIProgress(false)} className="hover:bg-slate-100 p-1 rounded-full transition-colors"><X className="h-3 w-3 text-slate-400 hover:text-slate-600" /></button>
-                            </div>
-                            <div className="space-y-2">
-                               <div className="flex items-center gap-2 text-[10px] font-medium text-slate-600"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> Initial Extraction</div>
-                               <div className="flex items-center gap-2 text-[10px] font-medium text-slate-600"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> Semantic Structuring</div>
-                               <div className="flex items-center gap-2 text-[10px] font-medium text-slate-600"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> Threat Vector Analysis</div>
-                               <div className="flex items-center gap-2 text-[10px] font-medium text-slate-400"><Loader2 className="h-3.5 w-3.5 animate-spin text-emerald-500" /> Cross-referencing Entities</div>
-                            </div>
-                         </div>
-                      )}
-                    </div>
+                    {showAIProgress && (
+                       <div className="absolute top-full mt-2 left-0 bg-white border border-slate-200 rounded-lg shadow-xl p-4 w-64 z-50">
+                          <div className="flex items-center justify-between mb-3 border-b border-slate-100 pb-2">
+                             <div className="text-[10px] font-black text-slate-600 uppercase tracking-widest">PROGRESS AI INVESTIGASI</div>
+                             <button onClick={() => setShowAIProgress(false)} className="hover:bg-slate-100 p-1 rounded-full transition-colors"><X className="h-3 w-3 text-slate-400 hover:text-slate-600" /></button>
+                          </div>
+                          <div className="space-y-2">
+                             {aiSteps.map((s, idx) => {
+                               const isCurrent = !s.done && (idx === 0 || aiSteps[idx - 1].done);
+                               return (
+                                 <div key={s.step} className={cn("flex items-center gap-2 text-[10px] font-medium", s.done ? "text-slate-600" : isCurrent ? "text-emerald-600" : "text-slate-400")}>
+                                   {s.done ? (
+                                     <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                                   ) : isCurrent ? (
+                                     <Loader2 className="h-3.5 w-3.5 animate-spin text-emerald-500" />
+                                   ) : (
+                                     <div className="h-3.5 w-3.5 rounded-full border border-slate-300 flex items-center justify-center text-[7px]">{idx + 1}</div>
+                                   )}
+                                   <span>{s.step}</span>
+                                 </div>
+                               );
+                             })}
+                          </div>
+                       </div>
+                    )}
                   </div>
                 </div>
               </div>

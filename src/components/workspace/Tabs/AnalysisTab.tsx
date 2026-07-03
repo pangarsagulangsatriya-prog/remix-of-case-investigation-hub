@@ -5,6 +5,7 @@ import {
   Play,
   Pause, 
   RotateCcw,
+  Info,
   Brain, 
   Clock, 
   AlertTriangle, 
@@ -32,7 +33,8 @@ import {
   Database,
   Folders,
   Crosshair,
-  Shield
+  Shield,
+  Settings
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -42,15 +44,31 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { useEvidence } from "@/hooks/useEvidence";
 import { AgentState, AgentRunHistory, EvidenceTraceLink } from "@/types/workspace";
 import { FactChronologyModule, TraceabilityPanel } from "@/components/analysis/FactChronologyModule";
 import { ActorAnalysisModule, ActorDetailPanel } from "@/components/analysis/ActorAnalysisModule";
+import { mockLayers, mockFolders, mockDocuments } from "@/data/mockKnowledgeData";
 
 // Icons mapping for local use
 const AudioIcon = Activity;
@@ -735,12 +753,16 @@ export default function AnalysisTab() {
   const batches = evidence?.batches || [];
 
   const [agents, setAgents] = useState<AgentState[]>(initialAgentsState);
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [activeNodeSettings, setActiveNodeSettings] = useState<string | null>(null);
   const [factViewMode, setFactViewMode] = useState<'slide' | 'default'>('default');
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
   const [allEvidenceExpanded, setAllEvidenceExpanded] = useState(false);
 
   const [activeEvidenceType, setActiveEvidenceType] = useState('audio_diarization');
   const [expandedFolders, setExpandedFolders] = useState<string[]>(['audio', 'document']);
+  const [expandedEvidenceFolders, setExpandedEvidenceFolders] = useState<string[]>([]);
+  const [expandedKnowledgeFolders, setExpandedKnowledgeFolders] = useState<string[]>([]);
   const [execMode, setExecMode] = useState<"idle" | "full" | "manual">("idle");
   const [globalStatus, setGlobalStatus] = useState<"idle" | "running" | "blocked" | "completed" | "stopped" | "failed" | "paused">("idle");
   const [chainQueue, setChainQueue] = useState<string[]>([]);
@@ -753,9 +775,31 @@ export default function AnalysisTab() {
   const [preRunAgentId, setPreRunAgentId] = useState<string | null>(null);
   const [historyAgentId, setHistoryAgentId] = useState<string | null>(null);
   const [knowledgeAgentId, setKnowledgeAgentId] = useState<string | null>(null);
-  const [expandedKnowledgeFolders, setExpandedKnowledgeFolders] = useState<string[]>([]);
   const [localKnowledgeSelection, setLocalKnowledgeSelection] = useState<Record<string, string[]>>({});
   const [isEditingSummary, setIsEditingSummary] = useState(false);
+
+  // Timer States
+  const [elapsedTimeMs, setElapsedTimeMs] = useState<number>(0);
+
+  useEffect(() => {
+    let interval: any;
+    if (globalStatus === 'running') {
+      interval = setInterval(() => {
+        setElapsedTimeMs(prev => prev + 1000);
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [globalStatus]);
+
+  const formatTime = (ms: number) => {
+    const totalSeconds = Math.floor(ms / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  };
 
   // NEW: Fact Trace States
   const [activeEvidenceConsoleMode, setActiveEvidenceConsoleMode] = useState<"trace" | "diarization" | "analysis">("trace");
@@ -1025,6 +1069,7 @@ export default function AnalysisTab() {
 
   const startFullChain = () => {
     setExecMode("full");
+    setElapsedTimeMs(0);
     setGlobalStatus("running");
     setAgents(prev => prev.map(a => ({ 
         ...a, 
@@ -1056,10 +1101,24 @@ export default function AnalysisTab() {
          <div className="w-[320px] border-r border-slate-200 bg-slate-50 flex flex-col shrink-0 z-20 shadow-[1px_0_4px_rgba(0,0,0,0.02)]">
             
             {/* Header Control Area */}
-            <div className="h-[72px] border-b border-slate-200 bg-white px-5 py-4 flex items-center justify-between shrink-0 shadow-sm z-30">
+            <div className="border-b border-slate-200 bg-white px-5 py-3 flex items-center justify-between shrink-0 shadow-sm z-30 min-h-[72px]">
                <div className="flex flex-col">
-                  <span className="text-[12px] font-black text-slate-800 tracking-tight uppercase">Orkestrasi Agen</span>
-                  <span className="text-[9px] font-medium text-slate-400">Pipeline analisis investigasi</span>
+                  <div className="flex items-center gap-1.5 group relative cursor-help w-fit">
+                    <span className="text-[12px] font-black text-slate-800 tracking-tight uppercase">INVESTIGASI</span>
+                    <Info className="h-3.5 w-3.5 text-slate-400 group-hover:text-indigo-500 transition-colors" />
+                    
+                    {/* Tooltip */}
+                    <div className="absolute top-full left-0 mt-1 w-64 bg-slate-900 text-white text-[10px] p-2.5 rounded shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none font-medium leading-relaxed">
+                       Fitur Orkestrasi Agen ini menjalankan sekumpulan AI spesifik secara berurutan untuk menganalisis data bukti, merekonstruksi kronologi kejadian, mengidentifikasi aktor, hingga merumuskan rencana pencegahan komprehensif.
+                    </div>
+                  </div>
+                  <span className="text-[9px] font-medium text-slate-400 mt-0.5">Analisis dan brainstorming investigasi</span>
+                  {(elapsedTimeMs > 0 || globalStatus === 'running') && (
+                     <div className="flex items-center gap-1 mt-1 text-[10px] font-mono font-bold text-emerald-600 bg-emerald-50/80 border border-emerald-100 w-fit px-1.5 py-0.5 rounded shadow-sm">
+                       <Clock className="h-2.5 w-2.5" />
+                       {formatTime(elapsedTimeMs)}
+                     </div>
+                  )}
                </div>
                
                {/* Controls Toolbar */}
@@ -1146,19 +1205,19 @@ export default function AnalysisTab() {
                      const isNextRunning = nextAgent?.status === 'running';
                      
                      // Unstructured.io Styling
-                     const cardBorder = isRunning ? 'border-slate-900 shadow-[2px_2px_0px_0px_rgba(15,23,42,0.1)] bg-white z-20' :
+                     const cardBorder = isRunning ? 'border-indigo-500 bg-indigo-50/40 z-20 overflow-hidden' :
                                         isPaused ? 'border-amber-500 shadow-sm bg-white z-10' :
                                         isCompleted ? (isActive ? 'border-slate-400 bg-white shadow-sm' : 'border-slate-300 bg-white hover:border-slate-400') :
                                         isStopped ? 'border-rose-300 bg-slate-50 opacity-70' :
                                         isActive ? 'border-slate-400 bg-white shadow-sm' : 'border-slate-200 bg-white/90 hover:bg-white';
                      
-                     const iconColor = isRunning ? 'text-slate-900' :
+                     const iconColor = isRunning ? 'text-indigo-600' :
                                        isPaused ? 'text-amber-600' :
                                        isCompleted ? 'text-emerald-600' :
                                        isStopped ? 'text-rose-500' :
                                        'text-slate-400';
                                     
-                     const badgeStyle = isRunning ? 'bg-slate-900 text-white border-slate-900' :
+                     const badgeStyle = isRunning ? 'bg-indigo-600 text-white border-indigo-600' :
                                         isPaused ? 'bg-amber-50 text-amber-700 border-amber-200' :
                                         isCompleted ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
                                         isStopped ? 'bg-rose-50 text-rose-700 border-rose-200' :
@@ -1171,36 +1230,91 @@ export default function AnalysisTab() {
                            <div 
                               onClick={() => setSelectedAgentId(agent.id)}
                               className={`
-                                 group flex flex-col rounded-sm border transition-all duration-300 cursor-pointer relative overflow-hidden
+                                 group flex flex-col border transition-all duration-300 cursor-pointer relative rounded-sm
                                  ${cardBorder}
                               `}
                            >
-                              {/* Top Bar Area */}
-                              <div className="flex items-center justify-between px-4 py-2 border-b border-slate-100 bg-slate-50/50">
-                                 <div className="flex items-center gap-2">
-                                    <agent.icon className={`h-3.5 w-3.5 ${iconColor} ${isRunning ? 'animate-pulse' : ''}`} />
-                                    <span className={`text-[10px] font-bold font-mono tracking-widest ${isRunning ? 'text-slate-900' : 'text-slate-500'}`}>{meta.nodeId}</span>
+                              {/* Background Scanner Effect for Running State */}
+                              {isRunning && (
+                                 <div className="absolute inset-0 z-0 bg-gradient-to-r from-transparent via-indigo-500/10 to-transparent -translate-x-full" style={{ animation: 'shimmer 2s infinite linear' }}>
+                                    <style>{`
+                                       @keyframes shimmer {
+                                          100% { transform: translateX(100%); }
+                                       }
+                                    `}</style>
                                  </div>
-                                 <div className="flex items-center gap-2">
-                                    {isCompleted && (
-                                       <button 
-                                          onClick={(e) => { e.stopPropagation(); runSingleAgent(agent.id, true); }}
-                                          title="Rerun Node"
-                                          className="h-5 w-5 rounded flex items-center justify-center text-slate-400 hover:bg-slate-200 hover:text-slate-800 opacity-0 group-hover:opacity-100 transition-all"
-                                       >
-                                          <Play className="h-2.5 w-2.5" />
-                                       </button>
-                                    )}
-                                    <div className={`px-2 py-0.5 rounded-[3px] text-[8px] font-bold tracking-widest border transition-colors ${badgeStyle}`}>
-                                       {badgeText}
+                              )}
+
+                              {/* Content Area */}
+                              <div className="flex flex-col p-4 relative z-10">
+                                 <div className="flex items-start justify-between mb-3">
+                                    <div className="flex gap-3">
+                                       <div className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center border transition-all duration-300 rounded-md ${
+                                          isRunning ? 'bg-indigo-600 border-indigo-600 text-white scale-110' :
+                                          isCompleted ? 'bg-indigo-50 border-indigo-100 text-indigo-600' :
+                                          isPaused ? 'bg-amber-50 border-amber-100 text-amber-600' :
+                                          isStopped ? 'bg-rose-50 border-rose-100 text-rose-500' :
+                                          'bg-slate-50 border-slate-200 text-slate-400'
+                                       }`}>
+                                          {isRunning ? (
+                                             <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                          ) : (
+                                             <agent.icon className="h-3.5 w-3.5" />
+                                          )}
+                                       </div>
+                                       <div>
+                                          <h4 className={`text-[12.5px] font-bold tracking-tight leading-none mb-1 transition-colors ${isRunning ? 'text-indigo-950' : (isWaiting || isStopped) ? 'text-slate-500' : 'text-slate-800'}`}>{agent.name}</h4>
+                                          <p className={`text-[10px] font-medium leading-snug transition-colors ${isRunning ? 'text-indigo-700/80' : 'text-slate-500'}`}>{meta.subtitle}</p>
+                                       </div>
                                     </div>
                                  </div>
-                              </div>
-                              
-                              {/* Content Area */}
-                              <div className="flex flex-col px-4 py-3 bg-white">
-                                 <h4 className={`text-[12px] font-bold tracking-tight mb-0.5 transition-colors ${isRunning ? 'text-slate-900' : (isWaiting || isStopped) ? 'text-slate-500' : 'text-slate-800'}`}>{agent.name}</h4>
-                                 <p className="text-[10px] font-medium text-slate-500 leading-snug">{meta.subtitle}</p>
+
+                                 <div className="flex items-center justify-between mt-1">
+                                    <div className={`px-2 py-0.5 text-[9px] font-bold tracking-widest border transition-all duration-300 flex items-center gap-1.5 rounded-[4px] ${badgeStyle}`}>
+                                       {isRunning && <span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span></span>}
+                                       {badgeText}
+                                    </div>
+                                    
+                                    <div className="flex items-center gap-1.5 transition-opacity">
+                                       {/* History Button */}
+                                       {isCompleted && (
+                                         <button 
+                                            onClick={(e) => { 
+                                               e.stopPropagation(); 
+                                               setHistoryAgentId(agent.id); 
+                                            }}
+                                            title="View History"
+                                            className="h-6 w-6 rounded flex items-center justify-center text-slate-400 hover:bg-slate-50 hover:text-indigo-600 shadow-sm border border-slate-200 transition-all bg-white"
+                                         >
+                                            <History className="h-3 w-3" />
+                                         </button>
+                                       )}
+
+                                       {/* Node Details (Book) Button */}
+                                       <button 
+                                          onClick={(e) => { 
+                                             e.stopPropagation(); 
+                                             setActiveNodeSettings(agent.id);
+                                             setSettingsModalOpen(true);
+                                          }}
+                                          title="Node Details"
+                                          className="h-6 w-6 rounded flex items-center justify-center text-slate-400 hover:bg-slate-50 hover:text-slate-700 shadow-sm border border-slate-200 transition-all bg-white"
+                                       >
+                                          <BookText className="h-3 w-3" />
+                                       </button>
+
+                                       {/* Play Button */}
+                                       {!isRunning && (
+                                          <button 
+                                             onClick={(e) => { e.stopPropagation(); runSingleAgent(agent.id, true); }}
+                                             title={isCompleted ? "Rerun Node" : "Run Node"}
+                                             className="h-6 w-6 rounded flex items-center justify-center text-slate-600 hover:bg-slate-50 hover:text-slate-900 shadow-sm border border-slate-200 transition-all bg-white"
+                                          >
+                                             <Play className="h-3 w-3 fill-current" />
+                                          </button>
+                                       )}
+                                    </div>
+                                 </div>
                               </div>
                            </div>
 
@@ -1706,10 +1820,303 @@ export default function AnalysisTab() {
                onClose={() => setHistoryAgentId(null)}
             />
          )}
+
+         {settingsModalOpen && (
+            <Sheet open={settingsModalOpen} onOpenChange={setSettingsModalOpen}>
+              <SheetContent side="right" className="w-[90vw] sm:w-[850px] sm:max-w-none bg-white border-l border-slate-100 shadow-2xl p-8 overflow-y-auto z-[9999] custom-scrollbar">
+                {(() => {
+                  const activeAgent = agents.find(a => a.id === activeNodeSettings);
+                  if (!activeAgent) return null;
+                  const meta = AgentDisplayMeta[activeAgent.id] || { nodeId: 'AGT', subtitle: 'Processing node' };
+                  
+                  const completedFiles = (evidence?.files || []).filter(f => f.extraction_status === 'completed');
+                  
+                  // Add hardcoded mock primary evidences for the demo to match ExtractionTab
+                  const mockPrimaryEvidenceList = [
+                    {
+                      id: "dummy-primary-1",
+                      name: "Form_Insiden_Lengkap.pdf",
+                      type: "PDF Document",
+                      extraction_status: "completed",
+                      batch_id: "UTAMA",
+                    },
+                    {
+                      id: "dummy-primary-2",
+                      name: "Metadata_Insiden_2161.json",
+                      type: "JSON Data",
+                      extraction_status: "completed",
+                      batch_id: "UTAMA",
+                    }
+                  ];
+                  
+                  const allCompleted = [...completedFiles, ...mockPrimaryEvidenceList];
+                  
+                  const primaryEvidences = allCompleted.filter(f => !f.batch_id || f.batch_id === "UTAMA");
+                  const folderBatches = (evidence?.batches || []).filter(b => b.type === "Folder");
+                  const looseFiles = allCompleted.filter(f => f.batch_id && f.batch_id !== "UTAMA" && !folderBatches.some(b => b.id === f.batch_id));
+
+                  const toggleFolder = (id: string) => {
+                    setExpandedEvidenceFolders(prev => prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]);
+                  };
+
+                  const mockKnowledgeUsed = [
+                    { id: 'KNO-01', name: 'SOP Investigasi Insiden', category: 'Prosedur' },
+                    { id: 'KNO-02', name: 'Regulasi K3 Tambang', category: 'Regulasi' }
+                  ];
+
+                  return (
+                    <>
+                      <SheetHeader className="pb-4 border-b border-slate-100">
+                        <SheetTitle className="text-sm font-black uppercase tracking-wider text-slate-900 flex items-center gap-2">
+                           <div className="h-6 w-6 rounded-[4px] bg-slate-900 text-white flex items-center justify-center shadow-sm shrink-0">
+                              <activeAgent.icon className="h-3 w-3" />
+                           </div>
+                           {activeAgent.name} <span className="text-slate-400 font-medium ml-1">({meta.nodeId})</span>
+                        </SheetTitle>
+                        <SheetDescription className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mt-1">
+                          Node Settings & Info
+                        </SheetDescription>
+                      </SheetHeader>
+
+                      <div className="mt-5 space-y-6">
+                        {/* Section: Description */}
+                        <div className="space-y-3">
+                          <h3 className="text-xs font-semibold text-slate-500 tracking-wider uppercase flex items-center gap-1.5">
+                            <BookText className="h-3.5 w-3.5 text-indigo-500" /> Deskripsi Node
+                          </h3>
+                          <div className="p-4 bg-slate-50 rounded-sm border border-slate-100">
+                            <p className="text-[11px] text-slate-700 leading-relaxed">
+                              Node ini bertanggung jawab untuk <span className="font-semibold">{meta.subtitle.toLowerCase()}</span>. 
+                              Secara spesifik, proses ini mengekstraksi informasi krusial dari data referensi, memvalidasinya terhadap knowledge base, 
+                              serta mensintesis hasil ke dalam format terstruktur untuk langkah analisis selanjutnya.
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-8">
+                          {/* Section: Data Used */}
+                          <div className="space-y-3">
+                            <h3 className="text-xs font-semibold text-slate-500 tracking-wider uppercase flex items-center gap-1.5">
+                              <Database className="h-3.5 w-3.5 text-blue-500" /> Data Referensi
+                            </h3>
+                            <div className="space-y-4 pr-1">
+                              {completedFiles.length === 0 ? (
+                                <p className="text-[10px] text-slate-400 italic">Belum ada data yang selesai diproses.</p>
+                              ) : (
+                                <>
+                                  {/* PREVIOUS AGENT OUTPUTS (For IPLS & Prev) */}
+                                  {(activeAgent.id === 'ipls' || activeAgent.id === 'prev') && (
+                                    <div className="space-y-2 mb-6">
+                                      <div className="pt-1 pb-2">
+                                        <span className="text-[9px] font-black text-emerald-700 uppercase tracking-widest bg-emerald-100/80 px-2.5 py-1 rounded-sm border border-emerald-200/50">OUTPUT AGEN SEBELUMNYA</span>
+                                      </div>
+                                      
+                                      {(activeAgent.id === 'prev' ? ['fact', 'actor', 'peepo', 'ipls'] : ['fact', 'actor', 'peepo']).map(agentId => {
+                                         const prevAgent = agents.find(a => a.id === agentId);
+                                         if (!prevAgent || prevAgent.status !== 'completed') return null;
+                                         return (
+                                           <div key={agentId} className="flex items-start gap-3 p-2.5 rounded-sm border border-emerald-200/60 bg-emerald-50/50 shadow-sm ml-2">
+                                             <div className="pt-0.5">
+                                               <div className="h-3.5 w-3.5 bg-emerald-500 rounded-[3px] flex items-center justify-center shadow-xs">
+                                                 <Check className="h-2.5 w-2.5 text-white stroke-[3]" />
+                                               </div>
+                                             </div>
+                                             <div className="min-w-0 flex-1">
+                                               <p className="text-[10px] font-bold text-slate-800 truncate">Output {prevAgent.name}</p>
+                                               <p className="text-[9px] text-slate-500 mt-0.5">Digunakan sebagai referensi konteks analisis</p>
+                                             </div>
+                                           </div>
+                                         );
+                                      })}
+                                    </div>
+                                  )}
+
+                                  {/* DATA CCR */}
+                                  {primaryEvidences.length > 0 && (
+                                    <div className="space-y-2">
+                                      <div className="pt-1 pb-2">
+                                        <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest bg-slate-100/80 px-2.5 py-1 rounded-sm border border-slate-200/50">DATA CCR</span>
+                                      </div>
+                                      {primaryEvidences.map(file => (
+                                        <div key={file.id} className="flex items-start gap-3 p-2.5 rounded-sm border border-slate-200 bg-slate-50/50 shadow-sm ml-2">
+                                          <div className="pt-0.5">
+                                            <div className="h-3.5 w-3.5 bg-blue-500 rounded-[3px] flex items-center justify-center shadow-xs">
+                                              <Check className="h-2.5 w-2.5 text-white stroke-[3]" />
+                                            </div>
+                                          </div>
+                                          <div className="min-w-0 flex-1">
+                                            <p className="text-[10px] font-bold text-slate-800 truncate" title={file.name}>{file.name}</p>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+
+                                  {/* BUKTI PENDUKUNG */}
+                                  {(folderBatches.length > 0 || looseFiles.length > 0) && (
+                                    <div className="space-y-2">
+                                      <div className="pt-3 pb-2">
+                                        <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest bg-slate-100/80 px-2.5 py-1 rounded-sm border border-slate-200/50">BUKTI PENDUKUNG</span>
+                                      </div>
+                                      
+                                      <div className="space-y-1 ml-2">
+                                        {/* Folders */}
+                                        {folderBatches.map(batch => {
+                                          const folderFiles = completedFiles.filter(f => f.batch_id === batch.id);
+                                          if (folderFiles.length === 0) return null;
+                                          const isExpanded = expandedEvidenceFolders.includes(batch.id);
+
+                                          return (
+                                            <div key={batch.id} className="border border-slate-200 rounded-sm overflow-hidden bg-white shadow-sm">
+                                              <div 
+                                                onClick={() => toggleFolder(batch.id)}
+                                                className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-slate-50 transition-colors bg-slate-50/50"
+                                              >
+                                                <ChevronRight className={cn("h-3.5 w-3.5 text-slate-400 transition-transform", isExpanded && "rotate-90")} />
+                                                <div className="h-6 w-6 rounded-md bg-indigo-50 border border-indigo-100 flex items-center justify-center shrink-0">
+                                                  <Folder className="h-3 w-3 text-indigo-500" />
+                                                </div>
+                                                <span className="text-[11px] font-bold text-slate-800 flex-1 truncate">{batch.name}</span>
+                                                <span className="text-[9px] font-bold text-slate-500 bg-slate-200/50 px-2 py-0.5 rounded-full">{folderFiles.length} item</span>
+                                              </div>
+                                              
+                                              {isExpanded && (
+                                                <div className="border-t border-slate-100 bg-white p-2 space-y-1.5">
+                                                  {folderFiles.map(file => (
+                                                    <div key={file.id} className="flex items-start gap-3 p-2 rounded-sm hover:bg-slate-50 transition-colors">
+                                                      <div className="pt-0.5 ml-2">
+                                                        <div className="h-3 w-3 bg-blue-500 rounded-[2px] flex items-center justify-center">
+                                                          <Check className="h-2 w-2 text-white stroke-[3]" />
+                                                        </div>
+                                                      </div>
+                                                      <div className="min-w-0 flex-1">
+                                                        <p className="text-[10px] font-bold text-slate-700 truncate" title={file.name}>{file.name}</p>
+                                                      </div>
+                                                    </div>
+                                                  ))}
+                                                </div>
+                                              )}
+                                            </div>
+                                          );
+                                        })}
+
+                                        {/* Loose Files */}
+                                        {looseFiles.map(file => (
+                                          <div key={file.id} className="flex items-start gap-3 p-2.5 rounded-sm border border-slate-200 bg-slate-50/50 shadow-sm mt-2">
+                                            <div className="pt-0.5">
+                                              <div className="h-3.5 w-3.5 bg-blue-500 rounded-[3px] flex items-center justify-center shadow-xs">
+                                                <Check className="h-2.5 w-2.5 text-white stroke-[3]" />
+                                              </div>
+                                            </div>
+                                            <div className="min-w-0 flex-1">
+                                              <p className="text-[10px] font-bold text-slate-800 truncate" title={file.name}>{file.name}</p>
+                                            </div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Section: Knowledge Used */}
+                          <div className="space-y-3">
+                            <h3 className="text-xs font-semibold text-slate-500 tracking-wider uppercase flex items-center gap-1.5">
+                              <Brain className="h-3.5 w-3.5 text-emerald-500" /> Knowledge Base
+                            </h3>
+                            <div className="space-y-4">
+                              {(activeAgent.id === 'ipls' || activeAgent.id === 'prev') ? (
+                                <div className="space-y-4">
+                                  {mockLayers.map(layer => {
+                                    const layerFolders = mockFolders.filter(f => f.layerId === layer.id);
+                                    // only show layer if it has folders that have documents
+                                    const hasDocs = layerFolders.some(f => mockDocuments.some(d => d.folderId === f.id));
+                                    if (!hasDocs) return null;
+                                    
+                                    return (
+                                      <div key={layer.id} className="space-y-2">
+                                        <div className="pt-1 pb-1">
+                                           <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest bg-slate-100/80 px-2.5 py-1 rounded-sm border border-slate-200/50">{layer.name}</span>
+                                        </div>
+                                        <div className="space-y-1.5 ml-2">
+                                          {layerFolders.map(folder => {
+                                            const folderDocs = mockDocuments.filter(d => d.folderId === folder.id);
+                                            if (folderDocs.length === 0) return null;
+                                            return (
+                                              <div key={folder.id} className="border border-slate-200 rounded-sm overflow-hidden bg-white shadow-sm">
+                                                <div 
+                                                  className="flex items-center justify-between p-2 bg-slate-50 border-b border-slate-100 cursor-pointer hover:bg-slate-100/50 transition-colors"
+                                                  onClick={() => {
+                                                    setExpandedKnowledgeFolders(prev => 
+                                                      prev.includes(folder.id) ? prev.filter(id => id !== folder.id) : [...prev, folder.id]
+                                                    );
+                                                  }}
+                                                >
+                                                  <div className="flex items-center gap-2">
+                                                    <Folder className="h-3.5 w-3.5 text-blue-400 fill-blue-400/20" />
+                                                    <span className="text-[10px] font-bold text-slate-700">{folder.name}</span>
+                                                  </div>
+                                                  <div className="flex items-center gap-2">
+                                                    <span className="text-[9px] font-medium text-slate-400 px-1.5 py-0.5 bg-slate-100 rounded-full">{folderDocs.length} item</span>
+                                                    <ChevronDown className={cn("h-3.5 w-3.5 text-slate-400 transition-transform duration-200", expandedKnowledgeFolders.includes(folder.id) ? "rotate-180" : "")} />
+                                                  </div>
+                                                </div>
+                                                {expandedKnowledgeFolders.includes(folder.id) && (
+                                                  <div className="divide-y divide-slate-50">
+                                                    {folderDocs.map(doc => (
+                                                      <div key={doc.id} className="flex items-start gap-3 p-2.5 hover:bg-slate-50/50 transition-colors">
+                                                        <div className="pt-0.5">
+                                                           <div className="h-3.5 w-3.5 bg-blue-500 rounded-[3px] flex items-center justify-center shadow-xs">
+                                                             <Check className="h-2.5 w-2.5 text-white stroke-[3]" />
+                                                           </div>
+                                                        </div>
+                                                        <div className="min-w-0 flex-1">
+                                                          <p className="text-[10px] font-bold text-slate-800 truncate" title={doc.title}>{doc.title}</p>
+                                                        </div>
+                                                      </div>
+                                                    ))}
+                                                  </div>
+                                                )}
+                                              </div>
+                                            );
+                                          })}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              ) : (
+                                <div className="space-y-2">
+                                  {mockKnowledgeUsed.map(k => (
+                                    <div key={k.id} className="flex items-center gap-3 p-2.5 rounded-sm border border-slate-200 bg-white shadow-sm">
+                                      <div className="pt-0.5">
+                                        <div className="h-3.5 w-3.5 bg-blue-500 rounded-[3px] flex items-center justify-center shadow-xs">
+                                          <Check className="h-2.5 w-2.5 text-white stroke-[3]" />
+                                        </div>
+                                      </div>
+                                      <div className="min-w-0 flex-1">
+                                        <p className="text-[10px] font-bold text-slate-800 truncate">{k.name}</p>
+                                        <p className="text-[9px] text-slate-400">{k.category}</p>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  );
+                })()}
+              </SheetContent>
+            </Sheet>
+         )}
       </div>
   );
 }
-
 function PreRunModal({ agent, onClose, onRun }: { agent: AgentState, onClose: () => void, onRun: (isRerun: boolean) => void }) {
   const isRerun = agent.status === 'completed' || agent.status === 'failed' || agent.status === 'cancelled';
   
@@ -1800,97 +2207,120 @@ function PreRunModal({ agent, onClose, onRun }: { agent: AgentState, onClose: ()
 
 function AgentHistoryPanel({ agent, onClose }: { agent: AgentState, onClose: () => void }) {
   return (
-    <div className="fixed inset-y-0 right-0 w-[420px] bg-white border-l border-slate-200 z-[100]  flex flex-col animate-in slide-in-from-right duration-300">
-      <div className="h-16 border-b border-slate-100 flex items-center justify-between px-6 bg-slate-50/50">
-        <div className="flex items-center gap-3">
-           <History className="h-5 w-5 text-slate-400" />
-           <div className="flex flex-col">
-              <h3 className="text-xs font-black uppercase tracking-widest text-slate-900">Run History</h3>
-              <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">{agent.name}</span>
-           </div>
-        </div>
-        <Button variant="ghost" size="sm" onClick={onClose} className="h-9 w-9 p-0 rounded-full hover:bg-slate-200 text-slate-400 transition-all">
-           <X className="h-5 w-5" />
-        </Button>
-      </div>
+    <Sheet open={true} onOpenChange={(open) => !open && onClose()}>
+      <SheetContent side="right" className="w-[400px] sm:w-[450px] bg-white border-l border-slate-100 shadow-2xl p-6 overflow-y-auto z-[9999] custom-scrollbar">
+        <SheetHeader className="pb-4 border-b border-slate-100">
+          <SheetTitle className="text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
+            <History className="h-4 w-4 text-indigo-500" /> Riwayat Proses & Versi
+          </SheetTitle>
+          <SheetDescription className="text-[11px] text-slate-500 font-bold leading-normal">
+            Tinjau riwayat eksekusi dan log operasional dari node {agent.name}.
+          </SheetDescription>
+        </SheetHeader>
 
-      <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
-        {agent.history.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center text-center opacity-20 p-12">
-             <Activity className="h-12 w-12 text-slate-300 mb-6" />
-             <h4 className="text-[12px] font-black uppercase tracking-[0.2em]">No History Found</h4>
-             <p className="text-[10px] font-bold text-slate-500 uppercase mt-2">This agent has not been executed yet.</p>
-          </div>
-        ) : (
-          agent.history.map((run, i) => (
-            <div key={run.run_id} className="relative pl-6 pb-8 last:pb-0">
-               {i !== agent.history.length - 1 && (
-                  <div className="absolute left-[7px] top-4 bottom-0 w-px bg-slate-100" />
-               )}
-               <div className="absolute left-0 top-1.5 h-3.5 w-3.5 rounded-full bg-white border-2 border-slate-200 flex items-center justify-center">
-                  <div className={`h-1.5 w-1.5 rounded-full ${run.status === 'completed' ? 'bg-emerald-500' : 'bg-rose-500'}`} />
-               </div>
-               
-               <div className="bg-white border border-slate-100 rounded-sm p-4  hover:border-slate-300 transition-all cursor-default">
-                  <div className="flex items-start justify-between mb-4">
-                     <div className="flex flex-col">
-                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Timestamp</span>
-                        <span className="text-[11px] font-black text-slate-800 tabular-nums">
-                           {new Date(run.started_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
-                        </span>
-                     </div>
-                     <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border ${run.status === 'completed' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-rose-50 text-rose-700 border-rose-100'}`}>
-                        {run.status}
-                     </span>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                     <div>
-                        <div className="text-[8px] font-black text-slate-400 uppercase mb-1">Token Usage</div>
-                        <div className="text-[12px] font-black text-slate-900 tabular-nums">{run.token_usage?.toLocaleString() || "---"}</div>
-                     </div>
-                     <div>
-                        <div className="text-[8px] font-black text-slate-400 uppercase mb-1">Duration</div>
-                        <div className="text-[12px] font-black text-slate-900 tabular-nums">{(run.duration_ms! / 1000).toFixed(2)}s</div>
-                     </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 mb-3">
-                     <Users className="h-3 w-3 text-slate-300" />
-                     <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Triggered by: <span className="text-slate-800">{run.triggered_by}</span></span>
-                  </div>
-
-                  <div className="bg-slate-50/50 rounded-sm p-3 border border-slate-50">
-                     <p className="text-[11px] font-bold text-slate-500 leading-snug italic">
-                        "{run.summary || "No summary provided for this run."}"
-                     </p>
-                  </div>
-               </div>
+        <div className="mt-5 space-y-6">
+          {/* Agent Info Card */}
+          <div className="flex gap-3 p-3 bg-slate-50 border border-slate-100 rounded-[6px] items-center">
+            <div className="h-10 w-10 bg-white rounded-[4px] flex items-center justify-center border shadow-sm shrink-0">
+              <agent.icon className="h-5 w-5 text-slate-700" />
             </div>
-          ))
-        )}
-      </div>
+            <div className="space-y-0.5 min-w-0">
+              <p className="text-[11px] font-black text-slate-900 uppercase tracking-widest truncate">
+                {agent.name}
+              </p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">
+                Total Eksekusi: {agent.runCount}
+              </p>
+            </div>
+          </div>
 
-      <div className="p-6 border-t border-slate-100 bg-slate-50/30">
-        <div className="flex items-center justify-between mb-4">
-           <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Aggregate Metrics</span>
-           <span className="text-[10px] font-black text-slate-900 uppercase">{agent.runCount} Total Runs</span>
+          {/* LOG AUDIT EKSEKUSI */}
+          <div className="space-y-3">
+            <h3 className="text-xs font-semibold text-slate-500 tracking-wider uppercase flex items-center gap-1.5">
+              <Clock className="h-3.5 w-3.5 text-slate-400" /> Log Audit Eksekusi
+            </h3>
+
+            <div className="relative border-l border-slate-100 pl-6 ml-3 space-y-6 pt-3 pb-3">
+              {agent.history.length === 0 ? (
+                <p className="text-[9.5px] text-slate-400 italic text-left">Tidak ada log riwayat.</p>
+              ) : (
+                agent.history.map((run, i) => {
+                  const isCompleted = run.status === 'completed';
+                  const isFailed = run.status === 'failed' || run.status === 'error'; // ensure we catch errors
+                  const isReverted = run.status === 'reverted';
+                  
+                  return (
+                    <div key={run.run_id} className="relative">
+                      {/* Timeline Bullet Indicator */}
+                      <div className={cn(
+                        "absolute -left-[35px] top-0 w-5 h-5 rounded-full border flex items-center justify-center shadow-xs z-10",
+                        isCompleted 
+                          ? "bg-emerald-50/50 border-emerald-100 text-emerald-500" 
+                          : isReverted
+                            ? "bg-amber-50/50 border-amber-100 text-amber-500"
+                            : "bg-rose-50/50 border-rose-100 text-rose-500"
+                      )}>
+                        {isCompleted ? (
+                          <Check className="h-2.5 w-2.5" />
+                        ) : isReverted ? (
+                          <RotateCcw className="h-2.5 w-2.5" />
+                        ) : (
+                          <X className="h-2.5 w-2.5" />
+                        )}
+                      </div>
+
+                      {/* Timeline Content Item */}
+                      <div className="space-y-1 text-left">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-[10px] font-black text-slate-600 uppercase tracking-wider">
+                            RUN #{agent.history.length - i}
+                          </span>
+                          <span className={cn(
+                            "text-[8px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-[3px] border shadow-xs leading-none",
+                            isCompleted ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-rose-50 text-rose-700 border-rose-100'
+                          )}>
+                            {run.status}
+                          </span>
+                        </div>
+                        
+                        <p className="text-[9px] text-slate-400 font-bold">
+                          Eksekusi: {new Date(run.started_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'medium' })}
+                        </p>
+
+                        <div className="bg-slate-50/50 rounded-sm p-3 border border-slate-100 mt-2">
+                          <div className="grid grid-cols-2 gap-2 mb-2">
+                             <div>
+                                <div className="text-[8px] font-bold text-slate-400 uppercase mb-0.5">Token Usage</div>
+                                <div className="text-[10px] font-black text-slate-700 tabular-nums">{run.token_usage?.toLocaleString() || "---"}</div>
+                             </div>
+                             <div>
+                                <div className="text-[8px] font-bold text-slate-400 uppercase mb-0.5">Duration</div>
+                                <div className="text-[10px] font-black text-slate-700 tabular-nums">{(run.duration_ms! / 1000).toFixed(2)}s</div>
+                             </div>
+                          </div>
+                          <div className="flex items-center gap-1.5 mb-2">
+                             <Users className="h-3 w-3 text-slate-300" />
+                             <span className="text-[8.5px] font-bold text-slate-400 uppercase tracking-widest">Triggered by: <span className="text-slate-600">{run.triggered_by}</span></span>
+                          </div>
+                          <p className="text-[10px] font-medium text-slate-500 leading-snug italic border-t border-slate-100 pt-2">
+                             "{run.summary || "No summary provided for this run."}"
+                          </p>
+                        </div>
+                        
+                        {!isCompleted && run.error && (
+                          <p className="text-[9.5px] font-mono text-rose-600 bg-rose-50 border border-rose-100 p-2 rounded-[4px] mt-1.5">
+                            Reason: {run.error}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
         </div>
-        <div className="grid grid-cols-2 gap-3">
-           <div className="bg-white p-3 rounded-sm border ">
-              <div className="text-[14px] font-black text-slate-900 leading-none">
-                 {agent.history.reduce((a, b) => a + (b.token_usage || 0), 0).toLocaleString()}
-              </div>
-              <div className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">Total Tokens</div>
-           </div>
-           <div className="bg-white p-3 rounded-sm border ">
-              <div className="text-[14px] font-black text-slate-900 leading-none">
-                 {(agent.history.reduce((a, b) => a + (b.duration_ms || 0), 0) / 1000).toFixed(1)}s
-              </div>
-              <div className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">Total Compute</div>
-           </div>
-        </div>
-      </div>
-    </div>
+      </SheetContent>
+    </Sheet>
   );
 }
