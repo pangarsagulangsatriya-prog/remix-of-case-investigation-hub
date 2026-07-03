@@ -191,28 +191,28 @@ interface FactChronologyModuleProps {
 
 const PHASE_CONFIG = {
   pre_contact: {
-    label: "PRA KONTAK",
-    color: "bg-emerald-600",
-    lightColor: "bg-emerald-50",
-    borderColor: "border-emerald-200",
-    textColor: "text-emerald-700",
-    dotColor: "bg-emerald-500",
+    label: "PRA-KONTAK",
+    color: "bg-[#ffff99]",
+    lightColor: "bg-[#ffff99]/20",
+    borderColor: "border-[#ffff99]",
+    textColor: "text-slate-900",
+    dotColor: "bg-[#ffff99]",
   },
   contact: {
     label: "KONTAK",
-    color: "bg-rose-600",
-    lightColor: "bg-rose-50",
-    borderColor: "border-rose-200",
-    textColor: "text-rose-700",
-    dotColor: "bg-rose-500",
+    color: "bg-[#ff3333]",
+    lightColor: "bg-[#ff3333]/20",
+    borderColor: "border-[#ff3333]",
+    textColor: "text-slate-900",
+    dotColor: "bg-[#ff3333]",
   },
   post_contact: {
     label: "PASCA KONTAK",
-    color: "bg-amber-500",
-    lightColor: "bg-amber-50",
-    borderColor: "border-amber-200",
-    textColor: "text-amber-700",
-    dotColor: "bg-amber-500",
+    color: "bg-[#00b0f0]",
+    lightColor: "bg-[#00b0f0]/20",
+    borderColor: "border-[#00b0f0]",
+    textColor: "text-slate-900",
+    dotColor: "bg-[#00b0f0]",
   }
 };
 
