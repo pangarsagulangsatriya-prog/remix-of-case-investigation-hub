@@ -1906,15 +1906,15 @@ const FactDefaultView: React.FC<{
                               isSelected ? "bg-slate-100/80 " : "hover:bg-slate-50/50"
                             )}
                           >
-                            <td className="px-4 py-2 align-top border-r border-b border-slate-200">
+                            <td className="px-4 py-2 align-top border-r border-b border-slate-400">
                               <div className="flex flex-col gap-1">
                                 <span className={cn("text-[11px] font-mono font-black mt-0.5", config.textColor)}>{item.time_label}</span>
                               </div>
                             </td>
-                            <td className="px-4 py-2 align-top border-r border-b border-slate-200">
+                            <td className="px-4 py-2 align-top border-r border-b border-slate-400">
                               <div className="relative">
-                                <p className={cn("text-xs font-medium leading-normal pr-8 transition-colors", 
-                                  isSelected ? "text-slate-900" : "text-slate-700"
+                                <p className={cn("text-[11px] font-medium leading-relaxed pr-8 transition-colors text-justify text-slate-800", 
+                                  isSelected ? "text-slate-900" : "text-slate-800"
                                 )}>
                                   {item.chronology_text}
                                 </p>
@@ -1922,7 +1922,7 @@ const FactDefaultView: React.FC<{
                               </div>
                             </td>
                             {showLocalAccuracy && (
-                              <td className="px-4 py-2 align-middle text-center border-r border-b border-slate-200 w-32">
+                              <td className="px-4 py-2 align-middle text-center border-r border-b border-slate-400 w-32">
                                 <span className={cn(
                                   "font-mono font-black text-[11px] px-2 py-0.5 border rounded-none transition-colors",
                                   rowAcc >= 90 ? "text-emerald-600 bg-emerald-50 border-emerald-200" :
@@ -1936,7 +1936,7 @@ const FactDefaultView: React.FC<{
                         );
                       }) : (
                         <tr>
-                          <td colSpan={showLocalAccuracy ? 3 : 2} className="px-5 py-8 text-center text-slate-300 text-[10px] font-black uppercase tracking-widest border-r border-b border-slate-200">
+                          <td colSpan={showLocalAccuracy ? 3 : 2} className="px-5 py-8 text-center text-slate-300 text-[10px] font-black uppercase tracking-widest border-r border-b border-slate-400">
                             No data available
                           </td>
                         </tr>
