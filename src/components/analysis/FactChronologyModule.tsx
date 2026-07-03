@@ -1873,22 +1873,20 @@ const FactDefaultView: React.FC<{
             const phaseItems = groupedItems[phase];
 
             return (
-              <div key={phase} className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <span className={cn("px-2.5 py-1 rounded text-[9px] font-black text-white uppercase tracking-widest", config.color)}>
-                    {config.label}
-                  </span>
-                  <div className="h-px flex-1 bg-slate-200" />
-                </div>
-
-                <div className="bg-white border-l border-t border-slate-200 overflow-hidden">
+              <div key={phase} className="space-y-0">
+                <div className="bg-white border border-slate-400 overflow-hidden">
                   <table className="w-full text-left border-collapse">
                     <thead>
+                      <tr>
+                         <th colSpan={showLocalAccuracy ? 3 : 2} className={cn("px-4 py-2 text-[13px] font-bold text-center border-b border-slate-400 text-slate-900 uppercase tracking-widest", config.color)}>
+                            {config.label}
+                         </th>
+                      </tr>
                       <tr className="bg-slate-50/80">
-                        <th className="px-4 py-2 text-[10px] font-black text-slate-500 uppercase tracking-widest w-32 border-r border-b border-slate-200 bg-slate-50/30">Time</th>
-                        <th className="px-4 py-2 text-[10px] font-black text-slate-500 uppercase tracking-widest border-r border-b border-slate-200 bg-slate-50/30">Description</th>
+                        <th className="px-4 py-2 text-[10px] font-bold text-slate-900 uppercase tracking-widest w-32 border-r border-b border-slate-400 bg-white text-center">Time</th>
+                        <th className="px-4 py-2 text-[10px] font-bold text-slate-900 uppercase tracking-widest border-r border-b border-slate-400 bg-white">Description</th>
                         {showLocalAccuracy && (
-                          <th className="px-4 py-2 text-[10px] font-black text-slate-500 uppercase tracking-widest w-32 border-r border-b border-slate-200 bg-slate-50/30 text-center">Akurasi AI</th>
+                          <th className="px-4 py-2 text-[10px] font-bold text-slate-900 uppercase tracking-widest w-32 border-b border-slate-400 bg-white text-center">Akurasi AI</th>
                         )}
                       </tr>
                     </thead>
