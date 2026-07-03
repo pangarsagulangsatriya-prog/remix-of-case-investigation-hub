@@ -2028,3 +2028,91 @@ const FactTableView: React.FC<{ tableData: any }> = ({ tableData }) => {
     </div>
   );
 };
+
+const FactFlowView: React.FC = () => {
+  const topNodes = [
+    { time: "02.Okt.25", text: "BM 391 PM Check dan\nSdr febri merilis unit\ntersebut" },
+    { time: "06.50", text: "Sdr Rico melakukan P5M di\nPitstop SGE BUMA 2 dan\nmendapat job dengan\nsettingan unit BM 391" },
+    { time: "07.20", text: "Sdr Rico Melakukan P2H LV BM\n391 dan Menemukan Wheel Nut\nIndicator tidak lengkap\ndan diverifikasi oleh pengawas" },
+    { time: "07.30", text: "Menuju ke pit PQRT untuk\nprogress maintenance\nbeberapa unit, setelah itu\nmenuju bigshop untuk\nkeperluan personal" },
+    { time: "11.30", text: "Sdr Rico tiba di\nbigshop, kemudian\nsetelah itu kembali ke\npitstop SGE BUMA 2" },
+    { time: "12.00", text: "Sdr Rico sampai di pitstop\nSGE BUMA 2 dan persiapan\nuntuk melaksanakan sholat\njumat" },
+  ];
+
+  const bottomNodes = [
+    { time: "12.05 Wita", color: "#ffcc00", text: "Sdr Rico dan Syafarudin\nmeninggalkan pitstop SGE BUMA 2\nmenuju Masjid KM 7 menggunakan\nLV BM 391 karena bus pengantaran\nsudah tidak ada di lokasi" },
+    { time: "12.10 Wita", color: "#ff0000", text: "Sdr Rico memasuki KM 12 muatan\nmerasa ada getaran pada steering dan\nbeberapa detik kemudian tyre kiri\ndepan dari BM 391 terlepas dan Sdr\nrico mengarahkan unit ke tepi jalan\nsebelah kiri" },
+    { time: "12.12 Wita", color: "#00b050", text: "Setelah BM 391 berhenti Sdr\nSyafarudin keluar untuk\nmengambil roda dan sdr rico\nmengambil safety cone dan wheel\nchock" },
+    { time: "12.13 Wita", color: "#00b050", text: "Team ERG keluar dari\nbasecamp dan menanyakan\nproblem apa yang terjadi\nkemudian melaporkan ke CCR" },
+  ];
+
+  return (
+    <div className="w-full h-full overflow-auto bg-white p-10 flex justify-center">
+      <div className="w-full max-w-[1100px]">
+        {/* Title */}
+        <div className="mb-10">
+          <p className="text-[15px] font-black text-slate-900">1. OVERVIEW NM LV BM 391</p>
+          <p className="text-[14px] font-bold text-slate-900 border-b-[3px] border-teal-700 pb-1 inline-block mt-0.5">A. Kronologis Incident</p>
+        </div>
+
+        {/* PRA KONTAK Banner */}
+        <div className="flex justify-center mb-6">
+          <div className="bg-[#ffcc00] px-16 py-2 text-slate-900 font-bold text-[13px] shadow-sm">
+            PRA KONTAK 10 Oktober 2025
+          </div>
+        </div>
+
+        {/* TOP ROW */}
+        <div className="relative flex justify-between items-start px-8 mb-2">
+          {/* Dashed horizontal line */}
+          <div className="absolute top-4 left-16 right-16 border-t-[2.5px] border-dashed border-slate-800 z-0" />
+          {/* Arrow right */}
+          <div className="absolute top-[9px] right-[60px] w-3 h-3 border-t-[2.5px] border-r-[2.5px] border-slate-800 rotate-45 z-10" />
+          {/* Vertical drop line on the right */}
+          <div className="absolute top-4 right-[64px] bottom-[-120px] border-r-[2.5px] border-dashed border-slate-800 z-0" />
+
+          {topNodes.map((node, i) => (
+            <div key={i} className="flex flex-col items-center w-[140px] shrink-0 relative z-10">
+              <div className="w-8 h-8 rounded-full mb-3 border-[3px] border-white shadow-md" style={{ backgroundColor: '#ffcc00' }} />
+              <div className="text-center">
+                <p className="font-bold text-[11px] mb-1 text-slate-900">{node.time}</p>
+                <p className="text-[9.5px] whitespace-pre-line text-slate-800 leading-[1.4]">{node.text}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Spacer for bottom row offset */}
+        <div className="h-20" />
+
+        {/* BOTTOM BADGES */}
+        <div className="flex justify-between items-center mb-6 px-8">
+          <div className="bg-[#00b050] px-10 py-2 text-slate-900 font-bold text-[13px] shadow-sm text-center">
+            PASKA KONTAK
+          </div>
+          <div className="bg-[#ff0000] px-10 py-2 text-white font-bold text-[13px] shadow-sm text-center">
+            KONTAK
+          </div>
+        </div>
+
+        {/* BOTTOM ROW (right to left) */}
+        <div className="relative flex flex-row-reverse justify-end items-start gap-4 px-8">
+          {/* Dashed horizontal line */}
+          <div className="absolute top-4 left-[200px] right-16 border-t-[2.5px] border-dashed border-slate-800 z-0" />
+          {/* Arrow left */}
+          <div className="absolute top-[9px] left-[194px] w-3 h-3 border-b-[2.5px] border-l-[2.5px] border-slate-800 -rotate-45 z-10" />
+
+          {bottomNodes.map((node, i) => (
+            <div key={i} className="flex flex-col items-center w-[200px] shrink-0 relative z-10">
+              <div className="w-8 h-8 rounded-full mb-3 border-[3px] border-white shadow-md" style={{ backgroundColor: node.color }} />
+              <div className="text-center">
+                <p className="font-bold text-[11px] mb-1 text-slate-900">{node.time}</p>
+                <p className="text-[9.5px] whitespace-pre-line text-slate-800 leading-[1.4]">{node.text}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
