@@ -236,7 +236,7 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
 }) => {
   const [items, setItems] = useState<ChronologyItem[]>(initialItems);
   const [internalSelectedItemId, setInternalSelectedItemId] = useState<string | null>(null);
-  const [displayFormat, setDisplayFormat] = useState<'timeline' | 'table'>('timeline');
+  const [displayFormat, setDisplayFormat] = useState<'timeline' | 'table' | 'flow'>('timeline');
   
   React.useEffect(() => {
     setItems(initialItems);
@@ -335,6 +335,16 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
                  <TableIcon className="h-3.5 w-3.5" />
                  Table
               </button>
+              <button
+                 onClick={() => setDisplayFormat('flow')}
+                 className={cn(
+                    "px-4 py-1.5 text-[11px] font-bold uppercase tracking-wider rounded-md transition-all flex items-center gap-2",
+                    displayFormat === 'flow' ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
+                 )}
+              >
+                 <Activity className="h-3.5 w-3.5" />
+                 Flow
+              </button>
            </div>
         </div>
 
@@ -353,8 +363,10 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
                  selectedItemId={selectedItemId}
                  onSelectItem={setSelectedItemId}
                />
-            ) : (
+            ) : displayFormat === 'table' ? (
                <FactTableView tableData={tableData} />
+            ) : (
+               <FactFlowView />
             )}
         </div>
 
