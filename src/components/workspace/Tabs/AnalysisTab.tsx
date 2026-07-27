@@ -34,7 +34,8 @@ import {
   Folders,
   Crosshair,
   Shield,
-  Settings
+  Settings,
+  Lock
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -66,7 +67,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useEvidence } from "@/hooks/useEvidence";
 import { AgentState, AgentRunHistory, EvidenceTraceLink } from "@/types/workspace";
-import { FactChronologyModule, TraceabilityPanel } from "@/components/analysis/FactChronologyModule";
+import { FactChronologyModule, TraceabilityPanel, extractStringValue } from "@/components/analysis/FactChronologyModule";
 import { ActorAnalysisModule, ActorDetailPanel } from "@/components/analysis/ActorAnalysisModule";
 import { mockLayers, mockFolders, mockDocuments } from "@/data/mockKnowledgeData";
 import { IplsAnalysisModule } from "@/components/analysis/IplsAnalysisModule";
@@ -152,7 +153,7 @@ const initialAgentsState: AgentState[] = [
              phase: 'pre_contact', 
              time_label: "Minggu 10-41",
              description: "Pada Minggu 10-41, Petugas DMS (Aris) mengidentifikasi riwayat deviasi kelelahan pada profil Operator Saiful dalam proses investigasi dengan pemantauan intensif.", 
-             chronology_text: "Pada Minggu 10-41, Petugas DMS (Aris) mengidentifikasi riwayat deviasi kelelahan pada profil Operator Saiful dalam proses investigasi dengan pemantauan intensif.",
+             chronology_text: "Pada Minggu 10-41, Petugas DMS (Aris) mengidentifikasi riwayat deviasi kelelahan pada profil Operator Saiful, melaporkan temuan tersebut kepada pengawas lapangan, dan melakukan pemantauan intensif selama proses investigasi.",
              confidence: "high",
              status: "completed",
              verification_status: "human_verified",
@@ -704,18 +705,18 @@ const initialAgentsState: AgentState[] = [
      results: {
          actions: [
             { no: 1, layer: "IV.4", hierarchy: "Adm", action: "Perbaikan DMS LV BM 391", pic: "Bimo", due_date: "19 - 10 - 2025", status: "Closed", type: "nc" },
-            { no: 2, layer: "IV.4", hierarchy: "Adm", action: "Identifikasi seluruh DMS untuk memastikan fungsi MDVR berjalan dengan baik", pic: "Bimo", due_date: "19 - 10 - 2025", status: "Open", type: "nc" },
+            { no: 2, layer: "IV.4", hierarchy: "Adm", action: "Mengidentifikasi seluruh DMS, melakukan pengujian fungsi MDVR, memperbaiki DMS yang bermasalah, dan menyerahkan hasil perbaikan kepada tim operasional", pic: "Bimo", due_date: "19 - 10 - 2025", status: "Open", type: "nc" },
             { no: 3, layer: "IV.6", hierarchy: "Adm", action: "Perbaikan GPS LV BM 391", pic: "Bimo", due_date: "19 - 10 - 2025", status: "Closed", type: "nc" },
-            { no: 4, layer: "IV.6", hierarchy: "Adm", action: "Identifikasi seluruh GPS untuk memastikan fungsi berjalan dengan baik", pic: "Bimo", due_date: "19 - 10 - 2025", status: "Open", type: "nc" },
+            { no: 4, layer: "IV.6", hierarchy: "Adm", action: "Mengidentifikasi seluruh GPS, melakukan pengujian fungsi berjalan dengan baik, dan membuat laporan hasil pengujian", pic: "Bimo", due_date: "19 - 10 - 2025", status: "Open", type: "nc" },
             { no: 5, layer: "III.3", hierarchy: "Adm", action: "Pemberian sanksi administrasi kepada Sdr. Rico", pic: "Muh Faishal", due_date: "18 - 10 - 2025", status: "Closed", type: "rc" },
-            { no: 6, layer: "III.3", hierarchy: "Adm", action: "Campaign terkait P2H yang baik dan benar", pic: "Adi Sucipto", due_date: "19 - 10 - 2025", status: "Closed", type: "rc" },
+            { no: 6, layer: "III.3", hierarchy: "Adm", action: "Melakukan campaign terkait P2H yang baik dan benar, memeriksa pemahaman seluruh peserta, dan menetapkan standar baru operasional", pic: "Adi Sucipto", due_date: "19 - 10 - 2025", status: "Closed", type: "rc" },
             { no: 7, layer: "III.3", hierarchy: "Adm", action: "Melakukan RSCS oleh security / FS terkait kualitas P2H pada saat unit dioperasikan", pic: "Sonar H", due_date: "21 - 10 - 2025", status: "Closed", type: "rc" },
-            { no: 8, layer: "III.3", hierarchy: "Adm", action: "Menyerahkan P2H kepada team security dan melakukan verifikasi P2H oleh vendor LV jika terdapat temuan", pic: "Sonar H", due_date: "19 - 10 - 2025", status: "Closed", type: "rc" },
+            { no: 8, layer: "III.3", hierarchy: "Adm", action: "Menyerahkan P2H kepada team security, melakukan verifikasi P2H oleh vendor LV, dan menetapkan area karantina untuk unit bermasalah", pic: "Sonar H", due_date: "19 - 10 - 2025", status: "Closed", type: "rc" },
             { no: 9, layer: "III.10", hierarchy: "Adm", action: "Pemberian surat teguran kepada Sdr. Mulyanto", pic: "Muh Faisal", due_date: "18 - 10 - 2025", status: "Closed", type: "rc" },
             { no: 10, layer: "II.12", hierarchy: "Adm", action: "Pelaksanaan retorque LV H+1 setelah PM check LV", pic: "Sonar H", due_date: "21 - 10 - 2025", status: "Closed", type: "nc" },
             { no: 11, layer: "II.9", hierarchy: "Rek Eng", action: "Trial penggunaan Wheel Nut Indicator Connecting", pic: "Sonar H", due_date: "15 - 11 - 2025", status: "Open", type: "nc" },
             { no: 12, layer: "II.9", hierarchy: "Adm", action: "Melakukan pengecekan nut tyre dan wheel nut indicator pada LV yang beroperasi", pic: "Sonar H", due_date: "13 - 10 - 2025", status: "Closed", type: "nc" },
-            { no: 13, layer: "II.9 & I.2", hierarchy: "Adm", action: "Membuat prosedur penggantian wheel nut dan pelaksanaan retorque (penegasan pelaksanaan dan penetapan tempat untuk pelaksanaan retorque)", pic: "Sonar H", due_date: "30 - 11 - 2025", status: "Open", type: "imp" },
+            { no: 13, layer: "II.9 & I.2", hierarchy: "Adm", action: "Membuat prosedur penggantian wheel nut, menetapkan lokasi retorque, melakukan verifikasi pelaksanaan retorque, dan mengawasi implementasi prosedur", pic: "Sonar H", due_date: "30 - 11 - 2025", status: "Open", type: "imp" },
             { no: 14, layer: "I.2", hierarchy: "Adm", action: "Melakukan revisi form PM Check Final LV dengan menambahkan detail pengecekan wheel nut indicator", pic: "Sonar H", due_date: "31 - 10 - 2025", status: "Closed", type: "imp" }
          ]
       }
@@ -1226,28 +1227,6 @@ export default function AnalysisTab() {
 
                   {globalStatus === 'running' && (
                      <Button 
-                        onClick={pauseChain} 
-                        size="icon"
-                        title="Pause Execution"
-                        className="h-7 w-7 rounded bg-amber-50 hover:bg-amber-100 text-amber-600 border border-amber-200 transition-all shadow-sm"
-                     >
-                        <Pause className="h-3 w-3 fill-current" />
-                     </Button>
-                  )}
-
-                  {globalStatus === 'paused' && (
-                     <Button 
-                        onClick={resumeChain} 
-                        size="icon"
-                        title="Resume Execution"
-                        className="h-7 w-7 rounded bg-emerald-50 hover:bg-emerald-100 text-emerald-600 border border-emerald-200 transition-all shadow-sm"
-                     >
-                        <Play className="h-3 w-3 fill-current" />
-                     </Button>
-                  )}
-
-                  {(globalStatus === 'running' || globalStatus === 'paused') && (
-                     <Button 
                         onClick={stopChain} 
                         size="icon"
                         title="Stop Execution"
@@ -1292,6 +1271,9 @@ export default function AnalysisTab() {
                      
                      const nextAgent = agents[index + 1];
                      const isNextRunning = nextAgent?.status === 'running';
+                     
+                     const runningAgentIdx = agents.findIndex(a => a.status === 'running');
+                     const isLocked = runningAgentIdx !== -1 && index > runningAgentIdx;
                      
                      // Unstructured.io Styling
                      const cardBorder = isRunning ? 'border-indigo-500 bg-indigo-50/40 z-20 overflow-hidden' :
@@ -1394,13 +1376,24 @@ export default function AnalysisTab() {
 
                                        {/* Play Button */}
                                        {!isRunning && (
-                                          <button 
-                                             onClick={(e) => { e.stopPropagation(); runSingleAgent(agent.id, true); }}
-                                             title={isCompleted ? "Rerun Node" : "Run Node"}
-                                             className="h-6 w-6 rounded flex items-center justify-center text-slate-600 hover:bg-slate-50 hover:text-slate-900 shadow-sm border border-slate-200 transition-all bg-white"
-                                          >
-                                             <Play className="h-3 w-3 fill-current" />
-                                          </button>
+                                          isLocked ? (
+                                             <button 
+                                                disabled
+                                                title="Locked"
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="h-6 w-6 rounded flex items-center justify-center text-slate-300 shadow-sm border border-slate-100 bg-slate-50 cursor-not-allowed"
+                                             >
+                                                <Lock className="h-3 w-3" />
+                                             </button>
+                                          ) : (
+                                             <button 
+                                                onClick={(e) => { e.stopPropagation(); runSingleAgent(agent.id, true); }}
+                                                title={isCompleted ? "Rerun Node" : "Run Node"}
+                                                className="h-6 w-6 rounded flex items-center justify-center text-slate-600 hover:bg-slate-50 hover:text-slate-900 shadow-sm border border-slate-200 transition-all bg-white"
+                                             >
+                                                <Play className="h-3 w-3 fill-current" />
+                                             </button>
+                                          )
                                        )}
                                     </div>
                                  </div>
@@ -1651,25 +1644,25 @@ export default function AnalysisTab() {
                                                                        )}
                                                                     >
                                                                        <td className="px-2 py-2 border-r border-b border-slate-400 text-center text-[10px] text-slate-800 bg-white">
-                                                                          {item.no}
+                                                                          {extractStringValue(item.no)}
                                                                        </td>
                                                                        <td className={`px-2 py-2 border-r border-b border-slate-400 text-center text-[10px] ${layerBg} ${layerText}`}>
-                                                                          {item.layer}
+                                                                          {extractStringValue(item.layer)}
                                                                        </td>
                                                                        <td className={`px-2 py-2 border-r border-b border-slate-400 text-center text-[10px] ${layerBg} ${layerText}`}>
-                                                                          {item.hierarchy}
+                                                                          {extractStringValue(item.hierarchy)}
                                                                        </td>
                                                                        <td className="px-3 py-2 border-r border-b border-slate-400 text-[10px] leading-snug bg-white text-slate-800">
-                                                                          {item.action}
+                                                                          {extractStringValue(item.action)}
                                                                        </td>
                                                                        <td className="px-2 py-2 border-r border-b border-slate-400 text-center text-[10px] text-slate-800 bg-white">
-                                                                          {item.pic}
+                                                                          {extractStringValue(item.pic)}
                                                                        </td>
                                                                        <td className="px-2 py-2 border-r border-b border-slate-400 text-center text-[10px] text-slate-800 bg-white whitespace-nowrap">
-                                                                          {item.due_date}
+                                                                          {extractStringValue(item.due_date)}
                                                                        </td>
                                                                        <td className={`px-2 py-2 border-b border-slate-400 text-center text-[10px] font-bold text-slate-900 ${statusBg}`}>
-                                                                          {item.status}
+                                                                          {extractStringValue(item.status)}
                                                                        </td>
                                                                     </tr>
                                                                  );
@@ -1723,7 +1716,7 @@ export default function AnalysisTab() {
                      <div className="w-[420px] shrink-0 border-l border-slate-200 bg-white shadow-[-10px_0_30px_-15px_rgba(0,0,0,0.1)] z-20 flex flex-col animate-in slide-in-from-right duration-300">
                         <TraceabilityPanel
                            key={item.id}
-                           item={item}
+                           item={{ ...item, agentId: 'peepo' }}
                            onClose={() => setSelectedRowId(null)}
                            onUpdateStatus={(status) => {
                               setAgents(prev => prev.map(a => {
@@ -1795,6 +1788,7 @@ export default function AnalysisTab() {
                         item = {
                            id: found.id || selectedRowId,
                            chronology_text: found.action,
+                           agentId: selectedAgentId,
                            breakdown: {
                               subject: { value: found.pic },
                               time: { value: found.due_date }

@@ -796,28 +796,6 @@ export default function ExtractionTab() {
         <div className={cn("shrink-0 bg-white transition-all duration-500 ease-out", activeFile ? "p-3 border-b border-slate-200" : "p-5")}>
           <div className={cn("flex flex-wrap items-center gap-3 w-full", activeFile ? "justify-between" : "justify-between")}>
             <div className={cn("flex items-center gap-3 min-w-[200px]", activeFile ? "w-full" : "flex-1")}>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button 
-                    id="tour-step-2-upload"
-                    className="h-9 bg-white hover:bg-slate-50 text-slate-900 border border-slate-200 font-black px-4 rounded-md text-[10px] uppercase tracking-widest gap-1.5 shrink-0 shadow-sm transition-all"
-                  >
-                    <Plus className="h-4 w-4 text-slate-500" /> TAMBAH
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-48 rounded-md shadow-lg border-slate-200">
-                  <DropdownMenuItem onClick={() => setIsCreateFolderModalOpen(true)} className="text-[11px] font-bold py-2.5 cursor-pointer">
-                    <FolderPlus className="h-4 w-4 mr-2.5 text-emerald-600" /> Buat Folder
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => setIsUploadModalOpen(true)} className="text-[11px] font-bold py-2.5 cursor-pointer">
-                    <FileUp className="h-4 w-4 mr-2.5 text-slate-500" /> Upload File
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setIsUploadModalOpen(true)} className="text-[11px] font-bold py-2.5 cursor-pointer">
-                    <FolderUp className="h-4 w-4 mr-2.5 text-slate-500" /> Upload Folder
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
 
               <div id="tour-step-3-search" className="relative flex-1 max-w-[400px] flex items-center gap-2">
                 <div className="relative flex-1">
@@ -906,13 +884,6 @@ export default function ExtractionTab() {
                   <Box className="h-6 w-6 text-slate-300" />
                 </div>
                 <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">No files yet</h3>
-                <Button 
-                  onClick={() => setIsUploadModalOpen(true)}
-                  variant="outline"
-                  className="h-9 border-slate-200 text-slate-500 text-[10px] font-black uppercase tracking-widest rounded-[4px] hover:bg-slate-50"
-                >
-                  <Upload className="h-3.5 w-3.5 mr-2" /> Upload
-                </Button>
               </div>
             )}
           </div>

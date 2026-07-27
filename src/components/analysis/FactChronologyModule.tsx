@@ -48,6 +48,24 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
+export const extractStringValue = (val: any, fallback = "-"): string => {
+  if (val === null || val === undefined) return fallback;
+  if (typeof val === "string") return val;
+  if (typeof val === "number" || typeof val === "boolean") return String(val);
+  if (typeof val === "object") {
+    if ("value" in val && val.value !== val) return extractStringValue(val.value, fallback);
+    if ("label" in val) return extractStringValue(val.label, fallback);
+    if ("name" in val) return extractStringValue(val.name, fallback);
+    if ("text" in val) return extractStringValue(val.text, fallback);
+    try {
+      return JSON.stringify(val);
+    } catch {
+      return fallback;
+    }
+  }
+  return String(val);
+};
+
 export type ChronologyPhase = "pre_contact" | "contact" | "post_contact";
 export type VerificationStatus = "ai_generated" | "human_verified" | "needs_review" | "partially_supported" | "unsupported";
 
@@ -130,6 +148,7 @@ export interface ChronologyItem {
   support_strength?: number;
   confidence?: "high" | "medium" | "low";
   status?: "completed" | "draft" | "reviewed";
+  agentId?: string;
   breakdown?: {
     subject?: SPOKField;
     action?: SPOKField;
@@ -385,7 +404,7 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
       {selectedItem && (
         <div className="w-[420px] shrink-0 border-l border-slate-200 h-full animate-in slide-in-from-right duration-300">
           <TraceabilityPanel 
-            item={selectedItem}
+            item={{ ...selectedItem, agentId: 'fact' }}
             onClose={() => setSelectedItemId(null)}
             onUpdateStatus={(newStatus) => {
               setItems(prev => {
@@ -805,21 +824,22 @@ const renderGroupedCitations = (citations: any[]) => {
 
 // ── Highlight 5W1H Substrings helper ────────────────────────────────────────
 
-const renderHighlightedStatement = (text: string, item: ChronologyItem, activeDimension: string | null, setActiveDimension: (dim: string | null) => void) => {
+const renderHighlightedStatement = (rawText: any, item: ChronologyItem, activeDimension: string | null, setActiveDimension: (dim: string | null) => void) => {
+  const text = extractStringValue(rawText, "");
   const breakdown = item.breakdown || {};
   
   const tagColor = "bg-slate-100 text-slate-800 border-slate-300/80";
   const humanTagColor = "bg-blue-50 text-blue-700 border-blue-200/85";
 
   const dimensions = [
-    { label: "WAKTU", value: breakdown.time || item.time_label, originalValue: (breakdown as any).time_original_value || breakdown.time || item.time_label, isHuman: !!(breakdown as any).time_annotated_by_human },
-    { label: "PIHAK", value: breakdown.subject?.value || breakdown.actor, originalValue: breakdown.subject?.original_value || breakdown.subject?.value || breakdown.actor, isHuman: !!(breakdown.subject as any)?.annotated_by_human },
-    { label: "OBJEK", value: breakdown.object?.value || (breakdown.location as any)?.value, originalValue: breakdown.object?.original_value || (breakdown.location as any)?.original_value || breakdown.object?.value || (breakdown.location as any)?.value, isHuman: !!(breakdown.location as any)?.annotated_by_human || !!(breakdown.object as any)?.annotated_by_human },
-    { label: "KEJADIAN", value: breakdown.action?.value, originalValue: breakdown.action?.original_value || breakdown.action?.value, isHuman: !!(breakdown.action as any)?.annotated_by_human },
-    { label: "KONTEKS", value: breakdown.condition?.value, originalValue: breakdown.condition?.original_value || breakdown.condition?.value, isHuman: !!(breakdown.condition as any)?.annotated_by_human },
-    { label: "SUMBER", value: breakdown.source_system?.value, originalValue: breakdown.source_system?.original_value || breakdown.source_system?.value, isHuman: !!(breakdown.source_system as any)?.annotated_by_human },
+    { label: "WAKTU", value: extractStringValue(breakdown.time?.value || breakdown.time || item.time_label), originalValue: extractStringValue((breakdown as any).time_original_value || breakdown.time || item.time_label), isHuman: !!(breakdown as any).time_annotated_by_human },
+    { label: "PIHAK", value: extractStringValue(breakdown.subject?.value || breakdown.subject || breakdown.actor), originalValue: extractStringValue(breakdown.subject?.original_value || breakdown.subject?.value || breakdown.actor), isHuman: !!(breakdown.subject as any)?.annotated_by_human },
+    { label: "OBJEK", value: extractStringValue(breakdown.object?.value || breakdown.object || (breakdown.location as any)?.value), originalValue: extractStringValue(breakdown.object?.original_value || (breakdown.location as any)?.original_value || breakdown.object?.value || (breakdown.location as any)?.value), isHuman: !!(breakdown.location as any)?.annotated_by_human || !!(breakdown.object as any)?.annotated_by_human },
+    { label: "KEJADIAN", value: extractStringValue(breakdown.action?.value || breakdown.action), originalValue: extractStringValue(breakdown.action?.original_value || breakdown.action?.value), isHuman: !!(breakdown.action as any)?.annotated_by_human },
+    { label: "KONTEKS", value: extractStringValue(breakdown.condition?.value || breakdown.condition), originalValue: extractStringValue(breakdown.condition?.original_value || breakdown.condition?.value), isHuman: !!(breakdown.condition as any)?.annotated_by_human },
+    { label: "SUMBER", value: extractStringValue(breakdown.source_system?.value || breakdown.source_system), originalValue: extractStringValue(breakdown.source_system?.original_value || breakdown.source_system?.value), isHuman: !!(breakdown.source_system as any)?.annotated_by_human },
     { label: "STATUS", value: item.status === "human_verified" ? "Terkonfirmasi" : "Menunggu Validasi", originalValue: item.status === "human_verified" ? "Terkonfirmasi" : "Menunggu Validasi", isHuman: item.annotated_by_human },
-    { label: "DAMPAK", value: (breakdown.why as any)?.value, originalValue: (breakdown.why as any)?.original_value || (breakdown.why as any)?.value, isHuman: !!(breakdown.why as any)?.annotated_by_human },
+    { label: "DAMPAK", value: extractStringValue((breakdown.why as any)?.value || breakdown.why), originalValue: extractStringValue((breakdown.why as any)?.original_value || (breakdown.why as any)?.value), isHuman: !!(breakdown.why as any)?.annotated_by_human },
     { label: "TINDAKAN", value: "Proses Investigasi", originalValue: "Proses Investigasi", isHuman: false }
   ];
 
@@ -1110,6 +1130,15 @@ export const TraceabilityPanel: React.FC<{
   onEdit: () => void,
   onUpdateChronologyText?: (newText: string) => void
 }> = ({ item, onClose, onUpdateBreakdown, onUpdateChronologyText }) => {
+  let statementWording = "Pernyataan Kronologi";
+  if (item.agentId === 'peepo') {
+    statementWording = "Pernyataan PEEPO";
+  } else if (item.agentId === 'ipls') {
+    statementWording = "Pernyataan IPLS";
+  } else if (item.agentId === 'prev') {
+    statementWording = "Pernyataan Pencegahan";
+  }
+
   const [isEditingStatement, setIsEditingStatement] = useState(false);
   const [segments, setSegments] = useState<Segment[]>([]);
 
@@ -1218,19 +1247,65 @@ export const TraceabilityPanel: React.FC<{
   ];
 
   const w5h1 = [
-    { label: "WAKTU", value: breakdown.time || item.time_label, citations: getDummyCitations("WAKTU") },
-    { label: "PIHAK", value: breakdown.subject?.value || breakdown.actor || "-", citations: breakdown.subject?.citations?.length ? breakdown.subject?.citations : getDummyCitations("PIHAK") },
-    { label: "OBJEK", value: breakdown.object?.value || breakdown.location?.value || "-", citations: getDummyCitations("OBJEK") },
-    { label: "KEJADIAN", value: breakdown.action?.value || item.chronology_text, citations: whatCitations.length > 0 ? whatCitations : getDummyCitations("KEJADIAN") },
-    { label: "KONTEKS", value: breakdown.condition?.value || "-", citations: breakdown.condition?.citations?.length ? breakdown.condition?.citations : getDummyCitations("KONTEKS") },
-    { label: "SUMBER", value: breakdown.source_system?.value || "DMS & Kamera Pengawas", citations: getDummyCitations("SUMBER") },
-    { label: "STATUS", value: item.status === "human_verified" ? "Terkonfirmasi" : "Menunggu Validasi", citations: getDummyCitations("STATUS") },
-    { label: "DAMPAK", value: breakdown.why?.value || "Risiko Operasional & Keselamatan", citations: getDummyCitations("DAMPAK") },
-    { label: "TINDAKAN", value: "Proses Investigasi", citations: getDummyCitations("TINDAKAN") }
+    { label: "WAKTU", value: extractStringValue(breakdown.time?.value || breakdown.time || item.time_label), citations: getDummyCitations("WAKTU") },
+    { label: "PIHAK", value: extractStringValue(breakdown.subject?.value || breakdown.subject || breakdown.actor), citations: breakdown.subject?.citations?.length ? breakdown.subject?.citations : getDummyCitations("PIHAK") },
+    { label: "OBJEK", value: extractStringValue(breakdown.object?.value || breakdown.object || breakdown.location?.value || breakdown.location), citations: getDummyCitations("OBJEK") },
+    { label: "KEJADIAN", value: extractStringValue(breakdown.action?.value || breakdown.action || item.chronology_text), citations: whatCitations.length > 0 ? whatCitations : getDummyCitations("KEJADIAN") },
+    { label: "KONTEKS", value: extractStringValue(breakdown.condition?.value || breakdown.condition), citations: breakdown.condition?.citations?.length ? breakdown.condition?.citations : getDummyCitations("KONTEKS") },
+    { label: "SUMBER", value: extractStringValue(breakdown.source_system?.value || breakdown.source_system || "DMS & Kamera Pengawas"), citations: getDummyCitations("SUMBER") },
+    { label: "STATUS", value: extractStringValue(item.status === "human_verified" ? "Terkonfirmasi" : "Menunggu Validasi"), citations: getDummyCitations("STATUS") },
+    { label: "DAMPAK", value: extractStringValue(breakdown.why?.value || breakdown.why || "Risiko Operasional & Keselamatan"), citations: getDummyCitations("DAMPAK") },
+    { label: "TINDAKAN", value: extractStringValue("Proses Investigasi"), citations: getDummyCitations("TINDAKAN") }
   ];
 
-  const accuracyResult = calculateItemAccuracy(item);
-  const { accuracy: accuracyPercent, validFieldsCount: totalValidFields, fields: accuracyFields } = accuracyResult;
+  const generateEventsFromText = (text: string) => {
+    let normalized = text
+      .replace(/^identifikasi\b/i, 'Mengidentifikasi')
+      .replace(/^perbaikan\b/i, 'Memperbaiki')
+      .replace(/^pemberian\b/i, 'Memberikan')
+      .replace(/^pelaksanaan\b/i, 'Melakukan')
+      .replace(/^trial\b/i, 'Melakukan trial')
+      .replace(/^campaign\b/i, 'Melakukan campaign');
+
+    const verbRegex = /^(membuat|menetapkan|memeriksa|memperbaiki|memasang|menguji|memverifikasi|menyerahkan|mengawasi|melakukan|mengidentifikasi|memberikan)\b/i;
+    
+    const rawParts = normalized.split(/,\s*dan\s+|\s+dan\s+|,\s*/i);
+    const events: string[] = [];
+    
+    let currentEvent = "";
+    for (let i = 0; i < rawParts.length; i++) {
+      let part = rawParts[i].trim();
+      if (!part) continue;
+      
+      if (i === 0) {
+        currentEvent = part;
+      } else {
+        if (verbRegex.test(part)) {
+          events.push(currentEvent);
+          currentEvent = part;
+        } else {
+          currentEvent += " dan " + part;
+        }
+      }
+    }
+    if (currentEvent) {
+      events.push(currentEvent);
+    }
+
+    return events.map((ev, i) => {
+      let clean = ev.trim();
+      clean = clean.charAt(0).toUpperCase() + clean.slice(1);
+      if (!clean.endsWith('.')) clean += '.';
+      return {
+        label: `EVENT ${i + 1}`,
+        value: clean,
+        citations: whatCitations.length > 0 ? whatCitations : getDummyCitations(`EVENT ${i + 1}`),
+        evidence_count: whatCitations.length > 0 ? whatCitations.length : 2
+      };
+    });
+  };
+
+  const tableRows = generateEventsFromText(item.chronology_text);
 
   const [showDebugPanel, setShowDebugPanel] = useState(false);
 
@@ -1244,7 +1319,7 @@ export const TraceabilityPanel: React.FC<{
               <TableIcon className="h-3.5 w-3.5" />
             </div>
             <div>
-              <h3 className="text-[13px] font-bold text-slate-900 uppercase tracking-wider leading-none">Dekomposisi Fakta</h3>
+              <h3 className="text-[13px] font-bold text-slate-900 uppercase tracking-wider leading-none">Detail Analisis</h3>
               <p className="text-[10px] text-slate-500 uppercase tracking-widest mt-1">Analisis Bukti Investigasi</p>
             </div>
           </div>
@@ -1255,257 +1330,15 @@ export const TraceabilityPanel: React.FC<{
           </div>
         </div>
 
-        {/* AI Metrics Bar */}
-        <TooltipProvider delayDuration={150}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="bg-slate-50 border border-slate-200 p-3 rounded-none mb-1 flex flex-col gap-2 cursor-help group hover:bg-slate-100 transition-colors">
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="font-mono text-slate-500 font-bold uppercase tracking-wider group-hover:text-slate-700">Akurasi Ekstraksi AI</span>
-                  <span className={cn(
-                    "font-mono font-black px-1.5 py-0.5 border border-blue-200/50 transition-colors",
-                    accuracyPercent >= 90 ? "text-emerald-600 bg-emerald-50/80 border-emerald-200/50 group-hover:bg-emerald-100" : 
-                    accuracyPercent >= 70 ? "text-blue-600 bg-blue-50/80 border-blue-200/50 group-hover:bg-blue-100" :
-                    accuracyPercent >= 40 ? "text-amber-600 bg-amber-50/80 border-amber-200/50 group-hover:bg-amber-100" :
-                    "text-rose-600 bg-rose-50/80 border-rose-200/50 group-hover:bg-rose-100"
-                  )}>{accuracyPercent}%</span>
-                </div>
-                <div className="w-full bg-slate-200 h-1.5 rounded-none overflow-hidden flex">
-                  <div 
-                    className={cn(
-                      "h-full transition-all duration-500 ease-out",
-                      accuracyPercent >= 90 ? "bg-emerald-500" : 
-                      accuracyPercent >= 70 ? "bg-blue-500" :
-                      accuracyPercent >= 40 ? "bg-amber-500" :
-                      "bg-rose-500"
-                    )}
-                    style={{ width: `${accuracyPercent}%` }} 
-                  />
-                </div>
-                <div className="flex items-center justify-between text-[9px] font-mono text-slate-400 mt-0.5 uppercase tracking-wide">
-                  <span>Hybrid Accuracy Scoring</span>
-                  <span>Lexical + Semantic ({totalValidFields} Atribut)</span>
-                </div>
-              </div>
-            </TooltipTrigger>
-            <TooltipContent side="left" align="start" className="w-[340px] bg-slate-900 text-slate-300 text-[10.5px] p-3 font-sans rounded-none shadow-xl flex flex-col gap-2 z-50 border border-slate-700">
-              <div className="text-white font-bold text-[11px] mb-1 flex items-center gap-2">
-                <Brain className="w-3.5 h-3.5 text-blue-400" />
-                Hybrid Accuracy Engine
-              </div>
-              <p className="leading-relaxed">
-                Sistem menggunakan <strong>Hybrid Scoring</strong> yang menggabungkan Normalized Levenshtein Similarity, Entity-Aware Matching, dan perbandingan semantik.
-              </p>
-              <div className="mt-1 flex flex-col gap-1.5 p-2 bg-slate-800/50 border border-slate-700">
-                <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Identik / Sangat Mirip</span>
-                  <span className="font-mono text-[9px] text-slate-400">Score ≥ 75%</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>Berbeda Parsial</span>
-                  <span className="font-mono text-[9px] text-slate-400">Score ≥ 40%</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>Berbeda Signifikan</span>
-                  <span className="font-mono text-[9px] text-slate-400">Score &lt; 40%</span>
-                </div>
-              </div>
-              <div className="p-2 bg-blue-500/10 border border-blue-500/20 text-blue-200 mt-1">
-                <p className="text-[9.5px] leading-relaxed">
-                  <strong>Catatan:</strong> Levenshtein digunakan untuk membaca kedekatan teks. Untuk nama orang, unit, lokasi, company, dan entitas penting lain, sistem juga memeriksa kecocokan entitas. Jika teks terlihat mirip tetapi merujuk ke entitas berbeda, hasil tetap dihitung sebagai Berbeda Signifikan.
-                </p>
-              </div>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-
-        {/* Debug Inspection Toggle */}
-        <button
-          onClick={() => setShowDebugPanel(!showDebugPanel)}
-          className="w-full flex items-center justify-center gap-1.5 py-1.5 text-[9px] font-bold text-slate-400 hover:text-blue-600 hover:bg-blue-50/50 transition-colors uppercase tracking-wider border border-transparent hover:border-blue-200 rounded-none mb-2"
-        >
-          <Brain className="h-3 w-3" />
-          {showDebugPanel ? "Tutup detail kalkulasi" : "🧠 Lihat detail kalkulasi"}
-        </button>
-
-        {/* Debug Inspection Panel */}
-        {showDebugPanel && (
-          <div className="border border-slate-200 bg-slate-50/80 rounded-none mb-3 overflow-hidden animate-in slide-in-from-top duration-200">
-            <div className="px-3 py-2 bg-slate-900 flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <Brain className="h-3 w-3 text-blue-400" />
-                <span className="text-[9px] font-black text-white uppercase tracking-widest">Hybrid Engine Debug v1.0</span>
-              </div>
-              <span className="text-[8px] font-mono text-slate-400">{accuracyResult.calculatedAt.slice(0, 19)}</span>
-            </div>
-            
-            {/* Item metadata */}
-            <div className="px-3 py-2 border-b border-slate-200 bg-white">
-              <div className="grid grid-cols-2 gap-2 text-[9px]">
-                <div>
-                  <span className="font-bold text-slate-400 uppercase tracking-wider">Item ID</span>
-                  <div className="font-mono text-slate-700 truncate" title={item.id}>{item.id}</div>
-                </div>
-                <div>
-                  <span className="font-bold text-slate-400 uppercase tracking-wider">Global Accuracy</span>
-                  <div className="font-mono font-black text-slate-900">{accuracyPercent}%</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Hybrid Details Table */}
-            <div className="overflow-x-auto">
-              <table className="w-full text-[8px] border-collapse min-w-[600px]">
-                <thead>
-                  <tr className="bg-slate-100 border-b border-slate-200">
-                    <th className="px-2 py-1.5 text-left font-black text-slate-500 uppercase tracking-wider">Atribut</th>
-                    <th className="px-2 py-1.5 text-center font-black text-slate-500 uppercase tracking-wider">Lexical</th>
-                    <th className="px-2 py-1.5 text-center font-black text-slate-500 uppercase tracking-wider">Entity</th>
-                    <th className="px-2 py-1.5 text-center font-black text-slate-500 uppercase tracking-wider">Semantic</th>
-                    <th className="px-2 py-1.5 text-center font-black text-slate-500 uppercase tracking-wider">Crit</th>
-                    <th className="px-2 py-1.5 text-right font-black text-slate-500 uppercase tracking-wider">Cap</th>
-                    <th className="px-2 py-1.5 text-right font-black text-slate-900 uppercase tracking-wider">Final%</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {accuracyFields.map((field, idx) => (
-                    <tr key={idx} className={cn("border-b border-slate-100", field.isAnnotated ? "bg-white" : "bg-slate-50/50")}>
-                      <td className="px-2 py-1.5 font-mono font-bold text-slate-700">
-                        {field.label}
-                        <div className="text-[7px] text-slate-400 font-sans mt-0.5" title={field.reason}>{field.reason.substring(0, 30)}...</div>
-                      </td>
-                      <td className="px-2 py-1.5 text-center font-mono text-slate-600">
-                        {field.isAnnotated ? `${field.lexicalSimilarity}%` : '-'}
-                      </td>
-                      <td className="px-2 py-1.5 text-center">
-                        {field.entityType ? (
-                          <div className="flex flex-col items-center gap-0.5">
-                            <span className="text-[7px] font-black uppercase text-blue-600 bg-blue-50 px-1">{field.entityType}</span>
-                            <span className={cn("text-[7px] font-mono", 
-                              field.entityMatch === 'same_entity' ? 'text-emerald-600' :
-                              field.entityMatch === 'different_entity' ? 'text-rose-600 font-bold' : 'text-amber-600'
-                            )}>{field.entityMatch || '-'}</span>
-                          </div>
-                        ) : '-'}
-                      </td>
-                      <td className="px-2 py-1.5 text-center font-mono text-slate-600">
-                        {field.semanticSimilarity !== null ? `${field.semanticSimilarity}%` : '-'}
-                      </td>
-                      <td className="px-2 py-1.5 text-center">
-                        {field.criticalMismatch ? (
-                          <span className="text-rose-600 font-black">YES</span>
-                        ) : (
-                          <span className="text-slate-300">-</span>
-                        )}
-                      </td>
-                      <td className="px-2 py-1.5 text-right font-mono text-slate-500">
-                        {field.scoreCap !== null ? `≤${field.scoreCap}` : '-'}
-                      </td>
-                      <td className="px-2 py-1.5 text-right">
-                        <span className={cn(
-                          "font-mono font-black",
-                          field.similarityPercent >= 75 ? "text-emerald-600" :
-                          field.similarityPercent >= 40 ? "text-amber-600" :
-                          "text-rose-600"
-                        )}>{field.fieldScore}%</span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Raw payload */}
-            <details className="border-t border-slate-200 bg-white">
-              <summary className="px-3 py-1.5 text-[8px] font-bold text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-slate-100 select-none">
-                Raw Calculation Payload (JSON)
-              </summary>
-              <div className="px-3 py-2 bg-slate-900 overflow-auto max-h-[200px]">
-                <pre className="text-[7px] text-slate-300 font-mono whitespace-pre-wrap leading-relaxed">{JSON.stringify(accuracyResult, null, 2)}</pre>
-              </div>
-            </details>
-          </div>
-        )}
-
         <div className="bg-slate-50/50 p-3 border border-slate-200 rounded-none mb-1 group/stmt">
           <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[9px] font-mono font-bold uppercase tracking-widest text-slate-400">Pernyataan Kronologi</span>
-            {!isEditingStatement && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="opacity-0 group-hover/stmt:opacity-100 h-5 w-5 p-0 hover:bg-slate-200 rounded-none transition-opacity"
-                onClick={() => {
-                  const initialSegments = getStatementSegments(item.chronology_text, item);
-                  setSegments(initialSegments);
-                  setIsEditingStatement(true);
-                }}
-              >
-                <Pencil className="h-3 w-3 text-slate-400 hover:text-blue-600" />
-              </Button>
-            )}
+            <span className="text-[9px] font-mono font-bold uppercase tracking-widest text-slate-400">{statementWording}</span>
           </div>
-          {isEditingStatement ? (
-            <div className="flex flex-col gap-2 mt-1">
-              <div className="flex flex-wrap items-center leading-[2.6] text-slate-700 text-[12.5px] font-sans p-2 border border-slate-200 bg-white min-h-[80px]">
-                {segments.map((seg, idx) => {
-                  if (seg.type === 'label') {
-                    return (
-                      <span 
-                        key={idx} 
-                        className={cn(
-                          "inline-block px-2 py-0.5 border font-sans font-semibold mx-1 my-0.5 rounded-none align-middle text-[12.5px] leading-relaxed cursor-not-allowed select-none", 
-                          seg.color
-                        )}
-                      >
-                        {seg.value}
-                      </span>
-                    );
-                  } else {
-                    return (
-                      <span
-                        key={idx}
-                        contentEditable
-                        suppressContentEditableWarning
-                        onBlur={(e) => handleTextSegmentChange(idx, e.currentTarget.innerText)}
-                        className="inline-block text-[12.5px] text-slate-800 font-normal leading-relaxed border-b border-dashed border-slate-300 focus:border-blue-600 focus:outline-none bg-slate-50/50 hover:bg-slate-100/70 py-0.5 px-1 font-sans mx-0.5 min-w-[20px] outline-none"
-                      >
-                        {seg.value}
-                      </span>
-                    );
-                  }
-                })}
-              </div>
-              <div className="flex items-center gap-1.5 justify-end">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    const newText = segments.map(s => s.value).join('');
-                    if (onUpdateChronologyText) {
-                      onUpdateChronologyText(newText);
-                    }
-                    setIsEditingStatement(false);
-                  }}
-                  className="h-7 px-3 text-[10px] font-bold uppercase tracking-wider bg-blue-600 text-white hover:bg-blue-700 rounded-none flex items-center gap-1 shadow-sm"
-                >
-                  <Check className="h-3 w-3" /> Save
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setIsEditingStatement(false)}
-                  className="h-7 px-3 text-[10px] font-bold uppercase tracking-wider text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-none flex items-center gap-1 border border-slate-200"
-                >
-                  <X className="h-3 w-3" /> Discard
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div className="mt-1">
-              {renderHighlightedStatement(item.chronology_text, item, activeDimension, setActiveDimension)}
-            </div>
-          )}
+          <div className="mt-1">
+            <p className="text-[12.5px] text-slate-700 font-sans leading-relaxed">
+              {item.chronology_text}
+            </p>
+          </div>
         </div>
       </div>
 
@@ -1525,8 +1358,8 @@ export const TraceabilityPanel: React.FC<{
               </th>
             </tr>
           </thead>
-          <tbody>
-            {w5h1.map((row) => {
+          <tbody className="bg-white">
+            {tableRows.map((row) => {
               const isExpanded = !!expandedRows[row.label];
               const hasCitations = row.citations && row.citations.length > 0;
               const isDimmed = activeDimension !== null && activeDimension !== row.label;
@@ -1632,7 +1465,7 @@ export const TraceabilityPanel: React.FC<{
                         </td>
                         <td className="px-3 py-3 align-middle text-[12.5px] text-slate-800 font-normal leading-normal">
                           <div className="flex items-center justify-between group/cell min-h-[24px]">
-                            <span className="pr-4">{row.value}</span>
+                            <span className="pr-4">{extractStringValue(row.value)}</span>
                             {row.label !== "STATUS" && row.label !== "TINDAKAN" && (
                               <Button
                                 variant="ghost"

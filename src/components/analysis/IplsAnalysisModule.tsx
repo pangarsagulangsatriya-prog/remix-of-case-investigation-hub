@@ -139,9 +139,6 @@ export function IplsAnalysisModule({ data, onSelectRow, selectedRowId, onSync }:
                               className={`flex flex-col cursor-pointer group relative p-2 rounded-md transition-all ${isSelected ? 'bg-slate-100/80 ring-1 ring-slate-300' : 'hover:bg-slate-50/50'}`}
                               onClick={() => onSelectRow ? onSelectRow(item.id) : handleEditClick(layer.id, item)}
                             >
-                               <div className="absolute -top-1 -right-1 bg-slate-900 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-md z-10">
-                                 <Pencil className="h-3 w-3" />
-                               </div>
                               <div className={`text-[10px] font-bold text-center py-1.5 px-2 rounded-sm border shadow-sm mb-1.5 transition-colors ${bgColor} ${textColor}`}>
                                 {num}. {item.label}
                               </div>
