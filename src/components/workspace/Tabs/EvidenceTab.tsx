@@ -859,26 +859,10 @@ export default function EvidenceTab() {
                  <div className="flex items-center bg-white border border-slate-200 rounded-[6px] divide-x divide-slate-200 shadow-sm overflow-hidden shrink-0">
                     <div className="flex flex-col items-center justify-center py-1.5 px-3 min-w-[75px] bg-white">
                       <span className="text-[15px] font-black text-rose-600 leading-none mb-0.5">
-                        {1 + batches.filter(b => b.type === "Folder").length + filteredFiles.filter((f: any) => !batches.find(b => b.id === f.batch_id && b.type === "Folder")).length}
-                      </span>
-                      <span className="text-[8px] font-bold text-slate-400 uppercase tracking-[0.15em] leading-none">
-                        Total
-                      </span>
-                    </div>
-                    <div className="flex flex-col items-center justify-center py-1.5 px-3 min-w-[75px] bg-white">
-                      <span className="text-[15px] font-black text-slate-800 leading-none mb-0.5">
-                        1
-                      </span>
-                      <span className="text-[8px] font-bold text-slate-400 uppercase tracking-[0.15em] leading-none">
-                        Utama
-                      </span>
-                    </div>
-                    <div className="flex flex-col items-center justify-center py-1.5 px-3 min-w-[75px] bg-white">
-                      <span className="text-[15px] font-black text-[#0f62fe] leading-none mb-0.5">
                         {batches.filter(b => b.type === "Folder").length + filteredFiles.filter((f: any) => !batches.find(b => b.id === f.batch_id && b.type === "Folder")).length}
                       </span>
                       <span className="text-[8px] font-bold text-slate-400 uppercase tracking-[0.15em] leading-none">
-                        Pendukung
+                        Total
                       </span>
                     </div>
                  </div>
@@ -901,41 +885,6 @@ export default function EvidenceTab() {
 
           <div className="space-y-0">
 
-            {/* BUKTI UTAMA / DATA CCR */}
-            <div className="mt-2">
-              <div className="px-4 py-2.5 flex items-center justify-between bg-slate-100/80 border-y border-slate-200 shadow-sm">
-                <div className="flex items-center gap-2">
-                  <Database className="h-4 w-4 text-slate-500" />
-                  <TooltipProvider delayDuration={100}>
-                    <Tooltip>
-                      <TooltipTrigger className="cursor-help">
-                        <span className="text-[11px] font-bold text-slate-700 uppercase tracking-widest border-b border-dashed border-slate-400">DATA CCR</span>
-                      </TooltipTrigger>
-                      <TooltipContent side="right" className="max-w-[250px] p-3 text-xs leading-relaxed bg-white text-slate-700 border-slate-200 shadow-md">
-                        <p><strong>CCR (Central Control Room)</strong> adalah pusat kendali operasi. Data ini otomatis disinkronisasi dari sistem _dispatch_ pusat dan dianggap valid sebagai bukti utama investigasi.</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-                <span className="text-[11px] font-bold text-slate-500 bg-slate-200/50 px-2 py-0.5 rounded-full">{primaryEvidences.length}</span>
-              </div>
-              <div className="bg-white">
-                {primaryEvidences.map((evidence) => (
-                  <FileRow 
-                    key={evidence.id}
-                    file={evidence} 
-                    isSelected={selectedFile?.id === evidence.id}
-                    onSelect={() => setSelectedFile(selectedFile?.id === evidence.id ? null : evidence)}
-                    onMove={handleMoveFile}
-                    onDelete={() => handleDeletePrimaryEvidence(evidence.id)}
-                    onRerun={() => {}}
-                    onOpenHistory={() => {}}
-                    batches={batches}
-                    onHoverChange={setHoveredFile}
-                  />
-                ))}
-              </div>
-            </div>
 
             {/* BUKTI PENDUKUNG */}
             <div className="mt-6">
