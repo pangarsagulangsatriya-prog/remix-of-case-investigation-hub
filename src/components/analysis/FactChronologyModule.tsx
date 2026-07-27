@@ -312,19 +312,26 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
     )}>
       <div className="flex-1 flex flex-col min-w-0 h-full relative">
 
-        <div className="flex-none px-6 py-4 border-b border-slate-200 bg-white flex justify-between items-center z-10 shadow-sm">
-           <h3 className="text-sm font-bold text-slate-800">Fakta & Kronologi</h3>
-           <div className="flex bg-slate-100 rounded-lg p-1 border border-slate-200">
-              <button
-                 onClick={() => setDisplayFormat('timeline')}
-                 className={cn(
-                    "px-4 py-1.5 text-[11px] font-bold uppercase tracking-wider rounded-md transition-all flex items-center gap-2",
-                    displayFormat === 'timeline' ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
-                 )}
-              >
-                 <History className="h-3.5 w-3.5" />
-                 Timeline
-              </button>
+        <div className="shrink-0 p-4 border-b border-slate-200 bg-white flex flex-col gap-4 z-10 shadow-sm">
+           <div className="flex items-center justify-between">
+              <div>
+                 <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                    <History className="h-4 w-4 text-slate-500" />
+                    FAKTA & KRONOLOGI
+                 </h2>
+                 <p className="text-[11px] text-slate-500 mt-1">Rangkaian peristiwa, bukti objektif, dan verifikasi silang multi-sumber.</p>
+              </div>
+              <div className="flex bg-slate-100 rounded-lg p-1 border border-slate-200">
+                 <button
+                    onClick={() => setDisplayFormat('timeline')}
+                    className={cn(
+                       "px-4 py-1.5 text-[11px] font-bold uppercase tracking-wider rounded-md transition-all flex items-center gap-2",
+                       displayFormat === 'timeline' ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
+                    )}
+                 >
+                    <History className="h-3.5 w-3.5" />
+                    Timeline
+                 </button>
               <button
                  onClick={() => setDisplayFormat('table')}
                  className={cn(
@@ -346,6 +353,7 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
                  Flow
               </button>
            </div>
+        </div>
         </div>
 
         <div className="flex-1 overflow-hidden">
@@ -818,10 +826,10 @@ const renderHighlightedStatement = (text: string, item: ChronologyItem, activeDi
   const searchTargets = dimensions
     .map(d => ({
       label: d.label,
-      val: d.originalValue?.trim(),
+      val: typeof d.originalValue === 'string' ? d.originalValue.trim() : String(d.originalValue || '').trim(),
       color: d.isHuman ? humanTagColor : tagColor,
       isHuman: !!d.isHuman,
-      currentValue: d.value?.trim() || ""
+      currentValue: typeof d.value === 'string' ? d.value.trim() : String(d.value || '').trim()
     }))
     .filter(t => t.val && t.val !== "-" && t.val.length > 1 && t.val.toLowerCase() !== text.toLowerCase());
 
@@ -963,10 +971,10 @@ const getStatementSegments = (text: string, item: ChronologyItem) => {
   const searchTargets = dimensions
     .map(d => ({
       label: d.label,
-      val: d.originalValue?.trim(),
+      val: typeof d.originalValue === 'string' ? d.originalValue.trim() : String(d.originalValue || '').trim(),
       color: d.isHuman ? humanTagColor : tagColor,
       isHuman: !!d.isHuman,
-      currentValue: d.value?.trim() || ""
+      currentValue: typeof d.value === 'string' ? d.value.trim() : String(d.value || '').trim()
     }))
     .filter(t => t.val && t.val !== "-" && t.val.length > 1 && t.val.toLowerCase() !== text.toLowerCase());
 

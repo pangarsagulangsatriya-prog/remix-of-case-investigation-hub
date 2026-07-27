@@ -69,6 +69,7 @@ import { AgentState, AgentRunHistory, EvidenceTraceLink } from "@/types/workspac
 import { FactChronologyModule, TraceabilityPanel } from "@/components/analysis/FactChronologyModule";
 import { ActorAnalysisModule, ActorDetailPanel } from "@/components/analysis/ActorAnalysisModule";
 import { mockLayers, mockFolders, mockDocuments } from "@/data/mockKnowledgeData";
+import { IplsAnalysisModule } from "@/components/analysis/IplsAnalysisModule";
 
 // Icons mapping for local use
 const AudioIcon = Activity;
@@ -1488,14 +1489,19 @@ export default function AnalysisTab() {
                                      <div className="flex flex-col h-full">
                                         {selectedAgentId === 'peepo' ? (
                                             <div className="flex flex-col h-full bg-slate-50/10 animate-in fade-in duration-500 overflow-hidden">
-                                               <div className="h-12 flex items-center justify-between px-5 border-b border-slate-200 bg-white shrink-0">
-                                                  <div className="flex items-center gap-2">
-                                                     <div className="h-2 w-2 rounded-full bg-[#8ba861]" />
-                                                     <h2 className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Lembar Analisis Faktor PEEPO</h2>
-                                                  </div>
-                                                  <div className="flex items-center gap-2">
-                                                     <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse" />
-                                                     <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Sintesis Selesai</span>
+                                               <div className="shrink-0 p-4 border-b border-slate-200 bg-white flex flex-col gap-4">
+                                                  <div className="flex items-center justify-between">
+                                                     <div>
+                                                        <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                                                           <LayoutGrid className="h-4 w-4 text-slate-500" />
+                                                           LEMBAR ANALISIS FAKTOR PEEPO
+                                                        </h2>
+                                                        <p className="text-[11px] text-slate-500 mt-1">Sintesis temuan berdasarkan kategori People, Environment, Equipment, Procedures, dan Organisation.</p>
+                                                     </div>
+                                                     <div className="flex items-center gap-2">
+                                                        <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse" />
+                                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Sintesis Selesai</span>
+                                                     </div>
                                                   </div>
                                                </div>
                                                
@@ -1572,177 +1578,31 @@ export default function AnalysisTab() {
                                                selectedActorId={selectedRowId}
                                             />
                                          ) : selectedAgentId === 'ipls' ? (
-                                            <div className="flex flex-col h-full bg-white animate-in fade-in duration-500 overflow-hidden">
-                                               {/* Title Bar */}
-                                               <div className="px-6 py-4 flex flex-col shrink-0">
-                                                  <h2 className="text-xl font-bold text-slate-800">IPLS - BUMA LMO - NM LV BM 391</h2>
-                                               </div>
-                                               
-                                               <div className="flex-1 overflow-auto px-4 pb-6 scrollbar-thin">
-                                                  <div className="min-w-[1000px] flex w-full">
-                                                     {/* Side Labels */}
-                                                     <div className="w-8 flex flex-col shrink-0 items-center justify-start pt-16">
-                                                        <div className="rotate-[-90deg] font-black text-[11px] text-slate-800 tracking-widest w-20 text-center mb-40">Scope</div>
-                                                        <div className="rotate-[-90deg] font-black text-[11px] text-slate-800 tracking-widest w-20 text-center mt-10">Activity</div>
-                                                     </div>
-
-                                                     {/* Main Content Area */}
-                                                     <div className="flex-1 flex flex-col">
-                                                        {/* Header bar */}
-                                                        <div className="relative h-8 bg-[#a3a6aa] flex items-center justify-center w-full mb-3 ml-2">
-                                                           <div className="absolute -left-4 top-0 w-0 h-0 border-y-[16px] border-y-transparent border-r-[16px] border-r-[#a3a6aa]"></div>
-                                                           <span className="text-white font-bold text-sm tracking-wide">Sistem Bekerja Selamat</span>
-                                                        </div>
-
-                                                        {/* Columns Grid */}
-                                                        <div className="grid grid-cols-5 gap-1.5 ml-2">
-                                                           {(selectedAgent?.results?.layers || []).map((layer: any, colIdx: number) => (
-                                                              <div key={layer.id} className="flex flex-col h-full">
-                                                                 {/* Layer Header */}
-                                                                 <div className="text-center font-bold text-[12px] mb-1 italic text-slate-800">
-                                                                    Layer {["I", "II", "III", "IV", "V"][colIdx]}
-                                                                 </div>
-                                                                 {/* Title Box */}
-                                                                 <div className="bg-[#f2f2f2] h-14 flex items-center justify-center text-center p-2 mb-1">
-                                                                    <span className="text-[10px] font-bold text-slate-800 leading-tight">{layer.title}</span>
-                                                                 </div>
-                                                                 {/* Content Box */}
-                                                                 <div className="bg-[#cae2b7] flex-1 p-3">
-                                                                    <ul className="space-y-1">
-                                                                       {layer.items.map((item: any, idx: number) => {
-                                                                          const num = item.originalIndex || (idx + 1);
-                                                                          let circleColor = "";
-                                                                          if (item.status === 'rootcause') circleColor = "border-red-500 text-slate-900";
-                                                                          else if (item.status === 'non-conformity') circleColor = "border-amber-400 text-slate-900";
-                                                                          else if (item.status === 'improvement') circleColor = "border-emerald-500 text-slate-900";
-
-                                                                          return (
-                                                                             <li key={item.id} className="flex items-start gap-1.5 text-[9px] text-slate-800">
-                                                                                <div className={`w-4 h-4 shrink-0 flex items-center justify-center rounded-full border-[2px] font-bold ${circleColor ? circleColor : 'border-transparent'}`}>
-                                                                                   {num}.
-                                                                                </div>
-                                                                                <span className="pt-[2px] leading-snug font-medium">{item.label}</span>
-                                                                             </li>
-                                                                          );
-                                                                       })}
-                                                                    </ul>
-                                                                 </div>
-                                                              </div>
-                                                           ))}
-                                                        </div>
-                                                        
-                                                        {/* Legend */}
-                                                        <div className="flex items-center gap-6 mt-4 ml-2 border-t border-slate-200 pt-4">
-                                                           <div className="bg-[#091b4c] text-white text-[11px] font-bold px-8 py-1.5 rounded-sm uppercase tracking-wide">
-                                                              Legend
-                                                           </div>
-                                                           <div className="flex items-center gap-6 text-[11px] font-bold text-slate-800">
-                                                              <div className="flex items-center gap-2">
-                                                                 <div className="w-4 h-4 rounded-full border-[2.5px] border-red-500"></div>
-                                                                 <span>Rootcause</span>
-                                                              </div>
-                                                              <div className="flex items-center gap-2">
-                                                                 <div className="w-4 h-4 rounded-full border-[2.5px] border-amber-400"></div>
-                                                                 <span>Non Confirmity</span>
-                                                              </div>
-                                                              <div className="flex items-center gap-2">
-                                                                 <div className="w-4 h-4 rounded-full border-[2.5px] border-emerald-500"></div>
-                                                                 <span>Improvement</span>
-                                                              </div>
-                                                           </div>
-                                                        </div>
-
-                                                        {/* Section 4: Analisa Kejadian */}
-                                                        <div className="mt-8 mb-4 ml-2">
-                                                           <h3 className="font-bold text-[14px] text-slate-900 mb-0.5">4. Analisa Kejadian</h3>
-                                                           <h4 className="font-bold text-[14px] text-slate-900 mb-2">IPLS &ndash; BUMA LMO &ndash; NM LV BM 391</h4>
-                                                           
-                                                           {/* Header bar */}
-                                                           <div className="relative h-6 bg-[#a3a6aa] flex items-center justify-center w-full mb-3">
-                                                              <div className="absolute -left-3 top-0 w-0 h-0 border-y-[12px] border-y-transparent border-r-[12px] border-r-[#a3a6aa]"></div>
-                                                              <span className="text-white font-bold text-xs tracking-wide">Investigation</span>
-                                                           </div>
-
-                                                           {/* Columns Grid */}
-                                                           <div className="grid grid-cols-5 gap-3">
-                                                              {(selectedAgent?.results?.layers || []).map((layer: any, colIdx: number) => {
-                                                                 const findingItems = layer.items.filter((i: any) => i.status);
-                                                                 return (
-                                                                    <div key={layer.id} className="flex flex-col h-full border-r border-dashed border-slate-300 last:border-r-0 pr-3 min-h-[150px]">
-                                                                       {/* Layer Header */}
-                                                                       <div className="text-center font-bold text-[12px] mb-3 italic text-slate-800">
-                                                                          Layer {["I", "II", "III", "IV", "V"][colIdx]}
-                                                                       </div>
-                                                                       
-                                                                       {/* Findings */}
-                                                                       <div className="flex-1 space-y-4">
-                                                                          {findingItems.map((item: any) => {
-                                                                             const num = item.originalIndex || 0;
-                                                                             let bgColor = "";
-                                                                             let textColor = "text-slate-900";
-                                                                             if (item.status === 'rootcause') {
-                                                                                bgColor = "bg-red-600 border-red-600";
-                                                                                textColor = "text-white";
-                                                                             } else if (item.status === 'non-conformity') {
-                                                                                bgColor = "bg-[#ffc000] border-[#ffc000]";
-                                                                             } else if (item.status === 'improvement') {
-                                                                                bgColor = "bg-[#00c950] border-[#00c950]";
-                                                                             }
-
-                                                                             return (
-                                                                                <div key={item.id} className="flex flex-col">
-                                                                                   <div className={`text-[10px] font-bold text-center py-1.5 px-2 rounded-sm border shadow-sm mb-1.5 ${bgColor} ${textColor}`}>
-                                                                                      {num}. {item.label}
-                                                                                   </div>
-                                                                                   {item.description && (
-                                                                                      <p className="text-[9px] text-slate-700 leading-[1.4] font-medium text-justify">
-                                                                                         {item.description}
-                                                                                      </p>
-                                                                                   )}
-                                                                                </div>
-                                                                             );
-                                                                          })}
-                                                                       </div>
-                                                                    </div>
-                                                                 );
-                                                              })}
-                                                           </div>
-
-                                                           {/* Legend 2 */}
-                                                           <div className="flex items-center gap-6 mt-6 pt-4 border-t border-slate-200">
-                                                              <div className="bg-[#091b4c] text-white text-[11px] font-bold px-8 py-1.5 rounded-sm uppercase tracking-wide">
-                                                                 Legend
-                                                              </div>
-                                                              <div className="flex items-center gap-6 text-[11px] font-bold text-slate-800">
-                                                                 <div className="flex items-center gap-2">
-                                                                    <div className="w-5 h-3 rounded-sm bg-red-400 border border-red-500"></div>
-                                                                    <span>Rootcause</span>
-                                                                 </div>
-                                                                 <div className="flex items-center gap-2">
-                                                                    <div className="w-5 h-3 rounded-sm bg-[#ffc000] border border-amber-500"></div>
-                                                                    <span>Non Confirmity</span>
-                                                                 </div>
-                                                                 <div className="flex items-center gap-2">
-                                                                    <div className="w-5 h-3 rounded-sm bg-[#00c950] border border-emerald-600"></div>
-                                                                    <span>Improvement</span>
-                                                                 </div>
-                                                              </div>
-                                                           </div>
-                                                        </div>
-                                                     </div>
-                                                  </div>
-                                               </div>
-                                            </div>
+                                            <IplsAnalysisModule
+                                               data={selectedAgent?.results as any}
+                                               onSelectRow={handleSelectRow}
+                                               selectedRowId={selectedRowId}
+                                               onSync={(updatedData) => {
+                                                  setAgents(prev => prev.map(a => 
+                                                     a.id === 'ipls' ? { ...a, results: updatedData } : a
+                                                  ));
+                                               }}
+                                            />
                                          ) : selectedAgentId === 'prev' ? (
                                             <div className="flex flex-col h-full bg-slate-50/10 animate-in fade-in duration-500 overflow-hidden">
-                                               <div className="h-12 flex items-center justify-between px-5 border-b border-slate-200 bg-white shrink-0">
-                                                  <div className="flex items-center gap-2">
-                                                     <div className="h-2 w-2 rounded-full bg-[#8ba861]" />
-                                                     <h2 className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Lembar Rencana Tindakan Pencegahan</h2>
-                                                  </div>
-                                                  <div className="flex items-center gap-2">
-                                                     <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse" />
-                                                     <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Rencana Difinalisasi</span>
+                                               <div className="shrink-0 p-4 border-b border-slate-200 bg-white flex flex-col gap-4">
+                                                  <div className="flex items-center justify-between">
+                                                     <div>
+                                                        <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                                                           <Crosshair className="h-4 w-4 text-slate-500" />
+                                                           LEMBAR RENCANA TINDAKAN PENCEGAHAN
+                                                        </h2>
+                                                        <p className="text-[11px] text-slate-500 mt-1">Rumusan tindakan korektif dan preventif untuk mencegah insiden berulang.</p>
+                                                     </div>
+                                                     <div className="flex items-center gap-2">
+                                                        <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse" />
+                                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Rencana Difinalisasi</span>
+                                                     </div>
                                                   </div>
                                                </div>
                                                
@@ -1780,8 +1640,16 @@ export default function AnalysisTab() {
                                                                     statusBg = "bg-[#00c950]";
                                                                  }
 
+                                                                 const isSelected = selectedRowId === (item.id || idx);
                                                                  return (
-                                                                    <tr key={idx} className="hover:bg-slate-50/50">
+                                                                    <tr 
+                                                                       key={item.id || idx} 
+                                                                       onClick={() => handleSelectRow(item.id || idx)}
+                                                                       className={cn(
+                                                                          "group transition-all cursor-pointer",
+                                                                          isSelected ? "bg-slate-100/80" : "hover:bg-slate-50/50"
+                                                                       )}
+                                                                    >
                                                                        <td className="px-2 py-2 border-r border-b border-slate-400 text-center text-[10px] text-slate-800 bg-white">
                                                                           {item.no}
                                                                        </td>
@@ -1901,8 +1769,58 @@ export default function AnalysisTab() {
                      </div>
                   );
                })()}
+               {selectedRowId && (selectedAgentId === 'ipls' || selectedAgentId === 'prev') && (() => {
+                  const agent = agents.find(a => a.id === selectedAgentId);
+                  let item: any = null;
+                  
+                  if (selectedAgentId === 'ipls') {
+                     const layers = agent?.results?.layers || [];
+                     for (const layer of layers) {
+                        const found = layer.items?.find((i: any) => i.id === selectedRowId);
+                        if (found) {
+                           item = {
+                              id: found.id,
+                              chronology_text: found.label,
+                              breakdown: {
+                                 action: { value: found.description }
+                              }
+                           };
+                           break;
+                        }
+                     }
+                  } else if (selectedAgentId === 'prev') {
+                     const actions = agent?.results?.actions || [];
+                     const found = actions.find((i: any, idx: number) => (i.id || idx) === selectedRowId);
+                     if (found) {
+                        item = {
+                           id: found.id || selectedRowId,
+                           chronology_text: found.action,
+                           breakdown: {
+                              subject: { value: found.pic },
+                              time: { value: found.due_date }
+                           }
+                        };
+                     }
+                  }
 
-               {selectedRowId && selectedAgentId !== 'fact' && selectedAgentId !== 'peepo' && selectedAgentId !== 'actor' && (
+                  if (!item) return null;
+
+                  return (
+                     <div className="w-[420px] shrink-0 border-l border-slate-200 bg-white shadow-[-10px_0_30px_-15px_rgba(0,0,0,0.1)] z-20 flex flex-col animate-in slide-in-from-right duration-300">
+                        <TraceabilityPanel
+                           key={item.id}
+                           item={item}
+                           onClose={() => setSelectedRowId(null)}
+                           onUpdateStatus={() => {}}
+                           onUpdateBreakdown={() => {}}
+                           onUpdateChronologyText={() => {}}
+                           onEdit={() => {}}
+                        />
+                     </div>
+                  );
+               })()}
+
+               {selectedRowId && selectedAgentId !== 'fact' && selectedAgentId !== 'peepo' && selectedAgentId !== 'actor' && selectedAgentId !== 'ipls' && selectedAgentId !== 'prev' && (
                   <div className="w-[420px] shrink-0 border-l border-slate-200 bg-white shadow-[-10px_0_30px_-15px_rgba(0,0,0,0.1)] z-20 flex flex-col animate-in slide-in-from-right duration-300">
                      <div className="h-12 border-b border-slate-200 flex items-center justify-between px-5 bg-slate-50/50 shrink-0">
                         <div className="flex items-center gap-2">

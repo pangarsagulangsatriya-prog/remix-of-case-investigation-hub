@@ -16,12 +16,13 @@ import { cn } from "@/lib/utils";
 
 // Modular Tab Components (Lazy Loaded)
 const ExtractionTab = React.lazy(() => import("@/components/workspace/Tabs/ExtractionTab"));
+const EvidenceTab = React.lazy(() => import("@/components/workspace/Tabs/EvidenceTab"));
 const AnalysisTab = React.lazy(() => import("@/components/workspace/Tabs/AnalysisTab"));
 const ReportsTab = React.lazy(() => import("@/components/workspace/Tabs/ReportsTab"));
 const ReviewTab = React.lazy(() => import("@/components/workspace/Tabs/ReviewTab"));
 const AuditTrailTab = React.lazy(() => import("@/components/workspace/Tabs/AuditTrailTab"));
 
-const tabs = ["Evidence Review", "Analysis", "Reports", "Review", "Audit Trail"];
+const tabs = ["CCR", "Evidence", "Analysis", "Reports"];
 
 class WorkspaceErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean, error: any }> {
   constructor(props: any) {
@@ -361,152 +362,142 @@ function CaseWorkspaceInner() {
 
             {/* Main Workspace Header Container */}
             <div id="tour-step-1-header" data-tour="workspace-header" className="bg-white border-b flex flex-col shrink-0 relative z-20">
-              {/* Main Header Row */}
-              <div className="px-6 py-3 flex items-start justify-between gap-4">
-              
-              {/* Project Title Area */}
-              <div className="flex-1 min-w-[300px] max-w-[500px] flex flex-col items-start">
-
-                <div className="flex-1 w-full">
-                  {/* Top Row: ID, Date, Investigation Status */}
-                  <div className="flex items-center gap-2 mb-1.5 text-[9px] font-bold tracking-wider uppercase">
-                    <span className="text-slate-500 font-mono bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
-                      {caseData?.id?.substring(0, 8) || "N/A"}
-                    </span>
-                    <div className="h-1 w-1 rounded-full bg-slate-300 hidden md:block mx-1"></div>
-                    <div className="flex items-center gap-1.5 text-slate-400">
-                      <Clock className="h-3 w-3" />
-                      {caseData?.created_at ? new Date(caseData.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Date Unknown'}
-                    </div>
-                    <div className="h-1 w-1 rounded-full bg-slate-300 hidden md:block mx-1"></div>
-                    <div className="flex items-center gap-1.5 text-slate-700 font-black">
-                      {caseData?.investigation_status || "INVESTIGASI"}
-                    </div>
-                  </div>
-
-                  {/* Middle Row: Title Area */}
-                  {isEditingTitle ? (
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        value={titleInput}
-                        onChange={(e) => setTitleInput(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") handleSaveTitle();
-                          else if (e.key === "Escape") {
-                            setIsEditingTitle(false);
-                            setTitleInput(caseData?.title || "");
-                          }
-                        }}
-                        onBlur={handleSaveTitle}
-                        className="text-lg font-bold tracking-tight text-slate-900 border border-slate-200 rounded px-2.5 py-1 bg-slate-50 w-full focus:outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all leading-tight h-8"
-                        autoFocus
-                        maxLength={100}
-                        disabled={updateCaseMutation.isPending}
-                      />
-                      <Button size="sm" variant="ghost" onClick={handleSaveTitle} disabled={updateCaseMutation.isPending} className="h-8 w-8 p-0 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded shrink-0">
-                        {updateCaseMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin text-slate-400" /> : <Check className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                  ) : (
-                    <div 
-                      className="group/title cursor-pointer py-1 px-1.5 -ml-1.5 rounded hover:bg-slate-50 transition-colors w-full"
-                      onClick={() => setIsEditingTitle(true)}
-                      title={caseData?.title || "Click to rename case"}
-                    >
-                      <div className="flex items-start gap-2">
-                        <h1 className="text-lg font-medium tracking-tight text-slate-400 border-none p-0 flex items-center gap-2 leading-none uppercase">
-                          {caseData?.title ? <span className="text-slate-700 font-bold line-clamp-1">{caseData.title}</span> : "UNTITLED PROJECT..."}
-                        </h1>
-                        <button className="opacity-0 group-hover/title:opacity-100 p-1 mt-0 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition-all shrink-0">
-                          <Pencil className="h-3 w-3" />
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Bottom Row: AI Status and Progress */}
-                  <div className="mt-1 flex items-center gap-2 relative z-50">
-                    <StatusChip status={caseData?.ai_status || "belum_mulai"} />
-                    <div 
-                      onClick={() => setShowAIProgress(!showAIProgress)}
-                      className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-full px-2 py-0.5 cursor-pointer hover:bg-slate-100 hover:border-emerald-200 transition-all group"
-                    >
-                       <Sparkles className="h-3 w-3 text-emerald-500 group-hover:text-emerald-600" />
-                       <div className="w-16 h-1 bg-slate-200 rounded-full overflow-hidden">
-                          <div className="h-full bg-emerald-500 rounded-full transition-all duration-300" style={{width: `${aiProgressPercent}%`}}></div>
+              {/* Main Header Top Row (Title + Controls) */}
+              <div className="px-6 pt-4 pb-2 flex items-start justify-between gap-4">
+                 {/* Project Title Area */}
+                 <div className="flex-1 min-w-[300px] flex flex-col items-start">
+                   <div className="flex-1 w-full">
+                     {/* Top Row: ID, Date, Investigation Status */}
+                     <div className="flex items-center gap-2 mb-1.5 text-[9px] font-bold tracking-wider uppercase">
+                       <span className="text-slate-500 font-mono bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                         {caseData?.id?.substring(0, 8) || "N/A"}
+                       </span>
+                       <div className="h-1 w-1 rounded-full bg-slate-300 hidden md:block mx-1"></div>
+                       <div className="flex items-center gap-1.5 text-slate-400">
+                         <Clock className="h-3 w-3" />
+                         {caseData?.created_at ? new Date(caseData.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Date Unknown'}
                        </div>
-                       <span className="text-[9px] font-bold text-slate-600 group-hover:text-emerald-700">{aiProgressPercent}%</span>
-                    </div>
-                    
-                    {showAIProgress && (
-                       <div className="absolute top-full mt-2 left-0 bg-white border border-slate-200 rounded-lg shadow-xl p-4 w-64 z-50">
-                          <div className="flex items-center justify-between mb-3 border-b border-slate-100 pb-2">
-                             <div className="text-[10px] font-black text-slate-600 uppercase tracking-widest">PROGRESS AI INVESTIGASI</div>
-                             <button onClick={() => setShowAIProgress(false)} className="hover:bg-slate-100 p-1 rounded-full transition-colors"><X className="h-3 w-3 text-slate-400 hover:text-slate-600" /></button>
-                          </div>
-                          <div className="space-y-2">
-                             {aiSteps.map((s, idx) => {
-                               const isCurrent = !s.done && (idx === 0 || aiSteps[idx - 1].done);
-                               return (
-                                 <div key={s.step} className={cn("flex items-center gap-2 text-[10px] font-medium", s.done ? "text-slate-600" : isCurrent ? "text-emerald-600" : "text-slate-400")}>
-                                   {s.done ? (
-                                     <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
-                                   ) : isCurrent ? (
-                                     <Loader2 className="h-3.5 w-3.5 animate-spin text-emerald-500" />
-                                   ) : (
-                                     <div className="h-3.5 w-3.5 rounded-full border border-slate-300 flex items-center justify-center text-[7px]">{idx + 1}</div>
-                                   )}
-                                   <span>{s.step}</span>
-                                 </div>
-                               );
-                             })}
-                          </div>
+                       <div className="h-1 w-1 rounded-full bg-slate-300 hidden md:block mx-1"></div>
+                       <div className="flex items-center gap-1.5 text-slate-700 font-black">
+                         {caseData?.investigation_status || "INVESTIGASI"}
                        </div>
-                    )}
-                  </div>
-                </div>
-              </div>
+                     </div>
 
-              {/* Stepper Area */}
-              <div id="tour-step-8-next" className="flex-[1.5] flex items-center justify-center relative px-4 max-w-2xl mt-1">
-                 <div className="w-full relative">
-                   <div className="absolute top-[18px] left-[10%] right-[10%] h-[2px] bg-slate-300 -z-10"></div>
-                   <div className="flex justify-between w-full">
-                      {[
-                        { id: 1, name: "DATA", desc: "PENGUMPULAN DATA", icon: Database },
-                        { id: 2, name: "ANALISIS", desc: "PROSES INVESTIGASI", icon: FileText },
-                        { id: 3, name: "SUBMIT", desc: "SUBMIT LAPORAN KE HSE", icon: CheckCircle2 }
-                      ].map((step) => {
-                         const isActive = currentStep === step.id && !showAuditTrail;
-                         return (
-                           <div 
-                             key={step.id} 
-                             onClick={() => { setCurrentStep(step.id); setShowAuditTrail(false); }}
-                             className="flex flex-col items-center gap-1.5 cursor-pointer group bg-white px-2"
-                           >
-                              <div className={`h-9 w-9 rounded-[10px] flex items-center justify-center transition-all duration-300 transform ${isActive ? 'bg-slate-900 border-2 border-slate-900 text-white scale-[1.15]' : 'bg-white border-2 border-slate-300 text-slate-500 group-hover:border-slate-400 group-hover:text-slate-900 group-hover:scale-110'}`}>
-                                 <step.icon className={`h-4 w-4 ${isActive ? 'stroke-[3px]' : 'stroke-[2.5px]'}`} />
-                              </div>
-                              <div className={`text-center transition-all duration-300 ${isActive ? 'mt-1' : 'mt-0 group-hover:mt-0.5'}`}>
-                                 <div className={`text-[10px] font-black uppercase tracking-[0.2em] mb-0.5 transition-colors ${isActive ? 'text-slate-900' : 'text-slate-600 group-hover:text-slate-900'}`}>{step.name}</div>
-                                 <div className={`text-[8px] font-extrabold uppercase tracking-widest transition-colors ${isActive ? 'text-slate-600' : 'text-slate-400 group-hover:text-slate-600'}`}>{step.desc}</div>
-                              </div>
-                           </div>
-                         )
-                      })}
+                     {/* Middle Row: Title Area */}
+                     {isEditingTitle ? (
+                       <div className="flex items-center gap-2">
+                         <input
+                           type="text"
+                           value={titleInput}
+                           onChange={(e) => setTitleInput(e.target.value)}
+                           onKeyDown={(e) => {
+                             if (e.key === "Enter") handleSaveTitle();
+                             else if (e.key === "Escape") {
+                               setIsEditingTitle(false);
+                               setTitleInput(caseData?.title || "");
+                             }
+                           }}
+                           onBlur={handleSaveTitle}
+                           className="text-lg font-bold tracking-tight text-slate-900 border border-slate-200 rounded px-2.5 py-1 bg-slate-50 w-full focus:outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all leading-tight h-8"
+                           autoFocus
+                           maxLength={100}
+                           disabled={updateCaseMutation.isPending}
+                         />
+                         <Button size="sm" variant="ghost" onClick={handleSaveTitle} disabled={updateCaseMutation.isPending} className="h-8 w-8 p-0 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded shrink-0">
+                           {updateCaseMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin text-slate-400" /> : <Check className="h-4 w-4" />}
+                         </Button>
+                       </div>
+                     ) : (
+                       <div 
+                         className="group/title cursor-pointer py-1 px-1.5 -ml-1.5 rounded hover:bg-slate-50 transition-colors w-full"
+                         onClick={() => setIsEditingTitle(true)}
+                         title={caseData?.title || "Click to rename case"}
+                       >
+                         <div className="flex items-start gap-2">
+                           <h1 className="text-lg font-medium tracking-tight text-slate-400 border-none p-0 flex items-center gap-2 leading-none uppercase">
+                             {caseData?.title ? <span className="text-slate-700 font-bold line-clamp-1">{caseData.title}</span> : "UNTITLED PROJECT..."}
+                           </h1>
+                           <button className="opacity-0 group-hover/title:opacity-100 p-1 mt-0 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition-all shrink-0">
+                             <Pencil className="h-3 w-3" />
+                           </button>
+                         </div>
+                       </div>
+                     )}
+                     
+                     {/* Bottom Row: AI Status and Progress */}
+                     <div className="mt-1 flex items-center gap-2 relative z-50">
+                       <StatusChip status={caseData?.ai_status || "belum_mulai"} />
+                       <div 
+                         onClick={() => setShowAIProgress(!showAIProgress)}
+                         className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-full px-2 py-0.5 cursor-pointer hover:bg-slate-100 hover:border-emerald-200 transition-all group"
+                       >
+                          <Sparkles className="h-3 w-3 text-emerald-500 group-hover:text-emerald-600" />
+                          <div className="w-16 h-1 bg-slate-200 rounded-full overflow-hidden">
+                             <div className="h-full bg-emerald-500 rounded-full transition-all duration-300" style={{width: `${aiProgressPercent}%`}}></div>
+                          </div>
+                          <span className="text-[9px] font-bold text-slate-600 group-hover:text-emerald-700">{aiProgressPercent}%</span>
+                       </div>
+                       
+                       {showAIProgress && (
+                          <div className="absolute top-full mt-2 left-0 bg-white border border-slate-200 rounded-lg shadow-xl p-4 w-64 z-50">
+                             <div className="flex items-center justify-between mb-3 border-b border-slate-100 pb-2">
+                                <div className="text-[10px] font-black text-slate-600 uppercase tracking-widest">PROGRESS AI INVESTIGASI</div>
+                                <button onClick={() => setShowAIProgress(false)} className="hover:bg-slate-100 p-1 rounded-full transition-colors"><X className="h-3 w-3 text-slate-400 hover:text-slate-600" /></button>
+                             </div>
+                             <div className="space-y-2">
+                                {aiSteps.map((s, idx) => {
+                                  const isCurrent = !s.done && (idx === 0 || aiSteps[idx - 1].done);
+                                  return (
+                                    <div key={s.step} className={cn("flex items-center gap-2 text-[10px] font-medium", s.done ? "text-slate-600" : isCurrent ? "text-emerald-600" : "text-slate-400")}>
+                                      {s.done ? (
+                                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                                      ) : isCurrent ? (
+                                        <Loader2 className="h-3.5 w-3.5 animate-spin text-emerald-500" />
+                                      ) : (
+                                        <div className="h-3.5 w-3.5 rounded-full border border-slate-300 flex items-center justify-center text-[7px]">{idx + 1}</div>
+                                      )}
+                                      <span>{s.step}</span>
+                                    </div>
+                                  );
+                                })}
+                             </div>
+                          </div>
+                       )}
+                     </div>
                    </div>
+                 </div>
+                 
+                 {/* Right Controls Area */}
+                 <div className="flex flex-row justify-end items-center gap-2 mt-1">
+                    <button onClick={() => setShowTutorial(true)} title="Video" className="group flex items-center justify-center border border-slate-200 bg-white rounded-md px-3 h-9 hover:border-emerald-200 hover:bg-emerald-50 transition-all duration-300 focus:outline-none overflow-hidden">
+                      <PlayCircle className="h-4 w-4 text-slate-400 group-hover:text-emerald-600 transition-colors shrink-0" />
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 group-hover:text-emerald-700 transition-all duration-300 max-w-0 opacity-0 group-hover:max-w-xs group-hover:opacity-100 group-hover:ml-2 whitespace-nowrap">Video</span>
+                    </button>
+                    <ProductTourButton />
                  </div>
               </div>
 
-              {/* Right Controls Area */}
-              <div className="flex-1 min-w-[150px] max-w-[250px] hidden lg:flex flex-row justify-end items-center gap-2 mt-1">
-                 <button onClick={() => setShowTutorial(true)} title="Video" className="group flex items-center justify-center border border-slate-200 bg-white rounded-md px-3 h-9 hover:border-emerald-200 hover:bg-emerald-50 transition-all duration-300 focus:outline-none overflow-hidden">
-                   <PlayCircle className="h-4 w-4 text-slate-400 group-hover:text-emerald-600 transition-colors shrink-0" />
-                   <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 group-hover:text-emerald-700 transition-all duration-300 max-w-0 opacity-0 group-hover:max-w-xs group-hover:opacity-100 group-hover:ml-2 whitespace-nowrap">Video</span>
-                 </button>
-                 <ProductTourButton />
-              </div>
+              {/* Tabs Navigation Bottom Row */}
+              <div className="px-6 flex items-end gap-1 mt-2">
+                 {[
+                   { id: 1, name: "CCR", isActive: currentStep === 1 && !showAuditTrail, onClick: () => { setCurrentStep(1); setShowAuditTrail(false); } },
+                   { id: 2, name: "Evidence", isActive: currentStep === 2 && !showAuditTrail, onClick: () => { setCurrentStep(2); setShowAuditTrail(false); } },
+                   { id: 3, name: "Analysis", isActive: currentStep === 3 && !showAuditTrail, onClick: () => { setCurrentStep(3); setShowAuditTrail(false); } },
+                   { id: 4, name: "Reports", isActive: currentStep === 4 && !showAuditTrail, onClick: () => { setCurrentStep(4); setShowAuditTrail(false); } },
+                 ].map((tab) => (
+                    <button
+                      key={tab.name}
+                      onClick={tab.onClick}
+                      className={cn(
+                        "px-6 py-2.5 text-xs font-bold transition-all relative focus:outline-none border-b-[3px]",
+                        tab.isActive 
+                          ? "text-emerald-800 bg-[#dcfce7] border-emerald-600"
+                          : "text-slate-500 hover:text-slate-800 hover:bg-slate-50 border-transparent"
+                      )}
+                    >
+                      {tab.name}
+                    </button>
+                 ))}
               </div>
             </div>
 
@@ -522,8 +513,9 @@ function CaseWorkspaceInner() {
                 ) : (
                   <>
                     {currentStep === 1 && <ExtractionTab />}
-                    {currentStep === 2 && <AnalysisTab />}
-                    {currentStep === 3 && <ReportsTab />}
+                    {currentStep === 2 && <EvidenceTab />}
+                    {currentStep === 3 && <AnalysisTab />}
+                    {currentStep === 4 && <ReportsTab />}
                   </>
                 )}
               </Suspense>
