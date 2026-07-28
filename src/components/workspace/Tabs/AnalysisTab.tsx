@@ -847,6 +847,7 @@ export default function AnalysisTab() {
   const [activeNodeSettings, setActiveNodeSettings] = useState<string | null>(null);
   const [factViewMode, setFactViewMode] = useState<'slide' | 'default'>('default');
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
+  const [editingRowId, setEditingRowId] = useState<string | null>(null);
   const [allEvidenceExpanded, setAllEvidenceExpanded] = useState(false);
 
   const [activeEvidenceType, setActiveEvidenceType] = useState('audio_diarization');
@@ -943,9 +944,31 @@ export default function AnalysisTab() {
     }
   };
 
+  const handleUpdateAction = (id: string | number, field: string, value: string) => {
+    setAgents(prev => {
+      return prev.map(a => {
+        if (a.id === 'prev' && a.results?.actions) {
+          return {
+            ...a,
+            results: {
+              ...a.results,
+              actions: a.results.actions.map((act: any, idx: number) => 
+                String(act.id || idx) === String(id) ? { ...act, [field]: value } : act
+              )
+            }
+          };
+        }
+        return a;
+      });
+    });
+  };
+
   const handleSelectRow = (id: string | null) => {
     setSelectedRowId(id);
     if (id) {
+      if (selectedRowId !== id) {
+        setEditingRowId(null);
+      }
       setActiveEvidenceConsoleMode("trace");
       const factAgent = agents.find(a => a.id === 'fact');
       const item = factAgent?.results?.chronology_items?.find((i: any) => i.id === id);
@@ -955,6 +978,19 @@ export default function AnalysisTab() {
       }
       setSelectedEvidenceLinkId(null);
       setFocusedPreview(null);
+    } else {
+      setEditingRowId(null);
+    }
+  };
+
+  const handleRowClick = (id: string | number) => {
+    const strId = String(id);
+    if (selectedRowId === strId) {
+      setEditingRowId(strId);
+    } else {
+      setSelectedRowId(strId);
+      setEditingRowId(null);
+      handleSelectRow(strId);
     }
   };
 
@@ -972,6 +1008,8 @@ export default function AnalysisTab() {
     if (selectedAgentId) {
       setTimeout(fitToWorkspace, 100);
       setActiveSlide(0);
+      setSelectedRowId(null);
+      setEditingRowId(null);
     }
   }, [selectedAgentId]);
 
@@ -1498,8 +1536,8 @@ export default function AnalysisTab() {
                                                   </div>
                                                </div>
                                                
-                                               <div className="flex-1 overflow-auto p-6 scrollbar-thin">
-                                                  <div className="max-w-5xl mx-auto space-y-8 pb-12">
+                                               <div className="flex-1 overflow-auto bg-slate-50 p-8 flex justify-center scrollbar-thin">
+                                                  <div className="w-full max-w-[1300px] bg-white border border-slate-300 shadow-sm p-8 pb-16 h-fit shrink-0 space-y-8">
                                                      {[
                                                         { id: 'people', label: 'People (Individu)' },
                                                         { id: 'environment', label: 'Environment (Lingkungan)' },
@@ -1599,21 +1637,18 @@ export default function AnalysisTab() {
                                                   </div>
                                                </div>
                                                
-                                               <div className="flex-1 overflow-auto p-8 scrollbar-thin">
-                                                  <div className="max-w-[1400px] mx-auto pb-12">
+                                               <div className="flex-1 overflow-auto bg-slate-50 p-8 flex justify-center scrollbar-thin">
+                                                  <div className="w-full max-w-[1300px] bg-white border border-slate-300 shadow-sm p-8 pb-16 h-fit shrink-0">
                                                      <h3 className="font-bold text-[14px] text-slate-900 mb-0.5">5. Tindakan Perbaikan dan Pencegahan Insiden NM LV BM 391</h3>
                                                      <div className="h-[2px] w-[50%] bg-[#8ba861] mb-4 mt-1"></div>
-                                                     <div className="bg-white border border-slate-400">
+                                                     <div className="border border-slate-400">
                                                         <table className="w-full text-left border-collapse">
                                                            <thead>
-                                                              <tr className="bg-[#8ba861]">
-                                                                 <th className="px-2 py-3 text-[10px] font-bold text-slate-900 text-center border-r border-b border-slate-400 w-10">NO</th>
-                                                                 <th className="px-2 py-3 text-[10px] font-bold text-slate-900 text-center border-r border-b border-slate-400 w-20">LAYER</th>
-                                                                 <th className="px-2 py-3 text-[10px] font-bold text-slate-900 text-center border-r border-b border-slate-400 w-24">HIRARKI<br/>KONTROL</th>
-                                                                 <th className="px-4 py-3 text-[10px] font-bold text-slate-900 text-center border-r border-b border-slate-400">TINDAKAN PERBAIKAN DAN PENCEGAHAN</th>
-                                                                 <th className="px-2 py-3 text-[10px] font-bold text-slate-900 text-center border-r border-b border-slate-400 w-32">PIC</th>
-                                                                 <th className="px-2 py-3 text-[10px] font-bold text-slate-900 text-center border-r border-b border-slate-400 w-28">DUE DATE</th>
-                                                                 <th className="px-2 py-3 text-[10px] font-bold text-slate-900 text-center border-b border-slate-400 w-24">STATUS</th>
+                                                              <tr className="bg-slate-50/80">
+                                                                 <th className="px-4 py-2 text-[10px] font-bold text-slate-900 text-center border-r border-b border-slate-400 w-12 uppercase tracking-widest bg-white">NO</th>
+                                                                 <th className="px-4 py-2 text-[10px] font-bold text-slate-900 text-center border-r border-b border-slate-400 w-24 uppercase tracking-widest bg-white">LAYER</th>
+                                                                 <th className="px-4 py-2 text-[10px] font-bold text-slate-900 text-center border-r border-b border-slate-400 w-28 uppercase tracking-widest bg-white">HIRARKI<br/>KONTROL</th>
+                                                                 <th className="px-4 py-2 text-[10px] font-bold text-slate-900 text-left border-b border-slate-400 uppercase tracking-widest bg-white">TINDAKAN PERBAIKAN DAN PENCEGAHAN</th>
                                                               </tr>
                                                            </thead>
                                                            <tbody>
@@ -1622,47 +1657,79 @@ export default function AnalysisTab() {
                                                                  let layerText = "text-slate-900";
                                                                  if (item.type === 'rc') {
                                                                     layerBg = "bg-red-500";
+                                                                    layerText = "text-white font-black";
                                                                  } else if (item.type === 'nc') {
                                                                     layerBg = "bg-[#ffc000]";
                                                                  } else if (item.type === 'imp') {
                                                                     layerBg = "bg-[#00c950]";
+                                                                    layerText = "text-white font-black";
                                                                  }
 
-                                                                 let statusBg = "bg-white";
-                                                                 if (item.status === 'Closed') {
-                                                                    statusBg = "bg-[#00c950]";
-                                                                 }
-
-                                                                 const isSelected = selectedRowId === (item.id || idx);
+                                                                 const isSelected = selectedRowId === String(item.id || idx);
+                                                                 const isEditing = editingRowId === String(item.id || idx);
                                                                  return (
                                                                     <tr 
                                                                        key={item.id || idx} 
-                                                                       onClick={() => handleSelectRow(item.id || idx)}
+                                                                       onClick={() => handleRowClick(item.id || idx)}
                                                                        className={cn(
                                                                           "group transition-all cursor-pointer",
-                                                                          isSelected ? "bg-slate-100/80" : "hover:bg-slate-50/50"
+                                                                          isSelected ? "bg-blue-50/55" : "bg-white hover:bg-slate-100/50"
                                                                        )}
                                                                     >
-                                                                       <td className="px-2 py-2 border-r border-b border-slate-400 text-center text-[10px] text-slate-800 bg-white">
+                                                                       <td className="px-4 py-2 border-r border-b border-slate-400 text-center text-[11px] font-mono font-black text-slate-800 align-middle">
                                                                           {extractStringValue(item.no)}
                                                                        </td>
-                                                                       <td className={`px-2 py-2 border-r border-b border-slate-400 text-center text-[10px] ${layerBg} ${layerText}`}>
-                                                                          {extractStringValue(item.layer)}
+                                                                       <td className={`px-4 py-2 border-r border-b border-slate-400 text-center text-[11px] font-mono font-black ${layerBg} ${layerText} align-middle`}>
+                                                                          {isEditing ? (
+                                                                             <select 
+                                                                               value={extractStringValue(item.layer)}
+                                                                               onChange={(e) => handleUpdateAction(item.id || idx, 'layer', e.target.value)}
+                                                                               className="w-full bg-white border border-blue-500 outline-none text-center cursor-pointer font-inherit rounded-sm px-1 py-0.5 shadow-sm ring-1 ring-blue-500 text-slate-900"
+                                                                               onClick={(e) => e.stopPropagation()}
+                                                                             >
+                                                                               <option value="I.2">I.2</option>
+                                                                               <option value="II.9">II.9</option>
+                                                                               <option value="II.9 & I.2">II.9 & I.2</option>
+                                                                               <option value="II.12">II.12</option>
+                                                                               <option value="III.3">III.3</option>
+                                                                               <option value="III.10">III.10</option>
+                                                                               <option value="IV.4">IV.4</option>
+                                                                               <option value="IV.6">IV.6</option>
+                                                                             </select>
+                                                                          ) : (
+                                                                             extractStringValue(item.layer)
+                                                                          )}
                                                                        </td>
-                                                                       <td className={`px-2 py-2 border-r border-b border-slate-400 text-center text-[10px] ${layerBg} ${layerText}`}>
-                                                                          {extractStringValue(item.hierarchy)}
+                                                                       <td className={`px-4 py-2 border-r border-b border-slate-400 text-center text-[11px] font-mono font-black ${layerBg} ${layerText} align-middle`}>
+                                                                          {isEditing ? (
+                                                                             <select
+                                                                               value={extractStringValue(item.hierarchy)}
+                                                                               onChange={(e) => handleUpdateAction(item.id || idx, 'hierarchy', e.target.value)}
+                                                                               className="w-full bg-white border border-blue-500 outline-none text-center cursor-pointer font-inherit rounded-sm px-1 py-0.5 shadow-sm ring-1 ring-blue-500 text-slate-900"
+                                                                               onClick={(e) => e.stopPropagation()}
+                                                                             >
+                                                                               <option value="Eliminasi">Eliminasi</option>
+                                                                               <option value="Substitusi">Substitusi</option>
+                                                                               <option value="Rek Eng">Rek Eng</option>
+                                                                               <option value="Adm">Adm</option>
+                                                                               <option value="APD">APD</option>
+                                                                             </select>
+                                                                          ) : (
+                                                                             extractStringValue(item.hierarchy)
+                                                                          )}
                                                                        </td>
-                                                                       <td className="px-3 py-2 border-r border-b border-slate-400 text-[10px] leading-snug bg-white text-slate-800">
-                                                                          {extractStringValue(item.action)}
-                                                                       </td>
-                                                                       <td className="px-2 py-2 border-r border-b border-slate-400 text-center text-[10px] text-slate-800 bg-white">
-                                                                          {extractStringValue(item.pic)}
-                                                                       </td>
-                                                                       <td className="px-2 py-2 border-r border-b border-slate-400 text-center text-[10px] text-slate-800 bg-white whitespace-nowrap">
-                                                                          {extractStringValue(item.due_date)}
-                                                                       </td>
-                                                                       <td className={`px-2 py-2 border-b border-slate-400 text-center text-[10px] font-bold text-slate-900 ${statusBg}`}>
-                                                                          {extractStringValue(item.status)}
+                                                                       <td className="px-4 py-2 border-b border-slate-400 text-[11px] font-medium leading-relaxed text-slate-800 align-top text-justify">
+                                                                          {isEditing ? (
+                                                                             <textarea 
+                                                                               value={extractStringValue(item.action)}
+                                                                               onChange={(e) => handleUpdateAction(item.id || idx, 'action', e.target.value)}
+                                                                               className="w-full bg-white p-1.5 resize-none overflow-hidden font-inherit leading-snug h-full min-h-[50px] border border-blue-500 outline-none rounded-sm shadow-sm ring-1 ring-blue-500 text-slate-900"
+                                                                               onClick={(e) => e.stopPropagation()}
+                                                                               autoFocus
+                                                                             />
+                                                                          ) : (
+                                                                             extractStringValue(item.action)
+                                                                          )}
                                                                        </td>
                                                                     </tr>
                                                                  );
@@ -1774,6 +1841,7 @@ export default function AnalysisTab() {
                            item = {
                               id: found.id,
                               chronology_text: found.label,
+                              agentId: 'ipls',
                               breakdown: {
                                  action: { value: found.description }
                               }
@@ -1783,7 +1851,7 @@ export default function AnalysisTab() {
                      }
                   } else if (selectedAgentId === 'prev') {
                      const actions = agent?.results?.actions || [];
-                     const found = actions.find((i: any, idx: number) => (i.id || idx) === selectedRowId);
+                     const found = actions.find((i: any, idx: number) => String(i.id || idx) === selectedRowId);
                      if (found) {
                         item = {
                            id: found.id || selectedRowId,

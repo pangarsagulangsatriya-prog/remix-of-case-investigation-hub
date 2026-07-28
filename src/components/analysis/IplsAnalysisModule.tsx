@@ -91,8 +91,8 @@ export function IplsAnalysisModule({ data, onSelectRow, selectedRowId, onSync }:
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto px-4 pb-6 scrollbar-thin">
-        <div className="min-w-[1000px] flex w-full">
+      <div className="flex-1 overflow-auto bg-slate-50 p-8 flex justify-center scrollbar-thin">
+        <div className="w-full max-w-[1300px] bg-white border border-slate-300 shadow-sm p-8 pb-16 h-fit shrink-0 overflow-x-auto">
           {/* Main Content Area */}
           <div className="flex-1 flex flex-col">
             {/* Section 4: Analisa Kejadian */}

@@ -1466,7 +1466,7 @@ export const TraceabilityPanel: React.FC<{
                         <td className="px-3 py-3 align-middle text-[12.5px] text-slate-800 font-normal leading-normal">
                           <div className="flex items-center justify-between group/cell min-h-[24px]">
                             <span className="pr-4">{extractStringValue(row.value)}</span>
-                            {row.label !== "STATUS" && row.label !== "TINDAKAN" && (
+                            {row.label !== "STATUS" && row.label !== "TINDAKAN" && !(row.label.startsWith("EVENT") && (item.agentId === "ipls" || item.agentId === "prev")) && (
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -1719,8 +1719,8 @@ const FactDefaultView: React.FC<{
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto p-6 scrollbar-thin">
-        <div className="max-w-5xl mx-auto space-y-8">
+      <div className="flex-1 overflow-auto bg-slate-50 p-8 flex justify-center scrollbar-thin">
+        <div className="w-full max-w-[1300px] bg-white border border-slate-300 shadow-sm p-8 pb-16 h-fit shrink-0 space-y-8">
           {(['pre_contact', 'contact', 'post_contact'] as ChronologyPhase[]).map((phase) => {
             const config = PHASE_CONFIG[phase];
             const phaseItems = groupedItems[phase];

@@ -108,9 +108,8 @@ export const ActorAnalysisModule: React.FC<ActorAnalysisModuleProps> = ({ data, 
         </div>
       </div>
 
-      {/* Main Table */}
-      <div className="flex-1 overflow-auto p-4">
-        <div className="bg-white border border-slate-200 rounded-none shadow-sm overflow-hidden">
+      <div className="flex-1 overflow-auto bg-slate-50 p-8 flex justify-center scrollbar-thin">
+        <div className="w-full max-w-[1300px] bg-white border border-slate-300 shadow-sm p-8 pb-16 h-fit shrink-0">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-100/80 border-b border-slate-200">
