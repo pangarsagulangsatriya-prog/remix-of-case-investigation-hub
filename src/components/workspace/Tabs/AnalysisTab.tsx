@@ -35,7 +35,8 @@ import {
   Crosshair,
   Shield,
   Settings,
-  Lock
+  Lock,
+  Pencil
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -848,6 +849,8 @@ export default function AnalysisTab() {
   const [factViewMode, setFactViewMode] = useState<'slide' | 'default'>('default');
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
   const [editingRowId, setEditingRowId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState<{ id: string; layer: string; hierarchy: string; action: string } | null>(null);
+  const [savingRowId, setSavingRowId] = useState<string | null>(null);
   const [allEvidenceExpanded, setAllEvidenceExpanded] = useState(false);
 
   const [activeEvidenceType, setActiveEvidenceType] = useState('audio_diarization');
@@ -987,11 +990,66 @@ export default function AnalysisTab() {
     const strId = String(id);
     if (selectedRowId === strId) {
       setEditingRowId(strId);
+      const agent = agents.find(a => a.id === 'prev');
+      const item = agent?.results?.actions?.find((act: any, idx: number) => String(act.id || idx) === strId);
+      if (item) {
+        setEditDraft({
+          id: strId,
+          layer: extractStringValue(item.layer),
+          hierarchy: extractStringValue(item.hierarchy),
+          action: extractStringValue(item.action),
+        });
+      }
     } else {
       setSelectedRowId(strId);
       setEditingRowId(null);
+      setEditDraft(null);
       handleSelectRow(strId);
     }
+  };
+
+  const handleUpdateDraft = (field: 'layer' | 'hierarchy' | 'action', value: string) => {
+    setEditDraft(prev => prev ? { ...prev, [field]: value } : null);
+  };
+
+  const handleSaveAction = (id: string | number) => {
+    if (!editDraft) return;
+    const strId = String(id);
+    setSavingRowId(strId);
+    
+    // Simulate database saving state with a micro-interaction timeout
+    setTimeout(() => {
+      setAgents(prev => {
+        return prev.map(a => {
+          if (a.id === 'prev' && a.results?.actions) {
+            return {
+              ...a,
+              results: {
+                ...a.results,
+                actions: a.results.actions.map((act: any, idx: number) => 
+                  String(act.id || idx) === strId ? { 
+                    ...act, 
+                    layer: editDraft.layer, 
+                    hierarchy: editDraft.hierarchy, 
+                    action: editDraft.action 
+                  } : act
+                )
+              }
+            };
+          }
+          return a;
+        });
+      });
+      setEditingRowId(null);
+      setEditDraft(null);
+      setSavingRowId(null);
+      toast.success("Tindakan perbaikan berhasil disimpan");
+    }, 850);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingRowId(null);
+    setEditDraft(null);
   };
 
   const fitToWorkspace = () => {
@@ -1680,11 +1738,15 @@ export default function AnalysisTab() {
                                                                           {extractStringValue(item.no)}
                                                                        </td>
                                                                        <td className={`px-4 py-2 border-r border-b border-slate-400 text-center text-[11px] font-mono font-black ${layerBg} ${layerText} align-middle`}>
-                                                                          {isEditing ? (
+                                                                          {isEditing && editDraft ? (
                                                                              <select 
-                                                                               value={extractStringValue(item.layer)}
-                                                                               onChange={(e) => handleUpdateAction(item.id || idx, 'layer', e.target.value)}
-                                                                               className="w-full bg-white border border-blue-500 outline-none text-center cursor-pointer font-inherit rounded-sm px-1 py-0.5 shadow-sm ring-1 ring-blue-500 text-slate-900"
+                                                                               value={editDraft.layer}
+                                                                               onChange={(e) => handleUpdateDraft('layer', e.target.value)}
+                                                                               disabled={savingRowId === String(item.id || idx)}
+                                                                               onKeyDown={(e) => {
+                                                                                 if (e.key === 'Escape') handleCancelEdit();
+                                                                               }}
+                                                                               className="w-full bg-white border border-blue-500/80 outline-none text-center cursor-pointer font-inherit rounded px-2 py-1 shadow-sm ring-2 ring-blue-500/10 text-slate-900 transition-all focus:border-blue-600 focus:ring-blue-500/20 text-xs font-bold disabled:opacity-60 disabled:cursor-not-allowed"
                                                                                onClick={(e) => e.stopPropagation()}
                                                                              >
                                                                                <option value="I.2">I.2</option>
@@ -1701,11 +1763,15 @@ export default function AnalysisTab() {
                                                                           )}
                                                                        </td>
                                                                        <td className={`px-4 py-2 border-r border-b border-slate-400 text-center text-[11px] font-mono font-black ${layerBg} ${layerText} align-middle`}>
-                                                                          {isEditing ? (
+                                                                          {isEditing && editDraft ? (
                                                                              <select
-                                                                               value={extractStringValue(item.hierarchy)}
-                                                                               onChange={(e) => handleUpdateAction(item.id || idx, 'hierarchy', e.target.value)}
-                                                                               className="w-full bg-white border border-blue-500 outline-none text-center cursor-pointer font-inherit rounded-sm px-1 py-0.5 shadow-sm ring-1 ring-blue-500 text-slate-900"
+                                                                               value={editDraft.hierarchy}
+                                                                               onChange={(e) => handleUpdateDraft('hierarchy', e.target.value)}
+                                                                               disabled={savingRowId === String(item.id || idx)}
+                                                                               onKeyDown={(e) => {
+                                                                                 if (e.key === 'Escape') handleCancelEdit();
+                                                                               }}
+                                                                               className="w-full bg-white border border-blue-500/80 outline-none text-center cursor-pointer font-inherit rounded px-2 py-1 shadow-sm ring-2 ring-blue-500/10 text-slate-900 transition-all focus:border-blue-600 focus:ring-blue-500/20 text-xs font-bold disabled:opacity-60 disabled:cursor-not-allowed"
                                                                                onClick={(e) => e.stopPropagation()}
                                                                              >
                                                                                <option value="Eliminasi">Eliminasi</option>
@@ -1718,17 +1784,59 @@ export default function AnalysisTab() {
                                                                              extractStringValue(item.hierarchy)
                                                                           )}
                                                                        </td>
-                                                                       <td className="px-4 py-2 border-b border-slate-400 text-[11px] font-medium leading-relaxed text-slate-800 align-top text-justify">
-                                                                          {isEditing ? (
-                                                                             <textarea 
-                                                                               value={extractStringValue(item.action)}
-                                                                               onChange={(e) => handleUpdateAction(item.id || idx, 'action', e.target.value)}
-                                                                               className="w-full bg-white p-1.5 resize-none overflow-hidden font-inherit leading-snug h-full min-h-[50px] border border-blue-500 outline-none rounded-sm shadow-sm ring-1 ring-blue-500 text-slate-900"
-                                                                               onClick={(e) => e.stopPropagation()}
-                                                                               autoFocus
-                                                                             />
+                                                                       <td className="px-4 py-3 border-b border-slate-400 text-[11px] font-medium leading-relaxed text-slate-800 align-top text-justify relative group">
+                                                                          {isEditing && editDraft ? (
+                                                                             <div className="flex flex-col gap-2.5 w-full animate-in fade-in slide-in-from-top-1 duration-200" onClick={(e) => e.stopPropagation()}>
+                                                                                <textarea 
+                                                                                  value={editDraft.action}
+                                                                                  onChange={(e) => handleUpdateDraft('action', e.target.value)}
+                                                                                  disabled={savingRowId === String(item.id || idx)}
+                                                                                  onKeyDown={(e) => {
+                                                                                    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                                                                                      e.preventDefault();
+                                                                                      handleSaveAction(item.id || idx);
+                                                                                    } else if (e.key === 'Escape') {
+                                                                                      handleCancelEdit();
+                                                                                    }
+                                                                                  }}
+                                                                                  className="w-full bg-white p-2.5 resize-none font-inherit leading-normal min-h-[80px] border border-blue-500 outline-none rounded shadow-md ring-2 ring-blue-500/15 text-slate-900 transition-all focus:border-blue-600 focus:ring-blue-500/25 disabled:opacity-60 disabled:cursor-not-allowed"
+                                                                                  autoFocus
+                                                                                />
+                                                                                <div className="flex items-center justify-between text-[10px]">
+                                                                                  <span className="text-slate-400 font-medium">Ctrl + Enter to Save, Esc to Cancel</span>
+                                                                                  <div className="flex items-center gap-1.5">
+                                                                                    <button 
+                                                                                      onClick={() => handleCancelEdit()}
+                                                                                      disabled={savingRowId === String(item.id || idx)}
+                                                                                      className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold text-slate-600 bg-slate-50 hover:bg-slate-100 hover:text-slate-800 border border-slate-300 rounded shadow-sm transition-all active:scale-95 duration-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                                    >
+                                                                                      <X className="h-3 w-3" /> Cancel
+                                                                                    </button>
+                                                                                    <button 
+                                                                                      onClick={() => handleSaveAction(item.id || idx)}
+                                                                                      disabled={savingRowId === String(item.id || idx)}
+                                                                                      className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold text-white bg-blue-600 hover:bg-blue-700 border border-blue-700 rounded shadow-sm transition-all active:scale-95 duration-100 disabled:opacity-75 disabled:cursor-not-allowed min-w-[70px] justify-center"
+                                                                                    >
+                                                                                      {savingRowId === String(item.id || idx) ? (
+                                                                                         <>
+                                                                                            <Loader2 className="h-3 w-3 animate-spin" /> Saving...
+                                                                                         </>
+                                                                                      ) : (
+                                                                                         <>
+                                                                                            <Check className="h-3 w-3" /> Save
+                                                                                         </>
+                                                                                      )}
+                                                                                    </button>
+                                                                                  </div>
+                                                                                </div>
+                                                                             </div>
                                                                           ) : (
-                                                                             extractStringValue(item.action)
+                                                                             <div className="flex items-start justify-between gap-4">
+                                                                                <span className="flex-1">{extractStringValue(item.action)}</span>
+                                                                                <span className="opacity-0 group-hover:opacity-100 transition-all duration-200 self-center text-[9px] text-blue-600 font-bold bg-blue-50/80 px-2 py-1 rounded border border-blue-200/60 flex items-center gap-1.5 shrink-0 shadow-sm active:scale-95">
+                                                                                   <Pencil className="h-2.5 w-2.5" /> Double-click active row to edit
+                                                                                </span>
+                                                                             </div>
                                                                           )}
                                                                        </td>
                                                                     </tr>
