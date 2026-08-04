@@ -258,7 +258,7 @@ function CaseWorkspaceInner() {
       <AppLayout hideHeader>
         <div className="flex flex-col h-screen overflow-hidden bg-slate-50/10">
             {/* Global Utility Bar */}
-            <div className="bg-slate-50 border-b px-8 py-2 flex items-center justify-between shrink-0 relative z-30">
+            <div className="bg-slate-50 border-b px-8 py-2 flex items-center justify-between shrink-0 relative z-30 no-print">
               <div className="flex items-center gap-2">
                   <Button 
                     variant="ghost" 
@@ -481,7 +481,7 @@ function CaseWorkspaceInner() {
               </div>
 
               {/* Tabs Navigation Bottom Row */}
-              <div className="px-6 flex items-end gap-1 mt-2">
+              <div className="px-6 flex items-end gap-1 mt-2 no-print">
                  {[
                    { id: 1, name: "CCR", isActive: currentStep === 1 && !showAuditTrail, onClick: () => { setCurrentStep(1); setShowAuditTrail(false); } },
                    { id: 2, name: "Evidence", isActive: currentStep === 2 && !showAuditTrail, onClick: () => { setCurrentStep(2); setShowAuditTrail(false); } },
@@ -712,5 +712,6 @@ export default function CaseWorkspacePage() {
     </TourProvider>
   );
 }
+
 
 
