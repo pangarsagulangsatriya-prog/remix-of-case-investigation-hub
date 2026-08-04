@@ -24,9 +24,9 @@ export default function ReportsTab({ agents }: ReportsTabProps) {
 
   return (
     <div className="flex h-full w-full bg-slate-50/10 overflow-auto relative print-container">
-      <div className="flex-1 flex flex-col items-center p-8 w-full max-w-5xl mx-auto">
+      <div className="flex-1 flex flex-col items-center p-8 w-full mx-auto print:p-0">
          {/* Print Controls - Hidden in print */}
-         <div className="w-full flex items-center justify-between bg-white px-6 py-4 rounded-sm border mb-8 no-print shadow-sm">
+         <div className="w-full max-w-[1300px] flex items-center justify-between bg-white px-6 py-4 rounded-sm border mb-8 no-print shadow-sm">
             <h2 className="text-lg font-bold text-slate-900 border-none p-0">Laporan Lengkap Analisis Investigasi</h2>
             <Button onClick={handlePrint} className="h-9 font-bold text-xs bg-blue-600 hover:bg-blue-700 text-white flex gap-2">
               <Download className="h-4 w-4" /> Download PDF
@@ -34,14 +34,12 @@ export default function ReportsTab({ agents }: ReportsTabProps) {
          </div>
 
          {/* Report Body */}
-         <div className="w-full space-y-12 pb-32 bg-white print-bg-white print-m-0">
+         <div className="w-full max-w-[1300px] space-y-12 pb-32 print-bg-white print-m-0">
+            
             {/* 1. Fakta & Kronologi */}
             {factAgent && factAgent.results && (
-              <div className="w-full border border-slate-200 rounded-sm overflow-hidden print-border-0">
-                 <div className="bg-slate-100/50 p-4 border-b border-slate-200">
-                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">1. Fakta & Kronologi</h3>
-                 </div>
-                 <div className="p-4 pointer-events-none">
+              <div className="w-full print-break-inside-avoid">
+                 <div className="pointer-events-none">
                     <FactChronologyModule 
                        initialItems={factAgent.results.chronology_items || []}
                        metadata={factAgent.results.ringkasan}
@@ -54,14 +52,18 @@ export default function ReportsTab({ agents }: ReportsTabProps) {
 
             {/* 2. PEEPO Analysis */}
             {peepoAgent && peepoAgent.results && (
-              <div className="w-full border border-slate-200 rounded-sm overflow-hidden print-border-0 print-break-inside-avoid">
-                 <div className="bg-slate-100/50 p-4 border-b border-slate-200">
-                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                      <LayoutGrid className="h-4 w-4" /> 2. Sintesis Temuan PEEPO
-                    </h3>
+              <div className="w-full flex flex-col print-break-inside-avoid border border-slate-300 shadow-sm rounded-sm overflow-hidden">
+                 <div className="bg-slate-900 px-6 py-4 flex items-center justify-between shrink-0">
+                    <div>
+                       <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                          <LayoutGrid className="h-4 w-4 text-slate-400" />
+                          LEMBAR ANALISIS FAKTOR PEEPO
+                       </h2>
+                       <p className="text-[11px] text-slate-400 mt-1">Sintesis temuan berdasarkan kategori People, Environment, Equipment, Procedures, dan Organisation.</p>
+                    </div>
                  </div>
-                 <div className="p-4">
-                    <div className="w-full bg-white border border-slate-300 shadow-sm p-8 space-y-8">
+                 <div className="flex-1 bg-slate-50 p-8 flex justify-center print:p-4">
+                    <div className="w-full bg-white border border-slate-300 shadow-sm p-8 h-fit shrink-0 space-y-8">
                        {[
                           { id: 'people', label: 'People (Individu)' },
                           { id: 'environment', label: 'Environment (Lingkungan)' },
@@ -74,31 +76,28 @@ export default function ReportsTab({ agents }: ReportsTabProps) {
                                 <span className="px-2.5 py-1 rounded text-[9px] font-black text-white uppercase tracking-widest bg-slate-900">
                                    {section.label}
                                 </span>
+                                <div className="h-px flex-1 bg-slate-200" />
                              </div>
-                             <div className="bg-white border border-slate-200 rounded-sm overflow-hidden shadow-sm">
-                                <table className="w-full text-left text-sm border-collapse">
+                             <div className="bg-white border-l border-t border-slate-200 overflow-hidden shadow-sm">
+                                <table className="w-full text-left border-collapse">
+                                   <thead>
+                                      <tr className="bg-slate-50/80">
+                                         <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest border-r border-b border-slate-200 bg-slate-50/30">TEMUAN</th>
+                                      </tr>
+                                   </thead>
                                    <tbody>
                                       {peepoAgent.results[section.id]?.length > 0 ? (
                                          peepoAgent.results[section.id].map((item: any, idx: number) => (
                                             <tr key={idx} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/50">
-                                               <td className="px-4 py-3 align-top w-8 text-[10px] font-bold text-slate-400">{(idx+1).toString().padStart(2, '0')}</td>
-                                               <td className="px-4 py-3 text-[11px] font-medium text-slate-700 leading-relaxed max-w-[400px]">
-                                                  {typeof item === 'string' ? item : (item.chronology_text || '-')}
-                                               </td>
-                                               <td className="px-4 py-3 align-top w-32">
-                                                  <span className={cn(
-                                                     "px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border",
-                                                     (item.status || 'valid') === 'valid' ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
-                                                     item.status === 'invalid' ? "bg-rose-50 text-rose-700 border-rose-200" :
-                                                     "bg-amber-50 text-amber-700 border-amber-200"
-                                                  )}>
-                                                     {item.status || 'valid'}
-                                                  </span>
+                                               <td className="px-5 py-4 align-top border-r border-b border-slate-200 relative">
+                                                  <p className="text-[11px] font-bold leading-relaxed pr-8 text-slate-700">
+                                                     {typeof item === 'string' ? item : (item.chronology_text || item.label || item.id || '-')}
+                                                  </p>
                                                </td>
                                             </tr>
                                          ))
                                       ) : (
-                                         <tr><td className="p-4 text-xs text-slate-400 italic">Tidak ada temuan.</td></tr>
+                                         <tr><td className="px-5 py-4 text-[11px] text-slate-400 italic">Tidak ada temuan.</td></tr>
                                       )}
                                    </tbody>
                                 </table>
@@ -112,66 +111,80 @@ export default function ReportsTab({ agents }: ReportsTabProps) {
 
             {/* 3. Aktor */}
             {actorAgent && actorAgent.results && (
-              <div className="w-full border border-slate-200 rounded-sm overflow-hidden print-border-0">
-                 <div className="bg-slate-100/50 p-4 border-b border-slate-200">
-                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">3. Analisis Aktor</h3>
-                 </div>
-                 <div className="p-4 pointer-events-none">
-                    <ActorAnalysisModule data={actorAgent.results} />
-                 </div>
+              <div className="w-full print-break-inside-avoid pointer-events-none">
+                 <ActorAnalysisModule data={actorAgent.results} />
               </div>
             )}
 
             {/* 4. IPLS */}
             {iplsAgent && iplsAgent.results && (
-              <div className="w-full border border-slate-200 rounded-sm overflow-hidden print-border-0 print-break-inside-avoid">
-                 <div className="bg-slate-100/50 p-4 border-b border-slate-200">
-                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">4. Pemetaan IPLS</h3>
-                 </div>
-                 <div className="p-4 pointer-events-none">
-                    <IplsAnalysisModule data={iplsAgent.results} />
-                 </div>
+              <div className="w-full print-break-inside-avoid pointer-events-none">
+                 <IplsAnalysisModule data={iplsAgent.results} />
               </div>
             )}
 
             {/* 5. Prevention */}
             {prevAgent && prevAgent.results && (
-              <div className="w-full border border-slate-200 rounded-sm overflow-hidden print-border-0 print-break-inside-avoid">
-                 <div className="bg-slate-100/50 p-4 border-b border-slate-200">
-                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                      <LayoutTemplate className="h-4 w-4" /> 5. Rencana Tindakan Pencegahan
-                    </h3>
+              <div className="w-full flex flex-col print-break-inside-avoid shadow-sm border border-slate-300 rounded overflow-hidden">
+                 <div className="bg-slate-900 px-6 py-4 flex items-center justify-between shrink-0">
+                    <div>
+                       <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                          <LayoutTemplate className="h-4 w-4 text-slate-400" />
+                          RENCANA TINDAKAN PENCEGAHAN (PREVENTION)
+                       </h2>
+                       <p className="text-[11px] text-slate-400 mt-1">Langkah-langkah perbaikan dan pencegahan insiden untuk meminimalisasi risiko.</p>
+                    </div>
                  </div>
-                 <div className="p-4">
-                    <div className="bg-white border border-slate-300 shadow-sm rounded-none overflow-hidden h-fit shrink-0">
-                       <table className="w-full text-left border-collapse">
-                          <thead>
-                             <tr className="bg-slate-100/80 border-b border-slate-200">
-                                <th className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest w-12 text-center">No</th>
-                                <th className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest w-24">Layer</th>
-                                <th className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest w-24">Hierarki</th>
-                                <th className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Rencana Tindakan</th>
-                             </tr>
-                          </thead>
-                          <tbody>
-                             {prevAgent.results.actions?.map((item: any, idx: number) => (
-                                <tr key={idx} className="border-b border-slate-100 hover:bg-slate-50/50">
-                                   <td className="px-4 py-3 text-center">
-                                      <span className="text-[10px] font-bold text-slate-400">{(idx + 1).toString().padStart(2, '0')}</span>
-                                   </td>
-                                   <td className="px-4 py-3">
-                                      <span className="text-[10.5px] font-bold text-slate-700 bg-slate-100 px-2 py-1 border border-slate-200 rounded">{item.layer}</span>
-                                   </td>
-                                   <td className="px-4 py-3">
-                                      <span className="text-[10px] font-bold text-blue-700 uppercase tracking-wider bg-blue-50 px-2 py-1 border border-blue-100 rounded">{item.hierarchy}</span>
-                                   </td>
-                                   <td className="px-4 py-3">
-                                      <p className="text-[11px] font-medium text-slate-700 leading-relaxed">{item.action}</p>
-                                   </td>
+                 <div className="flex-1 bg-slate-50 p-8 flex justify-center print:p-4">
+                    <div className="w-full bg-white border border-slate-300 shadow-sm p-10 h-fit shrink-0">
+                       <h3 className="font-bold text-[14px] text-slate-900 mb-0.5">5. Tindakan Perbaikan dan Pencegahan Insiden NM LV BM 391</h3>
+                       <div className="h-[2px] w-[50%] bg-[#8ba861] mb-4 mt-1"></div>
+                       <div className="border border-slate-400">
+                          <table className="w-full text-left border-collapse">
+                             <thead>
+                                <tr className="bg-slate-50/80">
+                                   <th className="px-4 py-2 text-[10px] font-bold text-slate-900 text-center border-r border-b border-slate-400 w-12 uppercase tracking-widest bg-white">NO</th>
+                                   <th className="px-4 py-2 text-[10px] font-bold text-slate-900 text-center border-r border-b border-slate-400 w-24 uppercase tracking-widest bg-white">LAYER</th>
+                                   <th className="px-4 py-2 text-[10px] font-bold text-slate-900 text-center border-r border-b border-slate-400 w-28 uppercase tracking-widest bg-white">HIRARKI<br/>KONTROL</th>
+                                   <th className="px-4 py-2 text-[10px] font-bold text-slate-900 text-left border-b border-slate-400 uppercase tracking-widest bg-white">TINDAKAN PERBAIKAN DAN PENCEGAHAN</th>
                                 </tr>
-                             ))}
-                          </tbody>
-                       </table>
+                             </thead>
+                             <tbody>
+                                {prevAgent.results.actions?.map((item: any, idx: number) => {
+                                   let layerBg = "bg-white";
+                                   let layerText = "text-slate-900";
+                                   if (item.type === 'rc') {
+                                      layerBg = "bg-red-500";
+                                      layerText = "text-white font-black";
+                                   } else if (item.type === 'nc') {
+                                      layerBg = "bg-[#ffc000]";
+                                   } else if (item.type === 'imp') {
+                                      layerBg = "bg-[#00c950]";
+                                      layerText = "text-white font-black";
+                                   }
+                                   
+                                   const getVal = (v: any) => typeof v === 'object' ? v?.text || v?.value || String(v) : String(v || '');
+                                   
+                                   return (
+                                      <tr key={idx} className="bg-white hover:bg-slate-100/50">
+                                         <td className="px-4 py-2 border-r border-b border-slate-400 text-center text-[11px] font-mono font-black text-slate-800 align-middle">
+                                            {getVal(item.no)}
+                                         </td>
+                                         <td className={`px-4 py-2 border-r border-b border-slate-400 text-center text-[11px] font-mono font-black ${layerBg} ${layerText} align-middle`}>
+                                            {getVal(item.layer)}
+                                         </td>
+                                         <td className="px-4 py-2 border-r border-b border-slate-400 text-center text-[11px] font-bold text-slate-700 align-middle uppercase">
+                                            {getVal(item.hierarchy)}
+                                         </td>
+                                         <td className="px-4 py-2 border-b border-slate-400 text-[11px] font-bold text-slate-800 leading-relaxed align-middle">
+                                            {getVal(item.action)}
+                                         </td>
+                                      </tr>
+                                   );
+                                })}
+                             </tbody>
+                          </table>
+                       </div>
                     </div>
                  </div>
               </div>
