@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   Users, User, ShieldAlert, CheckCircle2, AlertTriangle, 
   HelpCircle, Eye, Search, Filter, ShieldCheck, UserCog, UserCheck, 
-  Activity, Calendar, MapPin, Tag, ChevronDown, ChevronRight, X
+  Activity, Calendar, MapPin, Tag, ChevronDown, ChevronRight, X, Pencil, Trash2
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -54,9 +54,15 @@ interface ActorAnalysisModuleProps {
   };
   onSelectActor: (actorId: string | null) => void;
   selectedActorId: string | null;
+  onDeleteActor?: (id: string) => void;
+  onUpdateActors?: (actors: ActorItem[]) => void;
+  onLogAudit?: (desc: string) => void;
 }
 
-export const ActorAnalysisModule: React.FC<ActorAnalysisModuleProps> = ({ data, onSelectActor, selectedActorId }) => {
+export const ActorAnalysisModule: React.FC<ActorAnalysisModuleProps> = ({ data, onSelectActor, selectedActorId, onDeleteActor }) => {
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [editingActorId, setEditingActorId] = useState<string | null>(null);
+  const [editActorDraft, setEditActorDraft] = useState<Partial<ActorItem>>({});
   const { actor_registry_status, actor_registry } = data;
 
   return (
@@ -127,19 +133,44 @@ export const ActorAnalysisModule: React.FC<ActorAnalysisModuleProps> = ({ data, 
                   <tr 
                     key={actor.actor_id || idx}
                     onClick={() => onSelectActor(actor.actor_id)}
+                    onDoubleClick={() => {
+                      setEditingActorId(actor.actor_id);
+                      setEditActorDraft(actor);
+                    }}
                     className={cn(
                       "border-b border-slate-100 transition-colors cursor-pointer group",
                       isSelected ? "bg-blue-50/50 hover:bg-blue-50" : "hover:bg-slate-50"
                     )}
                   >
                     <td className="px-4 py-3">
-                      <div className="flex flex-col gap-1">
+                      <div className="flex flex-col gap-1 relative">
                         <span className="text-[12.5px] font-bold text-slate-800">{actor.name}</span>
                         {(actor.beid || actor.company) && (
                           <span className="text-[10px] text-slate-500 font-mono">
                             {actor.beid ? `${actor.beid}` : ''} {actor.beid && actor.company ? '•' : ''} {actor.company || ''}
                           </span>
                         )}
+                        <div className="absolute -bottom-5 left-0 z-10 flex items-center gap-2">
+                          {deleteConfirmId === String(actor.actor_id || idx) ? (
+                            <div className="flex items-center gap-1.5 animate-in fade-in bg-white p-1 rounded shadow-sm border border-slate-200" onClick={(e) => e.stopPropagation()}>
+                              <span className="text-[10px] font-bold text-red-600 mr-1 whitespace-nowrap">Yakin hapus?</span>
+                              <button className="px-2 py-1 bg-red-600 text-white rounded text-[10px] font-bold hover:bg-red-700 shadow-sm" onClick={(e) => { e.stopPropagation(); onDeleteActor?.(String(actor.actor_id || idx)); if (onLogAudit) onLogAudit(`Menghapus data aktor (ID: ${actor.actor_id || idx})`); setDeleteConfirmId(null); }}>Ya</button>
+                              <button className="px-2 py-1 bg-slate-200 text-slate-800 rounded text-[10px] font-bold hover:bg-slate-300 shadow-sm" onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(null); }}>Batal</button>
+                            </div>
+                          ) : (
+                            <>
+                              <span className="opacity-0 group-hover:opacity-100 transition-all duration-200 text-[9px] text-blue-600 font-bold bg-blue-50/80 px-2 py-1 rounded border border-blue-200/60 flex items-center gap-1.5 shadow-sm active:scale-95">
+                                <Pencil className="h-2.5 w-2.5" /> Double-click to edit
+                              </span>
+                              <button 
+                                className="opacity-0 group-hover:opacity-100 transition-all duration-200 text-slate-400 hover:text-red-500 hover:bg-red-50 p-1 rounded shadow-sm bg-white border border-slate-200"
+                                onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(String(actor.actor_id || idx)); }}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </>
+                          )}
+                        </div>
                       </div>
                     </td>
                     <td className="px-4 py-3">
@@ -302,3 +333,11 @@ export const ActorDetailPanel: React.FC<{ actor: ActorItem, onClose: () => void 
     </div>
   );
 };
+
+
+
+
+
+
+
+

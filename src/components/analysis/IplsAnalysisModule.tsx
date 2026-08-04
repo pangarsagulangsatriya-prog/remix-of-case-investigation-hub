@@ -7,7 +7,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Check, X, Pencil, Shield } from "lucide-react";
+import { Check, X, Pencil, Shield, Trash2} from "lucide-react";
 
 export interface IplsItem {
   id: string;
@@ -32,11 +32,27 @@ interface IplsAnalysisModuleProps {
   onSelectRow?: (id: string) => void;
   selectedRowId?: string | null;
   onSync: (newData: IplsData) => void;
+  onLogAudit?: (desc: string) => void;
 }
 
 export function IplsAnalysisModule({ data, onSelectRow, selectedRowId, onSync }: IplsAnalysisModuleProps) {
   const [editingItem, setEditingItem] = useState<{ layerId: number; item: IplsItem } | null>(null);
   const [editForm, setEditForm] = useState<Partial<IplsItem>>({});
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [editingIplsId, setEditingIplsId] = useState<string | null>(null);
+  const [editIplsDraft, setEditIplsDraft] = useState<Partial<IplsItem>>({});
+
+  const handleDelete = (layerId: number, itemId: string) => {
+    const newLayers = layers.map(layer => {
+      if (layer.id !== layerId) return layer;
+      return {
+        ...layer,
+        items: layer.items.filter((i) => i.id !== itemId)
+      };
+    });
+    onSync({ ...data, ipls_layers: newLayers });
+    toast.success("Item IPLS dihapus.");
+  };
 
   const layers = data?.layers || [];
 
@@ -137,16 +153,47 @@ export function IplsAnalysisModule({ data, onSelectRow, selectedRowId, onSync }:
                             <div 
                               key={item.id} 
                               className={`flex flex-col cursor-pointer group relative p-2 rounded-md transition-all ${isSelected ? 'bg-slate-100/80 ring-1 ring-slate-300' : 'hover:bg-slate-50/50'}`}
-                              onClick={() => onSelectRow ? onSelectRow(item.id) : handleEditClick(layer.id, item)}
+                              onClick={() => {
+                                 if (onSelectRow) {
+                                    if (isSelected) {
+                                       handleEditClick(layer.id, item);
+                                    } else {
+                                       onSelectRow(item.id);
+                                    }
+                                 } else {
+                                    handleEditClick(layer.id, item);
+                                 }
+                              }}
                             >
                               <div className={`text-[10px] font-bold text-center py-1.5 px-2 rounded-sm border shadow-sm mb-1.5 transition-colors ${bgColor} ${textColor}`}>
                                 {num}. {item.label}
                               </div>
                               {item.description && (
-                                <p className="text-[9px] text-slate-700 leading-[1.4] font-medium text-justify group-hover:text-slate-900 transition-colors">
+                                <p className="text-[9px] text-slate-700 leading-[1.4] font-medium text-justify group-hover:text-slate-900 transition-colors pb-3">
                                   {item.description}
                                 </p>
                               )}
+                              <div className="absolute -bottom-2 z-10 flex items-center gap-2 self-center">
+                                {deleteConfirmId === item.id ? (
+                                  <div className="flex items-center gap-1.5 animate-in fade-in bg-white p-1 rounded shadow-sm border border-slate-200" onClick={(e) => e.stopPropagation()}>
+                                    <span className="text-[10px] font-bold text-red-600 mr-1 whitespace-nowrap">Yakin hapus?</span>
+                                    <button className="px-2 py-1 bg-red-600 text-white rounded text-[10px] font-bold hover:bg-red-700 shadow-sm" onClick={(e) => { e.stopPropagation(); handleDelete(layer.id, item.id); setDeleteConfirmId(null); }}>Ya</button>
+                                    <button className="px-2 py-1 bg-slate-200 text-slate-800 rounded text-[10px] font-bold hover:bg-slate-300 shadow-sm" onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(null); }}>Batal</button>
+                                  </div>
+                                ) : (
+                                  <>
+                                    <span className="opacity-0 group-hover:opacity-100 transition-all duration-200 text-[9px] text-blue-600 font-bold bg-blue-50/80 px-2 py-1 rounded border border-blue-200/60 flex items-center gap-1.5 shadow-sm active:scale-95">
+                                      <Pencil className="h-2.5 w-2.5" /> Double-click to edit
+                                    </span>
+                                    <button 
+                                      className="opacity-0 group-hover:opacity-100 transition-all duration-200 text-slate-400 hover:text-red-500 hover:bg-red-50 p-1 rounded shadow-sm bg-white border border-slate-200"
+                                      onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(item.id); }}
+                                    >
+                                      <Trash2 className="h-3.5 w-3.5" />
+                                    </button>
+                                  </>
+                                )}
+                              </div>
                             </div>
                           );
                         })}
@@ -235,3 +282,9 @@ export function IplsAnalysisModule({ data, onSelectRow, selectedRowId, onSync }:
     </div>
   );
 }
+
+
+
+
+
+

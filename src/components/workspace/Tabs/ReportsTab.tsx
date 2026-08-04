@@ -1,65 +1,181 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { StatusChip } from "@/components/StatusChip";
-import { Pencil } from "lucide-react";
+import { AgentState } from "@/types/workspace";
+import { FactChronologyModule } from "@/components/analysis/FactChronologyModule";
+import { ActorAnalysisModule } from "@/components/analysis/ActorAnalysisModule";
+import { IplsAnalysisModule } from "@/components/analysis/IplsAnalysisModule";
+import { Download, LayoutGrid, LayoutTemplate } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-export default function ReportsTab() {
+interface ReportsTabProps {
+  agents: AgentState[];
+}
+
+export default function ReportsTab({ agents }: ReportsTabProps) {
+  const factAgent = agents.find(a => a.id === "fact");
+  const peepoAgent = agents.find(a => a.id === "peepo");
+  const prevAgent = agents.find(a => a.id === "prev");
+  const actorAgent = agents.find(a => a.id === "actor");
+  const iplsAgent = agents.find(a => a.id === "ipls");
+
+  const handlePrint = () => {
+    window.print();
+  };
+
   return (
-    <div className="flex h-full bg-slate-50/10">
-      <div className="w-[300px] border-r bg-white flex flex-col shrink-0">
-        <div className="h-12 border-b flex items-center justify-between px-4 shrink-0">
-           <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Reports</span>
-           <Button variant="ghost" size="sm" className="h-8 text-[11px] font-bold text-primary">+ Create New</Button>
-        </div>
-        <div className="flex-1 overflow-auto p-2 space-y-1">
-           {[
-             { title: "Initial Investigation Report", version: "V1.2", date: "Today", status: "draft" },
-             { title: "Internal Compliance Review", version: "V1.0", date: "Yesterday", status: "in_review" },
-             { title: "Executive Safety Summary", version: "V0.8", date: "2d ago", status: "draft" },
-           ].map((r, i) => (
-             <div key={i} className={`p-3 rounded-sm border cursor-pointer ${i === 0 ? 'bg-primary/5 border-primary/20' : 'bg-white border-transparent'}`}>
-                <div className="flex justify-between items-start mb-1">
-                   <h4 className="text-xs font-bold text-slate-800 leading-tight">{r.title}</h4>
-                   <span className="px-1.5 py-0.5 rounded bg-slate-100 text-[9px] font-bold text-slate-500">{r.version}</span>
-                </div>
-                <div className="flex items-center justify-between mt-3">
-                   <span className="text-[10px] text-slate-400">Edited {r.date}</span>
-                   <StatusChip status={r.status as any} />
-                </div>
-             </div>
-           ))}
-        </div>
-      </div>
+    <div className="flex h-full w-full bg-slate-50/10 overflow-auto relative print-container">
+      <div className="flex-1 flex flex-col items-center p-8 w-full max-w-5xl mx-auto">
+         {/* Print Controls - Hidden in print */}
+         <div className="w-full flex items-center justify-between bg-white px-6 py-4 rounded-sm border mb-8 no-print shadow-sm">
+            <h2 className="text-lg font-bold text-slate-900 border-none p-0">Laporan Lengkap Analisis Investigasi</h2>
+            <Button onClick={handlePrint} className="h-9 font-bold text-xs bg-blue-600 hover:bg-blue-700 text-white flex gap-2">
+              <Download className="h-4 w-4" /> Download PDF
+            </Button>
+         </div>
 
-      <div className="flex-1 flex flex-col items-center p-8 overflow-auto">
-         <div className="w-full max-w-[800px] flex flex-col gap-6">
-            <div className="flex items-center justify-between bg-white px-6 py-4 rounded-sm border  w-full mb-8">
-               <h2 className="text-lg font-bold text-slate-900 border-none p-0">Initial Investigation Report V1.2</h2>
-               <div className="flex items-center gap-2">
-                  <Button variant="outline" className="h-9 font-bold text-xs">Preview PDF</Button>
-                  <Button className="h-9 font-bold text-xs bg-slate-900">Finalize Build</Button>
-               </div>
-            </div>
+         {/* Report Body */}
+         <div className="w-full space-y-12 pb-32 bg-white print-bg-white print-m-0">
+            {/* 1. Fakta & Kronologi */}
+            {factAgent && factAgent.results && (
+              <div className="w-full border border-slate-200 rounded-sm overflow-hidden print-border-0">
+                 <div className="bg-slate-100/50 p-4 border-b border-slate-200">
+                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">1. Fakta & Kronologi</h3>
+                 </div>
+                 <div className="p-4 pointer-events-none">
+                    <FactChronologyModule 
+                       initialItems={factAgent.results.chronology_items || []}
+                       metadata={factAgent.results.ringkasan}
+                       tableData={factAgent.results.tableData}
+                       viewMode="default"
+                    />
+                 </div>
+              </div>
+            )}
 
-            <div className="space-y-8 pb-32">
-               {[
-                 { title: "1. Executive Summary", content: "On April 5, 2026, a conveyor belt failure occurred in Zone B of Site Alpha, resulting in material spillage and near-miss injury.", ai: true },
-                 { title: "2. Facts & Incident Chronology", content: "Extraction confirms the failure occurred at 14:35 relative to section 14. E-Stop was manually triggered 12 mins later.", ai: true },
-                 { title: "3. Analysis & Root Cause", content: "Click to insert AI PEEPO proof-points...", ai: false },
-                 { title: "4. Preventive Actions", content: "Replacement of roller support bracket with industrial Grade 8 steel...", ai: false },
-               ].map((section, idx) => (
-                  <div key={idx} className="group relative bg-white border border-slate-200 rounded-sm p-6  hover: transition-all">
-                     <div className="flex items-center justify-between mb-4 border-b border-slate-50 pb-2">
-                        <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest">{section.title}</h4>
-                        <div className="flex gap-1.5">
-                           {section.ai && <span className="text-[9px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded uppercase">AI Drafted</span>}
-                           <Pencil className="h-3.5 w-3.5 text-slate-400" />
-                        </div>
-                     </div>
-                     <p className={`text-sm leading-relaxed ${section.content.includes("Click") ? "text-slate-300 italic" : "text-slate-700 font-medium"}`}>{section.content}</p>
-                  </div>
-               ))}
-            </div>
+            {/* 2. PEEPO Analysis */}
+            {peepoAgent && peepoAgent.results && (
+              <div className="w-full border border-slate-200 rounded-sm overflow-hidden print-border-0 print-break-inside-avoid">
+                 <div className="bg-slate-100/50 p-4 border-b border-slate-200">
+                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                      <LayoutGrid className="h-4 w-4" /> 2. Sintesis Temuan PEEPO
+                    </h3>
+                 </div>
+                 <div className="p-4">
+                    <div className="w-full bg-white border border-slate-300 shadow-sm p-8 space-y-8">
+                       {[
+                          { id: 'people', label: 'People (Individu)' },
+                          { id: 'environment', label: 'Environment (Lingkungan)' },
+                          { id: 'equipment', label: 'Equipment (Peralatan)' },
+                          { id: 'procedures', label: 'Procedures (Prosedur)' },
+                          { id: 'organisation', label: 'Organisation (Organisasi)' },
+                       ].map((section) => (
+                          <div key={section.id} className="space-y-3 print-break-inside-avoid">
+                             <div className="flex items-center gap-3">
+                                <span className="px-2.5 py-1 rounded text-[9px] font-black text-white uppercase tracking-widest bg-slate-900">
+                                   {section.label}
+                                </span>
+                             </div>
+                             <div className="bg-white border border-slate-200 rounded-sm overflow-hidden shadow-sm">
+                                <table className="w-full text-left text-sm border-collapse">
+                                   <tbody>
+                                      {peepoAgent.results[section.id]?.length > 0 ? (
+                                         peepoAgent.results[section.id].map((item: any, idx: number) => (
+                                            <tr key={idx} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/50">
+                                               <td className="px-4 py-3 align-top w-8 text-[10px] font-bold text-slate-400">{(idx+1).toString().padStart(2, '0')}</td>
+                                               <td className="px-4 py-3 text-[11px] font-medium text-slate-700 leading-relaxed max-w-[400px]">
+                                                  {typeof item === 'string' ? item : (item.chronology_text || '-')}
+                                               </td>
+                                               <td className="px-4 py-3 align-top w-32">
+                                                  <span className={cn(
+                                                     "px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border",
+                                                     (item.status || 'valid') === 'valid' ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
+                                                     item.status === 'invalid' ? "bg-rose-50 text-rose-700 border-rose-200" :
+                                                     "bg-amber-50 text-amber-700 border-amber-200"
+                                                  )}>
+                                                     {item.status || 'valid'}
+                                                  </span>
+                                               </td>
+                                            </tr>
+                                         ))
+                                      ) : (
+                                         <tr><td className="p-4 text-xs text-slate-400 italic">Tidak ada temuan.</td></tr>
+                                      )}
+                                   </tbody>
+                                </table>
+                             </div>
+                          </div>
+                       ))}
+                    </div>
+                 </div>
+              </div>
+            )}
+
+            {/* 3. Aktor */}
+            {actorAgent && actorAgent.results && (
+              <div className="w-full border border-slate-200 rounded-sm overflow-hidden print-border-0">
+                 <div className="bg-slate-100/50 p-4 border-b border-slate-200">
+                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">3. Analisis Aktor</h3>
+                 </div>
+                 <div className="p-4 pointer-events-none">
+                    <ActorAnalysisModule data={actorAgent.results} />
+                 </div>
+              </div>
+            )}
+
+            {/* 4. IPLS */}
+            {iplsAgent && iplsAgent.results && (
+              <div className="w-full border border-slate-200 rounded-sm overflow-hidden print-border-0 print-break-inside-avoid">
+                 <div className="bg-slate-100/50 p-4 border-b border-slate-200">
+                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">4. Pemetaan IPLS</h3>
+                 </div>
+                 <div className="p-4 pointer-events-none">
+                    <IplsAnalysisModule data={iplsAgent.results} />
+                 </div>
+              </div>
+            )}
+
+            {/* 5. Prevention */}
+            {prevAgent && prevAgent.results && (
+              <div className="w-full border border-slate-200 rounded-sm overflow-hidden print-border-0 print-break-inside-avoid">
+                 <div className="bg-slate-100/50 p-4 border-b border-slate-200">
+                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                      <LayoutTemplate className="h-4 w-4" /> 5. Rencana Tindakan Pencegahan
+                    </h3>
+                 </div>
+                 <div className="p-4">
+                    <div className="bg-white border border-slate-300 shadow-sm rounded-none overflow-hidden h-fit shrink-0">
+                       <table className="w-full text-left border-collapse">
+                          <thead>
+                             <tr className="bg-slate-100/80 border-b border-slate-200">
+                                <th className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest w-12 text-center">No</th>
+                                <th className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest w-24">Layer</th>
+                                <th className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest w-24">Hierarki</th>
+                                <th className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Rencana Tindakan</th>
+                             </tr>
+                          </thead>
+                          <tbody>
+                             {prevAgent.results.actions?.map((item: any, idx: number) => (
+                                <tr key={idx} className="border-b border-slate-100 hover:bg-slate-50/50">
+                                   <td className="px-4 py-3 text-center">
+                                      <span className="text-[10px] font-bold text-slate-400">{(idx + 1).toString().padStart(2, '0')}</span>
+                                   </td>
+                                   <td className="px-4 py-3">
+                                      <span className="text-[10.5px] font-bold text-slate-700 bg-slate-100 px-2 py-1 border border-slate-200 rounded">{item.layer}</span>
+                                   </td>
+                                   <td className="px-4 py-3">
+                                      <span className="text-[10px] font-bold text-blue-700 uppercase tracking-wider bg-blue-50 px-2 py-1 border border-blue-100 rounded">{item.hierarchy}</span>
+                                   </td>
+                                   <td className="px-4 py-3">
+                                      <p className="text-[11px] font-medium text-slate-700 leading-relaxed">{item.action}</p>
+                                   </td>
+                                </tr>
+                             ))}
+                          </tbody>
+                       </table>
+                    </div>
+                 </div>
+              </div>
+            )}
          </div>
       </div>
     </div>

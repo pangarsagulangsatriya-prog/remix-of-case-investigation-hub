@@ -39,7 +39,8 @@ import {
   Eye,
   EyeOff,
   Crosshair,
-  BarChart3
+  BarChart3,
+  Trash2
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -281,6 +282,29 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
     setEditBuffer({ ...item });
   };
 
+  const handleAddFact = (phase: string) => {
+    const newId = "new-fact-" + Date.now();
+    const newFact: ChronologyItem = {
+      id: newId,
+      no: (items.length + 1).toString(),
+      time: "00:00",
+      date: "",
+      time_label: "",
+      chronology_text: "",
+      phase: phase as ChronologyPhase,
+      source: "human",
+      annotated_by_human: true,
+      verification_status: "verified",
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    setItems(prev => [...prev, newFact]);
+    setEditingId(newId);
+    setEditBuffer(newFact);
+    setInternalSelectedItemId(newId);
+    if (onLogAudit) onLogAudit(`Menambahkan baris fakta baru pada fase ${phase}`);
+  };
+
   const handleSaveEdit = () => {
     if (!editingId) return;
 
@@ -314,6 +338,11 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
   const handleCancelEdit = () => {
     setEditingId(null);
     setEditBuffer({});
+  };
+
+  const handleDelete = (id: string) => {
+    setItems(prev => prev.filter(item => item.id !== id));
+    toast.success("Entri dihapus.");
   };
 
   const groupedItems = useMemo(() => {
@@ -386,6 +415,7 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
                  onEdit={handleEdit}
                  onSave={handleSaveEdit}
                  onCancel={handleCancelEdit}
+                 onDelete={handleDelete}
                  metadata={metadata}
                  selectedItemId={selectedItemId}
                  onSelectItem={setSelectedItemId}
@@ -1524,7 +1554,8 @@ const FactSlideView: React.FC<{
   metadata: FactMetadata, 
   groupedItems: Record<ChronologyPhase, ChronologyItem[]>,
   selectedItemId?: string | null,
-  onSelectItem: (id: string | null) => void
+  onSelectItem: (id: string | null) => void,
+  onAddFact: (phase: string) => void
 }> = ({ 
   metadata, 
   groupedItems,
@@ -1660,9 +1691,11 @@ const FactDefaultView: React.FC<{
   onEdit: (item: ChronologyItem) => void,
   onSave: () => void,
   onCancel: () => void,
+  onDelete: (id: string) => void,
   metadata: FactMetadata,
   selectedItemId?: string | null,
-  onSelectItem: (id: string | null) => void
+  onSelectItem: (id: string | null) => void,
+  onAddFact: (phase: string) => void
 }> = ({ 
   items, 
   groupedItems, 
@@ -1672,10 +1705,12 @@ const FactDefaultView: React.FC<{
   onEdit, 
   onSave, 
   onCancel,
+  onDelete,
   metadata,
   selectedItemId,
   onSelectItem
 }) => {
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [showLocalAccuracy, setShowLocalAccuracy] = useState(false);
 
   const globalAverage = useMemo(() => {
@@ -1746,12 +1781,19 @@ const FactDefaultView: React.FC<{
                     <tbody className="">
                       {phaseItems.length > 0 ? phaseItems.map((item) => {
                         const isSelected = selectedItemId === item.id;
+                        const isEditing = editingId === item.id;
                         const { accuracy: rowAcc } = calculateItemAccuracy(item);
 
                         return (
                           <tr 
                             key={item.id} 
-                            onClick={() => onSelectItem(item.id)}
+                            onClick={() => {
+                               if (isSelected) {
+                                  onEdit(item);
+                               } else {
+                                  onSelectItem(item.id);
+                               }
+                            }}
                             className={cn(
                               "group transition-all cursor-pointer relative", 
                               isSelected ? "bg-slate-100/80 " : "hover:bg-slate-50/50"
@@ -1764,12 +1806,66 @@ const FactDefaultView: React.FC<{
                             </td>
                             <td className="px-4 py-2 align-top border-r border-b border-slate-400">
                               <div className="relative">
-                                <p className={cn("text-[11px] font-medium leading-relaxed pr-8 transition-colors text-justify text-slate-800", 
-                                  isSelected ? "text-slate-900" : "text-slate-800"
-                                )}>
-                                  {item.chronology_text}
-                                </p>
-
+                                {isEditing ? (
+                                   <div className="flex flex-col gap-2.5 w-full animate-in fade-in slide-in-from-top-1 duration-200" onClick={(e) => e.stopPropagation()}>
+                                      <textarea 
+                                        value={editBuffer.chronology_text || ""}
+                                        onChange={(e) => setEditBuffer({ ...editBuffer, chronology_text: e.target.value })}
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                                            e.preventDefault();
+                                            onSave();
+                                          } else if (e.key === 'Escape') {
+                                            onCancel();
+                                          }
+                                        }}
+                                        className="w-full bg-white p-2.5 resize-none font-inherit leading-normal min-h-[80px] border border-blue-500 outline-none rounded shadow-md ring-2 ring-blue-500/15 text-slate-900 transition-all focus:border-blue-600 focus:ring-blue-500/25"
+                                        autoFocus
+                                      />
+                                      <div className="flex items-center justify-between text-[10px]">
+                                        <span className="text-slate-400 font-medium">Ctrl + Enter to Save, Esc to Cancel</span>
+                                        <div className="flex items-center gap-1.5">
+                                          <button 
+                                            onClick={(e) => { e.stopPropagation(); onCancel(); }}
+                                            className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold text-slate-600 bg-slate-50 hover:bg-slate-100 hover:text-slate-800 border border-slate-300 rounded shadow-sm transition-all active:scale-95 duration-100"
+                                          >
+                                            <X className="h-3 w-3" /> Cancel
+                                          </button>
+                                          <button 
+                                            onClick={(e) => { e.stopPropagation(); onSave(); }}
+                                            className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold text-white bg-blue-600 hover:bg-blue-700 border border-blue-700 rounded shadow-sm transition-all active:scale-95 duration-100 min-w-[70px] justify-center"
+                                          >
+                                            <Check className="h-3 w-3" /> Save
+                                          </button>
+                                        </div>
+                                      </div>
+                                   </div>
+                                ) : (
+                                  <div className="flex items-start justify-between gap-4">
+                                    <p className={cn("text-[11px] font-medium leading-relaxed pr-8 transition-colors text-justify flex-1", 
+                                      isSelected ? "text-slate-900" : "text-slate-800"
+                                    )}>
+                                      {item.chronology_text}
+                                    </p>
+                                    <span className="opacity-0 group-hover:opacity-100 transition-all duration-200 self-center text-[9px] text-blue-600 font-bold bg-blue-50/80 px-2 py-1 rounded border border-blue-200/60 flex items-center gap-1.5 shrink-0 shadow-sm active:scale-95">
+                                       <Pencil className="h-2.5 w-2.5" /> Double-click active row to edit
+                                    </span>
+                                    {deleteConfirmId === item.id ? (
+                                       <div className="flex items-center gap-1.5 self-center animate-in fade-in" onClick={(e) => e.stopPropagation()}>
+                                          <span className="text-[10px] font-bold text-red-600 mr-2">Yakin hapus?</span>
+                                          <button className="px-2 py-1 bg-red-600 text-white rounded text-[10px] font-bold hover:bg-red-700 shadow-sm" onClick={() => { onDelete(item.id); setDeleteConfirmId(null); }}>Ya</button>
+                                          <button className="px-2 py-1 bg-slate-200 text-slate-800 rounded text-[10px] font-bold hover:bg-slate-300 shadow-sm" onClick={() => setDeleteConfirmId(null)}>Batal</button>
+                                       </div>
+                                    ) : (
+                                       <button 
+                                          className="opacity-0 group-hover:opacity-100 transition-all duration-200 self-center text-slate-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded"
+                                          onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(item.id); }}
+                                       >
+                                          <Trash2 className="h-3.5 w-3.5" />
+                                       </button>
+                                    )}
+                                  </div>
+                                )}
                               </div>
                             </td>
                             {showLocalAccuracy && (
@@ -2049,3 +2145,8 @@ const FactFlowView: React.FC = () => {
     </div>
   );
 };
+
+
+
+
+

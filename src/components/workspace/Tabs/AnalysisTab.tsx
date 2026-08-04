@@ -36,7 +36,8 @@ import {
   Shield,
   Settings,
   Lock,
-  Pencil
+  Pencil,
+  Trash2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -85,7 +86,7 @@ export const AgentDisplayMeta: Record<string, { nodeId: string, subtitle: string
   prev: { nodeId: 'PRV-03', subtitle: 'Generating prevention plans' }
 };
 
-const initialAgentsState: AgentState[] = [
+export const initialAgentsState: AgentState[] = [
   { 
      id: 'fact', 
      name: 'Fakta & Kronologi', 
@@ -837,18 +838,24 @@ function EvidenceCitationPanel({ citations, forceExpand }: { citations: any[], f
   );
 }
 
-export default function AnalysisTab() {
+interface AnalysisTabProps {
+  agents: AgentState[];
+  setAgents: React.Dispatch<React.SetStateAction<AgentState[]>>;
+}
+
+export default function AnalysisTab({ agents, setAgents }: AnalysisTabProps) {
   const { caseId } = useParams<{ caseId: string }>();
   const { data: evidence } = useEvidence(caseId!);
   const evidenceFiles = evidence?.files || [];
   const batches = evidence?.batches || [];
-
-  const [agents, setAgents] = useState<AgentState[]>(initialAgentsState);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [activeNodeSettings, setActiveNodeSettings] = useState<string | null>(null);
   const [factViewMode, setFactViewMode] = useState<'slide' | 'default'>('default');
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
   const [editingRowId, setEditingRowId] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [editingPeepoId, setEditingPeepoId] = useState<string | null>(null);
+  const [peepoEditDraft, setPeepoEditDraft] = useState<string>("");
   const [editDraft, setEditDraft] = useState<{ id: string; layer: string; hierarchy: string; action: string } | null>(null);
   const [savingRowId, setSavingRowId] = useState<string | null>(null);
   const [allEvidenceExpanded, setAllEvidenceExpanded] = useState(false);
@@ -1050,6 +1057,81 @@ export default function AnalysisTab() {
   const handleCancelEdit = () => {
     setEditingRowId(null);
     setEditDraft(null);
+  };
+
+  const handleAddPeepo = (sectionId: string) => {
+    const newId = "peepo-" + Date.now();
+    setAgents(prev => prev.map(a => {
+      if (a.id !== "peepo") return a;
+      const updatedResults = { ...a.results };
+      if (!updatedResults[sectionId]) updatedResults[sectionId] = [];
+      updatedResults[sectionId] = [...updatedResults[sectionId], { id: newId, chronology_text: "" }];
+      return { ...a, results: updatedResults };
+    }));
+    setEditingPeepoId(newId);
+    setPeepoEditDraft("");
+    handleLogAudit("peepo", `Menambahkan temuan baru pada kategori ${sectionId}`);
+  };
+
+  const handleSavePeepo = (sectionId: string, itemId: string) => {
+    setAgents(prev => prev.map(a => {
+      if (a.id !== "peepo") return a;
+      const updatedResults = { ...a.results };
+      if (updatedResults[sectionId]) {
+         updatedResults[sectionId] = updatedResults[sectionId].map((i: any, idx: number) => {
+           if (String(i.id || idx) === String(itemId)) {
+             return typeof i === "string" ? peepoEditDraft : { ...i, chronology_text: peepoEditDraft };
+           }
+           return i;
+         });
+      }
+      return { ...a, results: updatedResults };
+    }));
+    setEditingPeepoId(null);
+    setPeepoEditDraft("");
+    toast.success("Temuan PEEPO disimpan.");
+    handleLogAudit("peepo", `Memperbarui temuan PEEPO pada kategori ${sectionId}`);
+  };
+
+  const handleDeletePeepo = (sectionId: string, itemId: string) => {
+    setAgents(prev => prev.map(a => {
+      if (a.id !== 'peepo') return a;
+      const updatedResults = { ...a.results };
+      if (updatedResults[sectionId]) {
+         updatedResults[sectionId] = updatedResults[sectionId].filter((i: any, idx: number) => String(i.id || idx) !== String(itemId));
+      }
+      return { ...a, results: updatedResults };
+    }));
+    toast.success("Temuan PEEPO dihapus.");
+  };
+
+  const handleAddPrev = () => {
+    const newId = "prev-" + Date.now();
+    const newAction = { id: newId, no: "", layer: "I.2", hierarchy: "Adm", action: "", type: "prev" };
+    setAgents(prev => prev.map(a => {
+      if (a.id !== "prev") return a;
+      const updatedResults = { ...a.results };
+      if (!updatedResults.actions) updatedResults.actions = [];
+      newAction.no = String(updatedResults.actions.length + 1);
+      updatedResults.actions = [...updatedResults.actions, newAction];
+      return { ...a, results: updatedResults };
+    }));
+    setEditingRowId(newId);
+    setEditDraft({ id: newId, layer: "I.2", hierarchy: "Adm", action: "" });
+    setSelectedRowId(newId);
+    handleLogAudit("prev", `Menambahkan rencana tindakan baru`);
+  };
+
+  const handleDeletePrev = (itemId: string) => {
+    setAgents(prev => prev.map(a => {
+      if (a.id !== 'prev') return a;
+      const updatedResults = { ...a.results };
+      if (updatedResults.actions) {
+         updatedResults.actions = updatedResults.actions.filter((i: any, idx: number) => String(i.id || idx) !== String(itemId));
+      }
+      return { ...a, results: updatedResults };
+    }));
+    toast.success("Rencana tindakan dihapus.");
   };
 
   const fitToWorkspace = () => {
@@ -1555,7 +1637,8 @@ export default function AnalysisTab() {
                            ) : (
                               <div className="flex-1 animate-in fade-in duration-500 overflow-hidden">
                                  {slides[activeSlide]?.type === 'chronology_module' ? (
-                                    <FactChronologyModule 
+                                    <FactChronologyModule
+                                       onLogAudit={(desc) => handleLogAudit("fact", desc)}
                                        initialItems={selectedAgent.results?.chronology_items || []}
                                        metadata={selectedAgent.results?.ringkasan}
                                        tableData={selectedAgent.results?.tableData}
@@ -1624,18 +1707,43 @@ export default function AnalysisTab() {
                                                                           <tr 
                                                                              key={item.id || idx} 
                                                                              onClick={() => handleSelectRow(item.id || item)}
+                                                                             onDoubleClick={() => {
+                                                                               setEditingPeepoId(String(item.id || idx));
+                                                                               setPeepoEditDraft(item.chronology_text || item.label || item);
+                                                                             }}
                                                                              className={cn(
                                                                                 "group transition-all cursor-pointer",
                                                                                 isSelected ? "bg-slate-100/80" : "hover:bg-slate-50/50"
                                                                              )}
                                                                           >
-                                                                             <td className="px-5 py-4 align-top border-r border-b border-slate-200">
+                                                                             <td className="px-5 py-4 align-top border-r border-b border-slate-200 relative">
                                                                                 <p className={cn(
                                                                                    "text-[11px] font-bold leading-relaxed pr-8",
                                                                                    isSelected ? "text-slate-900" : "text-slate-700"
                                                                                 )}>
                                                                                    {item.chronology_text || item.label || item}
                                                                                 </p>
+                                                                                <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                                                                                    {deleteConfirmId === String(item.id || idx) ? (
+                                                                                       <div className="flex items-center gap-1.5 self-center animate-in fade-in bg-white p-1 rounded shadow-sm border border-slate-200" onClick={(e) => e.stopPropagation()}>
+                                                                                          <span className="text-[10px] font-bold text-red-600 mr-1 whitespace-nowrap">Yakin hapus?</span>
+                                                                                          <button className="px-2 py-1 bg-red-600 text-white rounded text-[10px] font-bold hover:bg-red-700 shadow-sm" onClick={() => { handleDeletePeepo(section.id, String(item.id || idx)); setDeleteConfirmId(null); }}>Ya</button>
+                                                                                          <button className="px-2 py-1 bg-slate-200 text-slate-800 rounded text-[10px] font-bold hover:bg-slate-300 shadow-sm" onClick={() => setDeleteConfirmId(null)}>Batal</button>
+                                                                                       </div>
+                                                                                    ) : (
+                                                                                       <>
+                                                                                          <span className="opacity-0 group-hover:opacity-100 transition-all duration-200 self-center text-[9px] text-blue-600 font-bold bg-blue-50/80 px-2 py-1 rounded border border-blue-200/60 flex items-center gap-1.5 shrink-0 shadow-sm active:scale-95">
+                                                                                             <Pencil className="h-2.5 w-2.5" /> Double-click to edit
+                                                                                          </span>
+                                                                                          <button 
+                                                                                             className="opacity-0 group-hover:opacity-100 transition-all duration-200 self-center text-slate-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded"
+                                                                                             onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(String(item.id || idx)); }}
+                                                                                          >
+                                                                                             <Trash2 className="h-3.5 w-3.5" />
+                                                                                          </button>
+                                                                                       </>
+                                                                                    )}
+                                                                                 </div>
                                                                              </td>
                                                                           </tr>
                                                                        );
@@ -1665,6 +1773,23 @@ export default function AnalysisTab() {
                                                data={selectedAgent?.results as any}
                                                onSelectActor={handleSelectRow}
                                                selectedActorId={selectedRowId}
+                                               onDeleteActor={(id) => {
+                                                  setAgents(prev => prev.map(a => {
+                                                     if (a.id !== 'actor') return a;
+                                                     const updatedResults = { ...a.results };
+                                                     if (updatedResults.actor_registry) {
+                                                        updatedResults.actor_registry = updatedResults.actor_registry.filter((actor: any) => actor.actor_id !== id);
+                                                     }
+                                                     return { ...a, results: updatedResults };
+                                                  }));
+                                                  toast.success("Aktor dihapus.");
+                                               }}
+                                               onUpdateActors={(actors) => {
+                                                  setAgents(prev => prev.map(a => {
+                                                     if (a.id !== "actor") return a;
+                                                     return { ...a, results: { ...a.results, actor_registry: actors } };
+                                                  }));
+                                               }}
                                             />
                                          ) : selectedAgentId === 'ipls' ? (
                                             <IplsAnalysisModule
@@ -1833,9 +1958,27 @@ export default function AnalysisTab() {
                                                                           ) : (
                                                                              <div className="flex items-start justify-between gap-4">
                                                                                 <span className="flex-1">{extractStringValue(item.action)}</span>
-                                                                                <span className="opacity-0 group-hover:opacity-100 transition-all duration-200 self-center text-[9px] text-blue-600 font-bold bg-blue-50/80 px-2 py-1 rounded border border-blue-200/60 flex items-center gap-1.5 shrink-0 shadow-sm active:scale-95">
-                                                                                   <Pencil className="h-2.5 w-2.5" /> Double-click active row to edit
-                                                                                </span>
+                                                                                <div className="flex items-center gap-2 relative">
+                                                                                    {deleteConfirmId === String(item.id || idx) ? (
+                                                                                       <div className="flex items-center gap-1.5 self-center animate-in fade-in bg-white p-1 rounded shadow-sm border border-slate-200" onClick={(e) => e.stopPropagation()}>
+                                                                                          <span className="text-[10px] font-bold text-red-600 mr-1 whitespace-nowrap">Yakin hapus?</span>
+                                                                                          <button className="px-2 py-1 bg-red-600 text-white rounded text-[10px] font-bold hover:bg-red-700 shadow-sm" onClick={(e) => { e.stopPropagation(); handleDeletePrev(String(item.id || idx)); setDeleteConfirmId(null); }}>Ya</button>
+                                                                                          <button className="px-2 py-1 bg-slate-200 text-slate-800 rounded text-[10px] font-bold hover:bg-slate-300 shadow-sm" onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(null); }}>Batal</button>
+                                                                                       </div>
+                                                                                    ) : (
+                                                                                       <>
+                                                                                          <span className="opacity-0 group-hover:opacity-100 transition-all duration-200 self-center text-[9px] text-blue-600 font-bold bg-blue-50/80 px-2 py-1 rounded border border-blue-200/60 flex items-center gap-1.5 shrink-0 shadow-sm active:scale-95">
+                                                                                             <Pencil className="h-2.5 w-2.5" /> Double-click active row to edit
+                                                                                          </span>
+                                                                                          <button 
+                                                                                             className="opacity-0 group-hover:opacity-100 transition-all duration-200 self-center text-slate-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded"
+                                                                                             onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(String(item.id || idx)); }}
+                                                                                          >
+                                                                                             <Trash2 className="h-3.5 w-3.5" />
+                                                                                          </button>
+                                                                                       </>
+                                                                                    )}
+                                                                                 </div>
                                                                              </div>
                                                                           )}
                                                                        </td>
@@ -2563,3 +2706,13 @@ function AgentHistoryPanel({ agent, onClose }: { agent: AgentState, onClose: () 
     </Sheet>
   );
 }
+
+
+
+
+
+
+
+
+
+

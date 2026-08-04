@@ -13,6 +13,8 @@ import { TourProvider, useTour } from '@/components/workspace/TourContext';
 import { ProductTourOverlay } from '@/components/workspace/ProductTourOverlay';
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
+import { AgentState } from "@/types/workspace";
+import { initialAgentsState } from "@/components/workspace/Tabs/AnalysisTab";
 
 // Modular Tab Components (Lazy Loaded)
 const ExtractionTab = React.lazy(() => import("@/components/workspace/Tabs/ExtractionTab"));
@@ -74,6 +76,7 @@ function CaseWorkspaceInner() {
   const { caseId } = useParams<{ caseId: string }>();
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
+  const [agents, setAgents] = useState<AgentState[]>(initialAgentsState);
   const [showAuditTrail, setShowAuditTrail] = useState(false);
   const [hasDemoDerivation, setHasDemoDerivation] = useState(false);
 
@@ -514,8 +517,8 @@ function CaseWorkspaceInner() {
                   <>
                     {currentStep === 1 && <ExtractionTab />}
                     {currentStep === 2 && <EvidenceTab />}
-                    {currentStep === 3 && <AnalysisTab />}
-                    {currentStep === 4 && <ReportsTab />}
+                    {currentStep === 3 && <AnalysisTab agents={agents} setAgents={setAgents} />}
+                    {currentStep === 4 && <ReportsTab agents={agents} />}
                   </>
                 )}
               </Suspense>
@@ -709,3 +712,5 @@ export default function CaseWorkspacePage() {
     </TourProvider>
   );
 }
+
+
