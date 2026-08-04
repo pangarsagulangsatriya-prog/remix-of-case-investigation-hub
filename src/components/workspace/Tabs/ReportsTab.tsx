@@ -34,7 +34,7 @@ export default function ReportsTab({ agents }: ReportsTabProps) {
          </div>
 
          {/* Report Body */}
-         <div className="w-full max-w-[1300px] space-y-12 pb-32 print-bg-white print-m-0">
+         <div className="w-full max-w-[1300px] space-y-12 print:space-y-8 pb-32 print:pb-0 print-bg-white print-m-0">
             
             {/* 1. Fakta & Kronologi */}
             {factAgent && factAgent.results && (
@@ -52,7 +52,7 @@ export default function ReportsTab({ agents }: ReportsTabProps) {
 
             {/* 2. PEEPO Analysis */}
             {peepoAgent && peepoAgent.results && (
-              <div className="w-full flex flex-col print-break-inside-avoid border border-slate-300 shadow-sm rounded-sm overflow-hidden">
+              <div className="w-full flex flex-col print-break-inside-avoid border border-slate-300 shadow-sm rounded-sm overflow-hidden print:border-none print:shadow-none print:rounded-none">
                  <div className="bg-slate-900 px-6 py-4 flex items-center justify-between shrink-0">
                     <div>
                        <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
@@ -62,8 +62,8 @@ export default function ReportsTab({ agents }: ReportsTabProps) {
                        <p className="text-[11px] text-slate-400 mt-1">Sintesis temuan berdasarkan kategori People, Environment, Equipment, Procedures, dan Organisation.</p>
                     </div>
                  </div>
-                 <div className="flex-1 bg-slate-50 p-8 flex justify-center print:p-4">
-                    <div className="w-full bg-white border border-slate-300 shadow-sm p-8 h-fit shrink-0 space-y-8">
+                 <div className="flex-1 bg-slate-50 p-8 flex justify-center print:p-0 print:bg-white">
+                    <div className="w-full bg-white border border-slate-300 shadow-sm p-8 h-fit shrink-0 space-y-8 print:border-none print:shadow-none print:p-2">
                        {[
                           { id: 'people', label: 'People (Individu)' },
                           { id: 'environment', label: 'Environment (Lingkungan)' },
@@ -135,8 +135,8 @@ export default function ReportsTab({ agents }: ReportsTabProps) {
                        <p className="text-[11px] text-slate-400 mt-1">Langkah-langkah perbaikan dan pencegahan insiden untuk meminimalisasi risiko.</p>
                     </div>
                  </div>
-                 <div className="flex-1 bg-slate-50 p-8 flex justify-center print:p-4">
-                    <div className="w-full bg-white border border-slate-300 shadow-sm p-10 h-fit shrink-0">
+                 <div className="flex-1 bg-slate-50 p-8 flex justify-center print:p-0 print:bg-white">
+                    <div className="w-full bg-white border border-slate-300 shadow-sm p-10 h-fit shrink-0 print:border-none print:shadow-none print:p-2">
                        <h3 className="font-bold text-[14px] text-slate-900 mb-0.5">5. Tindakan Perbaikan dan Pencegahan Insiden NM LV BM 391</h3>
                        <div className="h-[2px] w-[50%] bg-[#8ba861] mb-4 mt-1"></div>
                        <div className="border border-slate-400">
@@ -194,3 +194,4 @@ export default function ReportsTab({ agents }: ReportsTabProps) {
     </div>
   );
 }
+
