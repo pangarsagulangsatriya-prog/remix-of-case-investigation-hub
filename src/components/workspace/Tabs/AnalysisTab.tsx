@@ -834,6 +834,101 @@ function EvidenceCitationPanel({ citations, forceExpand }: { citations: any[], f
           ))}
         </div>
       )}
+      {/* PEEPO Add Modal */}
+      <Dialog open={isPeepoModalOpen} onOpenChange={setIsPeepoModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Tambah Faktor PEEPO</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-slate-700 uppercase">Kategori</label>
+              <Input value={peepoModalCategory} disabled className="bg-slate-100 text-slate-500 font-bold uppercase" />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-slate-700 uppercase">Faktor</label>
+              <Input 
+                value={peepoModalLabel} 
+                onChange={(e) => setPeepoModalLabel(e.target.value)} 
+                placeholder="Label faktor..." 
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-slate-700 uppercase">Deskripsi</label>
+              <Textarea 
+                value={peepoModalDesc} 
+                onChange={(e) => setPeepoModalDesc(e.target.value)} 
+                placeholder="Deskripsi faktor keterlibatan..." 
+                className="min-h-[100px]"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsPeepoModalOpen(false)}>Batal</Button>
+            <Button onClick={handleSaveNewPeepo} className="bg-blue-600 hover:bg-blue-700 text-white">Simpan</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Prevention Add Modal */}
+      <Dialog open={isPrevModalOpen} onOpenChange={setIsPrevModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Tambah Tindakan Perbaikan</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-slate-700 uppercase">Hierarki Pengendalian</label>
+              <Select value={prevModalCategory} onValueChange={setPrevModalCategory}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih hierarki" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Eliminasi">Eliminasi</SelectItem>
+                  <SelectItem value="Substitusi">Substitusi</SelectItem>
+                  <SelectItem value="Rekayasa">Rekayasa</SelectItem>
+                  <SelectItem value="Administrasi">Administrasi</SelectItem>
+                  <SelectItem value="APD">APD</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-slate-700 uppercase">Tindakan</label>
+              <Textarea 
+                value={prevModalDesc} 
+                onChange={(e) => setPrevModalDesc(e.target.value)} 
+                placeholder="Deskripsi tindakan..." 
+                className="min-h-[100px]"
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-slate-700 uppercase">Penanggung Jawab (PIC)</label>
+              <Input 
+                value={prevModalPic} 
+                onChange={(e) => setPrevModalPic(e.target.value)} 
+                placeholder="Nama PIC" 
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-slate-700 uppercase">Status</label>
+              <Select value={prevModalStatus} onValueChange={setPrevModalStatus}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="open">Open</SelectItem>
+                  <SelectItem value="in_progress">In Progress</SelectItem>
+                  <SelectItem value="closed">Closed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsPrevModalOpen(false)}>Batal</Button>
+            <Button onClick={handleSaveNewPrev} className="bg-blue-600 hover:bg-blue-700 text-white">Simpan</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -1748,6 +1843,16 @@ export default function AnalysisTab({ agents, setAgents }: AnalysisTabProps) {
                                                                           </tr>
                                                                        );
                                                                     })}
+                                                                    <tr>
+                                                                        <td className="px-0 py-0 border-r border-b border-slate-200 relative">
+                                                                          <button 
+                                                                            onClick={(e) => { e.stopPropagation(); handleAddPeepo(section.id); }}
+                                                                            className="w-full text-center py-2 text-[11px] font-bold text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 transition-colors uppercase tracking-widest bg-slate-50/50 hover:border-emerald-200 border border-transparent"
+                                                                          >
+                                                                            + Tambah Data
+                                                                          </button>
+                                                                        </td>
+                                                                     </tr>
                                                                  </tbody>
                                                               </table>
                                                            </div>
@@ -1985,8 +2090,30 @@ export default function AnalysisTab({ agents, setAgents }: AnalysisTabProps) {
                                                                     </tr>
                                                                  );
                                                               })}
-                                                           </tbody>
-                                                        </table>
+
+                                                              <tr>
+
+                                                                 <td colSpan={4} className="px-0 py-0 border-r border-b border-slate-400 relative">
+
+                                                                    <button 
+
+                                                                      onClick={(e) => { e.stopPropagation(); handleAddPrev(); }}
+
+                                                                      className="w-full text-center py-2 text-[11px] font-bold text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 transition-colors uppercase tracking-widest bg-slate-50/50 hover:border-emerald-200 border border-transparent"
+
+                                                                    >
+
+                                                                      + Tambah Tindakan Perbaikan
+
+                                                                    </button>
+
+                                                                 </td>
+
+                                                              </tr>
+
+                                                              </tbody>
+
+                                                              </table>
                                                      </div>
                                                   </div>
                                                </div>
@@ -2496,7 +2623,102 @@ export default function AnalysisTab({ agents, setAgents }: AnalysisTabProps) {
               </SheetContent>
             </Sheet>
          )}
-      </div>
+        {/* PEEPO Add Modal */}
+      <Dialog open={isPeepoModalOpen} onOpenChange={setIsPeepoModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Tambah Faktor PEEPO</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-slate-700 uppercase">Kategori</label>
+              <Input value={peepoModalCategory} disabled className="bg-slate-100 text-slate-500 font-bold uppercase" />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-slate-700 uppercase">Faktor</label>
+              <Input 
+                value={peepoModalLabel} 
+                onChange={(e) => setPeepoModalLabel(e.target.value)} 
+                placeholder="Label faktor..." 
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-slate-700 uppercase">Deskripsi</label>
+              <Textarea 
+                value={peepoModalDesc} 
+                onChange={(e) => setPeepoModalDesc(e.target.value)} 
+                placeholder="Deskripsi faktor keterlibatan..." 
+                className="min-h-[100px]"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsPeepoModalOpen(false)}>Batal</Button>
+            <Button onClick={handleSaveNewPeepo} className="bg-blue-600 hover:bg-blue-700 text-white">Simpan</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Prevention Add Modal */}
+      <Dialog open={isPrevModalOpen} onOpenChange={setIsPrevModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Tambah Tindakan Perbaikan</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-slate-700 uppercase">Hierarki Pengendalian</label>
+              <Select value={prevModalCategory} onValueChange={setPrevModalCategory}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih hierarki" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Eliminasi">Eliminasi</SelectItem>
+                  <SelectItem value="Substitusi">Substitusi</SelectItem>
+                  <SelectItem value="Rekayasa">Rekayasa</SelectItem>
+                  <SelectItem value="Administrasi">Administrasi</SelectItem>
+                  <SelectItem value="APD">APD</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-slate-700 uppercase">Tindakan</label>
+              <Textarea 
+                value={prevModalDesc} 
+                onChange={(e) => setPrevModalDesc(e.target.value)} 
+                placeholder="Deskripsi tindakan..." 
+                className="min-h-[100px]"
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-slate-700 uppercase">Penanggung Jawab (PIC)</label>
+              <Input 
+                value={prevModalPic} 
+                onChange={(e) => setPrevModalPic(e.target.value)} 
+                placeholder="Nama PIC" 
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-slate-700 uppercase">Status</label>
+              <Select value={prevModalStatus} onValueChange={setPrevModalStatus}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="open">Open</SelectItem>
+                  <SelectItem value="in_progress">In Progress</SelectItem>
+                  <SelectItem value="closed">Closed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsPrevModalOpen(false)}>Batal</Button>
+            <Button onClick={handleSaveNewPrev} className="bg-blue-600 hover:bg-blue-700 text-white">Simpan</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }
 function PreRunModal({ agent, onClose, onRun }: { agent: AgentState, onClose: () => void, onRun: (isRerun: boolean) => void }) {
@@ -2583,6 +2805,101 @@ function PreRunModal({ agent, onClose, onRun }: { agent: AgentState, onClose: ()
           </Button>
         </div>
       </div>
+      {/* PEEPO Add Modal */}
+      <Dialog open={isPeepoModalOpen} onOpenChange={setIsPeepoModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Tambah Faktor PEEPO</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-slate-700 uppercase">Kategori</label>
+              <Input value={peepoModalCategory} disabled className="bg-slate-100 text-slate-500 font-bold uppercase" />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-slate-700 uppercase">Faktor</label>
+              <Input 
+                value={peepoModalLabel} 
+                onChange={(e) => setPeepoModalLabel(e.target.value)} 
+                placeholder="Label faktor..." 
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-slate-700 uppercase">Deskripsi</label>
+              <Textarea 
+                value={peepoModalDesc} 
+                onChange={(e) => setPeepoModalDesc(e.target.value)} 
+                placeholder="Deskripsi faktor keterlibatan..." 
+                className="min-h-[100px]"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsPeepoModalOpen(false)}>Batal</Button>
+            <Button onClick={handleSaveNewPeepo} className="bg-blue-600 hover:bg-blue-700 text-white">Simpan</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Prevention Add Modal */}
+      <Dialog open={isPrevModalOpen} onOpenChange={setIsPrevModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Tambah Tindakan Perbaikan</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-slate-700 uppercase">Hierarki Pengendalian</label>
+              <Select value={prevModalCategory} onValueChange={setPrevModalCategory}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih hierarki" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Eliminasi">Eliminasi</SelectItem>
+                  <SelectItem value="Substitusi">Substitusi</SelectItem>
+                  <SelectItem value="Rekayasa">Rekayasa</SelectItem>
+                  <SelectItem value="Administrasi">Administrasi</SelectItem>
+                  <SelectItem value="APD">APD</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-slate-700 uppercase">Tindakan</label>
+              <Textarea 
+                value={prevModalDesc} 
+                onChange={(e) => setPrevModalDesc(e.target.value)} 
+                placeholder="Deskripsi tindakan..." 
+                className="min-h-[100px]"
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-slate-700 uppercase">Penanggung Jawab (PIC)</label>
+              <Input 
+                value={prevModalPic} 
+                onChange={(e) => setPrevModalPic(e.target.value)} 
+                placeholder="Nama PIC" 
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-slate-700 uppercase">Status</label>
+              <Select value={prevModalStatus} onValueChange={setPrevModalStatus}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="open">Open</SelectItem>
+                  <SelectItem value="in_progress">In Progress</SelectItem>
+                  <SelectItem value="closed">Closed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsPrevModalOpen(false)}>Batal</Button>
+            <Button onClick={handleSaveNewPrev} className="bg-blue-600 hover:bg-blue-700 text-white">Simpan</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -92,6 +92,28 @@ export function IplsAnalysisModule({ data, onSelectRow, selectedRowId, onSync }:
     setEditingItem(null);
   };
 
+  const handleAddItem = (layerId: number) => {
+    const newLayers = layers.map((layer) => {
+      if (layer.id === layerId) {
+        return {
+          ...layer,
+          items: [
+            ...layer.items,
+            {
+              id: "new-ipls-" + Date.now(),
+              label: "New Finding",
+              status: "non-conformity",
+              originalIndex: layer.items.length + 1,
+              description: ""
+            }
+          ]
+        };
+      }
+      return layer;
+    });
+    onSync({ ...data, layers: newLayers });
+  };
+
   return (
     <div className="flex flex-col h-full bg-white animate-in fade-in duration-500 overflow-hidden">
       {/* Title Bar */}
@@ -197,6 +219,12 @@ export function IplsAnalysisModule({ data, onSelectRow, selectedRowId, onSync }:
                             </div>
                           );
                         })}
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); handleAddItem(layer.id); }}
+                          className="w-full text-center py-2 text-[11px] font-bold text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 transition-colors uppercase tracking-widest bg-slate-50/50 hover:border-emerald-200 border border-transparent rounded mt-2"
+                        >
+                          + Tambah Item
+                        </button>
                       </div>
                     </div>
                   );

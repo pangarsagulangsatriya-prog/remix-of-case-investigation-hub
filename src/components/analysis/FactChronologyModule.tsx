@@ -42,6 +42,8 @@ import {
   BarChart3,
   Trash2
 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -277,6 +279,39 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editBuffer, setEditBuffer] = useState<Partial<ChronologyItem>>({});
 
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [addModalPhase, setAddModalPhase] = useState<string>("pre_contact");
+  const [addModalTime, setAddModalTime] = useState("");
+  const [addModalDesc, setAddModalDesc] = useState("");
+
+  const openAddModal = (phase: string) => {
+    setAddModalPhase(phase);
+    setAddModalTime("00:00");
+    setAddModalDesc("");
+    setIsAddModalOpen(true);
+  };
+
+  const handleSaveNewFact = () => {
+    const newId = "new-fact-" + Date.now();
+    const newFact: ChronologyItem = {
+      id: newId,
+      no: (items.length + 1).toString(),
+      time: addModalTime || "00:00",
+      date: "",
+      time_label: addModalTime || "00:00",
+      chronology_text: addModalDesc,
+      phase: addModalPhase as ChronologyPhase,
+      source: "human",
+      annotated_by_human: true,
+      verification_status: "human_verified",
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    setItems(prev => [...prev, newFact]);
+    setIsAddModalOpen(false);
+    setInternalSelectedItemId(newId);
+  };
+
   const handleEdit = (item: ChronologyItem) => {
     setEditingId(item.id);
     setEditBuffer({ ...item });
@@ -390,16 +425,7 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
                  <TableIcon className="h-3.5 w-3.5" />
                  Table
               </button>
-              <button
-                 onClick={() => setDisplayFormat('flow')}
-                 className={cn(
-                    "px-4 py-1.5 text-[11px] font-bold uppercase tracking-wider rounded-md transition-all flex items-center gap-2",
-                    displayFormat === 'flow' ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
-                 )}
-              >
-                 <Activity className="h-3.5 w-3.5" />
-                 Flow
-              </button>
+
            </div>
         </div>
         </div>
@@ -419,16 +445,60 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
                  metadata={metadata}
                  selectedItemId={selectedItemId}
                  onSelectItem={setSelectedItemId}
+                 onAddFact={openAddModal}
                />
-            ) : displayFormat === 'table' ? (
-               <FactTableView tableData={tableData} />
             ) : (
-               <FactFlowView />
+               <FactTableView tableData={tableData} onAddFact={openAddModal} setDisplayFormat={setDisplayFormat} />
             )}
         </div>
 
         {/* Sync Button Removed */}
       </div>
+
+      {/* Add Fact Modal */}
+      <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Tambah Data Fakta Baru</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-slate-700 uppercase">Fase</label>
+              <Select value={addModalPhase} onValueChange={setAddModalPhase}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih fase" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pre_contact">Pra-Kontak</SelectItem>
+                  <SelectItem value="contact">Kontak</SelectItem>
+                  <SelectItem value="post_contact">Pasca Kontak</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-slate-700 uppercase">Waktu</label>
+              <Input 
+                value={addModalTime} 
+                onChange={(e) => setAddModalTime(e.target.value)} 
+                placeholder="Contoh: 12:00 Wita" 
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-slate-700 uppercase">Deskripsi Kejadian</label>
+              <Textarea 
+                value={addModalDesc} 
+                onChange={(e) => setAddModalDesc(e.target.value)} 
+                placeholder="Deskripsikan kejadian..." 
+                className="min-h-[100px]"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddModalOpen(false)}>Batal</Button>
+            <Button onClick={handleSaveNewFact} className="bg-blue-600 hover:bg-blue-700 text-white">Simpan</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Traceability Panel */}
       {selectedItem && (
@@ -1560,7 +1630,8 @@ const FactSlideView: React.FC<{
   metadata, 
   groupedItems,
   selectedItemId,
-  onSelectItem
+  onSelectItem,
+  onAddFact
 }) => {
   return (
     <div className="flex-1 flex flex-col p-[60px] text-slate-900 animate-in fade-in duration-500 relative">
@@ -1708,7 +1779,8 @@ const FactDefaultView: React.FC<{
   onDelete,
   metadata,
   selectedItemId,
-  onSelectItem
+  onSelectItem,
+  onAddFact
 }) => {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [showLocalAccuracy, setShowLocalAccuracy] = useState(false);
@@ -1888,6 +1960,16 @@ const FactDefaultView: React.FC<{
                           </td>
                         </tr>
                       )}
+                      <tr>
+                        <td colSpan={showLocalAccuracy ? 3 : 2} className="px-0 py-0 border-r border-b border-slate-400 relative">
+                           <button 
+                             onClick={(e) => { e.stopPropagation(); onAddFact(phase); }}
+                             className="w-full text-center py-2 text-[11px] font-bold text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 transition-colors uppercase tracking-widest bg-slate-50/50 hover:border-emerald-200 border border-transparent"
+                           >
+                             + Tambah Data
+                           </button>
+                        </td>
+                      </tr>
                     </tbody>
                   </table>
                 </div>
@@ -1900,7 +1982,7 @@ const FactDefaultView: React.FC<{
   );
 };
 
-const FactTableView: React.FC<{ tableData: any }> = ({ tableData }) => {
+const FactTableView: React.FC<{ tableData: any, onAddFact: (phase: string) => void, setDisplayFormat: (val: any) => void }> = ({ tableData, onAddFact, setDisplayFormat }) => {
   if (!tableData) return (
      <div className="flex-1 flex items-center justify-center text-slate-400 bg-white h-full w-full">
         No table data available
@@ -1956,6 +2038,19 @@ const FactTableView: React.FC<{ tableData: any }> = ({ tableData }) => {
                       <p key={pIdx}>{p}</p>
                     ))}
                   </div>
+                  <div className="p-0 border-t border-slate-400">
+                     <button 
+                       onClick={(e) => {
+                         e.stopPropagation();
+                         const phaseMap: Record<number, string> = { 0: 'pre_contact', 1: 'contact', 2: 'post_contact' };
+                         onAddFact(phaseMap[idx]);
+                         setDisplayFormat('timeline');
+                       }}
+                       className="w-full text-center py-2 text-[11px] font-bold text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 transition-colors uppercase tracking-widest bg-slate-50/50 hover:border-emerald-200 border border-transparent"
+                     >
+                       + Tambah Data
+                     </button>
+                  </div>
                 </div>
               );
             })}
@@ -1965,188 +2060,4 @@ const FactTableView: React.FC<{ tableData: any }> = ({ tableData }) => {
     </div>
   );
 };
-
-const FactFlowView: React.FC = () => {
-  const topNodes = [
-    { time: "02.Okt.25", text: "BM 391 PM Check dan\nSdr febri merilis unit\ntersebut" },
-    { time: "06.50", text: "Sdr Rico melakukan P5M di\nPitstop SGE BUMA 2 dan\nmendapat job dengan\nsettingan unit BM 391" },
-    { time: "07.20", text: "Sdr Rico Melakukan P2H LV BM\n391 dan Menemukan Wheel Nut\nIndicator tidak lengkap\ndan diverifikasi oleh pengawas" },
-    { time: "07.30", text: "Menuju ke pit PQRT untuk\nprogress maintenance\nbeberapa unit, setelah itu\nmenuju bigshop untuk\nkeperluan personal" },
-    { time: "11.30", text: "Sdr Rico tiba di\nbigshop, kemudian\nsetelah itu kembali ke\npitstop SGE BUMA 2" },
-    { time: "12.00", text: "Sdr Rico sampai di pitstop\nSGE BUMA 2 dan persiapan\nuntuk melaksanakan sholat\njumat" },
-  ];
-
-  const bottomNodes = [
-    { time: "12.05 Wita", color: "#ffcc00", text: "Sdr Rico dan Syafarudin\nmeninggalkan pitstop SGE BUMA 2\nmenuju Masjid KM 7 menggunakan\nLV BM 391 karena bus pengantaran\nsudah tidak ada di lokasi" },
-    { time: "12.10 Wita", color: "#ff0000", text: "Sdr Rico memasuki KM 12 muatan\nmerasa ada getaran pada steering\ndan beberapa detik kemudian tyre\nkiri depan dari BM 391 terlepas\ndan Sdr rico mengarahkan unit ke\ntepi jalan sebelah kiri" },
-    { time: "12.12 Wita", color: "#00b050", text: "Setelah BM 391 berhenti Sdr\nSyafarudin keluar untuk\nmengambil roda dan sdr rico\nmengambil safety cone dan\nwheel chock" },
-    { time: "12.13 Wita", color: "#00b050", text: "Team ERG keluar dari\nbasecamp dan menanyakan\nproblem apa yang terjadi\nkemudian melaporkan ke CCR" },
-  ];
-
-  // Layout constants
-  const W = 1060;
-  const nodeY = 40;           // center Y of top circles
-  const bottomY = 280;        // center Y of bottom circles
-  const nodeCount = topNodes.length;
-  const bottomCount = bottomNodes.length;
-  const leftPad = 60;
-  const rightPad = 60;
-  const topSpacing = (W - leftPad - rightPad) / (nodeCount - 1);
-  const bottomSpacing = (W - leftPad - rightPad) / (bottomCount - 1);
-
-  const topX = (i: number) => leftPad + i * topSpacing;
-  // bottom row goes right to left (last node is rightmost)
-  const bottomX = (i: number) => W - rightPad - i * bottomSpacing;
-
-  const svgH = bottomY + 40;
-
-  const arrowSize = 8;
-
-  return (
-    <div className="w-full h-full overflow-auto bg-white p-10 flex justify-center">
-      <div className="w-[1060px] shrink-0">
-        {/* Title */}
-        <div className="mb-8">
-          <p className="text-[15px] font-black text-slate-900">1. OVERVIEW NM LV BM 391</p>
-          <p className="text-[14px] font-bold text-slate-900 border-b-[3px] border-teal-700 pb-1 inline-block mt-0.5">A. Kronologis Incident</p>
-        </div>
-
-        {/* PRA KONTAK Banner */}
-        <div className="flex justify-center mb-4">
-          <div className="bg-[#ffcc00] px-16 py-2 text-slate-900 font-bold text-[13px]">
-            PRA KONTAK 10 Oktober 2025
-          </div>
-        </div>
-
-        {/* SVG diagram */}
-        <div className="relative w-full" style={{ height: '420px' }}>
-          <svg
-            width={W}
-            height={svgH}
-            className="absolute top-0 left-0"
-            style={{ overflow: 'visible' }}
-          >
-            <defs>
-              <marker id="arrow-right" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
-                <polygon points="0 0, 10 3.5, 0 7" fill="#1e293b" />
-              </marker>
-              <marker id="arrow-left" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto">
-                <polygon points="10 0, 0 3.5, 10 7" fill="#1e293b" />
-              </marker>
-              <marker id="arrow-down" markerWidth="7" markerHeight="10" refX="3.5" refY="10" orient="auto">
-                <polygon points="0 0, 3.5 10, 7 0" fill="#1e293b" />
-              </marker>
-            </defs>
-
-            {/* Top horizontal dashed line with right arrow */}
-            <line
-              x1={topX(0)}
-              y1={nodeY}
-              x2={topX(nodeCount - 1) - arrowSize}
-              y2={nodeY}
-              stroke="#1e293b"
-              strokeWidth="2.5"
-              strokeDasharray="6,5"
-              markerEnd="url(#arrow-right)"
-            />
-
-            {/* Vertical drop line from top-right to bottom-right */}
-            <line
-              x1={topX(nodeCount - 1)}
-              y1={nodeY}
-              x2={topX(nodeCount - 1)}
-              y2={bottomY}
-              stroke="#1e293b"
-              strokeWidth="2.5"
-              strokeDasharray="6,5"
-            />
-
-            {/* Bottom horizontal dashed line with left arrow (right to left) */}
-            <line
-              x1={bottomX(0)}
-              y1={bottomY}
-              x2={bottomX(bottomCount - 1) + arrowSize}
-              y2={bottomY}
-              stroke="#1e293b"
-              strokeWidth="2.5"
-              strokeDasharray="6,5"
-              markerEnd="url(#arrow-left)"
-            />
-
-            {/* Top node circles */}
-            {topNodes.map((_, i) => (
-              <circle
-                key={`tc-${i}`}
-                cx={topX(i)}
-                cy={nodeY}
-                r={14}
-                fill="#ffcc00"
-                stroke="white"
-                strokeWidth="3"
-              />
-            ))}
-
-            {/* Bottom node circles */}
-            {bottomNodes.map((node, i) => (
-              <circle
-                key={`bc-${i}`}
-                cx={bottomX(i)}
-                cy={bottomY}
-                r={14}
-                fill={node.color}
-                stroke="white"
-                strokeWidth="3"
-              />
-            ))}
-          </svg>
-
-          {/* Top node labels (below circles) */}
-          {topNodes.map((node, i) => {
-            return (
-              <div
-                key={`tl-${i}`}
-                className="absolute flex flex-col items-center"
-                style={{ left: `${topX(i)}px`, top: `${nodeY + 20}px`, transform: 'translateX(-50%)', width: '130px' }}
-              >
-                <p className="font-bold text-[11px] mb-1 text-slate-900 text-center">{node.time}</p>
-                <p className="text-[9.5px] whitespace-pre-line text-slate-800 leading-[1.4] text-center">{node.text}</p>
-              </div>
-            );
-          })}
-
-          {/* Bottom node labels (below circles) */}
-          {bottomNodes.map((node, i) => {
-            return (
-              <div
-                key={`bl-${i}`}
-                className="absolute flex flex-col items-center"
-                style={{ left: `${bottomX(i)}px`, top: `${bottomY + 20}px`, transform: 'translateX(-50%)', width: '150px' }}
-              >
-                <p className="font-bold text-[11px] mb-1 text-slate-900 text-center">{node.time}</p>
-                <p className="text-[9.5px] whitespace-pre-line text-slate-800 leading-[1.4] text-center">{node.text}</p>
-              </div>
-            );
-          })}
-
-          {/* PASKA KONTAK / KONTAK badges (placed around the bottom line) */}
-          <div
-            className="absolute flex items-center gap-6 w-full px-[60px]"
-            style={{ top: `${bottomY - 46}px`, justifyContent: 'space-between' }}
-          >
-            <div className="bg-[#00b050] px-8 py-1.5 text-slate-900 font-bold text-[12px]">
-              PASKA KONTAK
-            </div>
-            <div className="bg-[#ff0000] px-8 py-1.5 text-white font-bold text-[12px]">
-              KONTAK
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-
-
-
 

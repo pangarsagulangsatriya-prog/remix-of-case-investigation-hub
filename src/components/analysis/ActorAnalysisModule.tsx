@@ -4,6 +4,10 @@ import {
   HelpCircle, Eye, Search, Filter, ShieldCheck, UserCog, UserCheck, 
   Activity, Calendar, MapPin, Tag, ChevronDown, ChevronRight, X, Pencil, Trash2
 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -63,6 +67,52 @@ export const ActorAnalysisModule: React.FC<ActorAnalysisModuleProps> = ({ data, 
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [editingActorId, setEditingActorId] = useState<string | null>(null);
   const [editActorDraft, setEditActorDraft] = useState<Partial<ActorItem>>({});
+  const [actors, setActors] = useState<ActorItem[]>(data.actor_registry);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [addName, setAddName] = useState("");
+  const [addCompany, setAddCompany] = useState("");
+  const [addCcr, setAddCcr] = useState("");
+  const [addInvolvement, setAddInvolvement] = useState("system_actor");
+
+  React.useEffect(() => {
+    setActors(data.actor_registry);
+  }, [data.actor_registry]);
+
+  const openAddModal = () => {
+    setAddName("");
+    setAddCompany("");
+    setAddCcr("");
+    setAddInvolvement("system_actor");
+    setIsAddModalOpen(true);
+  };
+
+  const handleSaveNewActor = () => {
+    const newActor: ActorItem = {
+      actor_id: "new-actor-" + Date.now(),
+      beid: "",
+      name: addName || "New Actor",
+      company: addCompany,
+      ccr_category: addCcr,
+      jabatan_struktural: "",
+      involvement_level: addInvolvement,
+      actor_type_assignments: [],
+      identity_decomposition: {},
+      role_crosscheck_decomposition: {},
+      linked_events: [],
+      review_recommendation: {
+        recommended_for_review: false,
+        review_priority: "None",
+        review_reason: null,
+        downstream_usage: "allowed",
+        downstream_note: null
+      }
+    };
+    const updatedActors = [...actors, newActor];
+    setActors(updatedActors);
+    setIsAddModalOpen(false);
+    if (onUpdateActors) onUpdateActors(updatedActors);
+    if (onLogAudit) onLogAudit(`Menambahkan aktor baru: ${newActor.name}`);
+  };
   const { actor_registry_status, actor_registry } = data;
 
   return (
@@ -126,7 +176,7 @@ export const ActorAnalysisModule: React.FC<ActorAnalysisModuleProps> = ({ data, 
               </tr>
             </thead>
             <tbody>
-              {actor_registry.map((actor, idx) => {
+              {actors.map((actor, idx) => {
                 const isSelected = selectedActorId === actor.actor_id;
                 const rec = actor.review_recommendation;
                 return (
@@ -225,10 +275,93 @@ export const ActorAnalysisModule: React.FC<ActorAnalysisModuleProps> = ({ data, 
                   </tr>
                 );
               })}
+              <tr>
+                <td colSpan={4} className="px-0 py-0 border-b border-slate-100">
+                  <button 
+                    onClick={() => {
+                      const newActor = {
+                        actor_id: "new-actor-" + Date.now(),
+                        beid: "",
+                        name: "New Actor",
+                        company: "",
+                        ccr_category: "",
+                        jabatan_struktural: "",
+                        involvement_level: "system_actor",
+                        actor_type_assignments: [],
+                        identity_decomposition: {},
+                        role_crosscheck_decomposition: {},
+                        linked_events: [],
+                        review_recommendation: {
+                          recommended_for_review: false,
+                          review_priority: "None" as const,
+                          review_reason: null,
+                          downstream_usage: "allowed" as const,
+                          downstream_note: null
+                        }
+                      };
+                      if (onUpdateActors) onUpdateActors([...data.actor_registry, newActor]);
+                    }}
+                    className="w-full text-center py-2 text-[11px] font-bold text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 transition-colors uppercase tracking-widest bg-slate-50/50 hover:border-emerald-200 border border-transparent"
+                  >
+                    + Tambah Aktor
+                  </button>
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>
       </div>
+      {/* Add Actor Modal */}
+      <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Tambah Data Aktor Baru</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-slate-700 uppercase">Nama Aktor</label>
+              <Input 
+                value={addName} 
+                onChange={(e) => setAddName(e.target.value)} 
+                placeholder="Nama lengkap" 
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-slate-700 uppercase">Perusahaan / Afiliasi</label>
+              <Input 
+                value={addCompany} 
+                onChange={(e) => setAddCompany(e.target.value)} 
+                placeholder="Contoh: PT BUMA" 
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-slate-700 uppercase">Kategori CCR / Peran</label>
+              <Input 
+                value={addCcr} 
+                onChange={(e) => setAddCcr(e.target.value)} 
+                placeholder="Contoh: Operator / Pengawas" 
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-slate-700 uppercase">Tingkat Keterlibatan</label>
+              <Select value={addInvolvement} onValueChange={setAddInvolvement}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih tingkat keterlibatan" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="direct_actor">Direct Actor</SelectItem>
+                  <SelectItem value="indirect_actor">Indirect Actor</SelectItem>
+                  <SelectItem value="system_actor">System Actor</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddModalOpen(false)}>Batal</Button>
+            <Button onClick={handleSaveNewActor} className="bg-blue-600 hover:bg-blue-700 text-white">Simpan</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
@@ -330,6 +463,57 @@ export const ActorDetailPanel: React.FC<{ actor: ActorItem, onClose: () => void 
           </div>
         )}
       </div>
+      {/* Add Actor Modal */}
+      <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Tambah Data Aktor Baru</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-slate-700 uppercase">Nama Aktor</label>
+              <Input 
+                value={addName} 
+                onChange={(e) => setAddName(e.target.value)} 
+                placeholder="Nama lengkap" 
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-slate-700 uppercase">Perusahaan / Afiliasi</label>
+              <Input 
+                value={addCompany} 
+                onChange={(e) => setAddCompany(e.target.value)} 
+                placeholder="Contoh: PT BUMA" 
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-slate-700 uppercase">Kategori CCR / Peran</label>
+              <Input 
+                value={addCcr} 
+                onChange={(e) => setAddCcr(e.target.value)} 
+                placeholder="Contoh: Operator / Pengawas" 
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-slate-700 uppercase">Tingkat Keterlibatan</label>
+              <Select value={addInvolvement} onValueChange={setAddInvolvement}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih tingkat keterlibatan" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="direct_actor">Direct Actor</SelectItem>
+                  <SelectItem value="indirect_actor">Indirect Actor</SelectItem>
+                  <SelectItem value="system_actor">System Actor</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddModalOpen(false)}>Batal</Button>
+            <Button onClick={handleSaveNewActor} className="bg-blue-600 hover:bg-blue-700 text-white">Simpan</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
