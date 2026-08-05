@@ -272,7 +272,7 @@ export default function CaseListPage() {
       if (!selectedCategories.includes(category)) return false;
     }
     if (selectedCompanies.length > 0) {
-      const company = "PT Fusi Solusi Transformasi";
+      const company = "PT Bumi Tambang Nusantara";
       if (!selectedCompanies.includes(company)) return false;
     }
     if (selectedSites.length > 0) {
@@ -508,7 +508,7 @@ export default function CaseListPage() {
                         )}
                       </div>
                       <div className="flex flex-col gap-1.5 max-h-40 overflow-y-auto">
-                        {["PT Fusi Solusi Transformasi", "PT Tambang Makmur", "PT Energy Jaya"].map((comp) => {
+                        {["PT Bumi Tambang Nusantara", "PT Tambang Makmur", "PT Energy Jaya"].map((comp) => {
                           const isChecked = selectedCompanies.includes(comp);
                           return (
                             <div 
@@ -1029,7 +1029,7 @@ export default function CaseListPage() {
                           {visibleColumns.kategori && <td className="text-xs font-medium text-slate-900 truncate max-w-[150px]">{["Near Miss", "Medical Treatment Injury", "Property Damage", "First Aid", "Fatality"][idx % 5]}</td>}
                           {visibleColumns.waktuInsiden && <td className="text-xs text-slate-600 font-medium">05 April 2026</td>}
                           {visibleColumns.waktuPelaporan && <td className="text-xs text-slate-500 font-medium">08 April 2026</td>}
-                          {visibleColumns.perusahaan && <td className="text-xs text-slate-700 font-medium">PT Fusi Solusi Transformasi</td>}
+                          {visibleColumns.perusahaan && <td className="text-xs text-slate-700 font-medium">PT Bumi Tambang Nusantara</td>}
                           {visibleColumns.site && <td className="text-xs text-slate-700 font-medium">GMO</td>}
                           {visibleColumns.lokasi && <td className="text-xs text-slate-700 font-medium">Pit J</td>}
                           {visibleColumns.detailLokasi && <td className="text-xs text-slate-700 font-medium">Area Loading</td>}
@@ -1341,7 +1341,7 @@ export default function CaseListPage() {
                         { label: "Kategori Insiden", value: ["Near Miss", "Medical Treatment Injury", "Property Damage", "First Aid", "Fatality"][cases.indexOf(selectedCase) % 5], icon: FileText },
                         { label: "Waktu Insiden", value: "05 April 2026", icon: Clock },
                         { label: "Waktu Pelaporan", value: "08 April 2026", icon: Clock },
-                        { label: "Perusahaan Pelapor", value: "PT Fusi Solusi Transformasi", icon: Globe },
+                        { label: "Perusahaan Pelapor", value: "PT Bumi Tambang Nusantara", icon: Globe },
                         { label: "Site", value: "GMO", icon: Globe },
                         { label: "Lokasi", value: "Pit J", icon: Globe },
                         { label: "Detail Lokasi", value: "Area Loading", icon: Globe },
@@ -1493,7 +1493,7 @@ const getIncidentMockMetadata = (caseObj: Case | null, casesList: Case[]) => {
     incident_type: ["Unsafe Condition", "Unsafe Act", "Property Damage", "Near Miss"][safeIdx % 4],
     incident_category: ["Near Miss", "Medical Treatment Injury", "Property Damage", "First Aid", "Fatality"][safeIdx % 5],
     reporter: ["Aris (DMS Officer)", "Fatur (Pengawas)", "Saiful (Operator)", "Jane Doe"][safeIdx % 4],
-    ccr_company_name: "PT Fusi Solusi Transformasi",
+    ccr_company_name: "PT Bumi Tambang Nusantara",
     ccr_employee_name: ["Saiful", "Aris", "Fatur", "John Doe"][safeIdx % 4],
     site_company_name: "Berau Coal",
     site_id: `GMO-0${safeIdx + 1}`,

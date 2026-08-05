@@ -43,6 +43,8 @@ import {
   Trash2
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from "@/components/ui/sheet";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -133,7 +135,38 @@ export interface AccuracyResult {
   engineVersion: string;
 }
 
+export type AuditAction = "CREATE" | "UPDATE" | "DELETE";
+export type ActorType = "HUMAN" | "AI" | "SYSTEM";
+
+export interface AnalysisVersion {
+  version: number;
+  stage: ChronologyPhase;
+  time: string;
+  description: string;
+  createdAt: string;
+}
+
+export interface AuditEntry {
+  id: string;
+  caseId: string;
+  agentId: string;
+  itemId: string;
+  action: AuditAction;
+  actorName: string;
+  actorRole: string;
+  actorType: ActorType;
+  timestamp: string;
+  versionFrom?: number;
+  versionTo: number;
+  changeNote?: string;
+  deletionReason?: string;
+  changedFields?: string[];
+  before?: AnalysisVersion;
+  after?: AnalysisVersion;
+}
+
 export interface ChronologyItem {
+  version?: number;
   id: string;
   time_label: string;
   chronology_text: string;
@@ -246,6 +279,183 @@ export const STATUS_CONFIG: Record<VerificationStatus, { label: string, color: s
   unsupported: { label: "Tidak Didukung", color: "bg-rose-50 text-rose-600 border-rose-100", icon: AlertTriangle },
 };
 
+const initialDummyAuditLogs: AuditEntry[] = [
+  {
+    id: "a8",
+    caseId: "c1",
+    agentId: "fact",
+    itemId: "post_1",
+    action: "DELETE",
+    actorName: "Aditya Pratama",
+    actorRole: "Safety Superintendent",
+    actorType: "HUMAN",
+    timestamp: "2026-08-05T09:04:00Z",
+    versionTo: 3,
+    deletionReason: "Item dihapus dari analisis aktif karena sudah tercatat di laporan terpisah.",
+    changeNote: "Menghapus fakta redundan",
+    before: {
+      version: 2,
+      stage: "post_contact",
+      time: "Pasca 01:35",
+      description: "Item dihapus dari analisis aktif.",
+      createdAt: "2026-08-05T08:50:00Z"
+    }
+  },
+  {
+    id: "a7",
+    caseId: "c1",
+    agentId: "fact",
+    itemId: "post_1",
+    action: "CREATE",
+    actorName: "Aditya Pratama",
+    actorRole: "Safety Superintendent",
+    actorType: "HUMAN",
+    timestamp: "2026-08-05T08:50:00Z",
+    versionTo: 1,
+    after: {
+      version: 1,
+      stage: "post_contact",
+      time: "Pasca 01:35",
+      description: "Item dihapus dari analisis aktif.",
+      createdAt: "2026-08-05T08:50:00Z"
+    }
+  },
+  {
+    id: "a6",
+    caseId: "c1",
+    agentId: "fact",
+    itemId: "pre_2",
+    action: "UPDATE",
+    actorName: "Gulang Satriya",
+    actorRole: "Lead Investigator",
+    actorType: "HUMAN",
+    timestamp: "2026-08-05T08:16:00Z",
+    versionFrom: 1,
+    versionTo: 2,
+    changeNote: "Mengoreksi format waktu",
+    changedFields: ["time_label"],
+    before: {
+      version: 1,
+      stage: "pre_contact",
+      time: "22:15",
+      description: "DMS memberikan peringatan kepada operator.",
+      createdAt: "2026-08-05T07:42:00Z"
+    },
+    after: {
+      version: 2,
+      stage: "pre_contact",
+      time: "22:15 WITA",
+      description: "Sistem DMS memicu peringatan kritis kategori Lockdown pada unit yang sedang dioperasikan oleh Operator Saiful.",
+      createdAt: "2026-08-05T07:42:00Z"
+    }
+  },
+  {
+    id: "a5",
+    caseId: "c1",
+    agentId: "fact",
+    itemId: "pre_2",
+    action: "UPDATE",
+    actorName: "Gulang Satriya",
+    actorRole: "Lead Investigator",
+    actorType: "HUMAN",
+    timestamp: "2026-08-05T08:00:00Z",
+    versionFrom: 1,
+    versionTo: 2,
+    changeNote: "Memperbaiki narasi kejadian",
+    changedFields: ["chronology_text"],
+    before: {
+      version: 1,
+      stage: "pre_contact",
+      time: "22:15",
+      description: "DMS memberikan peringatan kepada operator.",
+      createdAt: "2026-08-05T07:42:00Z"
+    },
+    after: {
+      version: 2,
+      stage: "pre_contact",
+      time: "22:15",
+      description: "Sistem DMS memicu peringatan kritis kategori Lockdown pada unit yang sedang dioperasikan oleh Operator Saiful.",
+      createdAt: "2026-08-05T07:42:00Z"
+    }
+  },
+  {
+    id: "a4",
+    caseId: "c1",
+    agentId: "fact",
+    itemId: "pre_2",
+    action: "CREATE",
+    actorName: "Rina Mahardika",
+    actorRole: "Investigator",
+    actorType: "HUMAN",
+    timestamp: "2026-08-05T07:42:00Z",
+    versionTo: 1,
+    after: {
+      version: 1,
+      stage: "pre_contact",
+      time: "22:15",
+      description: "DMS memberikan peringatan kepada operator.",
+      createdAt: "2026-08-05T07:42:00Z"
+    }
+  },
+  {
+    id: "a3",
+    caseId: "c1",
+    agentId: "fact",
+    itemId: "post_2",
+    action: "CREATE",
+    actorName: "Fact & Chronology Agent",
+    actorRole: "AI Analysis Agent",
+    actorType: "AI",
+    timestamp: "2026-08-05T07:05:00Z",
+    versionTo: 1,
+    after: {
+      version: 1,
+      stage: "post_contact",
+      time: "Pasca 01:35",
+      description: "Tim rescue tiba di lokasi dan melakukan evakuasi.",
+      createdAt: "2026-08-05T07:05:00Z"
+    }
+  },
+  {
+    id: "a2",
+    caseId: "c1",
+    agentId: "fact",
+    itemId: "contact_1",
+    action: "CREATE",
+    actorName: "Fact & Chronology Agent",
+    actorRole: "AI Analysis Agent",
+    actorType: "AI",
+    timestamp: "2026-08-05T07:02:00Z",
+    versionTo: 1,
+    after: {
+      version: 1,
+      stage: "contact",
+      time: "01:35 WITA",
+      description: "Unit Operator Saiful mengalami kecelakaan tunggal.",
+      createdAt: "2026-08-05T07:02:00Z"
+    }
+  },
+  {
+    id: "a1",
+    caseId: "c1",
+    agentId: "fact",
+    itemId: "pre_1",
+    action: "CREATE",
+    actorName: "Fact & Chronology Agent",
+    actorRole: "AI Analysis Agent",
+    actorType: "AI",
+    timestamp: "2026-08-05T07:00:00Z",
+    versionTo: 1,
+    after: {
+      version: 1,
+      stage: "pre_contact",
+      time: "Minggu 10-41",
+      description: "Petugas DMS mengidentifikasi riwayat deviasi kelelahan.",
+      createdAt: "2026-08-05T07:00:00Z"
+    }
+  }
+];
+
 export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({ 
   initialItems, 
   metadata,
@@ -256,12 +466,19 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
   selectedItemId: controlledSelectedItemId,
   tableData
 }) => {
-  const [items, setItems] = useState<ChronologyItem[]>(initialItems);
+  const [items, setItems] = useState<ChronologyItem[]>(initialItems.map(item => ({ ...item, version: item.version || 1 })));
   const [internalSelectedItemId, setInternalSelectedItemId] = useState<string | null>(null);
   const [displayFormat, setDisplayFormat] = useState<'timeline' | 'table' | 'flow'>('timeline');
-  
+  const [auditLogs, setAuditLogs] = useState<AuditEntry[]>(initialDummyAuditLogs);
+  const [isAuditDrawerOpen, setIsAuditDrawerOpen] = useState(false);
+  const [editChangeNote, setEditChangeNote] = useState("");
+  const [addChangeNote, setAddChangeNote] = useState("");
+  const [itemToDelete, setItemToDelete] = useState<ChronologyItem | null>(null);
+  const [deleteReason, setDeleteReason] = useState("");
+  const [auditItemFilter, setAuditItemFilter] = useState<string | null>(null);
+
   React.useEffect(() => {
-    setItems(initialItems);
+    setItems(initialItems.map(item => ({ ...item, version: item.version || 1 })));
   }, [initialItems]);
   
   const viewMode = 'default';
@@ -293,8 +510,10 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
 
   const handleSaveNewFact = () => {
     const newId = "new-fact-" + Date.now();
+    const ts = new Date().toISOString();
     const newFact: ChronologyItem = {
       id: newId,
+      version: 1,
       no: (items.length + 1).toString(),
       time: addModalTime || "00:00",
       date: "",
@@ -304,45 +523,57 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
       source: "human",
       annotated_by_human: true,
       verification_status: "human_verified",
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      created_at: ts,
+      updated_at: ts
     };
     setItems(prev => [...prev, newFact]);
+    
+    const audit: AuditEntry = {
+      id: "log-" + Date.now(),
+      caseId: "c1",
+      agentId: "fact",
+      itemId: newId,
+      action: "CREATE",
+      actorName: "Gulang Satriya",
+      actorRole: "Lead Investigator",
+      actorType: "HUMAN",
+      timestamp: ts,
+      versionTo: 1,
+      changeNote: addChangeNote || undefined,
+      after: {
+        version: 1,
+        stage: newFact.phase,
+        time: newFact.time_label,
+        description: newFact.chronology_text,
+        createdAt: ts
+      }
+    };
+    setAuditLogs(prev => [audit, ...prev]);
+    
     setIsAddModalOpen(false);
+    setAddChangeNote("");
     setInternalSelectedItemId(newId);
+    toast.success("Fakta ditambahkan dan tercatat dalam riwayat perubahan.");
   };
 
   const handleEdit = (item: ChronologyItem) => {
     setEditingId(item.id);
     setEditBuffer({ ...item });
+    setEditChangeNote("");
   };
 
   const handleAddFact = (phase: string) => {
-    const newId = "new-fact-" + Date.now();
-    const newFact: ChronologyItem = {
-      id: newId,
-      no: (items.length + 1).toString(),
-      time: "00:00",
-      date: "",
-      time_label: "",
-      chronology_text: "",
-      phase: phase as ChronologyPhase,
-      source: "human",
-      annotated_by_human: true,
-      verification_status: "verified",
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
-    setItems(prev => [...prev, newFact]);
-    setEditingId(newId);
-    setEditBuffer(newFact);
-    setInternalSelectedItemId(newId);
-    if (onLogAudit) onLogAudit(`Menambahkan baris fakta baru pada fase ${phase}`);
+    openAddModal(phase);
   };
 
   const handleSaveEdit = () => {
     if (!editingId) return;
+    if (!editChangeNote.trim()) {
+      toast.error("Catatan perubahan wajib diisi!");
+      return;
+    }
 
+    const ts = new Date().toISOString();
     setItems(prev => prev.map(item => {
       if (item.id === editingId) {
         const isActuallyChanged = 
@@ -352,32 +583,112 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
         
         if (!isActuallyChanged) return item;
 
-        return {
+        const nextVersion = (item.version || 1) + 1;
+        const updatedItem = {
           ...item,
           ...editBuffer,
+          version: nextVersion,
           source: "human",
           annotated_by_human: true,
-          updated_at: new Date().toISOString(),
-          updated_by: "Current User",
+          updated_at: ts,
+          updated_by: "Gulang Satriya",
           original_text: item.original_text || item.chronology_text
         } as ChronologyItem;
+
+        const changedFields: string[] = [];
+        if (item.time_label !== updatedItem.time_label) changedFields.push("Time");
+        if (item.chronology_text !== updatedItem.chronology_text) changedFields.push("Description");
+
+        const audit: AuditEntry = {
+          id: "log-" + Date.now(),
+          caseId: "c1",
+          agentId: "fact",
+          itemId: updatedItem.id,
+          action: "UPDATE",
+          actorName: "Gulang Satriya",
+          actorRole: "Lead Investigator",
+          actorType: "HUMAN",
+          timestamp: ts,
+          versionFrom: item.version || 1,
+          versionTo: nextVersion,
+          changeNote: editChangeNote,
+          changedFields,
+          before: {
+            version: item.version || 1,
+            stage: item.phase,
+            time: item.time_label,
+            description: item.chronology_text,
+            createdAt: item.created_at
+          },
+          after: {
+            version: nextVersion,
+            stage: updatedItem.phase,
+            time: updatedItem.time_label,
+            description: updatedItem.chronology_text,
+            createdAt: updatedItem.created_at
+          }
+        };
+        setAuditLogs(prevLogs => [audit, ...prevLogs]);
+
+        return updatedItem;
       }
       return item;
     }));
 
     setEditingId(null);
     setEditBuffer({});
-    toast.success("Entri diperbarui.");
+    setEditChangeNote("");
+    toast.success("Perubahan disimpan sebagai versi " + (items.find(i => i.id === editingId)?.version ? items.find(i => i.id === editingId)!.version! + 1 : 2) + ".");
   };
 
   const handleCancelEdit = () => {
     setEditingId(null);
     setEditBuffer({});
+    setEditChangeNote("");
   };
 
   const handleDelete = (id: string) => {
-    setItems(prev => prev.filter(item => item.id !== id));
-    toast.success("Entri dihapus.");
+    const item = items.find(i => i.id === id);
+    if (item) {
+      setItemToDelete(item);
+      setDeleteReason("");
+    }
+  };
+
+  const confirmDelete = () => {
+    if (!itemToDelete) return;
+    if (!deleteReason.trim()) {
+      toast.error("Alasan penghapusan wajib diisi!");
+      return;
+    }
+    
+    const ts = new Date().toISOString();
+    const audit: AuditEntry = {
+      id: "log-" + Date.now(),
+      caseId: "c1",
+      agentId: "fact",
+      itemId: itemToDelete.id,
+      action: "DELETE",
+      actorName: "Gulang Satriya",
+      actorRole: "Lead Investigator",
+      actorType: "HUMAN",
+      timestamp: ts,
+      versionTo: (itemToDelete.version || 1) + 1,
+      deletionReason: deleteReason,
+      before: {
+        version: itemToDelete.version || 1,
+        stage: itemToDelete.phase,
+        time: itemToDelete.time_label,
+        description: itemToDelete.chronology_text,
+        createdAt: itemToDelete.created_at
+      }
+    };
+    
+    setAuditLogs(prev => [audit, ...prev]);
+    setItems(prev => prev.filter(item => item.id !== itemToDelete.id));
+    setItemToDelete(null);
+    setDeleteReason("");
+    toast.success("Fakta dihapus dari analisis aktif. Riwayat tetap tersimpan.");
   };
 
   const groupedItems = useMemo(() => {
@@ -404,14 +715,25 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
                  </h2>
                  <p className="text-[11px] text-slate-500 mt-1">Rangkaian peristiwa, bukti objektif, dan verifikasi silang multi-sumber.</p>
               </div>
-              <div className="flex bg-slate-100 rounded-lg p-1 border border-slate-200">
-                 <button
-                    onClick={() => setDisplayFormat('timeline')}
-                    className={cn(
-                       "px-4 py-1.5 text-[11px] font-bold uppercase tracking-wider rounded-md transition-all flex items-center gap-2",
-                       displayFormat === 'timeline' ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
-                    )}
-                 >
+              <div className="flex items-center gap-4">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setIsAuditDrawerOpen(true)}
+                  className="text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 h-8"
+                >
+                  <History className="h-4 w-4 mr-2" />
+                  Riwayat Perubahan &middot; {auditLogs.length} aktivitas
+                </Button>
+                
+                <div className="flex bg-slate-100 rounded-lg p-1 border border-slate-200">
+                   <button
+                      onClick={() => setDisplayFormat('timeline')}
+                      className={cn(
+                         "px-4 py-1.5 text-[11px] font-bold uppercase tracking-wider rounded-md transition-all flex items-center gap-2",
+                         displayFormat === 'timeline' ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
+                      )}
+                   >
                     <History className="h-3.5 w-3.5" />
                     Timeline
                  </button>
@@ -425,7 +747,7 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
                  <TableIcon className="h-3.5 w-3.5" />
                  Table
               </button>
-
+           </div>
            </div>
         </div>
         </div>
@@ -448,7 +770,20 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
                  onAddFact={openAddModal}
                />
             ) : (
-               <FactTableView tableData={tableData} onAddFact={openAddModal} setDisplayFormat={setDisplayFormat} />
+               <FactTableView 
+                 groupedItems={groupedItems}
+                 editingId={editingId}
+                 editBuffer={editBuffer}
+                 setEditBuffer={setEditBuffer}
+                 onEdit={handleEdit}
+                 onSave={handleSaveEdit}
+                 onCancel={handleCancelEdit}
+                 onDelete={handleDelete}
+                 selectedItemId={selectedItemId}
+                 onSelectItem={setSelectedItemId}
+                 onAddFact={openAddModal}
+                 setDisplayFormat={setDisplayFormat} 
+               />
             )}
         </div>
 
@@ -492,10 +827,58 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
                 className="min-h-[100px]"
               />
             </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-slate-700 uppercase">Catatan Perubahan <span className="text-slate-400 font-normal lowercase">(Opsional)</span></label>
+              <Input 
+                value={addChangeNote} 
+                onChange={(e) => setAddChangeNote(e.target.value)} 
+                placeholder="Jelaskan perubahan..." 
+              />
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsAddModalOpen(false)}>Batal</Button>
-            <Button onClick={handleSaveNewFact} className="bg-blue-600 hover:bg-blue-700 text-white">Simpan</Button>
+            <Button onClick={handleSaveNewFact} className="bg-emerald-600 hover:bg-emerald-700 text-white">Simpan Fakta</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Fact Modal */}
+      <Dialog open={!!itemToDelete} onOpenChange={(open) => !open && setItemToDelete(null)}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="text-rose-600">HAPUS FAKTA?</DialogTitle>
+          </DialogHeader>
+          <div className="py-2 text-sm text-slate-600">
+            <p>Item ini akan dihapus dari analisis aktif.</p>
+            <p>Riwayat dan versi sebelumnya tetap tersimpan dalam Audit Log.</p>
+          </div>
+          
+          {itemToDelete && (
+            <div className="bg-slate-50 border border-slate-200 p-3 rounded-md text-xs">
+              <div className="font-bold text-slate-700 mb-1">
+                {PHASE_CONFIG[itemToDelete.phase]?.label} &middot; {itemToDelete.time_label}
+              </div>
+              <div className="text-slate-600 line-clamp-2">
+                {itemToDelete.chronology_text}
+              </div>
+            </div>
+          )}
+
+          <div className="grid gap-4 py-2">
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-slate-700 uppercase">Alasan Penghapusan</label>
+              <Textarea 
+                value={deleteReason} 
+                onChange={(e) => setDeleteReason(e.target.value)} 
+                placeholder="Wajib diisi..." 
+                className="min-h-[80px]"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setItemToDelete(null)}>Batal</Button>
+            <Button onClick={confirmDelete} className="bg-rose-600 hover:bg-rose-700 text-white">Hapus Fakta</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -564,6 +947,207 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
           />
         </div>
       )}
+
+      {/* Audit Log Drawer */}
+      <Sheet open={isAuditDrawerOpen} onOpenChange={setIsAuditDrawerOpen}>
+        <SheetContent className="w-full sm:max-w-[480px] p-0 flex flex-col bg-slate-50 border-l border-slate-300 shadow-xl overflow-hidden">
+          <SheetHeader className="p-6 border-b border-slate-200 bg-white shrink-0">
+            <div className="flex items-center justify-between">
+              <div>
+                <SheetTitle className="text-sm font-black text-slate-800 uppercase tracking-widest mb-1 flex items-center gap-2">
+                  <History className="h-4 w-4 text-blue-600" />
+                  RIWAYAT PERUBAHAN
+                </SheetTitle>
+                <SheetDescription className="text-xs text-slate-500 font-medium">
+                  {auditItemFilter ? (
+                    <span className="flex items-center gap-2">
+                      <button onClick={() => setAuditItemFilter(null)} className="text-blue-600 hover:underline">← Semua Perubahan</button>
+                      <span>&middot;</span>
+                      Riwayat Item
+                    </span>
+                  ) : (
+                    `Fakta & Kronologi · ${auditLogs.length} aktivitas`
+                  )}
+                </SheetDescription>
+              </div>
+            </div>
+            
+            {!auditItemFilter && (
+              <div className="mt-4 flex flex-col gap-3">
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
+                  <Input 
+                    placeholder="Cari waktu, pengguna, atau isi perubahan..."
+                    className="pl-8 h-9 text-xs bg-slate-50 border-slate-300"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Select defaultValue="all">
+                    <SelectTrigger className="h-8 text-xs bg-white border-slate-300 flex-1">
+                      <SelectValue placeholder="Semua Aksi" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Semua</SelectItem>
+                      <SelectItem value="CREATE">Dibuat</SelectItem>
+                      <SelectItem value="UPDATE">Diubah</SelectItem>
+                      <SelectItem value="DELETE">Dihapus</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select defaultValue="all">
+                    <SelectTrigger className="h-8 text-xs bg-white border-slate-300 flex-1">
+                      <SelectValue placeholder="Semua Pengguna" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Semua Pengguna</SelectItem>
+                      <SelectItem value="HUMAN">Human</SelectItem>
+                      <SelectItem value="AI">AI/System</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+          </SheetHeader>
+
+          <ScrollArea className="flex-1 bg-slate-50/50 p-6">
+            <div className="relative border-l border-slate-200 ml-4 pb-4 space-y-8">
+              {auditLogs.filter(log => !auditItemFilter || log.itemId === auditItemFilter).length === 0 && (
+                <div className="ml-6 mt-4 text-sm text-slate-500 bg-white p-4 rounded-md border border-slate-200 text-center">
+                  <History className="h-8 w-8 mx-auto text-slate-300 mb-2" />
+                  <p className="font-bold text-slate-700">Belum ada perubahan</p>
+                  <p className="text-xs mt-1">Aktivitas create, edit, dan delete pada agent ini akan muncul di sini.</p>
+                </div>
+              )}
+              {auditLogs.filter(log => !auditItemFilter || log.itemId === auditItemFilter).length > 0 && (
+                auditLogs
+                  .filter(log => !auditItemFilter || log.itemId === auditItemFilter)
+                  .map((log) => {
+                  const isCreate = log.action === 'CREATE';
+                  const isUpdate = log.action === 'UPDATE';
+                  const isDelete = log.action === 'DELETE';
+                  
+                  const phaseLabel = log.after?.stage || log.before?.stage;
+                  const timeLabel = log.after?.time || log.before?.time;
+                  const previewText = log.after?.description || log.before?.description;
+
+                  return (
+                    <div key={log.id} className="relative pl-8">
+                      <div className={cn(
+                        "absolute -left-2.5 top-1 h-5 w-5 rounded-full border-2 border-white flex items-center justify-center z-10 shadow-sm",
+                        isCreate && "bg-emerald-500",
+                        isUpdate && "bg-blue-500",
+                        isDelete && "bg-rose-500"
+                      )}>
+                        {isCreate && <Check className="h-3 w-3 text-white" />}
+                        {isUpdate && <Pencil className="h-3 w-3 text-white" />}
+                        {isDelete && <Trash2 className="h-3 w-3 text-white" />}
+                      </div>
+
+                      <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden group">
+                        <div className="p-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                          <div className={cn(
+                            "text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-sm",
+                            isCreate && "bg-emerald-100 text-emerald-700",
+                            isUpdate && "bg-blue-100 text-blue-700",
+                            isDelete && "bg-rose-100 text-rose-700"
+                          )}>
+                            {isCreate && "DIBUAT"}
+                            {isUpdate && "DIUBAH"}
+                            {isDelete && "DIHAPUS"}
+                          </div>
+                          <span className="text-[10px] text-slate-400 font-medium">
+                            {new Date(log.timestamp).toLocaleString('id-ID', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })} WIB
+                          </span>
+                        </div>
+
+                        <div className="p-4">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span 
+                              className="text-xs font-bold text-slate-700 cursor-pointer hover:text-blue-600 transition-colors"
+                              onClick={() => setAuditItemFilter(log.itemId)}
+                            >
+                              {PHASE_CONFIG[phaseLabel as ChronologyPhase]?.label || "FAKTA"} &middot; {timeLabel}
+                            </span>
+                          </div>
+
+                          {isUpdate && log.changeNote && (
+                            <p className="text-xs text-slate-600 mb-3 bg-blue-50 p-2 rounded border border-blue-100">
+                              {log.changeNote}
+                            </p>
+                          )}
+                          
+                          {isDelete && log.deletionReason && (
+                            <p className="text-xs text-slate-600 mb-3 bg-rose-50 p-2 rounded border border-rose-100">
+                              <span className="font-bold block mb-1">Alasan Penghapusan:</span>
+                              {log.deletionReason}
+                            </p>
+                          )}
+
+                          {isCreate && (
+                            <p className="text-xs text-slate-600 line-clamp-2 border-l-2 border-slate-200 pl-2 italic">
+                              "{previewText}"
+                            </p>
+                          )}
+
+                          {isUpdate && log.before && log.after && (
+                            <div className="mt-3 flex flex-col gap-2">
+                               {log.changedFields?.includes("Time") && (
+                                  <div className="text-[11px] grid grid-cols-2 gap-2 border border-slate-200 rounded p-2 bg-slate-50">
+                                    <div>
+                                      <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">SEBELUM (Time)</div>
+                                      <div className="text-rose-700 bg-rose-50 px-1 py-0.5 rounded">{log.before.time}</div>
+                                    </div>
+                                    <div>
+                                      <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">SESUDAH (Time)</div>
+                                      <div className="text-emerald-700 bg-emerald-50 px-1 py-0.5 rounded">{log.after.time}</div>
+                                    </div>
+                                  </div>
+                               )}
+                               {log.changedFields?.includes("Description") && (
+                                  <div className="text-[11px] grid grid-cols-1 gap-2 border border-slate-200 rounded p-2 bg-slate-50">
+                                    <div>
+                                      <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">SEBELUM (Description)</div>
+                                      <div className="text-rose-700 bg-rose-50/50 p-1.5 rounded">{log.before.description}</div>
+                                    </div>
+                                    <div className="border-t border-slate-200 pt-2">
+                                      <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">SESUDAH (Description)</div>
+                                      <div className="text-emerald-700 bg-emerald-50/50 p-1.5 rounded">{log.after.description}</div>
+                                    </div>
+                                  </div>
+                               )}
+                            </div>
+                          )}
+
+                          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+                            <div className="flex flex-col gap-0.5">
+                              <span className="text-[10px] text-slate-500 font-medium">Actor</span>
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-xs font-bold text-slate-700">{log.actorName}</span>
+                                <span className="text-[10px] text-slate-400">&middot; {log.actorRole}</span>
+                              </div>
+                            </div>
+                            <div className="flex flex-col items-end gap-1">
+                              <div className="flex items-center gap-1">
+                                {log.actorType === 'AI' && <Brain className="h-3 w-3 text-purple-500" />}
+                                {log.actorType !== 'AI' && <User className="h-3 w-3 text-blue-500" />}
+                                <span className="text-[9px] font-bold uppercase tracking-wider text-slate-500">
+                                  {log.actorType === 'AI' ? 'AI GENERATED' : log.actorType === 'SYSTEM' ? 'SYSTEM' : 'HUMAN'}
+                                </span>
+                              </div>
+                              <span className="text-[10px] font-bold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">
+                                Versi {log.versionTo}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </ScrollArea>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };
@@ -1766,7 +2350,9 @@ const FactDefaultView: React.FC<{
   metadata: FactMetadata,
   selectedItemId?: string | null,
   onSelectItem: (id: string | null) => void,
-  onAddFact: (phase: string) => void
+  onAddFact: (phase: string) => void,
+  editChangeNote: string,
+  setEditChangeNote: (val: string) => void
 }> = ({ 
   items, 
   groupedItems, 
@@ -1780,7 +2366,9 @@ const FactDefaultView: React.FC<{
   metadata,
   selectedItemId,
   onSelectItem,
-  onAddFact
+  onAddFact,
+  editChangeNote,
+  setEditChangeNote
 }) => {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [showLocalAccuracy, setShowLocalAccuracy] = useState(false);
@@ -1799,29 +2387,6 @@ const FactDefaultView: React.FC<{
           <h2 className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Case Chronology</h2>
         </div>
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 border-r border-slate-200 pr-4">
-            <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Rata-Rata Akurasi Global</span>
-            <span className={cn(
-              "font-mono font-black text-[11px] px-2 py-0.5 border rounded-none transition-colors",
-              globalAverage >= 90 ? "text-emerald-600 bg-emerald-50 border-emerald-200" :
-              globalAverage >= 70 ? "text-blue-600 bg-blue-50 border-blue-200" :
-              globalAverage >= 40 ? "text-amber-600 bg-amber-50 border-amber-200" :
-              "text-rose-600 bg-rose-50 border-rose-200"
-            )}>{globalAverage}%</span>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowLocalAccuracy(!showLocalAccuracy)}
-              className="h-6 w-6 p-0 hover:bg-slate-100 rounded-none ml-1 text-slate-500"
-              title={showLocalAccuracy ? "Sembunyikan Akurasi AI" : "Tunjukkan Akurasi AI"}
-            >
-              {showLocalAccuracy ? (
-                <Eye className="h-3.5 w-3.5" />
-              ) : (
-                <EyeOff className="h-3.5 w-3.5" />
-              )}
-            </Button>
-          </div>
           <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">{items.length} TOTAL ITEMS</span>
         </div>
       </div>
@@ -1874,6 +2439,7 @@ const FactDefaultView: React.FC<{
                             <td className="px-4 py-2 align-top border-r border-b border-slate-400">
                               <div className="flex flex-col gap-1">
                                 <span className={cn("text-[11px] font-mono font-black mt-0.5", config.textColor)}>{item.time_label}</span>
+                                {(isSelected || isEditing) && <span className="bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded-sm text-[9px] font-bold w-fit mt-1">Versi aktif: {item.version || 1}</span>}
                               </div>
                             </td>
                             <td className="px-4 py-2 align-top border-r border-b border-slate-400">
@@ -1893,6 +2459,13 @@ const FactDefaultView: React.FC<{
                                         }}
                                         className="w-full bg-white p-2.5 resize-none font-inherit leading-normal min-h-[80px] border border-blue-500 outline-none rounded shadow-md ring-2 ring-blue-500/15 text-slate-900 transition-all focus:border-blue-600 focus:ring-blue-500/25"
                                         autoFocus
+                                      />
+                                      <input 
+                                        type="text"
+                                        value={editChangeNote}
+                                        onChange={(e) => setEditChangeNote(e.target.value)}
+                                        placeholder="Catatan perubahan (wajib diisi)"
+                                        className="w-full bg-white px-2.5 py-1.5 text-[11px] border border-blue-500 outline-none rounded shadow-sm text-slate-900"
                                       />
                                       <div className="flex items-center justify-between text-[10px]">
                                         <span className="text-slate-400 font-medium">Ctrl + Enter to Save, Esc to Cancel</span>
@@ -1982,21 +2555,40 @@ const FactDefaultView: React.FC<{
   );
 };
 
-const FactTableView: React.FC<{ tableData: any, onAddFact: (phase: string) => void, setDisplayFormat: (val: any) => void }> = ({ tableData, onAddFact, setDisplayFormat }) => {
-  if (!tableData) return (
-     <div className="flex-1 flex items-center justify-center text-slate-400 bg-white h-full w-full">
-        No table data available
-     </div>
-  );
+const FactTableView: React.FC<{ 
+  groupedItems: Record<ChronologyPhase, ChronologyItem[]>,
+  editingId: string | null,
+  editBuffer: Partial<ChronologyItem>,
+  setEditBuffer: (b: Partial<ChronologyItem>) => void,
+  onEdit: (item: ChronologyItem) => void,
+  onSave: () => void,
+  onCancel: () => void,
+  onDelete: (id: string) => void,
+  selectedItemId?: string | null,
+  onSelectItem: (id: string | null) => void,
+  onAddFact: (phase: string) => void,
+  setDisplayFormat: (val: any) => void
+}> = ({ 
+  groupedItems, 
+  editingId, 
+  editBuffer, 
+  setEditBuffer, 
+  onEdit, 
+  onSave, 
+  onCancel,
+  onDelete,
+  selectedItemId,
+  onSelectItem,
+  onAddFact,
+  setDisplayFormat
+}) => {
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
   return (
-    <div className="w-full h-full overflow-auto bg-slate-50 p-8 flex justify-center">
+    <div className="w-full h-full overflow-auto bg-slate-50 p-8 flex justify-center scrollbar-thin">
       <div className="w-full max-w-[1300px] bg-white border border-slate-300 shadow-sm p-8 pb-16 h-fit shrink-0">
-        {/* Header */}
-        <div className="flex justify-between items-start mb-6">
-          <div className="whitespace-pre-line text-[15px] font-black text-slate-900 leading-tight">
-            {tableData.title}
-          </div>
-          {/* Legend */}
+        {/* Header Legend */}
+        <div className="flex justify-end items-start mb-6">
           <div className="flex items-center gap-4 text-[10px] font-bold">
             <div className="flex items-center gap-2">
               <div className="w-10 h-4 bg-[#ffff99] border border-slate-500"></div>
@@ -2016,34 +2608,115 @@ const FactTableView: React.FC<{ tableData: any, onAddFact: (phase: string) => vo
         {/* Table */}
         <div className="border border-slate-400">
           <div className="grid grid-cols-3 divide-x divide-slate-400">
-            {tableData.columns.map((col: any, idx: number) => {
+            {(['pre_contact', 'contact', 'post_contact'] as ChronologyPhase[]).map((phaseKey, idx) => {
+              const phaseItems = groupedItems[phaseKey] || [];
               let bg = "";
-              if (idx === 0) bg = "bg-[#ffff99]";
-              else if (idx === 1) bg = "bg-[#ff3333]";
-              else bg = "bg-[#00b0f0]";
+              let title = "";
+              if (idx === 0) { bg = "bg-[#ffff99]"; title = "PRA-KONTAK"; }
+              else if (idx === 1) { bg = "bg-[#ff3333]"; title = "KONTAK"; }
+              else { bg = "bg-[#00b0f0]"; title = "PASCA KONTAK"; }
               
               return (
                 <div key={idx} className="flex flex-col">
-                  {/* Time */}
-                  <div className="text-center py-2 font-bold text-[12px] border-b border-slate-400 text-slate-900">
-                    {col.time}
-                  </div>
                   {/* Phase */}
-                  <div className={`text-center py-2 font-bold text-[13px] border-b border-slate-400 text-slate-900 ${bg}`}>
-                    {col.phase}
+                  <div className={`text-center py-2 font-bold text-[13px] border-b border-slate-400 text-slate-900 uppercase tracking-widest ${bg}`}>
+                    {title}
                   </div>
                   {/* Body */}
                   <div className="p-4 flex-1 space-y-4 text-[11px] leading-relaxed text-slate-800 text-justify">
-                    {col.paragraphs.map((p: string, pIdx: number) => (
-                      <p key={pIdx}>{p}</p>
-                    ))}
+                    {phaseItems.map((item) => {
+                      const isSelected = selectedItemId === item.id;
+                      const isEditing = editingId === item.id;
+                      return (
+                        <div 
+                          key={item.id} 
+                          className={cn(
+                            "relative group p-2 -mx-2 rounded transition-colors cursor-pointer border border-transparent",
+                            isSelected ? "bg-slate-100/80 border-slate-200" : "hover:bg-slate-50/50"
+                          )}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (isSelected) {
+                              onEdit(item);
+                            } else {
+                              onSelectItem(item.id);
+                            }
+                          }}
+                        >
+                          <div className="font-bold mb-1 text-slate-600 text-[10px] flex items-center justify-between">
+                            <span>{item.time_label}</span>
+                            {(isSelected || isEditing) && <span className="bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded-sm">Versi aktif: {item.version || 1}</span>}
+                          </div>
+                          {isEditing ? (
+                            <div className="space-y-2" onClick={(e) => e.stopPropagation()}>
+                              <textarea
+                                className="w-full min-h-[80px] p-2 text-[11px] border border-slate-300 rounded-sm focus:outline-none focus:border-emerald-500"
+                                value={editBuffer.chronology_text || ""}
+                                onChange={(e) => setEditBuffer({ ...editBuffer, chronology_text: e.target.value })}
+                              />
+                              <input 
+                                type="text"
+                                value={editChangeNote}
+                                onChange={(e) => setEditChangeNote(e.target.value)}
+                                placeholder="Catatan perubahan (wajib diisi)"
+                                className="w-full p-2 text-[11px] border border-slate-300 rounded-sm focus:outline-none focus:border-emerald-500"
+                              />
+                              <div className="flex gap-2 justify-end">
+                                <button
+                                  className="px-3 py-1 text-[10px] font-bold border border-slate-300 text-slate-600 rounded-sm hover:bg-slate-100 transition-all active:scale-95"
+                                  onClick={(e) => { e.stopPropagation(); onCancel(); }}
+                                >
+                                  BATAL
+                                </button>
+                                <button
+                                  className="px-3 py-1 text-[10px] font-bold bg-blue-600 text-white border border-blue-700 rounded-sm hover:bg-blue-700 transition-all active:scale-95"
+                                  onClick={(e) => { e.stopPropagation(); onSave(); }}
+                                >
+                                  SIMPAN
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <p className="whitespace-pre-wrap">{item.chronology_text}</p>
+                              <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-all duration-200 flex items-center gap-1.5 z-10">
+                                {deleteConfirmId === item.id ? (
+                                  <div className="flex items-center gap-1.5 bg-white p-1 rounded shadow-sm border border-red-100" onClick={(e) => e.stopPropagation()}>
+                                    <button className="px-2 py-1 bg-red-600 text-white rounded text-[10px] font-bold hover:bg-red-700 shadow-sm" onClick={() => {
+                                      onDelete(item.id);
+                                      setDeleteConfirmId(null);
+                                    }}>Ya</button>
+                                    <button className="px-2 py-1 bg-slate-200 text-slate-800 rounded text-[10px] font-bold hover:bg-slate-300 shadow-sm" onClick={() => setDeleteConfirmId(null)}>Batal</button>
+                                  </div>
+                                ) : (
+                                  <>
+                                    <span className="text-[9px] text-blue-600 font-bold bg-blue-50/90 px-2 py-1 rounded border border-blue-200/60 flex items-center gap-1.5 shadow-sm active:scale-95">
+                                       <Pencil className="h-2.5 w-2.5" /> Double-click to edit
+                                    </span>
+                                    <button
+                                      className="p-1 hover:bg-red-50 hover:text-red-600 rounded text-slate-400 bg-white/90 border border-slate-200 shadow-sm transition-colors"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setDeleteConfirmId(item.id);
+                                      }}
+                                      title="Hapus"
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                    </button>
+                                  </>
+                                )}
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                   <div className="p-0 border-t border-slate-400">
                      <button 
                        onClick={(e) => {
                          e.stopPropagation();
-                         const phaseMap: Record<number, string> = { 0: 'pre_contact', 1: 'contact', 2: 'post_contact' };
-                         onAddFact(phaseMap[idx]);
+                         onAddFact(phaseKey);
                          setDisplayFormat('timeline');
                        }}
                        className="w-full text-center py-2 text-[11px] font-bold text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 transition-colors uppercase tracking-widest bg-slate-50/50 hover:border-emerald-200 border border-transparent"
