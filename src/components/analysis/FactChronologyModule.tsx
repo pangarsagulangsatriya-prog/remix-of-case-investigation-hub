@@ -5,6 +5,7 @@ import {
   User, 
   Pencil, 
   Check, 
+  CheckCircle2,
   X, 
   AlertTriangle,
   Presentation,
