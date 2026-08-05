@@ -8,17 +8,23 @@ export type ReadinessStatus =
   | "NOT_READY"
   | "OUTDATED";
 
-export type FindingSeverity = "CRITICAL" | "WARNING" | "SUGGESTION";
+export type RequirementLevel = "REQUIRED" | "RECOMMENDED" | "OPTIONAL";
+export type RequirementStatus = "FULFILLED" | "MISSING" | "BROKEN" | "NEEDS_VERIFICATION";
 
-export interface ReadinessFinding {
+export interface EvidenceRequirementResult {
   id: string;
-  severity: FindingSeverity;
-  title: string;
-  description: string;
-  impact: string;
-  suggestion: string;
-  relatedFileId?: string;
-  relatedFileName?: string;
+  label: string;
+  category: string;
+  level: RequirementLevel;
+  status: RequirementStatus;
+  matchedFiles: {
+    id: string;
+    name: string;
+    processingStatus: string;
+  }[];
+  issue?: string;
+  impact?: string;
+  recommendation?: string;
 }
 
 export interface EvidenceSnapshot {
@@ -42,7 +48,7 @@ export interface ReadinessRun {
   completedAt: string;
   status: ReadinessStatus;
   evidenceSnapshot: EvidenceSnapshot;
-  findings: ReadinessFinding[];
+  results: EvidenceRequirementResult[];
   previousRunId?: string;
 }
 
@@ -52,14 +58,14 @@ export interface AnalysisOverride {
   userName: string;
   userRole: string;
   timestamp: string;
-  activeFindingCount: number;
-  criticalFindingCount: number;
   acknowledgement: boolean;
   reason?: string;
+  missingRequired: string[];
+  brokenRequired: string[];
 }
 
-const STORAGE_KEY = "investigation_readiness_state_v2";
-const EVENT_KEY = "readiness_state_changed_v2";
+const STORAGE_KEY = "investigation_readiness_state_v4";
+const EVENT_KEY = "readiness_state_changed_v4";
 
 interface ReadinessState {
   runs: ReadinessRun[];
@@ -135,7 +141,7 @@ export const useReadiness = () => {
         processingFiles: 0,
         fileIds: ["file-1", "file-2"]
       },
-      findings: [],
+      results: [],
       previousRunId
     };
 
@@ -145,42 +151,123 @@ export const useReadiness = () => {
     setTimeout(() => {
       const stateAfterDelay = loadState();
       
-      const dummyFindings: ReadinessFinding[] = [
+      const dummyResults: EvidenceRequirementResult[] = [
         {
-          id: `fnd-${Date.now()}-1`,
-          severity: "CRITICAL",
-          title: "VIDEO GAGAL DIPROSES",
-          description: "File HOPPER_1_converted.mp4 gagal dianalisis oleh sistem.",
-          impact: "Informasi visual dan audio dari file ini tidak akan masuk ke proses analisis.",
-          suggestion: "Unggah ulang file, periksa format video, atau gunakan versi file lain.",
-          relatedFileName: "HOPPER_1_converted.mp4"
+          id: "req-1",
+          label: "Video kejadian lapangan",
+          category: "Visual",
+          level: "REQUIRED",
+          status: "BROKEN",
+          matchedFiles: [
+            { id: "file-1", name: "HOPPER_1_converted.mp4", processingStatus: "ERROR" }
+          ],
+          issue: "File gagal diproses",
+          impact: "Informasi visual dan audio tidak dapat digunakan dalam analisis.",
+          recommendation: "Unggah ulang video atau gunakan versi file lain yang dapat diproses."
         },
         {
-          id: `fnd-${Date.now()}-2`,
-          severity: "WARNING",
-          title: "KONTEKS KEJADIAN MASIH TERBATAS",
-          description: "Evidence yang tersedia belum memberikan informasi yang cukup mengenai waktu, lokasi, dan urutan kejadian utama.",
-          impact: "Penyusunan kronologi dapat menghasilkan bagian yang belum terverifikasi.",
-          suggestion: "Tambahkan dokumen, foto, video, rekaman komunikasi, atau pernyataan saksi yang relevan."
+          id: "req-2",
+          label: "Foto pengamatan lapangan",
+          category: "Visual",
+          level: "REQUIRED",
+          status: "FULFILLED",
+          matchedFiles: [
+            { id: "file-2", name: "Screenshot 2026-07-01 at 10.20.17.png", processingStatus: "DONE" }
+          ],
+          recommendation: "File tersedia dan berhasil diproses."
         },
         {
-          id: `fnd-${Date.now()}-3`,
-          severity: "SUGGESTION",
-          title: "SUMBER EVIDENCE MASIH TERBATAS",
-          description: "Evidence saat ini didominasi oleh gambar dan video.",
-          impact: "Sistem membutuhkan data yang lebih beragam untuk verifikasi silang.",
-          suggestion: "Tambahkan sumber pembanding agar hasil investigasi dapat diverifikasi silang."
+          id: "req-3",
+          label: "BAP / Berita Acara Pemeriksaan",
+          category: "Dokumen",
+          level: "REQUIRED",
+          status: "MISSING",
+          matchedFiles: [],
+          issue: "Belum ada file yang memenuhi requirement ini.",
+          recommendation: "Unggah BAP atau dokumen pemeriksaan resmi."
+        },
+        {
+          id: "req-4",
+          label: "Audio wawancara operator",
+          category: "Audio",
+          level: "RECOMMENDED",
+          status: "MISSING",
+          matchedFiles: [],
+          issue: "Belum ada file yang memenuhi requirement ini.",
+          recommendation: "Unggah rekaman suara wawancara dengan operator alat berat."
+        },
+        {
+          id: "req-5",
+          label: "Audio wawancara saksi",
+          category: "Audio",
+          level: "RECOMMENDED",
+          status: "MISSING",
+          matchedFiles: [],
+          issue: "Belum ada file yang memenuhi requirement ini.",
+          recommendation: "Unggah rekaman wawancara dengan saksi mata kejadian."
+        },
+        {
+          id: "req-6",
+          label: "Dokumen kronologi awal / laporan awal",
+          category: "Dokumen",
+          level: "REQUIRED",
+          status: "MISSING",
+          matchedFiles: [],
+          issue: "Belum ada file yang memenuhi requirement ini.",
+          recommendation: "Unggah laporan awal atau dokumen kronologi dari lapangan."
+        },
+        {
+          id: "req-7",
+          label: "Data waktu kejadian / timestamp pendukung",
+          category: "Data",
+          level: "RECOMMENDED",
+          status: "NEEDS_VERIFICATION",
+          matchedFiles: [],
+          issue: "Waktu kejadian tidak dapat divalidasi dari file yang ada.",
+          impact: "Sistem tidak dapat mengurutkan kronologi secara otomatis.",
+          recommendation: "Pastikan file yang diunggah memiliki metadata waktu atau unggah log sistem."
+        },
+        {
+          id: "req-8",
+          label: "Bukti fase kontak utama",
+          category: "Visual/Data",
+          level: "REQUIRED",
+          status: "MISSING",
+          matchedFiles: [],
+          issue: "Belum ada file yang memenuhi requirement ini.",
+          recommendation: "Unggah foto atau dokumen yang secara spesifik menunjukkan titik kontak insiden."
         }
       ];
 
+      let missingRequired = 0;
+      let brokenRequired = 0;
+      let missingRecommended = 0;
+      let verificationRequired = 0;
+
+      dummyResults.forEach(r => {
+        if (r.level === "REQUIRED") {
+          if (r.status === "MISSING") missingRequired++;
+          if (r.status === "BROKEN") brokenRequired++;
+        } else {
+          if (r.status === "MISSING") missingRecommended++;
+          if (r.status === "NEEDS_VERIFICATION") verificationRequired++;
+        }
+      });
+
+      let finalStatus: ReadinessStatus = "READY";
+      if (missingRequired > 0 || brokenRequired > 0) {
+        finalStatus = "NOT_READY";
+      } else if (missingRecommended > 0 || verificationRequired > 0) {
+        finalStatus = "NEEDS_ATTENTION";
+      }
+
       const completedAt = new Date().toISOString();
-      const finalStatus: ReadinessStatus = "NOT_READY"; // based on the dummy findings (1 critical, 2 warning/suggestion)
 
       const finalRun: ReadinessRun = {
         ...checkingRun,
         status: finalStatus,
         completedAt,
-        findings: dummyFindings
+        results: dummyResults
       };
 
       const newRuns = [finalRun, ...stateAfterDelay.runs.filter(r => r.id !== checkingRun.id)];
@@ -201,7 +288,9 @@ export const useReadiness = () => {
     if (!currentState.runs || currentState.runs.length === 0) return;
     
     const latest = currentState.runs[0];
-    const criticalCount = latest.findings.filter(f => f.severity === "CRITICAL").length;
+    
+    const missingReq = latest.results.filter(r => r.level === "REQUIRED" && r.status === "MISSING").map(r => r.label);
+    const brokenReq = latest.results.filter(r => r.level === "REQUIRED" && r.status === "BROKEN").map(r => r.label);
 
     const newOverride: AnalysisOverride = {
       id: `ovr-${Date.now()}`,
@@ -209,8 +298,8 @@ export const useReadiness = () => {
       userName: "Gulang Satriya",
       userRole: "Lead Investigator",
       timestamp: new Date().toISOString(),
-      activeFindingCount: latest.findings.length,
-      criticalFindingCount: criticalCount,
+      missingRequired: missingReq,
+      brokenRequired: brokenReq,
       acknowledgement: ack,
       reason
     };

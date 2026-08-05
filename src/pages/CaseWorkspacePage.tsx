@@ -89,7 +89,7 @@ function CaseWorkspaceInner() {
   const [isAnalysisModalOpen, setIsAnalysisModalOpen] = useState(false);
   const [overrideNote, setOverrideNote] = useState("");
   const [overrideAck, setOverrideAck] = useState(false);
-  const hasCritical = latestRun?.findings.some(f => f.severity === "CRITICAL") ?? false;
+  const hasCritical = latestRun?.results.some(c => c.level === "REQUIRED" && (c.status === "MISSING" || c.status === "BROKEN")) ?? false;
 
 
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -539,7 +539,10 @@ function CaseWorkspaceInner() {
                 ) : (
                   <>
                     {currentStep === 1 && <ExtractionTab />}
-                    {currentStep === 2 && <EvidenceTab />}
+                    {currentStep === 2 && <EvidenceTab onProceedToAnalysis={() => {
+                      setCurrentStep(3);
+                      setShowAuditTrail(false);
+                    }} />}
                     {currentStep === 3 && <AnalysisTab agents={agents} setAgents={setAgents} reportStatus={reportStatus} />}
                     {currentStep === 4 && <ReportsTab 
                       agents={agents} 
@@ -590,7 +593,7 @@ function CaseWorkspaceInner() {
                       <>
                         <div className="bg-amber-50/50 border border-amber-100 p-3 rounded space-y-1">
                           <p className="text-[11px] font-bold text-amber-800 uppercase tracking-widest">Evidence masih memiliki:</p>
-                          <p className="text-[10px] text-amber-700">{latestRun?.findings.length} temuan aktif • {latestRun?.findings.filter(f=>f.severity==="CRITICAL").length} temuan kritis</p>
+                          <p className="text-[10px] text-amber-700">{latestRun?.results.filter(c => c.status !== "FULFILLED").length} rekomendasi aktif • {latestRun?.results.filter(c => c.level === "REQUIRED" && (c.status === "MISSING" || c.status === "BROKEN")).length} kritis</p>
                         </div>
                         <p className="text-[11px] text-slate-700 font-medium leading-relaxed">
                           Analisis tetap dapat dijalankan menggunakan data yang tersedia.
@@ -598,7 +601,7 @@ function CaseWorkspaceInner() {
                         </p>
                         <div className="space-y-1">
                            <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2">Temuan Utama:</div>
-                           {latestRun?.findings.slice(0, 3).map((f, i) => (
+                           {latestRun?.results.filter(c => c.status !== "FULFILLED").slice(0, 3).map((f, i) => (
                              <div key={i} className="text-[11px] text-slate-700 flex items-start gap-1.5">
                                <span className="text-slate-400 mt-0.5">•</span>
                                <span className="leading-snug">{f.relatedFileName ? `${f.relatedFileName} ` : ''}{f.description}</span>

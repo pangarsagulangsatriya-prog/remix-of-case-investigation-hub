@@ -66,7 +66,11 @@ import { useReadiness } from "@/hooks/useReadiness";
 import { EvidenceReadinessModal } from "../EvidenceReadinessModal";
 import { ShieldCheck, Loader2 as Spinner } from "lucide-react";
 
-export default function EvidenceTab() {
+interface EvidenceTabProps {
+  onProceedToAnalysis?: () => void;
+}
+
+export default function EvidenceTab({ onProceedToAnalysis }: EvidenceTabProps) {
   const { currentStep: tourStep, isActive: isTourActive } = useTour();
   const { runs, currentStatus, triggerManualCheck, markAsOutdated, latestRun } = useReadiness();
   const [isReadinessModalOpen, setIsReadinessModalOpen] = useState(false);
@@ -870,7 +874,7 @@ export default function EvidenceTab() {
                     currentStatus === "OUTDATED" ? "bg-slate-100 text-slate-600 border-slate-300 hover:bg-slate-200" :
                     currentStatus === "NOT_READY" ? "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100" :
                     currentStatus === "NEEDS_ATTENTION" ? "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100" :
-                    currentStatus === "READY" ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100" :
+                    currentStatus === "READY" ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:emerald-100" :
                     "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
                   }`}
                   onClick={() => {
@@ -884,7 +888,7 @@ export default function EvidenceTab() {
                   {currentStatus === "OUTDATED" && "Periksa Ulang · Data Berubah"}
                   {currentStatus === "READY" && "Evidence Siap"}
                   {(currentStatus === "NOT_READY" || currentStatus === "NEEDS_ATTENTION") && (
-                    <>{currentStatus === "NOT_READY" ? "Belum Siap" : "Perlu Perhatian"} · {latestRun?.findings.length} Temuan</>
+                    <>{currentStatus === "NOT_READY" ? "Belum Siap" : "Perlu Perhatian"} · {latestRun?.results.filter(c => c.status !== "FULFILLED").length} Temuan</>
                   )}
                 </Button>
 
@@ -1331,6 +1335,13 @@ export default function EvidenceTab() {
         onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={handleDelete}
         fileName={selectedFile?.name || ""}
+      />
+
+       {/* Modal Kesipaan Evidence (Golden Gate) */}
+      <EvidenceReadinessModal 
+        open={isReadinessModalOpen} 
+        onOpenChange={setIsReadinessModalOpen} 
+        onProceedToAnalysis={onProceedToAnalysis || (() => {})}
       />
 
       <Modal 
