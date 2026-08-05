@@ -968,10 +968,12 @@ function EvidenceCitationPanel({ citations, forceExpand }: { citations: any[], f
 interface AnalysisTabProps {
   agents: AgentState[];
   setAgents: React.Dispatch<React.SetStateAction<AgentState[]>>;
+  reportStatus?: string;
 }
 
-export default function AnalysisTab({ agents, setAgents }: AnalysisTabProps) {
+export default function AnalysisTab({ agents, setAgents, reportStatus }: AnalysisTabProps) {
   const { caseId } = useParams<{ caseId: string }>();
+  const isLocked = reportStatus === 'FINAL_LOCKED';
   const { data: evidence } = useEvidence(caseId!);
   const evidenceFiles = evidence?.files || [];
   const batches = evidence?.batches || [];
@@ -1123,16 +1125,18 @@ export default function AnalysisTab({ agents, setAgents }: AnalysisTabProps) {
   const handleRowClick = (id: string | number) => {
     const strId = String(id);
     if (selectedRowId === strId) {
-      setEditingRowId(strId);
-      const agent = agents.find(a => a.id === 'prev');
-      const item = agent?.results?.actions?.find((act: any, idx: number) => String(act.id || idx) === strId);
-      if (item) {
-        setEditDraft({
-          id: strId,
-          layer: extractStringValue(item.layer),
-          hierarchy: extractStringValue(item.hierarchy),
-          action: extractStringValue(item.action),
-        });
+      if (!isLocked) {
+        setEditingRowId(strId);
+        const agent = agents.find(a => a.id === 'prev');
+        const item = agent?.results?.actions?.find((act: any, idx: number) => String(act.id || idx) === strId);
+        if (item) {
+          setEditDraft({
+            id: strId,
+            layer: extractStringValue(item.layer),
+            hierarchy: extractStringValue(item.hierarchy),
+            action: extractStringValue(item.action),
+          });
+        }
       }
     } else {
       setSelectedRowId(strId);
@@ -1765,6 +1769,7 @@ export default function AnalysisTab({ agents, setAgents }: AnalysisTabProps) {
                               <div className="flex-1 animate-in fade-in duration-500 overflow-hidden">
                                  {slides[activeSlide]?.type === 'chronology_module' ? (
                                     <FactChronologyModule
+                                       readonly={isLocked}
                                        onLogAudit={(desc) => handleLogAudit("fact", desc)}
                                        initialItems={selectedAgent.results?.chronology_items || []}
                                        metadata={selectedAgent.results?.ringkasan}
@@ -1835,6 +1840,7 @@ export default function AnalysisTab({ agents, setAgents }: AnalysisTabProps) {
                                                                              key={item.id || idx} 
                                                                              onClick={() => handleSelectRow(item.id || item)}
                                                                              onDoubleClick={() => {
+                                                                               if (isLocked) return;
                                                                                setEditingPeepoId(String(item.id || idx));
                                                                                setPeepoEditDraft(item.chronology_text || item.label || item);
                                                                              }}
@@ -1850,41 +1856,45 @@ export default function AnalysisTab({ agents, setAgents }: AnalysisTabProps) {
                                                                                 )}>
                                                                                    {item.chronology_text || item.label || item}
                                                                                 </p>
-                                                                                <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                                                                                    {deleteConfirmId === String(item.id || idx) ? (
-                                                                                       <div className="flex items-center gap-1.5 self-center animate-in fade-in bg-white p-1 rounded shadow-sm border border-slate-200" onClick={(e) => e.stopPropagation()}>
-                                                                                          <span className="text-[10px] font-bold text-red-600 mr-1 whitespace-nowrap">Yakin hapus?</span>
-                                                                                          <button className="px-2 py-1 bg-red-600 text-white rounded text-[10px] font-bold hover:bg-red-700 shadow-sm" onClick={() => { handleDeletePeepo(section.id, String(item.id || idx)); setDeleteConfirmId(null); }}>Ya</button>
-                                                                                          <button className="px-2 py-1 bg-slate-200 text-slate-800 rounded text-[10px] font-bold hover:bg-slate-300 shadow-sm" onClick={() => setDeleteConfirmId(null)}>Batal</button>
-                                                                                       </div>
-                                                                                    ) : (
-                                                                                       <>
-                                                                                          <span className="opacity-0 group-hover:opacity-100 transition-all duration-200 self-center text-[9px] text-blue-600 font-bold bg-blue-50/80 px-2 py-1 rounded border border-blue-200/60 flex items-center gap-1.5 shrink-0 shadow-sm active:scale-95">
-                                                                                             <Pencil className="h-2.5 w-2.5" /> Double-click to edit
-                                                                                          </span>
-                                                                                          <button 
-                                                                                             className="opacity-0 group-hover:opacity-100 transition-all duration-200 self-center text-slate-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded"
-                                                                                             onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(String(item.id || idx)); }}
-                                                                                          >
-                                                                                             <Trash2 className="h-3.5 w-3.5" />
-                                                                                          </button>
-                                                                                       </>
-                                                                                    )}
-                                                                                 </div>
+                                                                                {!isLocked && (
+                                                                                  <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                                                                                      {deleteConfirmId === String(item.id || idx) ? (
+                                                                                         <div className="flex items-center gap-1.5 self-center animate-in fade-in bg-white p-1 rounded shadow-sm border border-slate-200" onClick={(e) => e.stopPropagation()}>
+                                                                                            <span className="text-[10px] font-bold text-red-600 mr-1 whitespace-nowrap">Yakin hapus?</span>
+                                                                                            <button className="px-2 py-1 bg-red-600 text-white rounded text-[10px] font-bold hover:bg-red-700 shadow-sm" onClick={() => { handleDeletePeepo(section.id, String(item.id || idx)); setDeleteConfirmId(null); }}>Ya</button>
+                                                                                            <button className="px-2 py-1 bg-slate-200 text-slate-800 rounded text-[10px] font-bold hover:bg-slate-300 shadow-sm" onClick={() => setDeleteConfirmId(null)}>Batal</button>
+                                                                                         </div>
+                                                                                      ) : (
+                                                                                         <>
+                                                                                            <span className="opacity-0 group-hover:opacity-100 transition-all duration-200 self-center text-[9px] text-blue-600 font-bold bg-blue-50/80 px-2 py-1 rounded border border-blue-200/60 flex items-center gap-1.5 shrink-0 shadow-sm active:scale-95">
+                                                                                               <Pencil className="h-2.5 w-2.5" /> Double-click to edit
+                                                                                            </span>
+                                                                                            <button 
+                                                                                               className="opacity-0 group-hover:opacity-100 transition-all duration-200 self-center text-slate-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded"
+                                                                                               onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(String(item.id || idx)); }}
+                                                                                            >
+                                                                                               <Trash2 className="h-3.5 w-3.5" />
+                                                                                            </button>
+                                                                                         </>
+                                                                                      )}
+                                                                                   </div>
+                                                                                )}
                                                                              </td>
                                                                           </tr>
                                                                        );
                                                                     })}
-                                                                    <tr>
-                                                                        <td className="px-0 py-0 border-r border-b border-slate-200 relative">
-                                                                          <button 
-                                                                            onClick={(e) => { e.stopPropagation(); handleAddPeepo(section.id); }}
-                                                                            className="w-full text-center py-2 text-[11px] font-bold text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 transition-colors uppercase tracking-widest bg-slate-50/50 hover:border-emerald-200 border border-transparent"
-                                                                          >
-                                                                            + Tambah Data
-                                                                          </button>
-                                                                        </td>
-                                                                     </tr>
+                                                                    {!isLocked && (
+                                                                      <tr>
+                                                                          <td className="px-0 py-0 border-r border-b border-slate-200 relative">
+                                                                            <button 
+                                                                              onClick={(e) => { e.stopPropagation(); handleAddPeepo(section.id); }}
+                                                                              className="w-full text-center py-2 text-[11px] font-bold text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 transition-colors uppercase tracking-widest bg-slate-50/50 hover:border-emerald-200 border border-transparent"
+                                                                            >
+                                                                              + Tambah Data
+                                                                            </button>
+                                                                          </td>
+                                                                       </tr>
+                                                                    )}
                                                                  </tbody>
                                                               </table>
                                                            </div>
@@ -1907,6 +1917,7 @@ export default function AnalysisTab({ agents, setAgents }: AnalysisTabProps) {
                                             </div>
                                          ) : selectedAgentId === 'actor' ? (
                                             <ActorAnalysisModule 
+                                               readonly={isLocked}
                                                data={selectedAgent?.results as any}
                                                onSelectActor={handleSelectRow}
                                                selectedActorId={selectedRowId}
@@ -1930,6 +1941,7 @@ export default function AnalysisTab({ agents, setAgents }: AnalysisTabProps) {
                                             />
                                          ) : selectedAgentId === 'ipls' ? (
                                             <IplsAnalysisModule
+                                               readonly={isLocked}
                                                data={selectedAgent?.results as any}
                                                onSelectRow={handleSelectRow}
                                                selectedRowId={selectedRowId}
@@ -2095,27 +2107,29 @@ export default function AnalysisTab({ agents, setAgents }: AnalysisTabProps) {
                                                                           ) : (
                                                                              <div className="flex items-start justify-between gap-4">
                                                                                 <span className="flex-1">{extractStringValue(item.action)}</span>
-                                                                                <div className="flex items-center gap-2 relative">
-                                                                                    {deleteConfirmId === String(item.id || idx) ? (
-                                                                                       <div className="flex items-center gap-1.5 self-center animate-in fade-in bg-white p-1 rounded shadow-sm border border-slate-200" onClick={(e) => e.stopPropagation()}>
-                                                                                          <span className="text-[10px] font-bold text-red-600 mr-1 whitespace-nowrap">Yakin hapus?</span>
-                                                                                          <button className="px-2 py-1 bg-red-600 text-white rounded text-[10px] font-bold hover:bg-red-700 shadow-sm" onClick={(e) => { e.stopPropagation(); handleDeletePrev(String(item.id || idx)); setDeleteConfirmId(null); }}>Ya</button>
-                                                                                          <button className="px-2 py-1 bg-slate-200 text-slate-800 rounded text-[10px] font-bold hover:bg-slate-300 shadow-sm" onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(null); }}>Batal</button>
-                                                                                       </div>
-                                                                                    ) : (
-                                                                                       <>
-                                                                                          <span className="opacity-0 group-hover:opacity-100 transition-all duration-200 self-center text-[9px] text-blue-600 font-bold bg-blue-50/80 px-2 py-1 rounded border border-blue-200/60 flex items-center gap-1.5 shrink-0 shadow-sm active:scale-95">
-                                                                                             <Pencil className="h-2.5 w-2.5" /> Double-click active row to edit
-                                                                                          </span>
-                                                                                          <button 
-                                                                                             className="opacity-0 group-hover:opacity-100 transition-all duration-200 self-center text-slate-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded"
-                                                                                             onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(String(item.id || idx)); }}
-                                                                                          >
-                                                                                             <Trash2 className="h-3.5 w-3.5" />
-                                                                                          </button>
-                                                                                       </>
-                                                                                    )}
-                                                                                 </div>
+                                                                                {!isLocked && (
+                                                                                  <div className="flex items-center gap-2 relative">
+                                                                                      {deleteConfirmId === String(item.id || idx) ? (
+                                                                                         <div className="flex items-center gap-1.5 self-center animate-in fade-in bg-white p-1 rounded shadow-sm border border-slate-200" onClick={(e) => e.stopPropagation()}>
+                                                                                            <span className="text-[10px] font-bold text-red-600 mr-1 whitespace-nowrap">Yakin hapus?</span>
+                                                                                            <button className="px-2 py-1 bg-red-600 text-white rounded text-[10px] font-bold hover:bg-red-700 shadow-sm" onClick={(e) => { e.stopPropagation(); handleDeletePrev(String(item.id || idx)); setDeleteConfirmId(null); }}>Ya</button>
+                                                                                            <button className="px-2 py-1 bg-slate-200 text-slate-800 rounded text-[10px] font-bold hover:bg-slate-300 shadow-sm" onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(null); }}>Batal</button>
+                                                                                         </div>
+                                                                                      ) : (
+                                                                                         <>
+                                                                                            <span className="opacity-0 group-hover:opacity-100 transition-all duration-200 self-center text-[9px] text-blue-600 font-bold bg-blue-50/80 px-2 py-1 rounded border border-blue-200/60 flex items-center gap-1.5 shrink-0 shadow-sm active:scale-95">
+                                                                                               <Pencil className="h-2.5 w-2.5" /> Double-click active row to edit
+                                                                                            </span>
+                                                                                            <button 
+                                                                                               className="opacity-0 group-hover:opacity-100 transition-all duration-200 self-center text-slate-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded"
+                                                                                               onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(String(item.id || idx)); }}
+                                                                                            >
+                                                                                               <Trash2 className="h-3.5 w-3.5" />
+                                                                                            </button>
+                                                                                         </>
+                                                                                      )}
+                                                                                   </div>
+                                                                                )}
                                                                              </div>
                                                                           )}
                                                                        </td>
@@ -2123,28 +2137,19 @@ export default function AnalysisTab({ agents, setAgents }: AnalysisTabProps) {
                                                                  );
                                                               })}
 
-                                                              <tr>
-
-                                                                 <td colSpan={4} className="px-0 py-0 border-r border-b border-slate-400 relative">
-
-                                                                    <button 
-
-                                                                      onClick={(e) => { e.stopPropagation(); handleAddPrev(); }}
-
-                                                                      className="w-full text-center py-2 text-[11px] font-bold text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 transition-colors uppercase tracking-widest bg-slate-50/50 hover:border-emerald-200 border border-transparent"
-
-                                                                    >
-
-                                                                      + Tambah Tindakan Perbaikan
-
-                                                                    </button>
-
-                                                                 </td>
-
-                                                              </tr>
-
+                                                              {!isLocked && (
+                                                                <tr>
+                                                                   <td colSpan={4} className="px-0 py-0 border-r border-b border-slate-400 relative">
+                                                                      <button 
+                                                                        onClick={(e) => { e.stopPropagation(); handleAddPrev(); }}
+                                                                        className="w-full text-center py-2 text-[11px] font-bold text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 transition-colors uppercase tracking-widest bg-slate-50/50 hover:border-emerald-200 border border-transparent"
+                                                                      >
+                                                                        + Tambah Tindakan Perbaikan
+                                                                      </button>
+                                                                   </td>
+                                                                </tr>
+                                                              )}
                                                               </tbody>
-
                                                               </table>
                                                      </div>
                                                   </div>
@@ -2192,6 +2197,7 @@ export default function AnalysisTab({ agents, setAgents }: AnalysisTabProps) {
                   return (
                      <div className="w-[420px] shrink-0 border-l border-slate-200 bg-white shadow-[-10px_0_30px_-15px_rgba(0,0,0,0.1)] z-20 flex flex-col animate-in slide-in-from-right duration-300">
                         <TraceabilityPanel
+                           readonly={isLocked}
                            key={item.id}
                            item={{ ...item, agentId: 'peepo' }}
                            onClose={() => setSelectedRowId(null)}
@@ -2282,6 +2288,7 @@ export default function AnalysisTab({ agents, setAgents }: AnalysisTabProps) {
                   return (
                      <div className="w-[420px] shrink-0 border-l border-slate-200 bg-white shadow-[-10px_0_30px_-15px_rgba(0,0,0,0.1)] z-20 flex flex-col animate-in slide-in-from-right duration-300">
                         <TraceabilityPanel
+                           readonly={isLocked}
                            key={item.id}
                            item={item}
                            onClose={() => setSelectedRowId(null)}

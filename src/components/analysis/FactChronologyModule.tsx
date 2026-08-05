@@ -935,6 +935,7 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
       {selectedItem && (
         <div className="w-[420px] shrink-0 border-l border-slate-200 h-full animate-in slide-in-from-right duration-300">
           <TraceabilityPanel 
+            readonly={readonly}
             item={{ ...selectedItem, agentId: 'fact' }}
             onClose={() => setSelectedItemId(null)}
             onUpdateStatus={(newStatus) => {
@@ -1853,191 +1854,14 @@ const CATEGORY_EXPLANATIONS: Record<string, { title: string, subtitle: string, t
 
 // ── Provenance & Annotation Components ─────────────────────────────────────
 
-export const AnnotationHistoryView: React.FC<{ item: any, onClose: () => void }> = ({ item, onClose }) => {
-  return (
-    <div className="absolute inset-0 bg-white z-30 flex flex-col animate-in slide-in-from-bottom-4 duration-300">
-      <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-slate-50">
-        <div>
-          <h3 className="text-sm font-bold text-slate-800">Riwayat Perubahan</h3>
-          <p className="text-[10px] text-slate-500 mt-0.5">Jejak audit dan revisi manusia</p>
-        </div>
-        <Button variant="ghost" size="sm" onClick={onClose} className="h-6 w-6 p-0 hover:bg-slate-200">
-          <X className="h-4 w-4 text-slate-500" />
-        </Button>
-      </div>
-      <div className="flex-1 overflow-auto p-4 space-y-4 bg-slate-50/50">
-        <div className="relative border-l-2 border-slate-200 ml-3 pl-4 pb-4">
-          <div className="absolute w-2.5 h-2.5 rounded-full bg-blue-500 -left-[6px] top-1" />
-          <div className="text-[10px] text-slate-400 font-bold mb-1">Current Version (v{item.currentVersion || 1})</div>
-          <div className="bg-white border border-slate-200 p-3 shadow-sm rounded-sm">
-            <div className="font-bold text-slate-800 text-[11px] mb-1">{item.latestHumanChange?.userName || "Gulang Satriya"}</div>
-            <div className="text-[10px] text-slate-500 mb-2">{item.latestHumanChange?.changeNote || "Memperbarui data"}</div>
-            <div className="flex gap-1 flex-wrap">
-               {(item.latestHumanChange?.changedFields || ["description"]).map((f: string) => (
-                  <span key={f} className="text-[9px] px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded">Mod: {f}</span>
-               ))}
-            </div>
-          </div>
-        </div>
-        
-        <div className="relative border-l-2 border-transparent ml-3 pl-4">
-          <div className="absolute w-2.5 h-2.5 rounded-full bg-slate-300 -left-[6px] top-1" />
-          <div className="text-[10px] text-slate-400 font-bold mb-1">Original Content (v1)</div>
-          <div className="bg-slate-100 border border-slate-200 p-3 rounded-sm">
-            <div className="font-bold text-slate-500 text-[11px] mb-1">AI Generated</div>
-            <div className="text-[10px] text-slate-400">{item.originalSource?.timestamp || "2026-08-05"}</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export const ProvenanceBlock: React.FC<{ item: any, onOpenHistory: () => void }> = ({ item, onOpenHistory }) => {
-  if (item.provenanceType === 'HUMAN_MANUAL') {
-    return (
-      <div className="bg-emerald-50/50 p-2.5 border-y border-emerald-100 mb-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-          <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-widest">Ditambahkan Manual</span>
-        </div>
-        {item.manualRevisionCount > 0 && (
-          <span className="text-[9px] font-bold text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded cursor-pointer hover:bg-emerald-200" onClick={onOpenHistory}>
-            Revisi {item.manualRevisionCount}x
-          </span>
-        )}
-      </div>
-    );
-  }
-
-  if (item.provenanceType === 'AI_HUMAN_ANNOTATED') {
-    return (
-      <div className="bg-blue-50/50 p-2.5 border-y border-blue-100 mb-3 flex items-center justify-between group cursor-pointer hover:bg-blue-50" onClick={onOpenHistory}>
-        <div className="flex items-center gap-2">
-          <Pencil className="h-3.5 w-3.5 text-blue-600" />
-          <div className="flex flex-col">
-            <span className="text-[10px] font-bold text-blue-700 uppercase tracking-widest leading-tight">Human Annotated</span>
-            <span className="text-[9px] text-blue-500">{item.latestHumanChange?.userName || "User"} &middot; {item.humanAnnotationCount || 1} perubahan</span>
-          </div>
-        </div>
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <span className="text-[9px] font-bold text-blue-600">Riwayat</span>
-          <ChevronRight className="h-3 w-3 text-blue-600" />
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="bg-slate-50/80 p-2.5 border-y border-slate-100 mb-3 flex items-center gap-2">
-      <Brain className="h-3.5 w-3.5 text-indigo-400" />
-      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">AI Generated</span>
-    </div>
-  );
-};
-
-// ── Traceability Panel Component ──────────────────────────────────────────
-
-
-export const TraceabilityPanel: React.FC<{ 
-  item: ChronologyItem, 
-  onClose: () => void,
-  onUpdateStatus: (status: VerificationStatus) => void,
-  onUpdateBreakdown: (newBreakdown: any) => void,
-  onEdit: () => void,
-  onUpdateChronologyText?: (newText: string) => void
-}> = ({ item, onClose, onUpdateBreakdown, onUpdateChronologyText }) => {
-  let statementWording = "Pernyataan Kronologi";
-  if (item.agentId === 'peepo') {
-    statementWording = "Pernyataan PEEPO";
-  } else if (item.agentId === 'ipls') {
-    statementWording = "Pernyataan IPLS";
-  } else if (item.agentId === 'prev') {
-    statementWording = "Pernyataan Pencegahan";
-  }
-
-  const [isEditingStatement, setIsEditingStatement] = useState(false);
-  const [segments, setSegments] = useState<Segment[]>([]);
-
-  const handleTextSegmentChange = (index: number, newValue: string) => {
-    setSegments(prev => prev.map((seg, idx) => 
-      idx === index ? { ...seg, value: newValue } : seg
-    ));
-  };
+const EventCitationList: React.FC<{ item: any }> = ({ item }) => {
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
-  const [editingRowLabel, setEditingRowLabel] = useState<string | null>(null);
-  const [tempRowValue, setTempRowValue] = useState<string>("");
-  const [activeDimension, setActiveDimension] = useState<string | null>(null);
-  const [showHistory, setShowHistory] = useState(false);
 
   const toggleRow = (label: string) => {
     setExpandedRows(prev => ({ ...prev, [label]: !prev[label] }));
   };
 
-  const breakdown = item.breakdown || {};
-
-  const handleSaveRow = (label: string, newValue: string) => {
-    let updatedBreakdown = { ...breakdown };
-    if (label === "KEJADIAN") {
-      updatedBreakdown.action = { 
-        ...(breakdown.action || {}), 
-        value: newValue, 
-        original_value: breakdown.action?.original_value || breakdown.action?.value || item.chronology_text,
-        annotated_by_human: true 
-      };
-    } else if (label === "PIHAK") {
-      updatedBreakdown.subject = { 
-        ...(breakdown.subject || {}), 
-        value: newValue, 
-        original_value: breakdown.subject?.original_value || breakdown.subject?.value || breakdown.actor,
-        annotated_by_human: true 
-      };
-    } else if (label === "OBJEK") {
-      const origLocation = breakdown.location?.original_value || breakdown.location?.value;
-      const origObject = breakdown.object?.original_value || breakdown.object?.value;
-      updatedBreakdown.location = { 
-        ...(breakdown.location || {}), 
-        value: newValue, 
-        original_value: origLocation,
-        annotated_by_human: true 
-      };
-      updatedBreakdown.object = { 
-        ...(breakdown.object || {}), 
-        value: newValue, 
-        original_value: origObject,
-        annotated_by_human: true 
-      };
-    } else if (label === "WAKTU") {
-      (updatedBreakdown as any).time_original_value = (breakdown as any).time_original_value || breakdown.time || item.time_label;
-      updatedBreakdown.time = newValue;
-      (updatedBreakdown as any).time_annotated_by_human = true;
-    } else if (label === "DAMPAK") {
-      updatedBreakdown.why = { 
-        ...(breakdown.why || {}), 
-        value: newValue, 
-        original_value: breakdown.why?.original_value || breakdown.why?.value,
-        annotated_by_human: true 
-      };
-    } else if (label === "KONTEKS") {
-      updatedBreakdown.condition = { 
-        ...(breakdown.condition || {}), 
-        value: newValue, 
-        original_value: breakdown.condition?.original_value || breakdown.condition?.value,
-        annotated_by_human: true 
-      };
-    } else if (label === "SUMBER") {
-      updatedBreakdown.source_system = { 
-        ...(breakdown.source_system || {}), 
-        value: newValue, 
-        original_value: breakdown.source_system?.original_value || breakdown.source_system?.value,
-        annotated_by_human: true 
-      };
-    }
-    onUpdateBreakdown(updatedBreakdown);
-    setEditingRowLabel(null);
-  };
-  
-  const mappedTraceability = item.traceability?.map(t => ({
+  const mappedTraceability = item.traceability?.map((t: any) => ({
     type: t.source_type,
     content: t.extracted_content,
     time: t.timestamp_start,
@@ -2045,6 +1869,7 @@ export const TraceabilityPanel: React.FC<{
     thumbnail: t.source_type === 'video' ? 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=300&q=80' : undefined
   })) || [];
 
+  const breakdown = item.breakdown || {};
   const whatCitations = [...(breakdown.action?.citations || []), ...mappedTraceability];
 
   const getDummyCitations = (label: string) => [
@@ -2064,19 +1889,8 @@ export const TraceabilityPanel: React.FC<{
     }
   ];
 
-  const w5h1 = [
-    { label: "WAKTU", value: extractStringValue(breakdown.time?.value || breakdown.time || item.time_label), citations: getDummyCitations("WAKTU") },
-    { label: "PIHAK", value: extractStringValue(breakdown.subject?.value || breakdown.subject || breakdown.actor), citations: breakdown.subject?.citations?.length ? breakdown.subject?.citations : getDummyCitations("PIHAK") },
-    { label: "OBJEK", value: extractStringValue(breakdown.object?.value || breakdown.object || breakdown.location?.value || breakdown.location), citations: getDummyCitations("OBJEK") },
-    { label: "KEJADIAN", value: extractStringValue(breakdown.action?.value || breakdown.action || item.chronology_text), citations: whatCitations.length > 0 ? whatCitations : getDummyCitations("KEJADIAN") },
-    { label: "KONTEKS", value: extractStringValue(breakdown.condition?.value || breakdown.condition), citations: breakdown.condition?.citations?.length ? breakdown.condition?.citations : getDummyCitations("KONTEKS") },
-    { label: "SUMBER", value: extractStringValue(breakdown.source_system?.value || breakdown.source_system || "DMS & Kamera Pengawas"), citations: getDummyCitations("SUMBER") },
-    { label: "STATUS", value: extractStringValue(item.status === "human_verified" ? "Terkonfirmasi" : "Menunggu Validasi"), citations: getDummyCitations("STATUS") },
-    { label: "DAMPAK", value: extractStringValue(breakdown.why?.value || breakdown.why || "Risiko Operasional & Keselamatan"), citations: getDummyCitations("DAMPAK") },
-    { label: "TINDAKAN", value: extractStringValue("Proses Investigasi"), citations: getDummyCitations("TINDAKAN") }
-  ];
-
   const generateEventsFromText = (text: string) => {
+    if (!text) return [];
     let normalized = text
       .replace(/^identifikasi\b/i, 'Mengidentifikasi')
       .replace(/^perbaikan\b/i, 'Memperbaiki')
@@ -2123,246 +1937,68 @@ export const TraceabilityPanel: React.FC<{
     });
   };
 
-  const tableRows = generateEventsFromText(item.chronology_text);
+  const tableRows = generateEventsFromText(item.chronology_text || "");
 
-  const [showDebugPanel, setShowDebugPanel] = useState(false);
+  if (tableRows.length === 0) return null;
 
   return (
-    <div className="flex flex-col h-full bg-white border-l border-slate-200 relative overflow-hidden">
-      {showHistory && <AnnotationHistoryView item={item} onClose={() => setShowHistory(false)} />}
-      {/* Panel Header */}
-      <div className="p-4 border-b border-slate-200 bg-white shrink-0">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <div className="h-6 w-6 bg-slate-900 flex items-center justify-center text-white rounded-none">
-              <TableIcon className="h-3.5 w-3.5" />
-            </div>
-            <div>
-              <h3 className="text-[13px] font-bold text-slate-900 uppercase tracking-wider leading-none">Detail Analisis</h3>
-              <p className="text-[10px] text-slate-500 uppercase tracking-widest mt-1">Analisis Bukti Investigasi</p>
-            </div>
-          </div>
-          <div className="flex items-center">
-            <Button variant="ghost" size="sm" onClick={onClose} className="h-7 w-7 p-0 hover:bg-slate-100 rounded-none">
-              <X className="h-4 w-4 text-slate-500" />
-            </Button>
-          </div>
-        </div>
-        
-        <ProvenanceBlock item={item} onOpenHistory={() => setShowHistory(true)} />
-
-        <div className="bg-slate-50/50 p-3 border border-slate-200 rounded-none mb-1 group/stmt">
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[9px] font-mono font-bold uppercase tracking-widest text-slate-400">{statementWording}</span>
-          </div>
-          <div className="mt-1">
-            <p className="text-[12.5px] text-slate-700 font-sans leading-relaxed">
-              {item.chronology_text}
-            </p>
-          </div>
-        </div>
+    <div className="mt-6 border-t border-slate-100 pt-6">
+      <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-1.5">
+         <Zap className="h-3 w-3 text-blue-600" />
+         Event & Evidence Link
       </div>
-
-      {/* Main Content Area */}
-      <div className="flex-1 overflow-auto p-0 scrollbar-thin bg-slate-50/20">
-        {item.provenanceType === 'HUMAN_MANUAL' ? (
-          <div className="p-4 space-y-4">
-            <div className="bg-white border border-slate-200 p-4 rounded-sm shadow-sm">
-              <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-3">FAKTA MANUAL</h4>
-              
-              <div className="grid grid-cols-[100px_1fr] gap-2 mb-3">
-                 <div className="text-[11px] font-bold text-slate-400">Tahap</div>
-                 <div className="text-[12.5px] text-slate-800 font-medium">{item.phase === 'pre_contact' ? 'Pra-Kontak' : item.phase === 'contact' ? 'Kontak' : 'Pasca-Kontak'}</div>
-              </div>
-              
-              <div className="grid grid-cols-[100px_1fr] gap-2 mb-3">
-                 <div className="text-[11px] font-bold text-slate-400">Time</div>
-                 <div className="text-[12.5px] text-slate-800 font-medium">{item.time_label}</div>
-              </div>
-
-              <div className="grid grid-cols-[100px_1fr] gap-2 mb-3">
-                 <div className="text-[11px] font-bold text-slate-400">Description</div>
-                 <div className="text-[12.5px] text-slate-800 font-medium leading-relaxed">{item.description || item.chronology_text}</div>
-              </div>
-            </div>
-
-            <div className="bg-white border border-slate-200 p-4 rounded-sm shadow-sm">
-               <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-3">BUKTI TERHUBUNG</h4>
-               {whatCitations.length > 0 ? (
-                 <div>
-                    <div className="text-[11px] text-slate-700 font-medium mb-3">{whatCitations.length} bukti</div>
-                    {/* Simplified evidence list */}
-                    {whatCitations.map((cit, idx) => (
-                      <div key={idx} className="mb-2 p-2 bg-slate-50 border border-slate-100 rounded text-[11px] text-slate-700">
-                        <span className="font-bold text-slate-900">{cit.speaker || cit.source}</span>: {cit.content}
-                      </div>
-                    ))}
-                 </div>
-               ) : (
-                 <div className="text-[11px] text-slate-500 italic">Belum ada bukti yang ditautkan.</div>
-               )}
-            </div>
-          </div>
-        ) : (
+      <div className="border border-slate-200 rounded-sm overflow-hidden">
         <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-slate-100/80 border-b border-slate-200">
-              <th className="px-3 py-2.5 text-[10px] font-bold text-slate-500 uppercase tracking-widest w-[110px] border-r border-slate-200">
-                Kategori
-              </th>
-              <th className="px-3 py-2.5 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                Nilai Fakta
-              </th>
-              <th className="px-3 py-2.5 text-[10px] font-bold text-slate-500 uppercase tracking-widest w-16 text-center border-l border-slate-200/60">
-                Bukti
-              </th>
-            </tr>
-          </thead>
           <tbody className="bg-white">
             {tableRows.map((row) => {
               const isExpanded = !!expandedRows[row.label];
               const hasCitations = row.citations && row.citations.length > 0;
-              const isDimmed = activeDimension !== null && activeDimension !== row.label;
               
               return (
                 <React.Fragment key={row.label}>
                   <tr 
-                    onMouseEnter={() => setActiveDimension(row.label)}
-                    onMouseLeave={() => setActiveDimension(null)}
                     className={cn(
-                      "border-b border-slate-200 transition-all duration-300 rounded-none",
-                      !editingRowLabel && hasCitations ? "hover:bg-slate-50/80 cursor-pointer" : "bg-white",
-                      isExpanded ? "bg-slate-50" : "",
-                      activeDimension === row.label ? "bg-blue-50/50" : "",
-                      isDimmed ? "opacity-30" : "opacity-100"
+                      "border-b border-slate-100 transition-all duration-300 rounded-none",
+                      hasCitations ? "hover:bg-slate-50/80 cursor-pointer" : "bg-white",
+                      isExpanded ? "bg-slate-50" : ""
                     )}
                     onClick={() => {
-                      if (!editingRowLabel && hasCitations) toggleRow(row.label);
-                      if (!editingRowLabel) setActiveDimension(activeDimension === row.label ? null : row.label);
+                      if (hasCitations) toggleRow(row.label);
                     }}
                   >
-                     {editingRowLabel === row.label ? (
-                      <td colSpan={3} className="px-4 py-3 bg-slate-50/50" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex flex-col gap-2">
-                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono">
-                            Kategori: {row.label}
-                          </span>
-                          <textarea
-                            value={tempRowValue}
-                            onChange={(e) => setTempRowValue(e.target.value)}
-                            className="w-full text-[12.5px] text-slate-800 font-normal leading-normal border border-slate-300 p-2 rounded-none font-sans focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-blue-600 bg-white"
-                            rows={3}
+                    <td className="px-3 py-3 align-middle border-r border-slate-100 font-mono text-[9px] font-bold text-slate-500 tracking-wider w-20 bg-slate-50">
+                      <div className="flex items-center gap-1.5">
+                        {hasCitations ? (
+                          <ChevronDown 
+                            className={cn(
+                              "h-3 w-3 shrink-0 text-slate-400 transition-transform duration-200", 
+                              isExpanded ? "rotate-180 text-blue-600" : ""
+                            )} 
                           />
-                          <div className="flex items-center gap-2 justify-end mt-3">
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              onClick={() => handleSaveRow(row.label, tempRowValue)} 
-                              className="h-8 px-4 text-[11px] font-bold uppercase tracking-wider bg-blue-600 text-white hover:bg-blue-700 rounded-none flex items-center gap-1.5 shadow-sm"
-                            >
-                              <Check className="h-3.5 w-3.5" /> Save
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              onClick={() => setEditingRowLabel(null)} 
-                              className="h-8 px-4 text-[11px] font-bold uppercase tracking-wider text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-none flex items-center gap-1.5 border border-slate-200"
-                            >
-                              <X className="h-3.5 w-3.5" /> Discard
-                            </Button>
-                          </div>
-                          
-                          {hasCitations && (
-                            <div className="mt-4 pt-4 border-t border-slate-200 text-left">
-                              <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
-                                <Zap className="h-3 w-3 text-blue-600" />
-                                Evidence List ({row.citations.length})
-                              </div>
-                              {renderGroupedCitations(row.citations)}
-                            </div>
-                          )}
-                        </div>
-                      </td>
-                    ) : (
-                      <>
-                        <td className="px-3 py-3 align-middle border-r border-slate-200 font-mono text-[11px] font-bold text-slate-700 tracking-wider">
-                          <div className="flex items-center gap-2">
-                            {!editingRowLabel && hasCitations ? (
-                              <ChevronDown 
-                                className={cn(
-                                  "h-3.5 w-3.5 shrink-0 text-slate-400 transition-transform duration-200", 
-                                  isExpanded ? "rotate-180 text-blue-600" : ""
-                                )} 
-                              />
-                            ) : (
-                              <div className="w-3.5 shrink-0" />
-                            )}
-                            {CATEGORY_EXPLANATIONS[row.label] ? (
-                              <TooltipProvider delayDuration={150}>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <span className="cursor-help hover:text-blue-600 transition-colors border-b border-dotted border-slate-300">
-                                      {row.label}
-                                    </span>
-                                  </TooltipTrigger>
-                                  <TooltipContent side="right" className="w-[280px] bg-slate-900 text-white p-3 font-sans rounded-none shadow-xl border border-slate-700 z-[9999]">
-                                    <div className="font-bold text-[11px] leading-tight text-white mb-1">
-                                      {CATEGORY_EXPLANATIONS[row.label].title}
-                                    </div>
-                                    <div className="font-semibold text-[10px] text-blue-400 leading-none mb-2">
-                                      {CATEGORY_EXPLANATIONS[row.label].subtitle}
-                                    </div>
-                                    <p className="text-[10px] text-slate-300 leading-relaxed">
-                                      {CATEGORY_EXPLANATIONS[row.label].text}
-                                    </p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-                            ) : (
-                              <span>{row.label}</span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-3 py-3 align-middle text-[12.5px] text-slate-800 font-normal leading-normal">
-                          <div className="flex items-center justify-between group/cell min-h-[24px]">
-                            <span className="pr-4">{extractStringValue(row.value)}</span>
-                            {row.label !== "STATUS" && row.label !== "TINDAKAN" && !(row.label.startsWith("EVENT") && (item.agentId === "ipls" || item.agentId === "prev")) && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="opacity-0 group-hover/cell:opacity-100 h-6 w-6 p-0 hover:bg-slate-100 rounded-none transition-opacity ml-2 shrink-0"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setEditingRowLabel(row.label);
-                                  setTempRowValue(row.value === "-" ? "" : row.value);
-                                }}
-                              >
-                                <Pencil className="h-3.5 w-3.5 text-slate-400 hover:text-blue-600" />
-                              </Button>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-3 py-3 align-middle text-center border-l border-slate-200/60">
-                          {hasCitations ? (
-                            <span className="inline-flex items-center justify-center min-w-[20px] text-[10px] font-bold text-blue-600 bg-blue-50/80 px-1.5 py-0.5 border border-blue-200/50 rounded-none">
-                              {row.citations.length}
-                            </span>
-                          ) : (
-                            <span className="text-[10px] text-slate-400 font-normal">-</span>
-                          )}
-                        </td>
-                      </>
-                    )}
+                        ) : (
+                          <div className="w-3 shrink-0" />
+                        )}
+                        <span>{row.label}</span>
+                      </div>
+                    </td>
+                    <td className="px-3 py-3 align-middle text-[11.5px] text-slate-700 font-normal leading-normal">
+                      <span className="pr-4">{row.value}</span>
+                    </td>
+                    <td className="px-3 py-3 align-middle text-center border-l border-slate-100 bg-slate-50 w-12">
+                      {hasCitations ? (
+                        <span className="inline-flex items-center justify-center min-w-[20px] text-[10px] font-bold text-blue-600 bg-blue-50/80 px-1.5 py-0.5 border border-blue-200/50 rounded-none">
+                          {row.citations.length}
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-slate-400 font-normal">-</span>
+                      )}
+                    </td>
                   </tr>
                   
-                  {!editingRowLabel && isExpanded && hasCitations && (
-                    <tr className="bg-slate-50 border-b border-slate-200">
-                      <td colSpan={3} className="p-0 border-l-4 border-l-blue-600">
-                        <div className="bg-slate-50 p-4 border-b border-slate-200/60">
-                          <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
-                            <Zap className="h-3 w-3 text-blue-600" />
-                            Evidence List ({row.citations.length})
-                          </div>
+                  {isExpanded && hasCitations && (
+                    <tr className="bg-white border-b border-slate-200">
+                      <td colSpan={3} className="p-0 border-l-2 border-l-blue-600">
+                        <div className="bg-slate-50/50 p-4 border-t border-slate-100 shadow-inner">
                           {renderGroupedCitations(row.citations)}
                         </div>
                       </td>
@@ -2373,6 +2009,298 @@ export const TraceabilityPanel: React.FC<{
             })}
           </tbody>
         </table>
+      </div>
+    </div>
+  );
+};
+
+
+export const TraceabilityPanel: React.FC<{ 
+  item: ChronologyItem, 
+  onClose: () => void,
+  onUpdateStatus: (status: VerificationStatus) => void,
+  onUpdateBreakdown: (newBreakdown: any) => void,
+  onEdit: () => void,
+  onUpdateChronologyText: (newText: string) => void,
+  readonly?: boolean
+}> = ({ item, onClose, readonly }) => {
+  const [showHistory, setShowHistory] = useState(false);
+
+  // Fallback version if not defined
+  const currentVersion = item.currentVersion || item.version || 1;
+  const history = item.history || [];
+
+  if (showHistory) {
+    return (
+      <div className="flex flex-col h-full bg-white border-l border-slate-200 relative overflow-hidden animate-in slide-in-from-right duration-300">
+        {/* Header */}
+        <div className="p-4 border-b border-slate-200 bg-white shrink-0 flex items-center gap-3">
+          <Button variant="ghost" size="sm" onClick={() => setShowHistory(false)} className="h-7 px-2 text-slate-500 hover:text-slate-800">
+            &larr; Kembali
+          </Button>
+          <div className="flex-1">
+            <h3 className="text-[13px] font-bold text-slate-900 uppercase tracking-wider leading-none">RIWAYAT PERUBAHAN</h3>
+            <p className="text-[10px] text-slate-500 mt-1">{history.length + 1} versi</p>
+          </div>
+        </div>
+
+        {/* History List */}
+        <div className="flex-1 overflow-auto p-6 space-y-6 bg-slate-50">
+          {/* Current Version Node */}
+          <div className="relative pl-5 border-l-2 border-slate-200">
+             <div className="absolute w-3 h-3 rounded-full bg-blue-500 -left-[7px] top-1" />
+             <div className="text-[11px] font-black uppercase tracking-widest text-slate-500 mb-2">VERSI {currentVersion} &middot; {item.provenanceType === 'HUMAN_MANUAL' ? ((item.manualRevisionCount || 0) > 0 ? 'DIUBAH' : 'DITAMBAHKAN MANUAL') : 'DIUBAH'}</div>
+             <div className="bg-white border border-slate-200 rounded p-4 shadow-sm mb-2">
+                <div className="text-[10px] text-slate-400 mb-1">
+                  {item.provenanceType === 'HUMAN_MANUAL' && (item.manualRevisionCount || 0) === 0 ? 'Ditambahkan oleh' : 'Diubah oleh'}
+                </div>
+                <div className="text-[11px] font-bold text-slate-800 mb-4">{item.latestHumanChange?.userName || "Gulang Satriya"} &middot; {item.latestHumanChange?.userRole || "Lead Investigator"}</div>
+                
+                {item.latestHumanChange?.changedFields && (
+                  <div className="mb-4">
+                    <div className="text-[10px] font-bold text-slate-400 mb-1">Field yang diubah</div>
+                    <ul className="text-[11px] text-slate-700 space-y-0.5 ml-2">
+                      {item.latestHumanChange.changedFields.map((f: string) => (
+                        <li key={f} className="flex items-center gap-1.5"><div className="w-1 h-1 bg-slate-400 rounded-full"/>{f}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                
+                <div className="mb-4">
+                  <div className="text-[10px] font-bold text-slate-400 mb-1">{item.provenanceType === 'HUMAN_MANUAL' && (item.manualRevisionCount || 0) === 0 ? 'Catatan' : 'Catatan anotasi'}</div>
+                  <div className="text-[11px] text-slate-700">{item.latestHumanChange?.changeNote || "-"}</div>
+                </div>
+
+                <div className="text-[10px] text-slate-400 mb-3">
+                  {item.latestHumanChange?.timestamp ? new Date(item.latestHumanChange.timestamp).toLocaleString('id-ID', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' WIB' : '05 Agustus 2026, 14:18 WIB'}
+                </div>
+
+                {((item.provenanceType === 'HUMAN_MANUAL' && (item.manualRevisionCount || 0) > 0) || item.provenanceType === 'AI_HUMAN_ANNOTATED') && (
+                  <details className="group">
+                    <summary className="text-[10px] font-bold text-blue-600 cursor-pointer hover:text-blue-700 list-none flex items-center gap-1">
+                      <span className="group-open:hidden">[Lihat Detail Perubahan]</span>
+                      <span className="hidden group-open:inline">[Tutup Detail Perubahan]</span>
+                    </summary>
+                    <div className="mt-3 space-y-3 pt-3 border-t border-slate-100">
+                      <div>
+                        <div className="text-[9px] font-bold text-slate-400 mb-1">SEBELUM</div>
+                        <div className="bg-red-50 text-red-900 p-2 rounded text-[11px] border border-red-100">{item.history?.[0]?.chronology_text || "DMS memberikan peringatan kepada operator."}</div>
+                      </div>
+                      <div>
+                        <div className="text-[9px] font-bold text-slate-400 mb-1">SESUDAH</div>
+                        <div className="bg-emerald-50 text-emerald-900 p-2 rounded text-[11px] border border-emerald-100">{item.chronology_text}</div>
+                      </div>
+                    </div>
+                  </details>
+                )}
+             </div>
+          </div>
+
+          {/* Past versions from history */}
+          {history.map((histItem: any, idx: number) => {
+             const vNum = currentVersion - 1 - idx;
+             const isOriginal = idx === history.length - 1;
+             
+             if (isOriginal && histItem.provenanceType !== 'HUMAN_MANUAL') {
+               return (
+                 <div key={idx} className="relative pl-5 border-l-2 border-transparent">
+                   <div className="absolute w-3 h-3 rounded-full bg-slate-300 -left-[7px] top-1" />
+                   <div className="text-[11px] font-black uppercase tracking-widest text-slate-500 mb-2">VERSI {vNum} &middot; AI GENERATED</div>
+                   <div className="bg-slate-100 border border-slate-200 rounded p-4 shadow-sm">
+                      <div className="text-[11px] font-bold text-slate-800 mb-2">Fact & Chronology Agent</div>
+                      <div className="text-[10px] text-slate-400">
+                        {histItem.timestamp ? new Date(histItem.timestamp).toLocaleString('id-ID', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' WIB' : '05 Agustus 2026, 13:20 WIB'}
+                      </div>
+                   </div>
+                 </div>
+               );
+             }
+
+             return (
+               <div key={idx} className="relative pl-5 border-l-2 border-slate-200">
+                 <div className="absolute w-3 h-3 rounded-full bg-slate-400 -left-[7px] top-1" />
+                 <div className="text-[11px] font-black uppercase tracking-widest text-slate-500 mb-2">VERSI {vNum} &middot; {isOriginal && histItem.provenanceType === 'HUMAN_MANUAL' ? 'DITAMBAHKAN MANUAL' : 'DIUBAH'}</div>
+                 <div className="bg-white border border-slate-200 rounded p-4 shadow-sm mb-2 opacity-80">
+                    <div className="text-[10px] text-slate-400 mb-1">
+                      {isOriginal && histItem.provenanceType === 'HUMAN_MANUAL' ? 'Ditambahkan oleh' : 'Diubah oleh'}
+                    </div>
+                    <div className="text-[11px] font-bold text-slate-800 mb-4">{histItem.userName || "Rina Mahardika"} &middot; {histItem.userRole || "Investigator"}</div>
+                    
+                    {!isOriginal && histItem.changedFields && (
+                      <div className="mb-4">
+                        <div className="text-[10px] font-bold text-slate-400 mb-1">Field yang diubah</div>
+                        <ul className="text-[11px] text-slate-700 space-y-0.5 ml-2">
+                          {histItem.changedFields.map((f: string) => (
+                            <li key={f} className="flex items-center gap-1.5"><div className="w-1 h-1 bg-slate-400 rounded-full"/>{f}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    
+                    <div className="mb-4">
+                      <div className="text-[10px] font-bold text-slate-400 mb-1">{isOriginal && histItem.provenanceType === 'HUMAN_MANUAL' ? 'Catatan' : 'Catatan anotasi'}</div>
+                      <div className="text-[11px] text-slate-700">{histItem.changeNote || "-"}</div>
+                    </div>
+
+                    <div className="text-[10px] text-slate-400 mb-3">
+                      {histItem.timestamp ? new Date(histItem.timestamp).toLocaleString('id-ID', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' WIB' : '05 Agustus 2026, 14:02 WIB'}
+                    </div>
+                    
+                    {!isOriginal && (
+                      <details className="group">
+                        <summary className="text-[10px] font-bold text-blue-600 cursor-pointer hover:text-blue-700 list-none flex items-center gap-1">
+                          <span className="group-open:hidden">[Lihat Detail Perubahan]</span>
+                          <span className="hidden group-open:inline">[Tutup Detail Perubahan]</span>
+                        </summary>
+                        <div className="mt-3 space-y-3 pt-3 border-t border-slate-100">
+                          <div>
+                            <div className="text-[9px] font-bold text-slate-400 mb-1">SEBELUM</div>
+                            <div className="bg-red-50 text-red-900 p-2 rounded text-[11px] border border-red-100">{history[idx + 1]?.chronology_text || "DMS memberikan peringatan kepada operator."}</div>
+                          </div>
+                          <div>
+                            <div className="text-[9px] font-bold text-slate-400 mb-1">SESUDAH</div>
+                            <div className="bg-emerald-50 text-emerald-900 p-2 rounded text-[11px] border border-emerald-100">{histItem.chronology_text || item.chronology_text}</div>
+                          </div>
+                        </div>
+                      </details>
+                    )}
+                 </div>
+               </div>
+             );
+          })}
+
+        </div>
+      </div>
+    );
+  }
+
+  // --- Main Detail View ---
+  return (
+    <div className="flex flex-col h-full bg-white border-l border-slate-200 relative overflow-hidden">
+      {/* Panel Header */}
+      <div className="p-4 border-b border-slate-200 bg-white shrink-0 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="h-8 w-8 bg-slate-900 flex items-center justify-center text-white rounded-none">
+            <TableIcon className="h-4 w-4" />
+          </div>
+          <div>
+            <h3 className="text-[13px] font-bold text-slate-900 uppercase tracking-wider leading-none">Detail Analisis</h3>
+            <p className="text-[10px] text-slate-500 uppercase tracking-widest mt-1">Analisis Bukti Investigasi</p>
+          </div>
+        </div>
+        <Button variant="ghost" size="sm" onClick={onClose} className="h-7 w-7 p-0 hover:bg-slate-100 rounded-none">
+          <X className="h-4 w-4 text-slate-500" />
+        </Button>
+      </div>
+
+      <div className="flex-1 overflow-auto p-6 space-y-6">
+        
+        {/* Origin Label */}
+        {item.provenanceType === 'HUMAN_MANUAL' ? (
+          <div>
+            <div className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-widest border border-emerald-200 mb-4">
+               <CheckCircle2 className="h-3 w-3" />
+               Ditambahkan Manual
+            </div>
+            
+            <div className="text-[10px] text-slate-400 mb-1">Ditambahkan oleh</div>
+            <div className="text-[11px] font-bold text-slate-800 mb-1">{item.latestHumanChange?.userName || "Gulang Satriya"} &middot; Lead Investigator</div>
+            <div className="text-[10px] text-slate-500 mb-1">05 Agustus 2026, 13:42 WIB</div>
+            
+            {(item.manualRevisionCount || 0) > 0 && (
+               <>
+                 <div className="text-[10px] text-slate-400 mb-1 mt-3">Terakhir diubah oleh</div>
+                 <div className="text-[11px] font-bold text-slate-800 mb-1">{item.latestHumanChange?.userName || "Gulang Satriya"} &middot; Lead Investigator</div>
+                 <div className="text-[10px] text-slate-500 mb-1">05 Agustus 2026, 14:18 WIB</div>
+                 <div className="text-[10px] text-slate-500 mt-2">{(item.manualRevisionCount || 0)} kali perubahan</div>
+               </>
+            )}
+            <div className="text-[10px] font-mono text-slate-400 mt-2">Versi aktif {currentVersion}</div>
+          </div>
+        ) : item.provenanceType === 'AI_HUMAN_ANNOTATED' ? (
+          <div>
+            <div className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-widest border border-blue-200 mb-4">
+               <Pencil className="h-3 w-3" />
+               Human Annotation
+            </div>
+            <div className="text-[10px] text-slate-500 mb-3">{item.humanAnnotationCount || 2} kali anotasi</div>
+            
+            <div className="text-[10px] text-slate-400 mb-1">Terakhir diubah oleh</div>
+            <div className="text-[11px] font-bold text-slate-800 mb-1">{item.latestHumanChange?.userName || "Gulang Satriya"} &middot; Lead Investigator</div>
+            <div className="text-[10px] text-slate-500 mb-1">05 Agustus 2026, 14:18 WIB</div>
+            <div className="text-[10px] font-mono text-slate-400 mt-2">Versi aktif {currentVersion}</div>
+          </div>
+        ) : (
+          <div>
+            <div className="inline-flex items-center gap-1.5 bg-indigo-50 text-indigo-700 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-widest border border-indigo-200 mb-4">
+               <Brain className="h-3 w-3" />
+               AI Generated
+            </div>
+            <div className="text-[10px] text-slate-400 mb-1">Generated by</div>
+            <div className="text-[11px] font-bold text-slate-800 mb-1">Fact & Chronology Agent</div>
+            <div className="text-[10px] text-slate-500 mb-1">05 Agustus 2026, 13:20 WIB</div>
+            <div className="text-[10px] font-mono text-slate-400 mt-2">Versi aktif 1</div>
+          </div>
+        )}
+
+        <hr className="border-slate-100" />
+
+        {/* Current Statement */}
+        <div>
+           <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">PERNYATAAN</div>
+           <div className="text-[12.5px] text-slate-800 leading-relaxed bg-slate-50 p-3 rounded border border-slate-100">
+             {item.chronology_text}
+           </div>
+        </div>
+
+        {/* Latest Changes (if any) */}
+        {((item.provenanceType === 'HUMAN_MANUAL' && (item.manualRevisionCount || 0) > 0) || item.provenanceType === 'AI_HUMAN_ANNOTATED') && (
+           <>
+             <hr className="border-slate-100" />
+             <div>
+                <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">PERUBAHAN TERAKHIR</div>
+                
+                {item.latestHumanChange?.changedFields && (
+                  <div className="mb-4">
+                     <div className="text-[10px] text-slate-500 mb-1">Field yang diubah</div>
+                     <ul className="text-[11px] text-slate-800 space-y-0.5 ml-2 font-medium">
+                       {item.latestHumanChange.changedFields.map((f: string) => (
+                         <li key={f} className="flex items-center gap-1.5"><div className="w-1 h-1 bg-slate-400 rounded-full"/>{f}</li>
+                       ))}
+                     </ul>
+                  </div>
+                )}
+                
+                <div className="mb-4">
+                   <div className="text-[10px] text-slate-500 mb-1">{item.provenanceType === 'HUMAN_MANUAL' ? 'Catatan perubahan' : 'Catatan anotasi'}</div>
+                   <div className="text-[11px] text-slate-800 font-medium">
+                     {item.latestHumanChange?.changeNote || "Kalimat diperjelas berdasarkan hasil konfirmasi."}
+                   </div>
+                </div>
+                
+                <div className="text-[10px] text-slate-400 font-mono">
+                   Versi {currentVersion - 1} &rarr; Versi {currentVersion}
+                </div>
+             </div>
+           </>
+        )}
+
+        {item.provenanceType !== 'HUMAN_MANUAL' && (
+          <EventCitationList item={item} />
+        )}
+
+        {/* Action Button */}
+        {(item.provenanceType === 'HUMAN_MANUAL' || item.provenanceType === 'AI_HUMAN_ANNOTATED') && (
+          <div className="pt-4">
+            <Button 
+              variant="outline" 
+              className="w-full bg-white text-[11px] font-bold text-slate-700 border-slate-300 hover:bg-slate-50 h-9"
+              onClick={() => setShowHistory(true)}
+            >
+              Lihat Riwayat Perubahan
+            </Button>
+          </div>
         )}
       </div>
     </div>
@@ -2535,7 +2463,8 @@ const FactDefaultView: React.FC<{
   onSelectItem: (id: string | null) => void,
   onAddFact: (phase: string) => void,
   editChangeNote: string,
-  setEditChangeNote: (val: string) => void
+  setEditChangeNote: (val: string) => void,
+  readonly?: boolean
 }> = ({ 
   items, 
   groupedItems, 
@@ -2551,7 +2480,8 @@ const FactDefaultView: React.FC<{
   onSelectItem,
   onAddFact,
   editChangeNote,
-  setEditChangeNote
+  setEditChangeNote,
+  readonly
 }) => {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [showLocalAccuracy, setShowLocalAccuracy] = useState(false);
@@ -2608,6 +2538,10 @@ const FactDefaultView: React.FC<{
                           <tr 
                             key={item.id} 
                             onClick={() => {
+                               if (readonly) {
+                                  onSelectItem(item.id);
+                                  return;
+                               }
                                if (isSelected) {
                                   onEdit(item);
                                } else {
@@ -2675,22 +2609,26 @@ const FactDefaultView: React.FC<{
                                     )}>
                                       {item.chronology_text}
                                     </p>
-                                    <span className="opacity-0 group-hover:opacity-100 transition-all duration-200 self-center text-[9px] text-blue-600 font-bold bg-blue-50/80 px-2 py-1 rounded border border-blue-200/60 flex items-center gap-1.5 shrink-0 shadow-sm active:scale-95">
-                                       <Pencil className="h-2.5 w-2.5" /> Double-click active row to edit
-                                    </span>
-                                    {deleteConfirmId === item.id ? (
-                                       <div className="flex items-center gap-1.5 self-center animate-in fade-in" onClick={(e) => e.stopPropagation()}>
-                                          <span className="text-[10px] font-bold text-red-600 mr-2">Yakin hapus?</span>
-                                          <button className="px-2 py-1 bg-red-600 text-white rounded text-[10px] font-bold hover:bg-red-700 shadow-sm" onClick={() => { onDelete(item.id); setDeleteConfirmId(null); }}>Ya</button>
-                                          <button className="px-2 py-1 bg-slate-200 text-slate-800 rounded text-[10px] font-bold hover:bg-slate-300 shadow-sm" onClick={() => setDeleteConfirmId(null)}>Batal</button>
-                                       </div>
-                                    ) : (
-                                       <button 
-                                          className="opacity-0 group-hover:opacity-100 transition-all duration-200 self-center text-slate-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded"
-                                          onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(item.id); }}
-                                       >
-                                          <Trash2 className="h-3.5 w-3.5" />
-                                       </button>
+                                    {!readonly && (
+                                      <>
+                                        <span className="opacity-0 group-hover:opacity-100 transition-all duration-200 self-center text-[9px] text-blue-600 font-bold bg-blue-50/80 px-2 py-1 rounded border border-blue-200/60 flex items-center gap-1.5 shrink-0 shadow-sm active:scale-95">
+                                           <Pencil className="h-2.5 w-2.5" /> Double-click active row to edit
+                                        </span>
+                                        {deleteConfirmId === item.id ? (
+                                           <div className="flex items-center gap-1.5 self-center animate-in fade-in" onClick={(e) => e.stopPropagation()}>
+                                              <span className="text-[10px] font-bold text-red-600 mr-2">Yakin hapus?</span>
+                                              <button className="px-2 py-1 bg-red-600 text-white rounded text-[10px] font-bold hover:bg-red-700 shadow-sm" onClick={() => { onDelete(item.id); setDeleteConfirmId(null); }}>Ya</button>
+                                              <button className="px-2 py-1 bg-slate-200 text-slate-800 rounded text-[10px] font-bold hover:bg-slate-300 shadow-sm" onClick={() => setDeleteConfirmId(null)}>Batal</button>
+                                           </div>
+                                        ) : (
+                                           <button 
+                                              className="opacity-0 group-hover:opacity-100 transition-all duration-200 self-center text-slate-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded"
+                                              onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(item.id); }}
+                                           >
+                                              <Trash2 className="h-3.5 w-3.5" />
+                                           </button>
+                                        )}
+                                      </>
                                     )}
                                   </div>
                                 )}
@@ -2716,16 +2654,18 @@ const FactDefaultView: React.FC<{
                           </td>
                         </tr>
                       )}
-                      <tr>
-                        <td colSpan={showLocalAccuracy ? 3 : 2} className="px-0 py-0 border-r border-b border-slate-400 relative">
-                           <button 
-                             onClick={(e) => { e.stopPropagation(); onAddFact(phase); }}
-                             className="w-full text-center py-2 text-[11px] font-bold text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 transition-colors uppercase tracking-widest bg-slate-50/50 hover:border-emerald-200 border border-transparent"
-                           >
-                             + Tambah Data
-                           </button>
-                        </td>
-                      </tr>
+                      {!readonly && (
+                        <tr>
+                          <td colSpan={showLocalAccuracy ? 3 : 2} className="px-0 py-0 border-r border-b border-slate-400 relative">
+                             <button 
+                               onClick={(e) => { e.stopPropagation(); onAddFact(phase); }}
+                               className="w-full text-center py-2 text-[11px] font-bold text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 transition-colors uppercase tracking-widest bg-slate-50/50 hover:border-emerald-200 border border-transparent"
+                             >
+                               + Tambah Data
+                             </button>
+                          </td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -2750,7 +2690,8 @@ const FactTableView: React.FC<{
   selectedItemId?: string | null,
   onSelectItem: (id: string | null) => void,
   onAddFact: (phase: string) => void,
-  setDisplayFormat: (val: any) => void
+  setDisplayFormat: (val: any) => void,
+  readonly?: boolean
 }> = ({ 
   groupedItems, 
   editingId, 
@@ -2763,7 +2704,8 @@ const FactTableView: React.FC<{
   selectedItemId,
   onSelectItem,
   onAddFact,
-  setDisplayFormat
+  setDisplayFormat,
+  readonly
 }) => {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
@@ -2819,6 +2761,10 @@ const FactTableView: React.FC<{
                           )}
                           onClick={(e) => {
                             e.stopPropagation();
+                            if (readonly) {
+                              onSelectItem(item.id);
+                              return;
+                            }
                             if (isSelected) {
                               onEdit(item);
                             } else {
@@ -2873,51 +2819,55 @@ const FactTableView: React.FC<{
                           ) : (
                             <>
                               <p className="whitespace-pre-wrap">{item.chronology_text}</p>
-                              <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-all duration-200 flex items-center gap-1.5 z-10">
-                                {deleteConfirmId === item.id ? (
-                                  <div className="flex items-center gap-1.5 bg-white p-1 rounded shadow-sm border border-red-100" onClick={(e) => e.stopPropagation()}>
-                                    <button className="px-2 py-1 bg-red-600 text-white rounded text-[10px] font-bold hover:bg-red-700 shadow-sm" onClick={() => {
-                                      onDelete(item.id);
-                                      setDeleteConfirmId(null);
-                                    }}>Ya</button>
-                                    <button className="px-2 py-1 bg-slate-200 text-slate-800 rounded text-[10px] font-bold hover:bg-slate-300 shadow-sm" onClick={() => setDeleteConfirmId(null)}>Batal</button>
-                                  </div>
-                                ) : (
-                                  <>
-                                    <span className="text-[9px] text-blue-600 font-bold bg-blue-50/90 px-2 py-1 rounded border border-blue-200/60 flex items-center gap-1.5 shadow-sm active:scale-95">
-                                       <Pencil className="h-2.5 w-2.5" /> Double-click to edit
-                                    </span>
-                                    <button
-                                      className="p-1 hover:bg-red-50 hover:text-red-600 rounded text-slate-400 bg-white/90 border border-slate-200 shadow-sm transition-colors"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setDeleteConfirmId(item.id);
-                                      }}
-                                      title="Hapus"
-                                    >
-                                      <Trash2 className="h-3 w-3" />
-                                    </button>
-                                  </>
-                                )}
-                              </div>
+                              {!readonly && (
+                                <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-all duration-200 flex items-center gap-1.5 z-10">
+                                  {deleteConfirmId === item.id ? (
+                                    <div className="flex items-center gap-1.5 bg-white p-1 rounded shadow-sm border border-red-100" onClick={(e) => e.stopPropagation()}>
+                                      <button className="px-2 py-1 bg-red-600 text-white rounded text-[10px] font-bold hover:bg-red-700 shadow-sm" onClick={() => {
+                                        onDelete(item.id);
+                                        setDeleteConfirmId(null);
+                                      }}>Ya</button>
+                                      <button className="px-2 py-1 bg-slate-200 text-slate-800 rounded text-[10px] font-bold hover:bg-slate-300 shadow-sm" onClick={() => setDeleteConfirmId(null)}>Batal</button>
+                                    </div>
+                                  ) : (
+                                    <>
+                                      <span className="text-[9px] text-blue-600 font-bold bg-blue-50/90 px-2 py-1 rounded border border-blue-200/60 flex items-center gap-1.5 shadow-sm active:scale-95">
+                                         <Pencil className="h-2.5 w-2.5" /> Double-click to edit
+                                      </span>
+                                      <button
+                                        className="p-1 hover:bg-red-50 hover:text-red-600 rounded text-slate-400 bg-white/90 border border-slate-200 shadow-sm transition-colors"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setDeleteConfirmId(item.id);
+                                        }}
+                                        title="Hapus"
+                                      >
+                                        <Trash2 className="h-3 w-3" />
+                                      </button>
+                                    </>
+                                  )}
+                                </div>
+                              )}
                             </>
                           )}
                         </div>
                       );
                     })}
                   </div>
-                  <div className="p-0 border-t border-slate-400">
-                     <button 
-                       onClick={(e) => {
-                         e.stopPropagation();
-                         onAddFact(phaseKey);
-                         setDisplayFormat('timeline');
-                       }}
-                       className="w-full text-center py-2 text-[11px] font-bold text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 transition-colors uppercase tracking-widest bg-slate-50/50 hover:border-emerald-200 border border-transparent"
-                     >
-                       + Tambah Data
-                     </button>
-                  </div>
+                  {!readonly && (
+                    <div className="p-0 border-t border-slate-400">
+                       <button 
+                         onClick={(e) => {
+                           e.stopPropagation();
+                           onAddFact(phaseKey);
+                           setDisplayFormat('timeline');
+                         }}
+                         className="w-full text-center py-2 text-[11px] font-bold text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 transition-colors uppercase tracking-widest bg-slate-50/50 hover:border-emerald-200 border border-transparent"
+                       >
+                         + Tambah Data
+                       </button>
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -2928,3 +2878,6 @@ const FactTableView: React.FC<{
   );
 };
 
+
+export const AnnotationHistoryView: React.FC<any> = () => null;
+export const ProvenanceBlock: React.FC<any> = () => null;

@@ -520,7 +520,7 @@ function CaseWorkspaceInner() {
                   <>
                     {currentStep === 1 && <ExtractionTab />}
                     {currentStep === 2 && <EvidenceTab />}
-                    {currentStep === 3 && <AnalysisTab agents={agents} setAgents={setAgents} />}
+                    {currentStep === 3 && <AnalysisTab agents={agents} setAgents={setAgents} reportStatus={reportStatus} />}
                     {currentStep === 4 && <ReportsTab 
                       agents={agents} 
                       reportStatus={reportStatus}
