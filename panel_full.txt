@@ -1,0 +1,461 @@
+// ── Traceability Panel Component ──────────────────────────────────────────
+
+
+export const TraceabilityPanel: React.FC<{ 
+  item: ChronologyItem, 
+  onClose: () => void,
+  onUpdateStatus: (status: VerificationStatus) => void,
+  onUpdateBreakdown: (newBreakdown: any) => void,
+  onEdit: () => void,
+  onUpdateChronologyText?: (newText: string) => void,
+  readonly?: boolean
+}> = ({ item, onClose, onUpdateBreakdown, onUpdateChronologyText, readonly }) => {
+  let statementWording = "Pernyataan Kronologi";
+  if (item.agentId === 'peepo') {
+    statementWording = "Pernyataan PEEPO";
+  } else if (item.agentId === 'ipls') {
+    statementWording = "Pernyataan IPLS";
+  } else if (item.agentId === 'prev') {
+    statementWording = "Pernyataan Pencegahan";
+  }
+
+  const [isEditingStatement, setIsEditingStatement] = useState(false);
+  const [segments, setSegments] = useState<Segment[]>([]);
+
+  const handleTextSegmentChange = (index: number, newValue: string) => {
+    setSegments(prev => prev.map((seg, idx) => 
+      idx === index ? { ...seg, value: newValue } : seg
+    ));
+  };
+  const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
+  const [editingRowLabel, setEditingRowLabel] = useState<string | null>(null);
+  const [tempRowValue, setTempRowValue] = useState<string>("");
+  const [activeDimension, setActiveDimension] = useState<string | null>(null);
+  const [showHistory, setShowHistory] = useState(false);
+
+  const toggleRow = (label: string) => {
+    setExpandedRows(prev => ({ ...prev, [label]: !prev[label] }));
+  };
+
+  const breakdown = item.breakdown || {};
+
+  const handleSaveRow = (label: string, newValue: string) => {
+    let updatedBreakdown = { ...breakdown };
+    if (label === "KEJADIAN") {
+      updatedBreakdown.action = { 
+        ...(breakdown.action || {}), 
+        value: newValue, 
+        original_value: breakdown.action?.original_value || breakdown.action?.value || item.chronology_text,
+        annotated_by_human: true 
+      };
+    } else if (label === "PIHAK") {
+      updatedBreakdown.subject = { 
+        ...(breakdown.subject || {}), 
+        value: newValue, 
+        original_value: breakdown.subject?.original_value || breakdown.subject?.value || breakdown.actor,
+        annotated_by_human: true 
+      };
+    } else if (label === "OBJEK") {
+      const origLocation = breakdown.location?.original_value || breakdown.location?.value;
+      const origObject = breakdown.object?.original_value || breakdown.object?.value;
+      updatedBreakdown.location = { 
+        ...(breakdown.location || {}), 
+        value: newValue, 
+        original_value: origLocation,
+        annotated_by_human: true 
+      };
+      updatedBreakdown.object = { 
+        ...(breakdown.object || {}), 
+        value: newValue, 
+        original_value: origObject,
+        annotated_by_human: true 
+      };
+    } else if (label === "WAKTU") {
+      (updatedBreakdown as any).time_original_value = (breakdown as any).time_original_value || breakdown.time || item.time_label;
+      updatedBreakdown.time = newValue;
+      (updatedBreakdown as any).time_annotated_by_human = true;
+    } else if (label === "DAMPAK") {
+      updatedBreakdown.why = { 
+        ...(breakdown.why || {}), 
+        value: newValue, 
+        original_value: breakdown.why?.original_value || breakdown.why?.value,
+        annotated_by_human: true 
+      };
+    } else if (label === "KONTEKS") {
+      updatedBreakdown.condition = { 
+        ...(breakdown.condition || {}), 
+        value: newValue, 
+        original_value: breakdown.condition?.original_value || breakdown.condition?.value,
+        annotated_by_human: true 
+      };
+    } else if (label === "SUMBER") {
+      updatedBreakdown.source_system = { 
+        ...(breakdown.source_system || {}), 
+        value: newValue, 
+        original_value: breakdown.source_system?.original_value || breakdown.source_system?.value,
+        annotated_by_human: true 
+      };
+    }
+    onUpdateBreakdown(updatedBreakdown);
+    setEditingRowLabel(null);
+  };
+  
+  const mappedTraceability = item.traceability?.map(t => ({
+    type: t.source_type,
+    content: t.extracted_content,
+    time: t.timestamp_start,
+    speaker: t.source_file_name,
+    thumbnail: t.source_type === 'video' ? 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=300&q=80' : undefined
+  })) || [];
+
+  const whatCitations = [...(breakdown.action?.citations || []), ...mappedTraceability];
+
+  const getDummyCitations = (label: string) => [
+    {
+      type: "document",
+      content: `Data tercatat pada berkas BAP untuk parameter ${label} sesuai dengan SOP-204.`,
+      speaker: "Audit Log",
+      time: "10:42 AM",
+      source: "BAP_INVESTIGASI_SOP-204.PDF"
+    },
+    {
+      type: "audio",
+      content: `Saksi mengkonfirmasi elemen ${label} pada saat interogasi awal berlangsung.`,
+      speaker: "Saksi Utama",
+      time: "10:45 AM",
+      source: "REKAMAN_INTEROGASI_SAKSI.MP3"
+    }
+  ];
+
+  const w5h1 = [
+    { label: "WAKTU", value: extractStringValue(breakdown.time?.value || breakdown.time || item.time_label), citations: getDummyCitations("WAKTU") },
+    { label: "PIHAK", value: extractStringValue(breakdown.subject?.value || breakdown.subject || breakdown.actor), citations: breakdown.subject?.citations?.length ? breakdown.subject?.citations : getDummyCitations("PIHAK") },
+    { label: "OBJEK", value: extractStringValue(breakdown.object?.value || breakdown.object || breakdown.location?.value || breakdown.location), citations: getDummyCitations("OBJEK") },
+    { label: "KEJADIAN", value: extractStringValue(breakdown.action?.value || breakdown.action || item.chronology_text), citations: whatCitations.length > 0 ? whatCitations : getDummyCitations("KEJADIAN") },
+    { label: "KONTEKS", value: extractStringValue(breakdown.condition?.value || breakdown.condition), citations: breakdown.condition?.citations?.length ? breakdown.condition?.citations : getDummyCitations("KONTEKS") },
+    { label: "SUMBER", value: extractStringValue(breakdown.source_system?.value || breakdown.source_system || "DMS & Kamera Pengawas"), citations: getDummyCitations("SUMBER") },
+    { label: "STATUS", value: extractStringValue(item.status === "human_verified" ? "Terkonfirmasi" : "Menunggu Validasi"), citations: getDummyCitations("STATUS") },
+    { label: "DAMPAK", value: extractStringValue(breakdown.why?.value || breakdown.why || "Risiko Operasional & Keselamatan"), citations: getDummyCitations("DAMPAK") },
+    { label: "TINDAKAN", value: extractStringValue("Proses Investigasi"), citations: getDummyCitations("TINDAKAN") }
+  ];
+
+  const generateEventsFromText = (text: string) => {
+    let normalized = text
+      .replace(/^identifikasi\b/i, 'Mengidentifikasi')
+      .replace(/^perbaikan\b/i, 'Memperbaiki')
+      .replace(/^pemberian\b/i, 'Memberikan')
+      .replace(/^pelaksanaan\b/i, 'Melakukan')
+      .replace(/^trial\b/i, 'Melakukan trial')
+      .replace(/^campaign\b/i, 'Melakukan campaign');
+
+    const verbRegex = /^(membuat|menetapkan|memeriksa|memperbaiki|memasang|menguji|memverifikasi|menyerahkan|mengawasi|melakukan|mengidentifikasi|memberikan)\b/i;
+    
+    const rawParts = normalized.split(/,\s*dan\s+|\s+dan\s+|,\s*/i);
+    const events: string[] = [];
+    
+    let currentEvent = "";
+    for (let i = 0; i < rawParts.length; i++) {
+      let part = rawParts[i].trim();
+      if (!part) continue;
+      
+      if (i === 0) {
+        currentEvent = part;
+      } else {
+        if (verbRegex.test(part)) {
+          events.push(currentEvent);
+          currentEvent = part;
+        } else {
+          currentEvent += " dan " + part;
+        }
+      }
+    }
+    if (currentEvent) {
+      events.push(currentEvent);
+    }
+
+    return events.map((ev, i) => {
+      let clean = ev.trim();
+      clean = clean.charAt(0).toUpperCase() + clean.slice(1);
+      if (!clean.endsWith('.')) clean += '.';
+      return {
+        label: `EVENT ${i + 1}`,
+        value: clean,
+        citations: whatCitations.length > 0 ? whatCitations : getDummyCitations(`EVENT ${i + 1}`),
+        evidence_count: whatCitations.length > 0 ? whatCitations.length : 2
+      };
+    });
+  };
+
+  const tableRows = generateEventsFromText(item.chronology_text);
+
+  const [showDebugPanel, setShowDebugPanel] = useState(false);
+
+  return (
+    <div className="flex flex-col h-full bg-white border-l border-slate-200 relative overflow-hidden">
+      {showHistory && <AnnotationHistoryView item={item} onClose={() => setShowHistory(false)} />}
+      {/* Panel Header */}
+      <div className="p-4 border-b border-slate-200 bg-white shrink-0">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <div className="h-6 w-6 bg-slate-900 flex items-center justify-center text-white rounded-none">
+              <TableIcon className="h-3.5 w-3.5" />
+            </div>
+            <div>
+              <h3 className="text-[13px] font-bold text-slate-900 uppercase tracking-wider leading-none">Detail Analisis</h3>
+              <p className="text-[10px] text-slate-500 uppercase tracking-widest mt-1">Analisis Bukti Investigasi</p>
+            </div>
+          </div>
+          <div className="flex items-center">
+            <Button variant="ghost" size="sm" onClick={onClose} className="h-7 w-7 p-0 hover:bg-slate-100 rounded-none">
+              <X className="h-4 w-4 text-slate-500" />
+            </Button>
+          </div>
+        </div>
+        
+        <ProvenanceBlock item={item} onOpenHistory={() => setShowHistory(true)} />
+
+        <div className="bg-slate-50/50 p-3 border border-slate-200 rounded-none mb-1 group/stmt">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[9px] font-mono font-bold uppercase tracking-widest text-slate-400">{statementWording}</span>
+          </div>
+          <div className="mt-1">
+            <p className="text-[12.5px] text-slate-700 font-sans leading-relaxed">
+              {item.chronology_text}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content Area */}
+      <div className="flex-1 overflow-auto p-0 scrollbar-thin bg-slate-50/20">
+        {item.provenanceType === 'HUMAN_MANUAL' ? (
+          <div className="p-4 space-y-4">
+            <div className="bg-white border border-slate-200 p-4 rounded-sm shadow-sm">
+              <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-3">FAKTA MANUAL</h4>
+              
+              <div className="grid grid-cols-[100px_1fr] gap-2 mb-3">
+                 <div className="text-[11px] font-bold text-slate-400">Tahap</div>
+                 <div className="text-[12.5px] text-slate-800 font-medium">{item.phase === 'pre_contact' ? 'Pra-Kontak' : item.phase === 'contact' ? 'Kontak' : 'Pasca-Kontak'}</div>
+              </div>
+              
+              <div className="grid grid-cols-[100px_1fr] gap-2 mb-3">
+                 <div className="text-[11px] font-bold text-slate-400">Time</div>
+                 <div className="text-[12.5px] text-slate-800 font-medium">{item.time_label}</div>
+              </div>
+
+              <div className="grid grid-cols-[100px_1fr] gap-2 mb-3">
+                 <div className="text-[11px] font-bold text-slate-400">Description</div>
+                 <div className="text-[12.5px] text-slate-800 font-medium leading-relaxed">{item.description || item.chronology_text}</div>
+              </div>
+            </div>
+
+            <div className="bg-white border border-slate-200 p-4 rounded-sm shadow-sm">
+               <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-3">BUKTI TERHUBUNG</h4>
+               {whatCitations.length > 0 ? (
+                 <div>
+                    <div className="text-[11px] text-slate-700 font-medium mb-3">{whatCitations.length} bukti</div>
+                    {/* Simplified evidence list */}
+                    {whatCitations.map((cit, idx) => (
+                      <div key={idx} className="mb-2 p-2 bg-slate-50 border border-slate-100 rounded text-[11px] text-slate-700">
+                        <span className="font-bold text-slate-900">{cit.speaker || cit.source}</span>: {cit.content}
+                      </div>
+                    ))}
+                 </div>
+               ) : (
+                 <div className="text-[11px] text-slate-500 italic">Belum ada bukti yang ditautkan.</div>
+               )}
+            </div>
+          </div>
+        ) : (
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="bg-slate-100/80 border-b border-slate-200">
+              <th className="px-3 py-2.5 text-[10px] font-bold text-slate-500 uppercase tracking-widest w-[110px] border-r border-slate-200">
+                Kategori
+              </th>
+              <th className="px-3 py-2.5 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                Nilai Fakta
+              </th>
+              <th className="px-3 py-2.5 text-[10px] font-bold text-slate-500 uppercase tracking-widest w-16 text-center border-l border-slate-200/60">
+                Bukti
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white">
+            {tableRows.map((row) => {
+              const isExpanded = !!expandedRows[row.label];
+              const hasCitations = row.citations && row.citations.length > 0;
+              const isDimmed = activeDimension !== null && activeDimension !== row.label;
+              
+              return (
+                <React.Fragment key={row.label}>
+                  <tr 
+                    onMouseEnter={() => setActiveDimension(row.label)}
+                    onMouseLeave={() => setActiveDimension(null)}
+                    className={cn(
+                      "border-b border-slate-200 transition-all duration-300 rounded-none",
+                      !editingRowLabel && hasCitations ? "hover:bg-slate-50/80 cursor-pointer" : "bg-white",
+                      isExpanded ? "bg-slate-50" : "",
+                      activeDimension === row.label ? "bg-blue-50/50" : "",
+                      isDimmed ? "opacity-30" : "opacity-100"
+                    )}
+                    onClick={() => {
+                      if (!editingRowLabel && hasCitations) toggleRow(row.label);
+                      if (!editingRowLabel) setActiveDimension(activeDimension === row.label ? null : row.label);
+                    }}
+                  >
+                     {editingRowLabel === row.label ? (
+                      <td colSpan={3} className="px-4 py-3 bg-slate-50/50" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex flex-col gap-2">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono">
+                            Kategori: {row.label}
+                          </span>
+                          <textarea
+                            value={tempRowValue}
+                            onChange={(e) => setTempRowValue(e.target.value)}
+                            className="w-full text-[12.5px] text-slate-800 font-normal leading-normal border border-slate-300 p-2 rounded-none font-sans focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-blue-600 bg-white"
+                            rows={3}
+                          />
+                          <div className="flex items-center gap-2 justify-end mt-3">
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => handleSaveRow(row.label, tempRowValue)} 
+                              className="h-8 px-4 text-[11px] font-bold uppercase tracking-wider bg-blue-600 text-white hover:bg-blue-700 rounded-none flex items-center gap-1.5 shadow-sm"
+                            >
+                              <Check className="h-3.5 w-3.5" /> Save
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => setEditingRowLabel(null)} 
+                              className="h-8 px-4 text-[11px] font-bold uppercase tracking-wider text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-none flex items-center gap-1.5 border border-slate-200"
+                            >
+                              <X className="h-3.5 w-3.5" /> Discard
+                            </Button>
+                          </div>
+                          
+                          {hasCitations && (
+                            <div className="mt-4 pt-4 border-t border-slate-200 text-left">
+                              <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                                <Zap className="h-3 w-3 text-blue-600" />
+                                Evidence List ({row.citations.length})
+                              </div>
+                              {renderGroupedCitations(row.citations)}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                    ) : (
+                      <>
+                        <td className="px-3 py-3 align-middle border-r border-slate-200 font-mono text-[11px] font-bold text-slate-700 tracking-wider">
+                          <div className="flex items-center gap-2">
+                            {!editingRowLabel && hasCitations ? (
+                              <ChevronDown 
+                                className={cn(
+                                  "h-3.5 w-3.5 shrink-0 text-slate-400 transition-transform duration-200", 
+                                  isExpanded ? "rotate-180 text-blue-600" : ""
+                                )} 
+                              />
+                            ) : (
+                              <div className="w-3.5 shrink-0" />
+                            )}
+                            {CATEGORY_EXPLANATIONS[row.label] ? (
+                              <TooltipProvider delayDuration={150}>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span className="cursor-help hover:text-blue-600 transition-colors border-b border-dotted border-slate-300">
+                                      {row.label}
+                                    </span>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="right" className="w-[280px] bg-slate-900 text-white p-3 font-sans rounded-none shadow-xl border border-slate-700 z-[9999]">
+                                    <div className="font-bold text-[11px] leading-tight text-white mb-1">
+                                      {CATEGORY_EXPLANATIONS[row.label].title}
+                                    </div>
+                                    <div className="font-semibold text-[10px] text-blue-400 leading-none mb-2">
+                                      {CATEGORY_EXPLANATIONS[row.label].subtitle}
+                                    </div>
+                                    <p className="text-[10px] text-slate-300 leading-relaxed">
+                                      {CATEGORY_EXPLANATIONS[row.label].text}
+                                    </p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            ) : (
+                              <span>{row.label}</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-3 py-3 align-middle text-[12.5px] text-slate-800 font-normal leading-normal">
+                          <div className="flex items-center justify-between group/cell min-h-[24px]">
+                            <span className="pr-4">{extractStringValue(row.value)}</span>
+                            {row.label !== "STATUS" && row.label !== "TINDAKAN" && !(row.label.startsWith("EVENT") && (item.agentId === "ipls" || item.agentId === "prev")) && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="opacity-0 group-hover/cell:opacity-100 h-6 w-6 p-0 hover:bg-slate-100 rounded-none transition-opacity ml-2 shrink-0"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditingRowLabel(row.label);
+                                  setTempRowValue(row.value === "-" ? "" : row.value);
+                                }}
+                              >
+                                <Pencil className="h-3.5 w-3.5 text-slate-400 hover:text-blue-600" />
+                              </Button>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-3 py-3 align-middle text-center border-l border-slate-200/60">
+                          {hasCitations ? (
+                            <span className="inline-flex items-center justify-center min-w-[20px] text-[10px] font-bold text-blue-600 bg-blue-50/80 px-1.5 py-0.5 border border-blue-200/50 rounded-none">
+                              {row.citations.length}
+                            </span>
+                          ) : (
+                            <span className="text-[10px] text-slate-400 font-normal">-</span>
+                          )}
+                        </td>
+                      </>
+                    )}
+                  </tr>
+                  
+                  {!editingRowLabel && isExpanded && hasCitations && (
+                    <tr className="bg-slate-50 border-b border-slate-200">
+                      <td colSpan={3} className="p-0 border-l-4 border-l-blue-600">
+                        <div className="bg-slate-50 p-4 border-b border-slate-200/60">
+                          <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                            <Zap className="h-3 w-3 text-blue-600" />
+                            Evidence List ({row.citations.length})
+                          </div>
+                          {renderGroupedCitations(row.citations)}
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
+              );
+            })}
+          </tbody>
+        </table>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ── Slide View Component ───────────────────────────────────────────────────
+
+const FactSlideView: React.FC<{ 
+  metadata: FactMetadata, 
+  groupedItems: Record<ChronologyPhase, ChronologyItem[]>,
+  selectedItemId?: string | null,
+  onSelectItem: (id: string | null) => void,
+  onAddFact: (phase: string) => void
+}> = ({ 
+  metadata, 
+  groupedItems,
+  selectedItemId,
+  onSelectItem,
+  onAddFact
+}) => {
+  return (
+    <div className="flex-1 flex flex-col p-[60px] text-slate-900 animate-in fade-in duration-500 relative">

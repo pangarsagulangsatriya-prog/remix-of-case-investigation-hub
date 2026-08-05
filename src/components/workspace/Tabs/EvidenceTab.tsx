@@ -62,8 +62,15 @@ import { EvidenceDerivationInjector } from "../ExtractionTab/EvidenceDerivationI
 import { useSearchParams } from "react-router-dom";
 import { useTour } from '@/components/workspace/TourContext';
 
+import { useReadiness } from "@/hooks/useReadiness";
+import { EvidenceReadinessModal } from "../EvidenceReadinessModal";
+import { ShieldCheck, Loader2 as Spinner } from "lucide-react";
+
 export default function EvidenceTab() {
   const { currentStep: tourStep, isActive: isTourActive } = useTour();
+  const { runs, currentStatus, triggerManualCheck, markAsOutdated, latestRun } = useReadiness();
+  const [isReadinessModalOpen, setIsReadinessModalOpen] = useState(false);
+
   const [isHistoryDrawerOpen, setIsHistoryDrawerOpen] = useState(false);
   const [historyFile, setHistoryFile] = useState<any>(null);
   const { caseId } = useParams<{ caseId: string }>();
@@ -579,7 +586,10 @@ export default function EvidenceTab() {
 
   const handleUploadEvidence = async (groups: CompletedGroup[]) => {
     try {
+      
       await uploadEvidenceMutation.mutateAsync({ caseId: caseId!, groups });
+      markAsOutdated();
+
     } catch (error) {
       console.error(error);
       toast.error("Persist Failure: One or more evidence objects failed to sync.");
@@ -851,6 +861,34 @@ export default function EvidenceTab() {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
+
+                {/* Manual Readiness Trigger */}
+                <Button 
+                  variant={currentStatus === "NOT_CHECKED" || currentStatus === "READY" ? "outline" : "default"}
+                  className={`h-9 px-4 rounded-md shadow-sm shrink-0 text-[10px] font-black uppercase tracking-widest gap-2 transition-all ${
+                    currentStatus === "CHECKING" ? "bg-slate-100 text-slate-500 border-slate-200 cursor-not-allowed" :
+                    currentStatus === "OUTDATED" ? "bg-slate-100 text-slate-600 border-slate-300 hover:bg-slate-200" :
+                    currentStatus === "NOT_READY" ? "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100" :
+                    currentStatus === "NEEDS_ATTENTION" ? "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100" :
+                    currentStatus === "READY" ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100" :
+                    "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                  }`}
+                  onClick={() => {
+                    if (currentStatus === "CHECKING") return;
+                    setIsReadinessModalOpen(true);
+                  }}
+                >
+                  {currentStatus === "CHECKING" ? <Spinner className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
+                  {currentStatus === "NOT_CHECKED" && "Periksa Kesiapan Evidence"}
+                  {currentStatus === "CHECKING" && "Memeriksa Evidence..."}
+                  {currentStatus === "OUTDATED" && "Periksa Ulang · Data Berubah"}
+                  {currentStatus === "READY" && "Evidence Siap"}
+                  {(currentStatus === "NOT_READY" || currentStatus === "NEEDS_ATTENTION") && (
+                    <>{currentStatus === "NOT_READY" ? "Belum Siap" : "Perlu Perhatian"} · {latestRun?.findings.length} Temuan</>
+                  )}
+                </Button>
+
+                
               </div>
             </div>
 
@@ -973,6 +1011,8 @@ export default function EvidenceTab() {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
+
+                
               );
 
               return (

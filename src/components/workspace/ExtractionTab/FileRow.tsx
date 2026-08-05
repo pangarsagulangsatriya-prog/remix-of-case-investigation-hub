@@ -141,7 +141,7 @@ const getProcessedDuration = (file: any) => {
   return `${s}s`;
 };
 
-export function FileRow({ file, isSelected, onSelect, onMove, onDelete, onRename, onRerun, onOpenHistory, batches, isIndented, onHoverChange, compact }: any) {
+export function FileRow({ file, isSelected, onSelect, onMove, onDelete, onRename, onRerun, onOpenHistory, batches, isIndented, onHoverChange, compact, readinessFindings = [], onOpenFinding }: any) {
   const { caseId } = useParams<{ caseId: string }>();
   const isAnalysisActive = localStorage.getItem(`analysis_running_${caseId}`) === "true";
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -171,6 +171,36 @@ export function FileRow({ file, isSelected, onSelect, onMove, onDelete, onRename
   // Upload progress simulation
   const uploadProgress = Math.min(99, Math.max(1, Math.floor((elapsedSeconds / 20) * 100)));
   const processingProgress = Math.min(99, Math.max(1, Math.floor(((elapsedSeconds - 20) / 30) * 100)));
+
+  
+  const renderReadinessBadge = () => {
+    if (!readinessFindings || readinessFindings.length === 0) return null;
+    const critical = readinessFindings.find((f: any) => f.severity === "CRITICAL");
+    const warning = readinessFindings.find((f: any) => f.severity === "WARNING");
+    const topFinding = critical || warning || readinessFindings[0];
+    
+    let badgeClass = "bg-blue-50 text-blue-600 border-blue-200";
+    let Icon = AlertCircle;
+    
+    if (topFinding.severity === "CRITICAL") {
+      badgeClass = "bg-rose-50 text-rose-600 border-rose-200";
+      Icon = AlertCircle;
+    } else if (topFinding.severity === "WARNING") {
+      badgeClass = "bg-amber-50 text-amber-600 border-amber-200";
+      Icon = AlertTriangle;
+    }
+
+    return (
+      <div 
+        onClick={(e) => { e.stopPropagation(); if(onOpenFinding) onOpenFinding(); }}
+        className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[9px] font-bold cursor-pointer hover:opacity-80 ml-2 ${badgeClass}`}
+        title={topFinding.title}
+      >
+        <Icon className="h-2 w-2" />
+        <span className="max-w-[80px] truncate">{topFinding.title}</span>
+      </div>
+    );
+  };
 
   const renderStatusBadge = () => (
     <div id="tour-step-5-status" className="flex items-center shrink-0">
@@ -347,6 +377,7 @@ export function FileRow({ file, isSelected, onSelect, onMove, onDelete, onRename
           
           <div className="flex items-center gap-1 shrink-0">
              {renderStatusBadge()}
+           {renderReadinessBadge()}
              {renderActionsMenu()}
           </div>
         </>
@@ -454,6 +485,7 @@ export function FileRow({ file, isSelected, onSelect, onMove, onDelete, onRename
 
       {/* Col 4: Status AI */}
       {renderStatusBadge()}
+           {renderReadinessBadge()}
 
       {/* Col 5: Actions */}
       {renderActionsMenu()}
