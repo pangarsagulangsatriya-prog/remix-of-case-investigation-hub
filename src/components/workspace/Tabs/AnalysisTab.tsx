@@ -154,106 +154,148 @@ export const initialAgentsState: AgentState[] = [
              id: 'chrono-saiful-001', 
              phase: 'pre_contact', 
              time_label: "Minggu 10-41",
-             description: "Pada Minggu 10-41, Petugas DMS (Aris) mengidentifikasi riwayat deviasi kelelahan pada profil Operator Saiful dalam proses investigasi dengan pemantauan intensif.", 
-             chronology_text: "Pada Minggu 10-41, Petugas DMS (Aris) mengidentifikasi riwayat deviasi kelelahan pada profil Operator Saiful, melaporkan temuan tersebut kepada pengawas lapangan, dan melakukan pemantauan intensif selama proses investigasi.",
+             description: "Pada Minggu 10-41, Petugas DMS (Aris) mengidentifikasi riwayat deviasi kelelahan pada profil Operator Saiful.", 
+             chronology_text: "Pada Minggu 10-41, Petugas DMS (Aris) mengidentifikasi riwayat deviasi kelelahan pada profil Operator Saiful.",
              confidence: "high",
              status: "completed",
              verification_status: "human_verified",
-             annotated_by_human: true,
+             annotated_by_human: false,
+             provenanceType: "AI_GENERATED",
+             originalSource: {
+                actorId: "ai-fnc",
+                actorName: "Fact & Chronology Agent",
+                actorType: "AI",
+                timestamp: "2026-08-05T07:55:00Z"
+             },
+             createdBy: {
+                id: "ai-fnc",
+                name: "Fact & Chronology Agent",
+                role: "AI Agent",
+                actorType: "AI"
+             },
+             currentVersion: 1,
+             humanAnnotationCount: 0,
+             manualRevisionCount: 0,
+             event: {
+                eventNumber: 1,
+                factValue: "Riwayat deviasi kelelahan",
+                evidenceCount: 2
+             },
              breakdown: {
                 subject: { value: "Petugas DMS (Aris)", evidence: "tanggung jawab Pak Aris sebagai DMS control room" },
                 action: { 
                     value: "mengidentifikasi riwayat deviasi kelelahan", 
                     citations: [
-                       { type: 'document', content: "ada juga banyak di rekapan juga sampai dari week 10 sampai week 41 itu 41 kali", page: "04", source: "DMS_RECAP_WEEKLY.XLSX" },
-                       { type: 'image', content: "Screenshot dashboard DMS menunjukkan lonjakan deviasi pada profil Saiful.", source: "DMS_ALERT_SS_01.PNG", thumbnail: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=200" }
+                       { type: 'document', content: "ada juga banyak di rekapan", page: "04", source: "DMS_RECAP_WEEKLY.XLSX" }
                     ]
                  },
-                object: { 
-                    value: "profil Operator Saiful", 
-                    citations: [
-                       { type: 'audio', content: "catatannya banyak fatigue, ah itu biasa kami sering intens... mengontrol mereka", speaker: "Aris", time: "02:16", source: "VOIP_REC_01.WAV" },
-                       { type: 'video', content: "Rekaman CCTV menunjukkan operator Saiful terlihat kelelahan saat memasuki unit.", time: "22:05", source: "CCTV_GATE_A.MP4", thumbnail: "https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&q=80&w=200" }
-                    ]
-                 },
-                location: { value: "profil Operator Saiful" },
                 time: "Minggu 10-41",
-                why: { value: "dalam proses investigasi" },
-                source_system: { 
-                    value: "Rekapitulasi Data DMS", 
-                    citations: [
-                       { type: 'document', content: "laporan temuan deviasi fatigue itu ada yang kami catat tuh Pak di rekap itu", page: "08", source: "DMS_RECAP_WEEKLY.XLSX" }
-                    ]
-                 },
-                condition: { 
-                    value: "pemantauan intensif", 
-                    citations: [
-                       { type: 'audio', content: "kalau misalnya dari orang ini eh catatannya banyak fatigue, ah itu biasa kami sering intens", speaker: "Aris", time: "02:18", source: "VOIP_REC_01.WAV" }
-                    ]
-                 }
              }
            },
            { 
              id: 'chrono-saiful-002', 
              phase: 'pre_contact', 
              time_label: "22:15 WITA",
-             description: "Pada 22:15 WITA, Sistem DMS memicu peringatan kritis kategori Lockdown pada unit yang sedang dioperasikan oleh Operator Saiful untuk operasional malam hari dalam proses investigasi.", 
-             chronology_text: "Pada 22:15 WITA, Sistem DMS memicu peringatan kritis kategori Lockdown pada unit yang sedang dioperasikan oleh Operator Saiful untuk operasional malam hari dalam proses investigasi.",
+             description: "Sistem DMS memicu peringatan kritis kategori Lockdown pada unit yang sedang dioperasikan oleh Operator Saiful.", 
+             chronology_text: "Sistem DMS memicu peringatan kritis kategori Lockdown pada unit yang sedang dioperasikan oleh Operator Saiful.",
              confidence: "high",
              status: "completed",
-             verification_status: "ai_generated",
-             annotated_by_human: false,
+             verification_status: "human_verified",
+             annotated_by_human: true,
+             provenanceType: "AI_HUMAN_ANNOTATED",
+             originalSource: {
+                actorId: "ai-fnc",
+                actorName: "Fact & Chronology Agent",
+                actorType: "AI",
+                timestamp: "2026-08-05T07:55:00Z"
+             },
+             createdBy: {
+                id: "ai-fnc",
+                name: "Fact & Chronology Agent",
+                role: "AI Agent",
+                actorType: "AI"
+             },
+             currentVersion: 3,
+             humanAnnotationCount: 2,
+             manualRevisionCount: 0,
+             latestHumanChange: {
+                userId: "usr-gulang",
+                userName: "Gulang Satriya",
+                userRole: "Lead Investigator",
+                timestamp: "2026-08-05T09:12:00Z",
+                changedFields: ["Time", "Description"],
+                changeNote: "Waktu diperjelas berdasarkan rekaman DMS.",
+                versionFrom: 2,
+                versionTo: 3
+             },
+             event: {
+                eventNumber: 2,
+                factValue: "Peringatan kritis",
+                evidenceCount: 1
+             },
              breakdown: {
                 subject: { value: "Sistem DMS", evidence: "kalau di klik DMS dua, kalau di Gimo satu" },
-                action: { value: "memicu peringatan kritis kategori Lockdown", evidence: "Yang pertama itu eh Lockdown, itu di jam 22:15" },
-                object: { value: "unit yang sedang dioperasikan oleh Operator Saiful", evidence: "Jam 22:15 ada alert lockdown-nya Pak Saiful ya" },
-                location: { value: "unit yang sedang dioperasikan oleh Operator Saiful" },
                 time: "22:15 WITA",
-                why: { value: "dalam proses investigasi" },
-                source_system: { value: "Dashboard Control Room", evidence: "Terus saya pantau lagi di klik DMS" },
-                condition: { value: "operasional malam hari", evidence: "pengawas room yang bertugas pada malam hari itu" }
              }
            },
            { 
              id: 'chrono-saiful-003', 
              phase: 'pre_contact', 
-             time_label: "Pasca 22:15",
-             description: "Pasca 22:15, Pengawas Fatur mengonfirmasi kondisi operator dalam keadaan baik secara verbal melalui aplikasi WhatsApp tanpa bukti visual dalam proses investigasi.", 
-             chronology_text: "Pasca 22:15, Pengawas Fatur mengonfirmasi kondisi operator dalam keadaan baik secara verbal melalui aplikasi WhatsApp tanpa bukti visual dalam proses investigasi.",
+             time_label: "22:35 WITA",
+             description: "Pengawas melakukan konfirmasi langsung kepada operator.", 
+             chronology_text: "Pengawas melakukan konfirmasi langsung kepada operator melalui radio komunikasi.",
              confidence: "high",
              status: "completed",
              verification_status: "human_verified",
              annotated_by_human: true,
+             provenanceType: "HUMAN_MANUAL",
+             createdBy: {
+                id: "usr-rina",
+                name: "Rina Mahardika",
+                role: "Investigator",
+                actorType: "HUMAN"
+             },
+             currentVersion: 1,
+             humanAnnotationCount: 0,
+             manualRevisionCount: 0,
              breakdown: {
-                subject: { value: "Pengawas Fatur", evidence: "dia lapor kondisi beliau yang kondisinya baik-baik saja" },
-                action: { value: "mengonfirmasi kondisi operator dalam keadaan baik secara verbal", evidence: "Minta evidence lanjut? Enggak. Karena saya yakin chat itu sudah memastikan" },
-                object: { value: "Kondisi Operator", evidence: "Sudah diintervensi komunikasi dua arah sama Pak Saiful... beliau baik-baik saja" },
-                location: { value: "aplikasi WhatsApp", evidence: "Komunikasi japri lewat WA ke pengawas room" },
-                time: "Pasca 22:15",
-                why: { value: "dalam proses investigasi" },
-                source_system: { value: "Aplikasi WhatsApp", evidence: "Komunikasi japri lewat WA ke pengawas room" },
-                condition: { value: "tanpa bukti visual", evidence: "Aris did not request photo evidence of the intervention, relying on the text message" }
+                subject: { value: "Pengawas", evidence: "dia lapor kondisi beliau yang kondisinya baik-baik saja" },
+                time: "22:35 WITA",
              }
            },
            { 
              id: 'chrono-saiful-004', 
              phase: 'contact', 
              time_label: "01:35 WITA",
-             description: "Pada 01:35 WITA, Unit Operator Saiful mengalami kecelakaan tunggal yang teramati melalui video surveillance DMS pada saat shift kritis dalam proses investigasi.", 
-             chronology_text: "Pada 01:35 WITA, Unit Operator Saiful mengalami kecelakaan tunggal yang teramati melalui video surveillance DMS pada saat shift kritis dalam proses investigasi.",
+             description: "Unit Operator Saiful mengalami kecelakaan tunggal.", 
+             chronology_text: "Unit Operator Saiful mengalami kecelakaan tunggal yang teramati melalui video surveillance DMS.",
              confidence: "high",
              status: "completed",
              verification_status: "human_verified",
              annotated_by_human: true,
+             provenanceType: "HUMAN_MANUAL",
+             createdBy: {
+                id: "usr-rina",
+                name: "Rina Mahardika",
+                role: "Investigator",
+                actorType: "HUMAN"
+             },
+             currentVersion: 2,
+             humanAnnotationCount: 0,
+             manualRevisionCount: 1,
+             latestHumanChange: {
+                userId: "usr-gulang",
+                userName: "Gulang Satriya",
+                userRole: "Lead Investigator",
+                timestamp: "2026-08-05T09:40:00Z",
+                changedFields: ["Description"],
+                changeNote: "Detail sumber video ditambahkan.",
+                versionFrom: 1,
+                versionTo: 2
+             },
              breakdown: {
-                subject: { value: "Unit Operator Saiful", evidence: "Pak Saiful itu alertnya di mana... kecelakaan tunggal" },
-                action: { value: "mengalami kecelakaan tunggal", evidence: "itu masuk pas di nonton pas di pertengahan video itu sudah kecelakaan tunggal" },
-                object: { value: "Fasilitas Operasional", evidence: "sudah kecelakaan tunggal jam 01:35" },
-                location: { value: "video surveillance DMS" },
+                subject: { value: "Unit Operator Saiful", evidence: "kecelakaan tunggal" },
                 time: "01:35 WITA",
-                why: { value: "dalam proses investigasi" },
-                source_system: { value: "Video Surveillance DMS", evidence: "pas di nonton pas di pertengahan video" },
-                condition: { value: "shift kritis", evidence: "pada saat shift kritis Pak di hari Jumat" }
              }
            },
            { 

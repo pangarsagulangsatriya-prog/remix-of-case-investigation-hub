@@ -242,6 +242,7 @@ interface FactChronologyModuleProps {
   onSelectItem?: (itemId: string | null) => void;
   selectedItemId?: string | null;
   tableData?: any;
+  readonly?: boolean;
 }
 
 const PHASE_CONFIG = {
@@ -464,7 +465,8 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
   onViewModeChange,
   onSelectItem,
   selectedItemId: controlledSelectedItemId,
-  tableData
+  tableData,
+  readonly = false
 }) => {
   const [items, setItems] = useState<ChronologyItem[]>(initialItems.map(item => ({ ...item, version: item.version || 1 })));
   const [internalSelectedItemId, setInternalSelectedItemId] = useState<string | null>(null);
@@ -716,38 +718,42 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
                  <p className="text-[11px] text-slate-500 mt-1">Rangkaian peristiwa, bukti objektif, dan verifikasi silang multi-sumber.</p>
               </div>
               <div className="flex items-center gap-4">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => setIsAuditDrawerOpen(true)}
-                  className="text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 h-8"
-                >
-                  <History className="h-4 w-4 mr-2" />
-                  Riwayat Perubahan &middot; {auditLogs.length} aktivitas
-                </Button>
+                {!readonly && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setIsAuditDrawerOpen(true)}
+                    className="text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 h-8"
+                  >
+                    <History className="h-4 w-4 mr-2" />
+                    Riwayat Perubahan &middot; {auditLogs.length} aktivitas
+                  </Button>
+                )}
                 
-                <div className="flex bg-slate-100 rounded-lg p-1 border border-slate-200">
-                   <button
-                      onClick={() => setDisplayFormat('timeline')}
-                      className={cn(
-                         "px-4 py-1.5 text-[11px] font-bold uppercase tracking-wider rounded-md transition-all flex items-center gap-2",
-                         displayFormat === 'timeline' ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
-                      )}
-                   >
-                    <History className="h-3.5 w-3.5" />
-                    Timeline
-                 </button>
-              <button
-                 onClick={() => setDisplayFormat('table')}
-                 className={cn(
-                    "px-4 py-1.5 text-[11px] font-bold uppercase tracking-wider rounded-md transition-all flex items-center gap-2",
-                    displayFormat === 'table' ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
-                 )}
-              >
-                 <TableIcon className="h-3.5 w-3.5" />
-                 Table
-              </button>
-           </div>
+                {!readonly && (
+                  <div className="flex bg-slate-100 rounded-lg p-1 border border-slate-200">
+                     <button
+                        onClick={() => setDisplayFormat('timeline')}
+                        className={cn(
+                           "px-4 py-1.5 text-[11px] font-bold uppercase tracking-wider rounded-md transition-all flex items-center gap-2",
+                           displayFormat === 'timeline' ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
+                        )}
+                     >
+                      <History className="h-3.5 w-3.5" />
+                      Timeline
+                   </button>
+                <button
+                   onClick={() => setDisplayFormat('table')}
+                   className={cn(
+                      "px-4 py-1.5 text-[11px] font-bold uppercase tracking-wider rounded-md transition-all flex items-center gap-2",
+                      displayFormat === 'table' ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
+                   )}
+                >
+                   <TableIcon className="h-3.5 w-3.5" />
+                   Table
+                </button>
+             </div>
+                )}
            </div>
         </div>
         </div>
@@ -756,18 +762,21 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
             {displayFormat === 'timeline' ? (
                <FactDefaultView 
                  items={items} 
-                 groupedItems={groupedItems}
-                 editingId={editingId}
-                 editBuffer={editBuffer}
-                 setEditBuffer={setEditBuffer}
-                 onEdit={handleEdit}
-                 onSave={handleSaveEdit}
-                 onCancel={handleCancelEdit}
+                 groupedItems={groupedItems} 
+                 editingId={editingId} 
+                 editBuffer={editBuffer} 
+                 setEditBuffer={setEditBuffer} 
+                 onEdit={handleEdit} 
+                 onSave={handleSaveEdit} 
+                 onCancel={() => { setEditingId(null); setEditBuffer({}); setEditChangeNote(""); }} 
                  onDelete={handleDelete}
                  metadata={metadata}
                  selectedItemId={selectedItemId}
                  onSelectItem={setSelectedItemId}
-                 onAddFact={openAddModal}
+                 onAddFact={handleAddFact}
+                 editChangeNote={editChangeNote}
+                 setEditChangeNote={setEditChangeNote}
+                 readonly={readonly}
                />
             ) : (
                <FactTableView 
@@ -783,6 +792,7 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
                  onSelectItem={setSelectedItemId}
                  onAddFact={openAddModal}
                  setDisplayFormat={setDisplayFormat} 
+                 readonly={readonly}
                />
             )}
         </div>

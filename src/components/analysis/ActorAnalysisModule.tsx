@@ -61,9 +61,10 @@ interface ActorAnalysisModuleProps {
   onDeleteActor?: (id: string) => void;
   onUpdateActors?: (actors: ActorItem[]) => void;
   onLogAudit?: (desc: string) => void;
+  readonly?: boolean;
 }
 
-export const ActorAnalysisModule: React.FC<ActorAnalysisModuleProps> = ({ data, onSelectActor, selectedActorId, onDeleteActor }) => {
+export const ActorAnalysisModule: React.FC<ActorAnalysisModuleProps> = ({ data, onSelectActor, selectedActorId, onDeleteActor, readonly = false }) => {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [editingActorId, setEditingActorId] = useState<string | null>(null);
   const [editActorDraft, setEditActorDraft] = useState<Partial<ActorItem>>({});
@@ -116,7 +117,7 @@ export const ActorAnalysisModule: React.FC<ActorAnalysisModuleProps> = ({ data, 
   const { actor_registry_status, actor_registry } = data;
 
   return (
-    <div className="flex flex-col h-full bg-slate-50/50">
+    <div className="flex flex-col h-full bg-white">
       {/* Header Summary */}
       <div className="shrink-0 p-4 border-b border-slate-200 bg-white flex flex-col gap-4">
         <div className="flex items-center justify-between">
@@ -164,8 +165,8 @@ export const ActorAnalysisModule: React.FC<ActorAnalysisModuleProps> = ({ data, 
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto bg-slate-50 p-8 flex justify-center scrollbar-thin">
-        <div className="w-full max-w-[1300px] bg-white border border-slate-300 shadow-sm p-8 pb-16 h-fit shrink-0">
+      <div className="flex-1 overflow-auto bg-white p-4 lg:p-8 flex justify-center scrollbar-thin">
+        <div className="w-full max-w-[1300px] bg-white h-fit shrink-0">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-100/80 border-b border-slate-200">
@@ -182,10 +183,14 @@ export const ActorAnalysisModule: React.FC<ActorAnalysisModuleProps> = ({ data, 
                 return (
                   <tr 
                     key={actor.actor_id || idx}
-                    onClick={() => onSelectActor(actor.actor_id)}
+                    onClick={() => {
+                      if (!readonly) onSelectActor(actor.actor_id);
+                    }}
                     onDoubleClick={() => {
-                      setEditingActorId(actor.actor_id);
-                      setEditActorDraft(actor);
+                      if (!readonly) {
+                        setEditingActorId(actor.actor_id);
+                        setEditActorDraft(actor);
+                      }
                     }}
                     className={cn(
                       "border-b border-slate-100 transition-colors cursor-pointer group",
@@ -200,25 +205,27 @@ export const ActorAnalysisModule: React.FC<ActorAnalysisModuleProps> = ({ data, 
                             {actor.beid ? `${actor.beid}` : ''} {actor.beid && actor.company ? '•' : ''} {actor.company || ''}
                           </span>
                         )}
-                        <div className="absolute -bottom-5 left-0 z-10 flex items-center gap-2">
-                          {deleteConfirmId === String(actor.actor_id || idx) ? (
-                            <div className="flex items-center gap-1.5 animate-in fade-in bg-white p-1 rounded shadow-sm border border-slate-200" onClick={(e) => e.stopPropagation()}>
-                              <span className="text-[10px] font-bold text-red-600 mr-1 whitespace-nowrap">Yakin hapus?</span>
-                              <button className="px-2 py-1 bg-red-600 text-white rounded text-[10px] font-bold hover:bg-red-700 shadow-sm" onClick={(e) => { e.stopPropagation(); onDeleteActor?.(String(actor.actor_id || idx)); if (onLogAudit) onLogAudit(`Menghapus data aktor (ID: ${actor.actor_id || idx})`); setDeleteConfirmId(null); }}>Ya</button>
-                              <button className="px-2 py-1 bg-slate-200 text-slate-800 rounded text-[10px] font-bold hover:bg-slate-300 shadow-sm" onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(null); }}>Batal</button>
-                            </div>
-                          ) : (
-                            <>
-                              <span className="opacity-0 group-hover:opacity-100 transition-all duration-200 text-[9px] text-blue-600 font-bold bg-blue-50/80 px-2 py-1 rounded border border-blue-200/60 flex items-center gap-1.5 shadow-sm active:scale-95">
-                                <Pencil className="h-2.5 w-2.5" /> Double-click to edit
-                              </span>
-                              <button 
-                                className="opacity-0 group-hover:opacity-100 transition-all duration-200 text-slate-400 hover:text-red-500 hover:bg-red-50 p-1 rounded shadow-sm bg-white border border-slate-200"
-                                onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(String(actor.actor_id || idx)); }}
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </button>
-                            </>
+                        <div className="absolute top-0 right-0 flex items-center gap-2">
+                          {!readonly && (
+                            deleteConfirmId === String(actor.actor_id || idx) ? (
+                              <div className="flex items-center gap-1.5 animate-in fade-in bg-white p-1 rounded shadow-sm border border-slate-200" onClick={(e) => e.stopPropagation()}>
+                                <span className="text-[10px] font-bold text-red-600 mr-1 whitespace-nowrap">Yakin hapus?</span>
+                                <button className="px-2 py-1 bg-red-600 text-white rounded text-[10px] font-bold hover:bg-red-700 shadow-sm" onClick={(e) => { e.stopPropagation(); onDeleteActor?.(String(actor.actor_id || idx)); if (onLogAudit) onLogAudit(`Menghapus data aktor (ID: ${actor.actor_id || idx})`); setDeleteConfirmId(null); }}>Ya</button>
+                                <button className="px-2 py-1 bg-slate-200 text-slate-800 rounded text-[10px] font-bold hover:bg-slate-300 shadow-sm" onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(null); }}>Batal</button>
+                              </div>
+                            ) : (
+                              <>
+                                <span className="opacity-0 group-hover:opacity-100 transition-all duration-200 text-[9px] text-blue-600 font-bold bg-blue-50/80 px-2 py-1 rounded border border-blue-200/60 flex items-center gap-1.5 shadow-sm active:scale-95">
+                                  <Pencil className="h-2.5 w-2.5" /> Double-click to edit
+                                </span>
+                                <button 
+                                  className="opacity-0 group-hover:opacity-100 transition-all duration-200 text-slate-400 hover:text-red-500 hover:bg-red-50 p-1 rounded shadow-sm bg-white border border-slate-200"
+                                  onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(String(actor.actor_id || idx)); }}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </>
+                            )
                           )}
                         </div>
                       </div>
@@ -275,38 +282,40 @@ export const ActorAnalysisModule: React.FC<ActorAnalysisModuleProps> = ({ data, 
                   </tr>
                 );
               })}
-              <tr>
-                <td colSpan={4} className="px-0 py-0 border-b border-slate-100">
-                  <button 
-                    onClick={() => {
-                      const newActor = {
-                        actor_id: "new-actor-" + Date.now(),
-                        beid: "",
-                        name: "New Actor",
-                        company: "",
-                        ccr_category: "",
-                        jabatan_struktural: "",
-                        involvement_level: "system_actor",
-                        actor_type_assignments: [],
-                        identity_decomposition: {},
-                        role_crosscheck_decomposition: {},
-                        linked_events: [],
-                        review_recommendation: {
-                          recommended_for_review: false,
-                          review_priority: "None" as const,
-                          review_reason: null,
-                          downstream_usage: "allowed" as const,
-                          downstream_note: null
-                        }
-                      };
-                      if (onUpdateActors) onUpdateActors([...data.actor_registry, newActor]);
-                    }}
-                    className="w-full text-center py-2 text-[11px] font-bold text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 transition-colors uppercase tracking-widest bg-slate-50/50 hover:border-emerald-200 border border-transparent"
-                  >
-                    + Tambah Aktor
-                  </button>
-                </td>
-              </tr>
+              {!readonly && (
+                <tr>
+                  <td colSpan={4} className="px-0 py-0 border-b border-slate-100">
+                    <button 
+                      onClick={() => {
+                        const newActor = {
+                          actor_id: "new-actor-" + Date.now(),
+                          beid: "",
+                          name: "New Actor",
+                          company: "",
+                          ccr_category: "",
+                          jabatan_struktural: "",
+                          involvement_level: "system_actor",
+                          actor_type_assignments: [],
+                          identity_decomposition: {},
+                          role_crosscheck_decomposition: {},
+                          linked_events: [],
+                          review_recommendation: {
+                            recommended_for_review: false,
+                            review_priority: "None" as const,
+                            review_reason: null,
+                            downstream_usage: "allowed" as const,
+                            downstream_note: null
+                          }
+                        };
+                        if (onUpdateActors) onUpdateActors([...data.actor_registry, newActor]);
+                      }}
+                      className="w-full text-center py-2 text-[11px] font-bold text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 transition-colors uppercase tracking-widest bg-slate-50/50 hover:border-emerald-200 border border-transparent"
+                    >
+                      + Tambah Aktor
+                    </button>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

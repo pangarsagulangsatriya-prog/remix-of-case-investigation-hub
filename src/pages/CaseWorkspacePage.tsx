@@ -13,7 +13,7 @@ import { TourProvider, useTour } from '@/components/workspace/TourContext';
 import { ProductTourOverlay } from '@/components/workspace/ProductTourOverlay';
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
-import { AgentState } from "@/types/workspace";
+import { AgentState, ReportStatusType, ReportSnapshot, ReportAuditEntry } from "@/types/workspace";
 import { initialAgentsState } from "@/components/workspace/Tabs/AnalysisTab";
 
 // Modular Tab Components (Lazy Loaded)
@@ -77,6 +77,9 @@ function CaseWorkspaceInner() {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [agents, setAgents] = useState<AgentState[]>(initialAgentsState);
+  const [reportStatus, setReportStatus] = useState<ReportStatusType>('EMPTY');
+  const [reportSnapshot, setReportSnapshot] = useState<ReportSnapshot | null>(null);
+  const [reportAuditLogs, setReportAuditLogs] = useState<ReportAuditEntry[]>([]);
   const [showAuditTrail, setShowAuditTrail] = useState(false);
   const [hasDemoDerivation, setHasDemoDerivation] = useState(false);
 
@@ -518,7 +521,15 @@ function CaseWorkspaceInner() {
                     {currentStep === 1 && <ExtractionTab />}
                     {currentStep === 2 && <EvidenceTab />}
                     {currentStep === 3 && <AnalysisTab agents={agents} setAgents={setAgents} />}
-                    {currentStep === 4 && <ReportsTab agents={agents} />}
+                    {currentStep === 4 && <ReportsTab 
+                      agents={agents} 
+                      reportStatus={reportStatus}
+                      setReportStatus={setReportStatus}
+                      reportSnapshot={reportSnapshot}
+                      setReportSnapshot={setReportSnapshot}
+                      reportAuditLogs={reportAuditLogs}
+                      setReportAuditLogs={setReportAuditLogs}
+                    />}
                   </>
                 )}
               </Suspense>

@@ -88,3 +88,20 @@ export interface EnhancedChronologyItem {
   annotations: any[];
   updatedAt: string;
 }
+
+export type ReportStatusType = 'EMPTY' | 'PREVIEW' | 'FINAL_LOCKED';
+
+export interface ReportSnapshot {
+  lockedAt: string;
+  lockedBy: string;
+  reportId: string;
+  agentsSnapshot: AgentState[];
+}
+
+export interface ReportAuditEntry {
+  id: string;
+  timestamp: string;
+  action: 'PREVIEW_GENERATED' | 'REPORT_APPROVED' | 'REPORT_LOCKED';
+  actor: string;
+  details?: string;
+}

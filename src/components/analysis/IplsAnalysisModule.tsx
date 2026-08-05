@@ -33,9 +33,10 @@ interface IplsAnalysisModuleProps {
   selectedRowId?: string | null;
   onSync: (newData: IplsData) => void;
   onLogAudit?: (desc: string) => void;
+  readonly?: boolean;
 }
 
-export function IplsAnalysisModule({ data, onSelectRow, selectedRowId, onSync }: IplsAnalysisModuleProps) {
+export function IplsAnalysisModule({ data, onSelectRow, selectedRowId, onSync, readonly = false }: IplsAnalysisModuleProps) {
   const [editingItem, setEditingItem] = useState<{ layerId: number; item: IplsItem } | null>(null);
   const [editForm, setEditForm] = useState<Partial<IplsItem>>({});
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -129,8 +130,8 @@ export function IplsAnalysisModule({ data, onSelectRow, selectedRowId, onSync }:
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto bg-slate-50 p-8 flex justify-center scrollbar-thin">
-        <div className="w-full max-w-[1300px] bg-white border border-slate-300 shadow-sm p-8 pb-16 h-fit shrink-0 overflow-x-auto">
+      <div className="flex-1 overflow-auto bg-white p-4 lg:p-8 flex justify-center scrollbar-thin">
+        <div className="w-full max-w-[1300px] bg-white h-fit shrink-0 overflow-x-auto">
           {/* Main Content Area */}
           <div className="flex-1 flex flex-col">
             {/* Section 4: Analisa Kejadian */}
@@ -176,6 +177,7 @@ export function IplsAnalysisModule({ data, onSelectRow, selectedRowId, onSync }:
                               key={item.id} 
                               className={`flex flex-col cursor-pointer group relative p-2 rounded-md transition-all ${isSelected ? 'bg-slate-100/80 ring-1 ring-slate-300' : 'hover:bg-slate-50/50'}`}
                               onClick={() => {
+                                 if (readonly) return;
                                  if (onSelectRow) {
                                     if (isSelected) {
                                        handleEditClick(layer.id, item);
@@ -195,36 +197,40 @@ export function IplsAnalysisModule({ data, onSelectRow, selectedRowId, onSync }:
                                   {item.description}
                                 </p>
                               )}
-                              <div className="absolute -bottom-2 z-10 flex items-center gap-2 self-center">
-                                {deleteConfirmId === item.id ? (
-                                  <div className="flex items-center gap-1.5 animate-in fade-in bg-white p-1 rounded shadow-sm border border-slate-200" onClick={(e) => e.stopPropagation()}>
-                                    <span className="text-[10px] font-bold text-red-600 mr-1 whitespace-nowrap">Yakin hapus?</span>
-                                    <button className="px-2 py-1 bg-red-600 text-white rounded text-[10px] font-bold hover:bg-red-700 shadow-sm" onClick={(e) => { e.stopPropagation(); handleDelete(layer.id, item.id); setDeleteConfirmId(null); }}>Ya</button>
-                                    <button className="px-2 py-1 bg-slate-200 text-slate-800 rounded text-[10px] font-bold hover:bg-slate-300 shadow-sm" onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(null); }}>Batal</button>
-                                  </div>
-                                ) : (
-                                  <>
-                                    <span className="opacity-0 group-hover:opacity-100 transition-all duration-200 text-[9px] text-blue-600 font-bold bg-blue-50/80 px-2 py-1 rounded border border-blue-200/60 flex items-center gap-1.5 shadow-sm active:scale-95">
-                                      <Pencil className="h-2.5 w-2.5" /> Double-click to edit
-                                    </span>
-                                    <button 
-                                      className="opacity-0 group-hover:opacity-100 transition-all duration-200 text-slate-400 hover:text-red-500 hover:bg-red-50 p-1 rounded shadow-sm bg-white border border-slate-200"
-                                      onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(item.id); }}
-                                    >
-                                      <Trash2 className="h-3.5 w-3.5" />
-                                    </button>
-                                  </>
-                                )}
-                              </div>
+                              {!readonly && (
+                                <div className="absolute -bottom-2 z-10 flex items-center gap-2 self-center">
+                                  {deleteConfirmId === item.id ? (
+                                    <div className="flex items-center gap-1.5 animate-in fade-in bg-white p-1 rounded shadow-sm border border-slate-200" onClick={(e) => e.stopPropagation()}>
+                                      <span className="text-[10px] font-bold text-red-600 mr-1 whitespace-nowrap">Yakin hapus?</span>
+                                      <button className="px-2 py-1 bg-red-600 text-white rounded text-[10px] font-bold hover:bg-red-700 shadow-sm" onClick={(e) => { e.stopPropagation(); handleDelete(layer.id, item.id); setDeleteConfirmId(null); }}>Ya</button>
+                                      <button className="px-2 py-1 bg-slate-200 text-slate-800 rounded text-[10px] font-bold hover:bg-slate-300 shadow-sm" onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(null); }}>Batal</button>
+                                    </div>
+                                  ) : (
+                                    <>
+                                      <span className="opacity-0 group-hover:opacity-100 transition-all duration-200 text-[9px] text-blue-600 font-bold bg-blue-50/80 px-2 py-1 rounded border border-blue-200/60 flex items-center gap-1.5 shadow-sm active:scale-95">
+                                        <Pencil className="h-2.5 w-2.5" /> Double-click to edit
+                                      </span>
+                                      <button 
+                                        className="opacity-0 group-hover:opacity-100 transition-all duration-200 text-slate-400 hover:text-red-500 hover:bg-red-50 p-1 rounded shadow-sm bg-white border border-slate-200"
+                                        onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(item.id); }}
+                                      >
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                      </button>
+                                    </>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           );
                         })}
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); handleAddItem(layer.id); }}
-                          className="w-full text-center py-2 text-[11px] font-bold text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 transition-colors uppercase tracking-widest bg-slate-50/50 hover:border-emerald-200 border border-transparent rounded mt-2"
-                        >
-                          + Tambah Item
-                        </button>
+                        {!readonly && (
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); handleAddItem(layer.id); }}
+                            className="w-full text-center py-2 text-[11px] font-bold text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 transition-colors uppercase tracking-widest bg-slate-50/50 hover:border-emerald-200 border border-transparent rounded mt-2"
+                          >
+                            + Tambah Item
+                          </button>
+                        )}
                       </div>
                     </div>
                   );
