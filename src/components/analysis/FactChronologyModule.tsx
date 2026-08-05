@@ -144,6 +144,43 @@ export interface AnalysisVersion {
   time: string;
   description: string;
   createdAt: string;
+  actorName?: string;
+  actorRole?: string;
+  actorType?: ActorType;
+  changeNote?: string;
+}
+
+export type ProvenanceType = "AI_GENERATED" | "AI_HUMAN_ANNOTATED" | "HUMAN_MANUAL";
+
+export interface ProvenanceData {
+  provenanceType?: ProvenanceType;
+  originalSource?: {
+    actorId: string;
+    actorName: string;
+    actorType: "AI" | "HUMAN";
+    timestamp: string;
+    agentName?: string;
+  };
+  createdBy?: {
+    id: string;
+    name: string;
+    role: string;
+    actorType: "AI" | "HUMAN";
+  };
+  currentVersion?: number;
+  humanAnnotationCount?: number;
+  manualRevisionCount?: number;
+  latestHumanChange?: {
+    userId: string;
+    userName: string;
+    userRole: string;
+    timestamp: string;
+    changedFields: string[];
+    changeNote: string;
+    versionFrom: number;
+    versionTo: number;
+  };
+  versions?: AnalysisVersion[];
 }
 
 export interface AuditEntry {
@@ -165,7 +202,7 @@ export interface AuditEntry {
   after?: AnalysisVersion;
 }
 
-export interface ChronologyItem {
+export interface ChronologyItem extends ProvenanceData {
   version?: number;
   id: string;
   time_label: string;
@@ -1813,6 +1850,91 @@ const CATEGORY_EXPLANATIONS: Record<string, { title: string, subtitle: string, t
   }
 };
 
+// ── Provenance & Annotation Components ─────────────────────────────────────
+
+export const AnnotationHistoryView: React.FC<{ item: any, onClose: () => void }> = ({ item, onClose }) => {
+  return (
+    <div className="absolute inset-0 bg-white z-30 flex flex-col animate-in slide-in-from-bottom-4 duration-300">
+      <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-slate-50">
+        <div>
+          <h3 className="text-sm font-bold text-slate-800">Riwayat Perubahan</h3>
+          <p className="text-[10px] text-slate-500 mt-0.5">Jejak audit dan revisi manusia</p>
+        </div>
+        <Button variant="ghost" size="sm" onClick={onClose} className="h-6 w-6 p-0 hover:bg-slate-200">
+          <X className="h-4 w-4 text-slate-500" />
+        </Button>
+      </div>
+      <div className="flex-1 overflow-auto p-4 space-y-4 bg-slate-50/50">
+        <div className="relative border-l-2 border-slate-200 ml-3 pl-4 pb-4">
+          <div className="absolute w-2.5 h-2.5 rounded-full bg-blue-500 -left-[6px] top-1" />
+          <div className="text-[10px] text-slate-400 font-bold mb-1">Current Version (v{item.currentVersion || 1})</div>
+          <div className="bg-white border border-slate-200 p-3 shadow-sm rounded-sm">
+            <div className="font-bold text-slate-800 text-[11px] mb-1">{item.latestHumanChange?.userName || "Gulang Satriya"}</div>
+            <div className="text-[10px] text-slate-500 mb-2">{item.latestHumanChange?.changeNote || "Memperbarui data"}</div>
+            <div className="flex gap-1 flex-wrap">
+               {(item.latestHumanChange?.changedFields || ["description"]).map((f: string) => (
+                  <span key={f} className="text-[9px] px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded">Mod: {f}</span>
+               ))}
+            </div>
+          </div>
+        </div>
+        
+        <div className="relative border-l-2 border-transparent ml-3 pl-4">
+          <div className="absolute w-2.5 h-2.5 rounded-full bg-slate-300 -left-[6px] top-1" />
+          <div className="text-[10px] text-slate-400 font-bold mb-1">Original Content (v1)</div>
+          <div className="bg-slate-100 border border-slate-200 p-3 rounded-sm">
+            <div className="font-bold text-slate-500 text-[11px] mb-1">AI Generated</div>
+            <div className="text-[10px] text-slate-400">{item.originalSource?.timestamp || "2026-08-05"}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export const ProvenanceBlock: React.FC<{ item: any, onOpenHistory: () => void }> = ({ item, onOpenHistory }) => {
+  if (item.provenanceType === 'HUMAN_MANUAL') {
+    return (
+      <div className="bg-emerald-50/50 p-2.5 border-y border-emerald-100 mb-3 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+          <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-widest">Ditambahkan Manual</span>
+        </div>
+        {item.manualRevisionCount > 0 && (
+          <span className="text-[9px] font-bold text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded cursor-pointer hover:bg-emerald-200" onClick={onOpenHistory}>
+            Revisi {item.manualRevisionCount}x
+          </span>
+        )}
+      </div>
+    );
+  }
+
+  if (item.provenanceType === 'AI_HUMAN_ANNOTATED') {
+    return (
+      <div className="bg-blue-50/50 p-2.5 border-y border-blue-100 mb-3 flex items-center justify-between group cursor-pointer hover:bg-blue-50" onClick={onOpenHistory}>
+        <div className="flex items-center gap-2">
+          <Pencil className="h-3.5 w-3.5 text-blue-600" />
+          <div className="flex flex-col">
+            <span className="text-[10px] font-bold text-blue-700 uppercase tracking-widest leading-tight">Human Annotated</span>
+            <span className="text-[9px] text-blue-500">{item.latestHumanChange?.userName || "User"} &middot; {item.humanAnnotationCount || 1} perubahan</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <span className="text-[9px] font-bold text-blue-600">Riwayat</span>
+          <ChevronRight className="h-3 w-3 text-blue-600" />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-slate-50/80 p-2.5 border-y border-slate-100 mb-3 flex items-center gap-2">
+      <Brain className="h-3.5 w-3.5 text-indigo-400" />
+      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">AI Generated</span>
+    </div>
+  );
+};
+
 // ── Traceability Panel Component ──────────────────────────────────────────
 
 
@@ -1845,6 +1967,7 @@ export const TraceabilityPanel: React.FC<{
   const [editingRowLabel, setEditingRowLabel] = useState<string | null>(null);
   const [tempRowValue, setTempRowValue] = useState<string>("");
   const [activeDimension, setActiveDimension] = useState<string | null>(null);
+  const [showHistory, setShowHistory] = useState(false);
 
   const toggleRow = (label: string) => {
     setExpandedRows(prev => ({ ...prev, [label]: !prev[label] }));
@@ -2004,7 +2127,8 @@ export const TraceabilityPanel: React.FC<{
   const [showDebugPanel, setShowDebugPanel] = useState(false);
 
   return (
-    <div className="flex flex-col h-full bg-white border-l border-slate-200">
+    <div className="flex flex-col h-full bg-white border-l border-slate-200 relative overflow-hidden">
+      {showHistory && <AnnotationHistoryView item={item} onClose={() => setShowHistory(false)} />}
       {/* Panel Header */}
       <div className="p-4 border-b border-slate-200 bg-white shrink-0">
         <div className="flex items-center justify-between mb-3">
@@ -2023,6 +2147,8 @@ export const TraceabilityPanel: React.FC<{
             </Button>
           </div>
         </div>
+        
+        <ProvenanceBlock item={item} onOpenHistory={() => setShowHistory(true)} />
 
         <div className="bg-slate-50/50 p-3 border border-slate-200 rounded-none mb-1 group/stmt">
           <div className="flex items-center justify-between mb-1.5">
@@ -2036,8 +2162,47 @@ export const TraceabilityPanel: React.FC<{
         </div>
       </div>
 
-      {/* Main Content Area: 5W1H Full-Width Table */}
+      {/* Main Content Area */}
       <div className="flex-1 overflow-auto p-0 scrollbar-thin bg-slate-50/20">
+        {item.provenanceType === 'HUMAN_MANUAL' ? (
+          <div className="p-4 space-y-4">
+            <div className="bg-white border border-slate-200 p-4 rounded-sm shadow-sm">
+              <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-3">FAKTA MANUAL</h4>
+              
+              <div className="grid grid-cols-[100px_1fr] gap-2 mb-3">
+                 <div className="text-[11px] font-bold text-slate-400">Tahap</div>
+                 <div className="text-[12.5px] text-slate-800 font-medium">{item.phase === 'pre_contact' ? 'Pra-Kontak' : item.phase === 'contact' ? 'Kontak' : 'Pasca-Kontak'}</div>
+              </div>
+              
+              <div className="grid grid-cols-[100px_1fr] gap-2 mb-3">
+                 <div className="text-[11px] font-bold text-slate-400">Time</div>
+                 <div className="text-[12.5px] text-slate-800 font-medium">{item.time_label}</div>
+              </div>
+
+              <div className="grid grid-cols-[100px_1fr] gap-2 mb-3">
+                 <div className="text-[11px] font-bold text-slate-400">Description</div>
+                 <div className="text-[12.5px] text-slate-800 font-medium leading-relaxed">{item.description || item.chronology_text}</div>
+              </div>
+            </div>
+
+            <div className="bg-white border border-slate-200 p-4 rounded-sm shadow-sm">
+               <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-3">BUKTI TERHUBUNG</h4>
+               {whatCitations.length > 0 ? (
+                 <div>
+                    <div className="text-[11px] text-slate-700 font-medium mb-3">{whatCitations.length} bukti</div>
+                    {/* Simplified evidence list */}
+                    {whatCitations.map((cit, idx) => (
+                      <div key={idx} className="mb-2 p-2 bg-slate-50 border border-slate-100 rounded text-[11px] text-slate-700">
+                        <span className="font-bold text-slate-900">{cit.speaker || cit.source}</span>: {cit.content}
+                      </div>
+                    ))}
+                 </div>
+               ) : (
+                 <div className="text-[11px] text-slate-500 italic">Belum ada bukti yang ditautkan.</div>
+               )}
+            </div>
+          </div>
+        ) : (
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-slate-100/80 border-b border-slate-200">
@@ -2207,6 +2372,7 @@ export const TraceabilityPanel: React.FC<{
             })}
           </tbody>
         </table>
+        )}
       </div>
     </div>
   );
@@ -2300,8 +2466,14 @@ const FactSlideView: React.FC<{
                         <div className="flex items-center justify-between mb-1">
                           <div className="flex items-center gap-2">
                              <span className="text-[10px] font-mono font-black text-slate-400">[{item.time_label}]</span>
-                             {item.annotated_by_human && (
-                               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" title="Human Annotated" />
+                             {item.provenanceType === 'AI_HUMAN_ANNOTATED' && (
+                               <span className="text-[8px] font-black uppercase text-blue-500 tracking-widest bg-blue-50 px-1 py-0.5 rounded" title="Human Annotated">Human Annotated &middot; {item.humanAnnotationCount}&times;</span>
+                             )}
+                             {item.provenanceType === 'HUMAN_MANUAL' && (
+                               <span className="text-[8px] font-black uppercase text-emerald-500 tracking-widest bg-emerald-50 px-1 py-0.5 rounded" title="Added Manually">Added Manually</span>
+                             )}
+                             {(!item.provenanceType || item.provenanceType === 'AI_GENERATED') && (
+                               <span className="text-[8px] font-black uppercase text-indigo-400 tracking-widest bg-indigo-50/50 px-1 py-0.5 rounded" title="AI Generated">AI Generated</span>
                              )}
                           </div>
                           {item.traceability && (
@@ -2654,8 +2826,19 @@ const FactTableView: React.FC<{
                           }}
                         >
                           <div className="font-bold mb-1 text-slate-600 text-[10px] flex items-center justify-between">
-                            <span>{item.time_label}</span>
-                            {(isSelected || isEditing) && <span className="bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded-sm">Versi aktif: {item.version || 1}</span>}
+                            <div className="flex items-center gap-2">
+                              <span>{item.time_label}</span>
+                              {item.provenanceType === 'AI_HUMAN_ANNOTATED' && (
+                                <span className="text-[8px] font-black uppercase text-blue-500 tracking-widest bg-blue-50 px-1 py-0.5 rounded" title="Human Annotated">Human Annotated &middot; {item.humanAnnotationCount}&times;</span>
+                              )}
+                              {item.provenanceType === 'HUMAN_MANUAL' && (
+                                <span className="text-[8px] font-black uppercase text-emerald-500 tracking-widest bg-emerald-50 px-1 py-0.5 rounded" title="Added Manually">Added Manually</span>
+                              )}
+                              {(!item.provenanceType || item.provenanceType === 'AI_GENERATED') && (
+                                <span className="text-[8px] font-black uppercase text-indigo-400 tracking-widest bg-indigo-50/50 px-1 py-0.5 rounded" title="AI Generated">AI Generated</span>
+                              )}
+                            </div>
+                            {(isSelected || isEditing) && <span className="bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded-sm">Versi aktif: {item.currentVersion || item.version || 1}</span>}
                           </div>
                           {isEditing ? (
                             <div className="space-y-2" onClick={(e) => e.stopPropagation()}>

@@ -35,7 +35,9 @@ export interface ReviewRecommendation {
   downstream_note: string | null;
 }
 
-export interface ActorItem {
+import { ProvenanceData, ProvenanceBlock, AnnotationHistoryView } from "./FactChronologyModule";
+
+export interface ActorItem extends ProvenanceData {
   actor_id: string;
   beid: string | null;
   name: string;
@@ -199,7 +201,18 @@ export const ActorAnalysisModule: React.FC<ActorAnalysisModuleProps> = ({ data, 
                   >
                     <td className="px-4 py-3">
                       <div className="flex flex-col gap-1 relative">
-                        <span className="text-[12.5px] font-bold text-slate-800">{actor.name}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[12.5px] font-bold text-slate-800">{actor.name}</span>
+                          {actor.provenanceType === 'AI_HUMAN_ANNOTATED' && (
+                            <span className="text-[8px] font-black uppercase text-blue-500 tracking-widest bg-blue-50 px-1 py-0.5 rounded" title="Human Annotated">Human Annotated &middot; {actor.humanAnnotationCount}&times;</span>
+                          )}
+                          {actor.provenanceType === 'HUMAN_MANUAL' && (
+                            <span className="text-[8px] font-black uppercase text-emerald-500 tracking-widest bg-emerald-50 px-1 py-0.5 rounded" title="Added Manually">Added Manually</span>
+                          )}
+                          {(!actor.provenanceType || actor.provenanceType === 'AI_GENERATED') && (
+                            <span className="text-[8px] font-black uppercase text-indigo-400 tracking-widest bg-indigo-50/50 px-1 py-0.5 rounded" title="AI Generated">AI Generated</span>
+                          )}
+                        </div>
                         {(actor.beid || actor.company) && (
                           <span className="text-[10px] text-slate-500 font-mono">
                             {actor.beid ? `${actor.beid}` : ''} {actor.beid && actor.company ? '•' : ''} {actor.company || ''}
@@ -376,8 +389,10 @@ export const ActorAnalysisModule: React.FC<ActorAnalysisModuleProps> = ({ data, 
 };
 
 export const ActorDetailPanel: React.FC<{ actor: ActorItem, onClose: () => void }> = ({ actor, onClose }) => {
+  const [showHistory, setShowHistory] = useState(false);
   return (
-    <div className="flex flex-col h-full bg-slate-50 w-[420px] shrink-0 border-l border-slate-200 shadow-[-10px_0_30px_-15px_rgba(0,0,0,0.1)] z-20 animate-in slide-in-from-right duration-300">
+    <div className="flex flex-col h-full bg-slate-50 w-[420px] shrink-0 border-l border-slate-200 shadow-[-10px_0_30px_-15px_rgba(0,0,0,0.1)] z-20 animate-in slide-in-from-right duration-300 relative overflow-hidden">
+      {showHistory && <AnnotationHistoryView item={actor as any} onClose={() => setShowHistory(false)} />}
       <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-white">
         <div>
           <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1 flex items-center gap-1.5">
@@ -389,6 +404,10 @@ export const ActorDetailPanel: React.FC<{ actor: ActorItem, onClose: () => void 
         <Button variant="ghost" size="sm" onClick={onClose} className="h-6 w-6 p-0 hover:bg-slate-100 rounded-sm">
           <X className="h-4 w-4 text-slate-500" />
         </Button>
+      </div>
+      
+      <div className="px-4 pt-2 bg-white border-b border-slate-200">
+        <ProvenanceBlock item={actor} onOpenHistory={() => setShowHistory(true)} />
       </div>
 
       <div className="flex-1 overflow-auto scrollbar-thin">

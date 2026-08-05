@@ -387,6 +387,22 @@ export const initialAgentsState: AgentState[] = [
               jabatan_struktural: "Operator Hauler",
               involvement_level: "primary_involved_worker",
               actor_type_assignments: [],
+              provenanceType: "AI_GENERATED",
+              originalSource: {
+                 actorId: "ai-actor",
+                 actorName: "Actor Analysis Agent",
+                 actorType: "AI",
+                 timestamp: "2026-08-05T07:56:00Z"
+              },
+              createdBy: {
+                 id: "ai-actor",
+                 name: "Actor Analysis Agent",
+                 role: "AI Agent",
+                 actorType: "AI"
+              },
+              currentVersion: 1,
+              humanAnnotationCount: 0,
+              manualRevisionCount: 0,
               linked_events: [
                  { event_id: "e1", phase: "PRA_KONTAK", time: "22:15 WITA", action_summary: "Sistem DMS memicu peringatan kritis kategori Lockdown pada unit yang sedang dioperasikan oleh Operator Saiful" },
                  { event_id: "e2", phase: "KONTAK", time: "01:35 WITA", action_summary: "Unit Operator Saiful mengalami kecelakaan tunggal yang teramati melalui video surveillance DMS" }
@@ -420,6 +436,32 @@ export const initialAgentsState: AgentState[] = [
               jabatan_struktural: "Supervisor Hauling",
               involvement_level: "direct_supervisor",
               actor_type_assignments: [],
+              provenanceType: "AI_HUMAN_ANNOTATED",
+              originalSource: {
+                 actorId: "ai-actor",
+                 actorName: "Actor Analysis Agent",
+                 actorType: "AI",
+                 timestamp: "2026-08-05T07:56:00Z"
+              },
+              createdBy: {
+                 id: "ai-actor",
+                 name: "Actor Analysis Agent",
+                 role: "AI Agent",
+                 actorType: "AI"
+              },
+              currentVersion: 2,
+              humanAnnotationCount: 1,
+              manualRevisionCount: 0,
+              latestHumanChange: {
+                 userId: "usr-gulang",
+                 userName: "Gulang Satriya",
+                 userRole: "Lead Investigator",
+                 timestamp: "2026-08-05T09:30:00Z",
+                 changedFields: ["Name", "Company"],
+                 changeNote: "Mengoreksi nama pengawas dari Faturrahman menjadi Fatur sesuai absen perusahaan KMB.",
+                 versionFrom: 1,
+                 versionTo: 2
+              },
               linked_events: [
                  { event_id: "e3", phase: "PRA_KONTAK", time: "Pasca 22:15", action_summary: "Pengawas Fatur mengonfirmasi kondisi operator dalam keadaan baik secara verbal melalui aplikasi WhatsApp tanpa bukti visual" }
               ],
@@ -452,6 +494,16 @@ export const initialAgentsState: AgentState[] = [
               jabatan_struktural: "Petugas CCR",
               involvement_level: "system_actor",
               actor_type_assignments: [],
+              provenanceType: "HUMAN_MANUAL",
+              createdBy: {
+                 id: "usr-investigator",
+                 name: "Investigator Ops",
+                 role: "Investigator",
+                 actorType: "HUMAN"
+              },
+              currentVersion: 1,
+              humanAnnotationCount: 0,
+              manualRevisionCount: 0,
               linked_events: [
                  { event_id: "e4", phase: "PASCA_KONTAK", time: "Pasca 01:35", action_summary: "Petugas Control Room (Aris) dengan monitoring standby memfokuskan pemantauan pada jalur emergency dikarenakan respons pengawas lapangan terbatas" }
               ],
@@ -496,6 +548,16 @@ export const initialAgentsState: AgentState[] = [
             id: "peepo-p1",
             chronology_text: "Sdr Ade Lukmanul Hakim tidak langsung mengaktifkan tombol Emergency Shut Down Engine Saat melihat indikasi awal adanya Fire Case di Area Engine WA 500- 3 MIJ 1001 dikarenakan panik",
             status: "human_verified",
+            provenanceType: "AI_HUMAN_ANNOTATED",
+            createdBy: { id: "ai-actor", name: "PEEPO Agent", role: "AI", actorType: "AI" },
+            originalSource: { actorId: "ai-actor", actorName: "PEEPO Agent", actorType: "AI", timestamp: "2026-08-05T07:56:00Z" },
+            currentVersion: 2,
+            humanAnnotationCount: 1,
+            manualRevisionCount: 0,
+            latestHumanChange: {
+               userId: "usr-gulang", userName: "Gulang Satriya", userRole: "Lead Investigator", timestamp: "2026-08-05T09:30:00Z",
+               changedFields: ["chronology_text"], changeNote: "Menambahkan alasan 'dikarenakan panik'", versionFrom: 1, versionTo: 2
+            },
             breakdown: {
               subject:  { value: "Sdr Ade Lukmanul Hakim", citations: [] },
               action:   { value: "tidak langsung mengaktifkan tombol Emergency Shut Down Engine", citations: [] },
@@ -508,6 +570,7 @@ export const initialAgentsState: AgentState[] = [
             id: "peepo-p2",
             chronology_text: "Operator Wheel Loader belum memahami sepenuhnya prosedur penggunaan Fire Suppression sistem otomatis saat kejadian berlangsung",
             status: "needs_review",
+            provenanceType: "AI_GENERATED",
             breakdown: {
               subject:  { value: "Operator Wheel Loader", citations: [] },
               action:   { value: "belum memahami sepenuhnya prosedur penggunaan Fire Suppression sistem otomatis", citations: [] },
@@ -518,6 +581,8 @@ export const initialAgentsState: AgentState[] = [
             id: "peepo-p3",
             chronology_text: "Pengawas area tidak berada di lokasi saat indikasi awal api muncul sehingga instruksi tanggap darurat tertunda",
             status: "ai_generated",
+            provenanceType: "HUMAN_MANUAL",
+            createdBy: { id: "usr-investigator", name: "Investigator Ops", role: "Investigator", actorType: "HUMAN" },
             breakdown: {
               subject:  { value: "Pengawas area", citations: [] },
               action:   { value: "tidak berada di lokasi", citations: [] },
@@ -531,6 +596,7 @@ export const initialAgentsState: AgentState[] = [
             id: "peepo-e1",
             chronology_text: "Terdapat material batu bara / fine Coal yang menumpuk pada bagian atas fuel tank sisi kiri dan kanan , yang menyelip anatar hose oli cooler transmisi dan Hydraulic ( Pembersihan yang dilakukan tidak menyeluruh pada semua bagian atas Fuel Tank , bagian yang dibersihkan hanya yang terlihat dari luar / bagian bawah oil pan )",
             status: "ai_generated",
+            provenanceType: "AI_GENERATED",
             breakdown: {
               object:   { value: "material batu bara / fine Coal", citations: [] },
               action:   { value: "menumpuk pada bagian atas fuel tank sisi kiri dan kanan , yang menyelip anatar hose oli cooler transmisi dan Hydraulic", citations: [] },
@@ -685,7 +751,19 @@ export const initialAgentsState: AgentState[] = [
                title: "Organization's Roles & Responsibilities", 
                items: [
                   { id: 'l1-1', label: "HIRA", status: "", originalIndex: 1 },
-                  { id: 'l1-2', label: "SOP (Policy, Procedure, IK, Std & form)", status: "improvement", originalIndex: 2, description: "Pada form PM Check LV sudah terdapat item pengecekan nut roda, namun belum mendetail terkait poin wheel nut indicator" },
+                  { 
+                    id: 'l1-2', label: "SOP (Policy, Procedure, IK, Std & form)", status: "improvement", originalIndex: 2, description: "Pada form PM Check LV sudah terdapat item pengecekan nut roda, namun belum mendetail terkait poin wheel nut indicator",
+                    provenanceType: "AI_HUMAN_ANNOTATED",
+                    createdBy: { id: "ai-actor", name: "IPLS Agent", role: "AI", actorType: "AI" },
+                    originalSource: { actorId: "ai-actor", actorName: "IPLS Agent", actorType: "AI", timestamp: "2026-08-05T08:00:00Z" },
+                    currentVersion: 2,
+                    humanAnnotationCount: 1,
+                    manualRevisionCount: 0,
+                    latestHumanChange: {
+                       userId: "usr-gulang", userName: "Gulang Satriya", userRole: "Lead Investigator", timestamp: "2026-08-05T10:30:00Z",
+                       changedFields: ["description"], changeNote: "Menambahkan detail terkait wheel nut indicator", versionFrom: 1, versionTo: 2
+                    }
+                  },
                   { id: 'l1-3', label: "Do's & Don'ts Policy", status: "", originalIndex: 3 },
                   { id: 'l1-4', label: "26 High Risk Activity", status: "", originalIndex: 4 },
                   { id: 'l1-5', label: "Golden Rules", status: "", originalIndex: 5 },
@@ -748,7 +826,14 @@ export const initialAgentsState: AgentState[] = [
      backendCapabilities: { canPause: true, canResume: true, canStop: true, canRerun: true },
      results: {
          actions: [
-            { no: 1, layer: "IV.4", hierarchy: "Adm", action: "Perbaikan DMS LV BM 391", pic: "Bimo", due_date: "19 - 10 - 2025", status: "Closed", type: "nc" },
+            { 
+               no: 1, layer: "IV.4", hierarchy: "Adm", action: "Perbaikan DMS LV BM 391", pic: "Bimo", due_date: "19 - 10 - 2025", status: "Closed", type: "nc",
+               provenanceType: "HUMAN_MANUAL",
+               createdBy: { id: "usr-investigator", name: "Investigator Ops", role: "Investigator", actorType: "HUMAN" },
+               currentVersion: 1,
+               humanAnnotationCount: 0,
+               manualRevisionCount: 0
+            },
             { no: 2, layer: "IV.4", hierarchy: "Adm", action: "Mengidentifikasi seluruh DMS, melakukan pengujian fungsi MDVR, memperbaiki DMS yang bermasalah, dan menyerahkan hasil perbaikan kepada tim operasional", pic: "Bimo", due_date: "19 - 10 - 2025", status: "Open", type: "nc" },
             { no: 3, layer: "IV.6", hierarchy: "Adm", action: "Perbaikan GPS LV BM 391", pic: "Bimo", due_date: "19 - 10 - 2025", status: "Closed", type: "nc" },
             { no: 4, layer: "IV.6", hierarchy: "Adm", action: "Mengidentifikasi seluruh GPS, melakukan pengujian fungsi berjalan dengan baik, dan membuat laporan hasil pengujian", pic: "Bimo", due_date: "19 - 10 - 2025", status: "Open", type: "nc" },
@@ -2164,6 +2249,7 @@ export default function AnalysisTab({ agents, setAgents }: AnalysisTabProps) {
                         const found = layer.items?.find((i: any) => i.id === selectedRowId);
                         if (found) {
                            item = {
+                              ...found,
                               id: found.id,
                               chronology_text: found.label,
                               agentId: 'ipls',
@@ -2179,6 +2265,7 @@ export default function AnalysisTab({ agents, setAgents }: AnalysisTabProps) {
                      const found = actions.find((i: any, idx: number) => String(i.id || idx) === selectedRowId);
                      if (found) {
                         item = {
+                           ...found,
                            id: found.id || selectedRowId,
                            chronology_text: found.action,
                            agentId: selectedAgentId,
