@@ -12,6 +12,8 @@ import {
   Table as TableIcon,
   Search,
   History,
+  PanelRightOpen,
+  EllipsisVertical,
   Calendar,
   MapPin,
   Tag,
@@ -43,6 +45,7 @@ import {
   BarChart3,
   Trash2
 } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -507,7 +510,7 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
   readonly = false
 }) => {
   const [items, setItems] = useState<ChronologyItem[]>(initialItems.map(item => ({ ...item, version: item.version || 1 })));
-  const [internalSelectedItemId, setInternalSelectedItemId] = useState<string | null>(null);
+  const [internalSelectedFactId, setInternalSelectedFactId] = useState<string | null>(null);
   const [displayFormat, setDisplayFormat] = useState<'timeline' | 'table' | 'flow'>('timeline');
   const [auditLogs, setAuditLogs] = useState<AuditEntry[]>(initialDummyAuditLogs);
   const [isAuditDrawerOpen, setIsAuditDrawerOpen] = useState(false);
@@ -522,16 +525,24 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
   }, [initialItems]);
   
   const viewMode = 'default';
-  const selectedItemId = controlledSelectedItemId || internalSelectedItemId;
-  const setSelectedItemId = (id: string | null) => {
+  const selectedFactId = controlledSelectedItemId || internalSelectedFactId;
+  const setSelectedFactId = (id: string | null) => {
     if (onSelectItem) onSelectItem(id);
-    setInternalSelectedItemId(id);
+    setInternalSelectedFactId(id);
   };
 
   const selectedItem = useMemo(() => {
-    if (!selectedItemId) return null;
-    return items.find(i => i.id === selectedItemId) || null;
-  }, [items, selectedItemId]);
+    if (!selectedFactId) return null;
+    return items.find(i => i.id === selectedFactId) || null;
+  }, [items, selectedFactId]);
+
+  const [detailFactId, setDetailFactId] = useState<string | null>(null);
+  const [detailMode, setDetailMode] = useState<'detail' | 'history'>('detail');
+
+  const detailItem = useMemo(() => {
+    if (!detailFactId) return null;
+    return items.find(i => i.id === detailFactId) || null;
+  }, [items, detailFactId]);
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editBuffer, setEditBuffer] = useState<Partial<ChronologyItem>>({});
@@ -540,62 +551,85 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
   const [addModalPhase, setAddModalPhase] = useState<string>("pre_contact");
   const [addModalTime, setAddModalTime] = useState("");
   const [addModalDesc, setAddModalDesc] = useState("");
+  const [addModalErrors, setAddModalErrors] = useState<{phase?: string, time?: string, desc?: string}>({});
+  const [isAddingFact, setIsAddingFact] = useState(false);
+  const [showAddSuccess, setShowAddSuccess] = useState(false);
 
   const openAddModal = (phase: string) => {
     setAddModalPhase(phase);
-    setAddModalTime("00:00");
-    setAddModalDesc("");
+    setAddModalTime("");
+        setAddModalDesc("");
+    setAddModalErrors({});
+    setShowAddSuccess(false);
     setIsAddModalOpen(true);
   };
 
   const handleSaveNewFact = () => {
-    const newId = "new-fact-" + Date.now();
-    const ts = new Date().toISOString();
-    const newFact: ChronologyItem = {
-      id: newId,
-      version: 1,
-      no: (items.length + 1).toString(),
-      time: addModalTime || "00:00",
-      date: "",
-      time_label: addModalTime || "00:00",
-      chronology_text: addModalDesc,
-      phase: addModalPhase as ChronologyPhase,
-      source: "human",
-      annotated_by_human: true,
-      verification_status: "human_verified",
-      created_at: ts,
-      updated_at: ts
-    };
-    setItems(prev => [...prev, newFact]);
-    
-    const audit: AuditEntry = {
-      id: "log-" + Date.now(),
-      caseId: "c1",
-      agentId: "fact",
-      itemId: newId,
-      action: "CREATE",
-      actorName: "Gulang Satriya",
-      actorRole: "Lead Investigator",
-      actorType: "HUMAN",
-      timestamp: ts,
-      versionTo: 1,
-      changeNote: addChangeNote || undefined,
-      after: {
-        version: 1,
-        stage: newFact.phase,
-        time: newFact.time_label,
-        description: newFact.chronology_text,
-        createdAt: ts
-      }
-    };
-    setAuditLogs(prev => [audit, ...prev]);
-    
-    setIsAddModalOpen(false);
-    setAddChangeNote("");
-    setInternalSelectedItemId(newId);
-    toast.success("Fakta ditambahkan dan tercatat dalam riwayat perubahan.");
-  };
+    const errors: {phase?: string, time?: string, desc?: string} = {};
+    if (!addModalPhase) errors.phase = "Pilih fase terlebih dahulu";
+    if (!addModalTime.trim()) errors.time = "Isi waktu kejadian";
+    if (!addModalDesc.trim()) errors.desc = "Deskripsi kejadian belum diisi";
 
+    if (Object.keys(errors).length > 0) {
+      setAddModalErrors(errors);
+      return;
+    }
+
+    setAddModalErrors({});
+    setIsAddingFact(true);
+    
+    setTimeout(() => {
+      const newId = "new-fact-" + Date.now();
+      const ts = new Date().toISOString();
+      const combinedTime = addModalTime.trim();
+      const newFact: ChronologyItem = {
+        id: newId,
+        version: 1,
+        no: (items.length + 1).toString(),
+        time: combinedTime,
+        date: "",
+        time_label: combinedTime,
+        chronology_text: addModalDesc,
+        phase: addModalPhase as ChronologyPhase,
+        source: "human",
+        annotated_by_human: true,
+        verification_status: "human_verified",
+        created_at: ts,
+        updated_at: ts
+      };
+      setItems(prev => [...prev, newFact]);
+      
+      const audit: AuditEntry = {
+        id: "log-" + Date.now(),
+        caseId: "c1",
+        agentId: "fact",
+        itemId: newId,
+        action: "CREATE",
+        actorName: "Gulang Satriya",
+        actorRole: "Lead Investigator",
+        actorType: "HUMAN",
+        timestamp: ts,
+        versionTo: 1,
+        after: {
+          version: 1,
+          stage: newFact.phase,
+          time: newFact.time_label,
+          description: newFact.chronology_text,
+          createdAt: ts
+        }
+      };
+      setAuditLogs(prev => [audit, ...prev]);
+      
+      setIsAddingFact(false);
+      setShowAddSuccess(true);
+      
+      setTimeout(() => {
+        setIsAddModalOpen(false);
+        setInternalSelectedFactId(newId);
+        // We do not reset success here to avoid flash, but rely on openAddModal for reset
+      }, 1000);
+    }, 600);
+  };
   const handleEdit = (item: ChronologyItem) => {
     setEditingId(item.id);
     setEditBuffer({ ...item });
@@ -808,9 +842,13 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
                  onSave={handleSaveEdit} 
                  onCancel={() => { setEditingId(null); setEditBuffer({}); setEditChangeNote(""); }} 
                  onDelete={handleDelete}
+                 onOpenDetail={(id, mode = 'detail') => {
+                   setDetailFactId(id);
+                   setDetailMode(mode);
+                 }}
                  metadata={metadata}
-                 selectedItemId={selectedItemId}
-                 onSelectItem={setSelectedItemId}
+                 selectedFactId={selectedFactId}
+                 onSelectItem={setSelectedFactId}
                  onAddFact={handleAddFact}
                  editChangeNote={editChangeNote}
                  setEditChangeNote={setEditChangeNote}
@@ -826,8 +864,12 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
                  onSave={handleSaveEdit}
                  onCancel={handleCancelEdit}
                  onDelete={handleDelete}
-                 selectedItemId={selectedItemId}
-                 onSelectItem={setSelectedItemId}
+                 onOpenDetail={(id, mode = 'detail') => {
+                   setDetailFactId(id);
+                   setDetailMode(mode);
+                 }}
+                 selectedFactId={selectedFactId}
+                 onSelectItem={setSelectedFactId}
                  onAddFact={openAddModal}
                  setDisplayFormat={setDisplayFormat} 
                  readonly={readonly}
@@ -838,56 +880,120 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
         {/* Sync Button Removed */}
       </div>
 
-      {/* Add Fact Modal */}
-      <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Tambah Data Fakta Baru</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="flex flex-col gap-2">
-              <label className="text-xs font-bold text-slate-700 uppercase">Fase</label>
-              <Select value={addModalPhase} onValueChange={setAddModalPhase}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Pilih fase" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pre_contact">Pra-Kontak</SelectItem>
-                  <SelectItem value="contact">Kontak</SelectItem>
-                  <SelectItem value="post_contact">Pasca Kontak</SelectItem>
-                </SelectContent>
-              </Select>
+      {/* Add Fact Modal (Upgraded) */}
+      <Dialog open={isAddModalOpen} onOpenChange={(open) => {
+        if (!open && (addModalTime || addModalDesc) && !showAddSuccess) {
+           if (window.confirm("Batal menambahkan fakta? Data yang Anda ketik akan hilang.")) {
+             setIsAddModalOpen(false);
+           }
+        } else {
+           setIsAddModalOpen(open);
+        }
+      }}>
+        <DialogContent className="sm:max-w-[480px] p-0 overflow-hidden border-slate-200 shadow-2xl transition-all duration-300 gap-0">
+          <div className="px-6 pt-6 pb-4 border-b border-slate-100 bg-white">
+            <DialogTitle className="text-lg font-bold text-slate-900 tracking-tight">Tambah Data Fakta Baru</DialogTitle>
+            <p className="text-[13px] text-slate-500 mt-1">Tambahkan fakta manual ke kronologi investigasi</p>
+          </div>
+          <div className="px-6 py-6 space-y-6 bg-slate-50/50">
+            <div className="flex gap-4">
+              {/* Phase */}
+              <div className="flex-1 space-y-1.5">
+                <label className="text-[11px] font-bold text-slate-700 uppercase tracking-widest">Fase</label>
+                <Select value={addModalPhase} onValueChange={(val) => {
+                  setAddModalPhase(val);
+                  if (addModalErrors.phase) setAddModalErrors(e => ({...e, phase: undefined}));
+                }}>
+                  <SelectTrigger className={cn("bg-white h-9 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors", addModalErrors.phase && "border-rose-300 focus:border-rose-500 focus:ring-rose-500/20")}>
+                    <SelectValue placeholder="Pilih fase" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pre_contact" className="hover:bg-slate-50">Pra-Kontak</SelectItem>
+                    <SelectItem value="contact" className="hover:bg-slate-50">Kontak</SelectItem>
+                    <SelectItem value="post_contact" className="hover:bg-slate-50">Pasca-Kontak</SelectItem>
+                  </SelectContent>
+                </Select>
+                {addModalErrors.phase && <p className="text-[11px] text-rose-500">{addModalErrors.phase}</p>}
+              </div>
+
+              {/* Time Group */}
+              <div className="flex-1 space-y-1.5">
+                <label className="text-[11px] font-bold text-slate-700 uppercase tracking-widest">Waktu Kejadian</label>
+                <div className="relative">
+                  <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Input 
+                    value={addModalTime} 
+                    onChange={(e) => {
+                      setAddModalTime(e.target.value);
+                      if (addModalErrors.time) setAddModalErrors(err => ({...err, time: undefined}));
+                    }} 
+                    placeholder="Contoh: 14:30 WIB" 
+                    className={cn("pl-9 h-9 bg-white focus-visible:ring-emerald-500/20 focus-visible:border-emerald-500 transition-colors placeholder:text-slate-300", addModalErrors.time && "border-rose-300 focus-visible:border-rose-500 focus-visible:ring-rose-500/20")}
+                    autoFocus
+                  />
+                </div>
+                {addModalErrors.time && <p className="text-[11px] text-rose-500">{addModalErrors.time}</p>}
+              </div>
             </div>
-            <div className="flex flex-col gap-2">
-              <label className="text-xs font-bold text-slate-700 uppercase">Waktu</label>
-              <Input 
-                value={addModalTime} 
-                onChange={(e) => setAddModalTime(e.target.value)} 
-                placeholder="Contoh: 12:00 Wita" 
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <label className="text-xs font-bold text-slate-700 uppercase">Deskripsi Kejadian</label>
+
+            {/* Description */}
+            <div className="space-y-1.5">
+              <div className="flex justify-between items-end">
+                <label className="text-[11px] font-bold text-slate-700 uppercase tracking-widest">Deskripsi Kejadian</label>
+                <span className="text-[10px] text-slate-400">Jelas & Spesifik</span>
+              </div>
               <Textarea 
                 value={addModalDesc} 
-                onChange={(e) => setAddModalDesc(e.target.value)} 
-                placeholder="Deskripsikan kejadian..." 
-                className="min-h-[100px]"
+                onChange={(e) => {
+                  setAddModalDesc(e.target.value);
+                  if (addModalErrors.desc) setAddModalErrors(err => ({...err, desc: undefined}));
+                }} 
+                placeholder="Tulis fakta atau kejadian yang ingin ditambahkan..." 
+                className={cn("min-h-[120px] bg-white resize-none text-[13px] leading-relaxed focus-visible:ring-emerald-500/20 focus-visible:border-emerald-500 transition-colors placeholder:text-slate-300", addModalErrors.desc && "border-rose-300 focus-visible:border-rose-500 focus-visible:ring-rose-500/20")}
               />
-            </div>
-            <div className="flex flex-col gap-2">
-              <label className="text-xs font-bold text-slate-700 uppercase">Catatan Perubahan <span className="text-slate-400 font-normal lowercase">(Opsional)</span></label>
-              <Input 
-                value={addChangeNote} 
-                onChange={(e) => setAddChangeNote(e.target.value)} 
-                placeholder="Jelaskan perubahan..." 
-              />
+              {addModalErrors.desc && <p className="text-[11px] text-rose-500">{addModalErrors.desc}</p>}
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddModalOpen(false)}>Batal</Button>
-            <Button onClick={handleSaveNewFact} className="bg-emerald-600 hover:bg-emerald-700 text-white">Simpan Fakta</Button>
-          </DialogFooter>
+
+          <div className="px-6 py-4 border-t border-slate-100 bg-white flex items-center justify-between">
+            <div className="flex-1">
+              {showAddSuccess && (
+                <div className="flex items-center gap-2 text-emerald-600 animate-in fade-in zoom-in-95 duration-200">
+                  <CheckCircle2 className="h-4 w-4" />
+                  <span className="text-xs font-medium">Fakta berhasil ditambahkan</span>
+                </div>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="ghost" 
+                className="text-xs font-medium h-9 text-slate-500 hover:text-slate-800" 
+                onClick={() => setIsAddModalOpen(false)}
+                disabled={isAddingFact || showAddSuccess}
+              >
+                Batal
+              </Button>
+              <Button 
+                onClick={handleSaveNewFact} 
+                disabled={isAddingFact || showAddSuccess}
+                className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold h-9 px-5 transition-all shadow-sm"
+              >
+                {isAddingFact ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" />
+                    Menyimpan...
+                  </>
+                ) : showAddSuccess ? (
+                  <>
+                    <CheckCircle2 className="h-3.5 w-3.5 mr-2" />
+                    Tersimpan
+                  </>
+                ) : (
+                  "Simpan Fakta"
+                )}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -932,16 +1038,17 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
       </Dialog>
 
       {/* Traceability Panel */}
-      {selectedItem && (
+      {detailItem && (
         <div className="w-[420px] shrink-0 border-l border-slate-200 h-full animate-in slide-in-from-right duration-300">
           <TraceabilityPanel 
-            readonly={readonly}
-            item={{ ...selectedItem, agentId: 'fact' }}
-            onClose={() => setSelectedItemId(null)}
+            readonly={true}
+            defaultShowHistory={detailMode === 'history'}
+            item={{ ...detailItem, agentId: 'fact' }}
+            onClose={() => setDetailFactId(null)}
             onUpdateStatus={(newStatus) => {
               setItems(prev => {
                 const updated = prev.map(item => 
-                  item.id === selectedItem.id 
+                  item.id === detailItem.id 
                     ? { 
                         ...item, 
                         verification_status: newStatus,
@@ -2024,7 +2131,9 @@ export const TraceabilityPanel: React.FC<{
   onUpdateChronologyText: (newText: string) => void,
   readonly?: boolean
 }> = ({ item, onClose, readonly }) => {
-  const [showHistory, setShowHistory] = useState(false);
+  const [showHistory,
+  PanelRightOpen,
+  EllipsisVertical, setShowHistory] = useState(false);
 
   // Fallback version if not defined
   const currentVersion = item.currentVersion || item.version || 1;
@@ -2312,13 +2421,13 @@ export const TraceabilityPanel: React.FC<{
 const FactSlideView: React.FC<{ 
   metadata: FactMetadata, 
   groupedItems: Record<ChronologyPhase, ChronologyItem[]>,
-  selectedItemId?: string | null,
+  selectedFactId?: string | null,
   onSelectItem: (id: string | null) => void,
   onAddFact: (phase: string) => void
 }> = ({ 
   metadata, 
   groupedItems,
-  selectedItemId,
+  selectedFactId,
   onSelectItem,
   onAddFact
 }) => {
@@ -2383,7 +2492,7 @@ const FactSlideView: React.FC<{
                     onClick={() => onSelectItem(item.id)}
                     className={cn(
                       "relative group cursor-pointer p-2 -mx-2 rounded-lg transition-all",
-                      selectedItemId === item.id ? "bg-slate-100 shadow-inner" : "hover:bg-slate-50"
+                      selectedFactId === item.id ? "bg-slate-100 shadow-inner" : "hover:bg-slate-50"
                     )}
                   >
                     <div className="flex gap-3">
@@ -2458,8 +2567,9 @@ const FactDefaultView: React.FC<{
   onSave: () => void,
   onCancel: () => void,
   onDelete: (id: string) => void,
+  onOpenDetail: (id: string, type: 'detail' | 'history') => void,
   metadata: FactMetadata,
-  selectedItemId?: string | null,
+  selectedFactId?: string | null,
   onSelectItem: (id: string | null) => void,
   onAddFact: (phase: string) => void,
   editChangeNote: string,
@@ -2475,8 +2585,9 @@ const FactDefaultView: React.FC<{
   onSave, 
   onCancel,
   onDelete,
+  onOpenDetail,
   metadata,
-  selectedItemId,
+  selectedFactId,
   onSelectItem,
   onAddFact,
   editChangeNote,
@@ -2524,13 +2635,14 @@ const FactDefaultView: React.FC<{
                         <th className="px-4 py-2 text-[10px] font-bold text-slate-900 uppercase tracking-widest w-32 border-r border-b border-slate-400 bg-white text-center">Time</th>
                         <th className="px-4 py-2 text-[10px] font-bold text-slate-900 uppercase tracking-widest border-r border-b border-slate-400 bg-white">Description</th>
                         {showLocalAccuracy && (
-                          <th className="px-4 py-2 text-[10px] font-bold text-slate-900 uppercase tracking-widest w-32 border-b border-slate-400 bg-white text-center">Akurasi AI</th>
+                          <th className="px-4 py-2 text-[10px] font-bold text-slate-900 uppercase tracking-widest w-32 border-r border-b border-slate-400 bg-white text-center">Akurasi AI</th>
                         )}
+                        
                       </tr>
                     </thead>
                     <tbody className="">
                       {phaseItems.length > 0 ? phaseItems.map((item) => {
-                        const isSelected = selectedItemId === item.id;
+                        const isSelected = selectedFactId === item.id;
                         const isEditing = editingId === item.id;
                         const { accuracy: rowAcc } = calculateItemAccuracy(item);
 
@@ -2542,21 +2654,19 @@ const FactDefaultView: React.FC<{
                                   onSelectItem(item.id);
                                   return;
                                }
-                               if (isSelected) {
-                                  onEdit(item);
-                               } else {
-                                  onSelectItem(item.id);
-                               }
+                               onSelectItem(item.id);
+                            }}
+                            onDoubleClick={(e) => {
+                               if (!readonly) onEdit(item);
                             }}
                             className={cn(
                               "group transition-all cursor-pointer relative", 
-                              isSelected ? "bg-slate-100/80 " : "hover:bg-slate-50/50"
+                              isSelected ? "bg-slate-100/70" : "bg-white hover:bg-slate-50/80"
                             )}
                           >
-                            <td className="px-4 py-2 align-top border-r border-b border-slate-400">
+                            <td className={cn("px-4 py-2 align-top border-r border-b border-slate-400 transition-colors", isSelected && "border-l-[3px] border-l-blue-600")}>
                               <div className="flex flex-col gap-1">
                                 <span className={cn("text-[11px] font-mono font-black mt-0.5", config.textColor)}>{item.time_label}</span>
-                                {(isSelected || isEditing) && <span className="bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded-sm text-[9px] font-bold w-fit mt-1">Versi aktif: {item.version || 1}</span>}
                               </div>
                             </td>
                             <td className="px-4 py-2 align-top border-r border-b border-slate-400">
@@ -2574,15 +2684,15 @@ const FactDefaultView: React.FC<{
                                             onCancel();
                                           }
                                         }}
-                                        className="w-full bg-white p-2.5 resize-none font-inherit leading-normal min-h-[80px] border border-blue-500 outline-none rounded shadow-md ring-2 ring-blue-500/15 text-slate-900 transition-all focus:border-blue-600 focus:ring-blue-500/25"
+                                        className="w-full bg-white p-2.5 resize-none font-inherit leading-normal min-h-[80px] border border-slate-300 rounded text-slate-900 transition-colors focus:outline-none focus:ring-0 focus:border-blue-500"
                                         autoFocus
                                       />
                                       <input 
                                         type="text"
                                         value={editChangeNote}
                                         onChange={(e) => setEditChangeNote(e.target.value)}
-                                        placeholder="Catatan perubahan (wajib diisi)"
-                                        className="w-full bg-white px-2.5 py-1.5 text-[11px] border border-blue-500 outline-none rounded shadow-sm text-slate-900"
+                                        placeholder="Catatan perubahan (opsional)"
+                                        className="w-full bg-white px-2.5 py-1.5 text-[11px] border border-slate-300 rounded text-slate-900 transition-colors focus:outline-none focus:ring-0 focus:border-blue-500"
                                       />
                                       <div className="flex items-center justify-between text-[10px]">
                                         <span className="text-slate-400 font-medium">Ctrl + Enter to Save, Esc to Cancel</span>
@@ -2604,31 +2714,62 @@ const FactDefaultView: React.FC<{
                                    </div>
                                 ) : (
                                   <div className="flex items-start justify-between gap-4">
-                                    <p className={cn("text-[11px] font-medium leading-relaxed pr-8 transition-colors text-justify flex-1", 
+                                    <p className={cn("text-[11px] font-medium leading-relaxed pr-2 transition-colors text-justify flex-1", 
                                       isSelected ? "text-slate-900" : "text-slate-800"
                                     )}>
                                       {item.chronology_text}
                                     </p>
                                     {!readonly && (
-                                      <>
-                                        <span className="opacity-0 group-hover:opacity-100 transition-all duration-200 self-center text-[9px] text-blue-600 font-bold bg-blue-50/80 px-2 py-1 rounded border border-blue-200/60 flex items-center gap-1.5 shrink-0 shadow-sm active:scale-95">
-                                           <Pencil className="h-2.5 w-2.5" /> Double-click active row to edit
-                                        </span>
-                                        {deleteConfirmId === item.id ? (
-                                           <div className="flex items-center gap-1.5 self-center animate-in fade-in" onClick={(e) => e.stopPropagation()}>
-                                              <span className="text-[10px] font-bold text-red-600 mr-2">Yakin hapus?</span>
-                                              <button className="px-2 py-1 bg-red-600 text-white rounded text-[10px] font-bold hover:bg-red-700 shadow-sm" onClick={() => { onDelete(item.id); setDeleteConfirmId(null); }}>Ya</button>
-                                              <button className="px-2 py-1 bg-slate-200 text-slate-800 rounded text-[10px] font-bold hover:bg-slate-300 shadow-sm" onClick={() => setDeleteConfirmId(null)}>Batal</button>
-                                           </div>
-                                        ) : (
-                                           <button 
-                                              className="opacity-0 group-hover:opacity-100 transition-all duration-200 self-center text-slate-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded"
-                                              onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(item.id); }}
-                                           >
-                                              <Trash2 className="h-3.5 w-3.5" />
-                                           </button>
-                                        )}
-                                      </>
+                                      <div className={cn("flex items-center shrink-0 gap-1 transition-opacity duration-120", isSelected ? "opacity-100 pointer-events-auto" : "opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto")}>
+                                        <TooltipProvider delayDuration={400}>
+                                          <Tooltip>
+                                            <TooltipTrigger asChild>
+                                              <button 
+                                                onClick={(e) => { e.stopPropagation(); onOpenDetail(item.id, 'detail'); }}
+                                                className="p-1.5 rounded transition-colors text-slate-500 hover:text-blue-600 hover:bg-blue-50 outline-none focus:ring-1 focus:ring-slate-400"
+                                              >
+                                                 <Eye className="h-4 w-4" />
+                                              </button>
+                                            </TooltipTrigger>
+                                            <TooltipContent side="top" className="z-50 text-[10px] font-bold">
+                                              Lihat detail analisis
+                                            </TooltipContent>
+                                          </Tooltip>
+                                        </TooltipProvider>
+
+                                        <TooltipProvider delayDuration={400}>
+                                          <Tooltip>
+                                            <TooltipTrigger asChild>
+                                              <button 
+                                                onClick={(e) => { e.stopPropagation(); onEdit(item); }}
+                                                className="p-1.5 rounded transition-colors text-slate-500 hover:text-blue-600 hover:bg-blue-50 outline-none focus:ring-1 focus:ring-slate-400"
+                                              >
+                                                 <Pencil className="h-4 w-4" />
+                                              </button>
+                                            </TooltipTrigger>
+                                            <TooltipContent side="top" className="z-50 text-center">
+                                              <p className="text-[10px] font-bold">Edit fakta</p>
+                                              <p className="text-[9px] text-slate-400 mt-0.5">Double-click baris sebagai shortcut</p>
+                                            </TooltipContent>
+                                          </Tooltip>
+                                        </TooltipProvider>
+
+                                        <TooltipProvider delayDuration={400}>
+                                          <Tooltip>
+                                            <TooltipTrigger asChild>
+                                              <button 
+                                                onClick={(e) => { e.stopPropagation(); onDelete(item.id); }}
+                                                className="p-1.5 rounded transition-colors text-slate-500 hover:text-red-600 hover:bg-red-50 outline-none focus:ring-1 focus:ring-slate-400"
+                                              >
+                                                 <Trash2 className="h-4 w-4" />
+                                              </button>
+                                            </TooltipTrigger>
+                                            <TooltipContent side="top" className="z-50 text-center">
+                                              <p className="text-[10px] font-bold text-red-600">Hapus Fakta</p>
+                                            </TooltipContent>
+                                          </Tooltip>
+                                        </TooltipProvider>
+                                      </div>
                                     )}
                                   </div>
                                 )}
@@ -2687,7 +2828,8 @@ const FactTableView: React.FC<{
   onSave: () => void,
   onCancel: () => void,
   onDelete: (id: string) => void,
-  selectedItemId?: string | null,
+  onOpenDetail: (id: string, type: 'detail' | 'history') => void,
+  selectedFactId?: string | null,
   onSelectItem: (id: string | null) => void,
   onAddFact: (phase: string) => void,
   setDisplayFormat: (val: any) => void,
@@ -2700,8 +2842,8 @@ const FactTableView: React.FC<{
   onEdit, 
   onSave, 
   onCancel,
-  onDelete,
-  selectedItemId,
+  onOpenDetail,
+  selectedFactId,
   onSelectItem,
   onAddFact,
   setDisplayFormat,
@@ -2750,14 +2892,14 @@ const FactTableView: React.FC<{
                   {/* Body */}
                   <div className="p-4 flex-1 space-y-4 text-[11px] leading-relaxed text-slate-800 text-justify">
                     {phaseItems.map((item) => {
-                      const isSelected = selectedItemId === item.id;
+                      const isSelected = selectedFactId === item.id;
                       const isEditing = editingId === item.id;
                       return (
                         <div 
                           key={item.id} 
                           className={cn(
-                            "relative group p-2 -mx-2 rounded transition-colors cursor-pointer border border-transparent",
-                            isSelected ? "bg-slate-100/80 border-slate-200" : "hover:bg-slate-50/50"
+                            "relative group p-2 -mx-2 rounded transition-colors cursor-pointer border border-transparent flex flex-col",
+                            isSelected ? "bg-slate-100/80 border-slate-200 border-l-[3px] border-l-blue-600 pl-[5px]" : "hover:bg-slate-50/50"
                           )}
                           onClick={(e) => {
                             e.stopPropagation();
@@ -2765,11 +2907,10 @@ const FactTableView: React.FC<{
                               onSelectItem(item.id);
                               return;
                             }
-                            if (isSelected) {
-                              onEdit(item);
-                            } else {
-                              onSelectItem(item.id);
-                            }
+                            onSelectItem(item.id);
+                          }}
+                          onDoubleClick={(e) => {
+                            if (!readonly) onEdit(item);
                           }}
                         >
                           <div className="font-bold mb-1 text-slate-600 text-[10px] flex items-center justify-between">
@@ -2785,10 +2926,9 @@ const FactTableView: React.FC<{
                                 <span className="text-[8px] font-black uppercase text-indigo-400 tracking-widest bg-indigo-50/50 px-1 py-0.5 rounded" title="AI Generated">AI Generated</span>
                               )}
                             </div>
-                            {(isSelected || isEditing) && <span className="bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded-sm">Versi aktif: {item.currentVersion || item.version || 1}</span>}
                           </div>
                           {isEditing ? (
-                            <div className="space-y-2" onClick={(e) => e.stopPropagation()}>
+                            <div className="space-y-2 mt-1" onClick={(e) => e.stopPropagation()}>
                               <textarea
                                 className="w-full min-h-[80px] p-2 text-[11px] border border-slate-300 rounded-sm focus:outline-none focus:border-emerald-500"
                                 value={editBuffer.chronology_text || ""}
@@ -2798,7 +2938,7 @@ const FactTableView: React.FC<{
                                 type="text"
                                 value={editChangeNote}
                                 onChange={(e) => setEditChangeNote(e.target.value)}
-                                placeholder="Catatan perubahan (wajib diisi)"
+                                placeholder="Catatan perubahan (opsional)"
                                 className="w-full p-2 text-[11px] border border-slate-300 rounded-sm focus:outline-none focus:border-emerald-500"
                               />
                               <div className="flex gap-2 justify-end">
@@ -2818,34 +2958,57 @@ const FactTableView: React.FC<{
                             </div>
                           ) : (
                             <>
-                              <p className="whitespace-pre-wrap">{item.chronology_text}</p>
+                              <p className={cn("whitespace-pre-wrap transition-colors", isSelected ? "text-slate-900" : "")}>{item.chronology_text}</p>
                               {!readonly && (
-                                <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-all duration-200 flex items-center gap-1.5 z-10">
-                                  {deleteConfirmId === item.id ? (
-                                    <div className="flex items-center gap-1.5 bg-white p-1 rounded shadow-sm border border-red-100" onClick={(e) => e.stopPropagation()}>
-                                      <button className="px-2 py-1 bg-red-600 text-white rounded text-[10px] font-bold hover:bg-red-700 shadow-sm" onClick={() => {
-                                        onDelete(item.id);
-                                        setDeleteConfirmId(null);
-                                      }}>Ya</button>
-                                      <button className="px-2 py-1 bg-slate-200 text-slate-800 rounded text-[10px] font-bold hover:bg-slate-300 shadow-sm" onClick={() => setDeleteConfirmId(null)}>Batal</button>
-                                    </div>
-                                  ) : (
-                                    <>
-                                      <span className="text-[9px] text-blue-600 font-bold bg-blue-50/90 px-2 py-1 rounded border border-blue-200/60 flex items-center gap-1.5 shadow-sm active:scale-95">
-                                         <Pencil className="h-2.5 w-2.5" /> Double-click to edit
-                                      </span>
-                                      <button
-                                        className="p-1 hover:bg-red-50 hover:text-red-600 rounded text-slate-400 bg-white/90 border border-slate-200 shadow-sm transition-colors"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          setDeleteConfirmId(item.id);
-                                        }}
-                                        title="Hapus"
-                                      >
-                                        <Trash2 className="h-3 w-3" />
-                                      </button>
-                                    </>
-                                  )}
+                                <div className={cn("absolute top-1 right-1 flex items-center gap-1 z-10 transition-opacity duration-120", isSelected ? "opacity-100 pointer-events-auto" : "opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto")}>
+                                  <TooltipProvider delayDuration={400}>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <button 
+                                          onClick={(e) => { e.stopPropagation(); onOpenDetail(item.id, 'detail'); }}
+                                          className="p-1.5 bg-white/90 border border-slate-200 shadow-sm rounded transition-colors text-slate-500 hover:text-blue-600 hover:bg-blue-50 outline-none focus:ring-1 focus:ring-slate-400"
+                                        >
+                                           <Eye className="h-3 w-3" />
+                                        </button>
+                                      </TooltipTrigger>
+                                      <TooltipContent side="top" className="z-50 text-[10px] font-bold">
+                                        Lihat detail analisis
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+
+                                  <TooltipProvider delayDuration={400}>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <button 
+                                          onClick={(e) => { e.stopPropagation(); onEdit(item); }}
+                                          className="p-1.5 bg-white/90 border border-slate-200 shadow-sm rounded transition-colors text-slate-500 hover:text-blue-600 hover:bg-blue-50 outline-none focus:ring-1 focus:ring-slate-400"
+                                        >
+                                           <Pencil className="h-3 w-3" />
+                                        </button>
+                                      </TooltipTrigger>
+                                      <TooltipContent side="top" className="z-50 text-center">
+                                        <p className="text-[10px] font-bold">Edit fakta</p>
+                                        <p className="text-[9px] text-slate-400 mt-0.5">Double-click baris sebagai shortcut</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+
+                                  <TooltipProvider delayDuration={400}>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <button 
+                                          onClick={(e) => { e.stopPropagation(); onDelete(item.id); }}
+                                          className="p-1.5 bg-white/90 border border-slate-200 shadow-sm rounded transition-colors text-slate-500 hover:text-red-600 hover:bg-red-50 outline-none focus:ring-1 focus:ring-slate-400"
+                                        >
+                                           <Trash2 className="h-3 w-3" />
+                                        </button>
+                                      </TooltipTrigger>
+                                      <TooltipContent side="top" className="z-50 text-center">
+                                        <p className="text-[10px] font-bold text-red-600">Hapus Fakta</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
                                 </div>
                               )}
                             </>

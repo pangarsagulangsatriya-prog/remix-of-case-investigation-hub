@@ -22,6 +22,7 @@ export interface EvidenceRequirementResult {
     name: string;
     processingStatus: string;
   }[];
+  requiredDesc?: string;
   issue?: string;
   impact?: string;
   recommendation?: string;
@@ -64,8 +65,8 @@ export interface AnalysisOverride {
   brokenRequired: string[];
 }
 
-const STORAGE_KEY = "investigation_readiness_state_v4";
-const EVENT_KEY = "readiness_state_changed_v4";
+const STORAGE_KEY = "investigation_readiness_state_v5";
+const EVENT_KEY = "readiness_state_changed_v5";
 
 interface ReadinessState {
   runs: ReadinessRun[];
@@ -155,87 +156,102 @@ export const useReadiness = () => {
         {
           id: "req-1",
           label: "Video kejadian lapangan",
-          category: "Visual",
+          category: "BUKTI LAPANGAN",
           level: "REQUIRED",
           status: "BROKEN",
           matchedFiles: [
             { id: "file-1", name: "HOPPER_1_converted.mp4", processingStatus: "ERROR" }
           ],
-          issue: "File gagal diproses",
-          impact: "Informasi visual dan audio tidak dapat digunakan dalam analisis.",
-          recommendation: "Unggah ulang video atau gunakan versi file lain yang dapat diproses."
+          requiredDesc: "Video utama yang merekam kejadian atau kondisi area lapangan.",
+          issue: "File tersedia, namun sistem gagal membaca konten video.",
+          impact: "Informasi visual dan audio dari kejadian utama tidak dapat digunakan\nuntuk menyusun kronologi dan memverifikasi fakta.",
+          recommendation: "Unggah ulang file asli atau gunakan versi video lain yang dapat diproses."
         },
         {
           id: "req-2",
           label: "Foto pengamatan lapangan",
-          category: "Visual",
+          category: "BUKTI LAPANGAN",
           level: "REQUIRED",
           status: "FULFILLED",
           matchedFiles: [
             { id: "file-2", name: "Screenshot 2026-07-01 at 10.20.17.png", processingStatus: "DONE" }
           ],
-          recommendation: "File tersedia dan berhasil diproses."
+          requiredDesc: "Dokumentasi foto yang memperlihatkan kondisi peralatan, area, atau posisi setelah kejadian.",
+          issue: "File tersedia, dapat dibaca, dan sesuai dengan requirement\nfoto pengamatan lapangan.",
+          impact: "",
+          recommendation: "Tidak ada tindakan lanjutan."
         },
         {
           id: "req-3",
           label: "BAP / Berita Acara Pemeriksaan",
-          category: "Dokumen",
+          category: "DOKUMEN FORMAL",
           level: "REQUIRED",
           status: "MISSING",
           matchedFiles: [],
-          issue: "Belum ada file yang memenuhi requirement ini.",
-          recommendation: "Unggah BAP atau dokumen pemeriksaan resmi."
+          requiredDesc: "BAP atau dokumen pemeriksaan resmi yang mencatat hasil klarifikasi awal.",
+          issue: "Belum ada file yang dipetakan ke requirement ini.",
+          impact: "Keterangan formal dari pihak terkait belum tersedia untuk verifikasi silang.",
+          recommendation: "Unggah BAP atau dokumen pemeriksaan resmi sebelum Analysis dijalankan."
         },
         {
           id: "req-4",
-          label: "Audio wawancara operator",
-          category: "Audio",
-          level: "RECOMMENDED",
-          status: "MISSING",
-          matchedFiles: [],
-          issue: "Belum ada file yang memenuhi requirement ini.",
-          recommendation: "Unggah rekaman suara wawancara dengan operator alat berat."
-        },
-        {
-          id: "req-5",
-          label: "Audio wawancara saksi",
-          category: "Audio",
-          level: "RECOMMENDED",
-          status: "MISSING",
-          matchedFiles: [],
-          issue: "Belum ada file yang memenuhi requirement ini.",
-          recommendation: "Unggah rekaman wawancara dengan saksi mata kejadian."
-        },
-        {
-          id: "req-6",
           label: "Dokumen kronologi awal / laporan awal",
-          category: "Dokumen",
+          category: "DOKUMEN FORMAL",
           level: "REQUIRED",
           status: "MISSING",
           matchedFiles: [],
-          issue: "Belum ada file yang memenuhi requirement ini.",
-          recommendation: "Unggah laporan awal atau dokumen kronologi dari lapangan."
+          requiredDesc: "Dokumen tertulis yang mendeskripsikan runtutan kejadian secara kronologis dari laporan awal.",
+          issue: "Belum ada file yang dipetakan ke requirement ini.",
+          impact: "Kerangka dasar kronologi untuk memandu proses investigasi tidak tersedia.",
+          recommendation: "Unggah laporan awal atau dokumen kronologi resmi."
+        },
+        {
+          id: "req-5",
+          label: "Audio wawancara operator",
+          category: "WAWANCARA & KOMUNIKASI",
+          level: "RECOMMENDED",
+          status: "MISSING",
+          matchedFiles: [],
+          requiredDesc: "Rekaman suara dari wawancara langsung dengan operator alat berat yang bertugas.",
+          issue: "Belum ada file yang dipetakan ke requirement ini.",
+          impact: "Konteks operasional langsung dari sudut pandang operator tidak dapat dianalisis.",
+          recommendation: "Unggah rekaman wawancara operator (opsional tapi disarankan)."
+        },
+        {
+          id: "req-6",
+          label: "Audio wawancara saksi",
+          category: "WAWANCARA & KOMUNIKASI",
+          level: "RECOMMENDED",
+          status: "MISSING",
+          matchedFiles: [],
+          requiredDesc: "Rekaman suara dari saksi mata atau rekan kerja di sekitar lokasi kejadian.",
+          issue: "Belum ada file yang dipetakan ke requirement ini.",
+          impact: "Perspektif pihak ketiga untuk menguatkan atau menantang kronologi utama tidak tersedia.",
+          recommendation: "Unggah rekaman wawancara saksi mata jika ada."
         },
         {
           id: "req-7",
           label: "Data waktu kejadian / timestamp pendukung",
-          category: "Data",
+          category: "KONTEKS KEJADIAN",
           level: "RECOMMENDED",
           status: "NEEDS_VERIFICATION",
           matchedFiles: [],
+          requiredDesc: "Catatan waktu operasional seperti log radio, dispatch log, atau GPS log.",
           issue: "Waktu kejadian tidak dapat divalidasi dari file yang ada.",
-          impact: "Sistem tidak dapat mengurutkan kronologi secara otomatis.",
+          impact: "Sistem tidak dapat mengurutkan kronologi dan mengkorelasikan kejadian secara otomatis.",
           recommendation: "Pastikan file yang diunggah memiliki metadata waktu atau unggah log sistem."
         },
         {
           id: "req-8",
           label: "Bukti fase kontak utama",
-          category: "Visual/Data",
+          category: "KONTEKS KEJADIAN",
           level: "REQUIRED",
           status: "MISSING",
           matchedFiles: [],
-          issue: "Belum ada file yang memenuhi requirement ini.",
-          recommendation: "Unggah foto atau dokumen yang secara spesifik menunjukkan titik kontak insiden."
+          requiredDesc: "Titik data spesifik yang membuktikan terjadinya titik kontak fisik dalam insiden.",
+          issue: "Belum ada file yang dipetakan ke requirement ini.",
+          impact: "Sebab akibat utama tidak dapat dipastikan karena tidak ada bukti visual fase kontak.",
+          recommendation: "Unggah foto spesifik atau data telemetri yang menunjukkan saat kejadian."
         }
       ];
 

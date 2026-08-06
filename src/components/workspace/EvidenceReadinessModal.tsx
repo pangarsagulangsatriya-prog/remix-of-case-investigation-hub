@@ -1,7 +1,7 @@
-import React, { useState } from "react";
-import { Loader2, AlertCircle, AlertTriangle, Lightbulb, CheckCircle2, RotateCcw, X, ChevronLeft, Calendar, ShieldCheck, ChevronDown, ChevronRight, Check, ArrowRight, Activity, ArrowRightCircle, FileText } from "lucide-react";
+import React, { useState, useMemo, useEffect } from "react";
+import { Loader2, ShieldCheck, X, ChevronRight, Check, ArrowLeft, ArrowRight, RotateCcw, AlertTriangle, FileText, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useReadiness, ReadinessRun } from "@/hooks/useReadiness";
+import { useReadiness, ReadinessRun, EvidenceRequirementResult } from "@/hooks/useReadiness";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,28 +16,47 @@ export function EvidenceReadinessModal({ open, onOpenChange, onProceedToAnalysis
   const { runs, triggerManualCheck, latestRun, isOutdated, overrideAnalysis } = useReadiness();
   const [view, setView] = useState<"RESULT" | "HISTORY" | "ARCHIVE" | "OVERRIDE">("RESULT");
   const [selectedRun, setSelectedRun] = useState<ReadinessRun | null>(null);
-  const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
+  const [activeReqId, setActiveReqId] = useState<string | null>(null);
   const [overrideAck, setOverrideAck] = useState(false);
   const [overrideNote, setOverrideNote] = useState("");
+
+  const activeRun = view === "ARCHIVE" ? selectedRun : latestRun;
+
+  useEffect(() => {
+    if (open && activeRun && activeRun.results.length > 0 && !activeReqId) {
+      setActiveReqId(activeRun.results[0].id);
+    }
+  }, [open, activeRun, activeReqId]);
+
+  const groupedResults = useMemo(() => {
+    if (!activeRun) return {};
+    return activeRun.results.reduce((acc, req) => {
+      const cat = req.category;
+      if (!acc[cat]) acc[cat] = [];
+      acc[cat].push(req);
+      return acc;
+    }, {} as Record<string, EvidenceRequirementResult[]>);
+  }, [activeRun]);
+
+  const activeRequirement = useMemo(() => {
+    if (!activeRun || !activeReqId) return null;
+    return activeRun.results.find(r => r.id === activeReqId) || null;
+  }, [activeRun, activeReqId]);
 
   if (!open) return null;
 
   const handleClose = () => {
     onOpenChange(false);
-    setView("RESULT");
-    setExpandedItems({});
-    setOverrideAck(false);
-    setOverrideNote("");
+    setTimeout(() => {
+      setView("RESULT");
+      setOverrideAck(false);
+      setOverrideNote("");
+    }, 300);
   };
 
   const handleRecheck = () => {
     triggerManualCheck();
     setView("RESULT");
-    setExpandedItems({});
-  };
-
-  const toggleExpand = (id: string) => {
-    setExpandedItems(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
   const translateLevel = (level: string) => {
@@ -61,44 +80,282 @@ export function EvidenceReadinessModal({ open, onOpenChange, onProceedToAnalysis
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "FULFILLED": return "text-emerald-700 bg-emerald-50 border-emerald-200";
-      case "BROKEN": return "text-rose-700 bg-rose-50 border-rose-200";
+      case "FULFILLED": return "bg-emerald-50 text-emerald-700 border-emerald-200";
+      case "BROKEN": return "bg-rose-50 text-rose-700 border-rose-200";
       case "MISSING": 
-      case "NEEDS_VERIFICATION": return "text-amber-700 bg-amber-50 border-amber-200";
-      default: return "text-slate-700 bg-slate-50 border-slate-200";
+      case "NEEDS_VERIFICATION": return "bg-amber-50 text-amber-700 border-amber-200";
+      default: return "bg-slate-50 text-slate-700 border-slate-200";
     }
   };
   
-  const getStatusIconColor = (status: string) => {
+  const getIndicatorColor = (status: string) => {
     switch (status) {
-      case "FULFILLED": return "text-emerald-600 bg-emerald-100";
-      case "BROKEN": return "text-rose-600 bg-rose-100";
+      case "FULFILLED": return "bg-emerald-500";
+      case "BROKEN": return "bg-rose-500";
       case "MISSING": 
-      case "NEEDS_VERIFICATION": return "text-amber-600 bg-amber-100";
-      default: return "text-slate-600 bg-slate-100";
+      case "NEEDS_VERIFICATION": return "bg-amber-500";
+      default: return "bg-slate-300";
     }
+  };
+  // COMPACT GATE SUMMARY
+  // ----------------------------------------------------------------------
+  const renderSummary = () => {
+    if (!activeRun) return null;
+    const fulfilled = activeRun.results.filter(c => c.status === "FULFILLED").length;
+    const broken = activeRun.results.filter(c => c.status === "BROKEN").length;
+    const missing = activeRun.results.filter(c => c.status === "MISSING").length;
+    const needsVerif = activeRun.results.filter(c => c.status === "NEEDS_VERIFICATION").length;
+    
+    const isReady = activeRun.status === "READY";
+    const isNeedsAttention = activeRun.status === "NEEDS_ATTENTION";
+    const isNotReady = activeRun.status === "NOT_READY";
+
+    let diffText = "";
+    if (activeRun.previousRunId) {
+      const prevRun = runs.find(r => r.id === activeRun.previousRunId);
+      if (prevRun) {
+        const prevFulfilled = prevRun.results.filter(c => c.status === "FULFILLED").length;
+        const diff = fulfilled - prevFulfilled;
+        const label = diff > 0 ? "Membaik" : diff < 0 ? "Menurun" : "Tidak Berubah";
+        diffText = `Perkembangan dari Pemeriksaan #${prevRun.runNumber} — ${label} · ${prevFulfilled} dari ${prevRun.results.length} terpenuhi`;
+      }
+    }
+
+    return (
+      <div className="px-8 py-5 border-b border-slate-200 bg-slate-50/50 shrink-0">
+        <h4 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-3">GATE SUMMARY</h4>
+        
+        <div className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm flex flex-col gap-4">
+          <div className="flex items-center gap-4">
+            <span className="text-[12px] font-semibold text-slate-500 w-24">Status</span>
+            <div className={cn(
+              "text-[11px] font-bold uppercase px-2.5 py-1 rounded-md border",
+              isNotReady ? "bg-rose-50 text-rose-700 border-rose-200" :
+              isNeedsAttention ? "bg-amber-50 text-amber-700 border-amber-200" :
+              "bg-emerald-50 text-emerald-700 border-emerald-200"
+            )}>
+              {isNotReady ? "BELUM SIAP" : isNeedsAttention ? "PERLU DILENGKAPI" : "SIAP DIANALISIS"}
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-4 gap-4 pt-4 border-t border-slate-100">
+            <div>
+              <div className="text-[11px] font-semibold text-slate-500 mb-1">Terpenuhi</div>
+              <div className="text-[14px] font-bold text-slate-800">{fulfilled} / {activeRun.results.length}</div>
+            </div>
+            <div>
+              <div className="text-[11px] font-semibold text-slate-500 mb-1">Bermasalah</div>
+              <div className="text-[14px] font-bold text-slate-800">{broken}</div>
+            </div>
+            <div>
+              <div className="text-[11px] font-semibold text-slate-500 mb-1">Belum Ada</div>
+              <div className="text-[14px] font-bold text-slate-800">{missing}</div>
+            </div>
+            <div>
+              <div className="text-[11px] font-semibold text-slate-500 mb-1">Perlu Verifikasi</div>
+              <div className="text-[14px] font-bold text-slate-800">{needsVerif}</div>
+            </div>
+          </div>
+
+          {diffText && (
+             <div className="text-[11px] font-medium text-slate-500 pt-3 border-t border-slate-100">
+               {diffText}
+             </div>
+          )}
+        </div>
+        
+        <p className="text-[12px] text-slate-600 mt-4 leading-relaxed">
+          {isNotReady ? "Beberapa requirement wajib belum tersedia atau belum dapat digunakan. Periksa requirement di bawah sebelum melanjutkan ke Analysis." :
+           isNeedsAttention ? "Beberapa requirement yang disarankan belum terpenuhi sepenuhnya." : 
+           "Seluruh standard requirement telah terpenuhi."}
+        </p>
+      </div>
+    );
   };
 
   // ----------------------------------------------------------------------
-  // UI: HISTORY VIEW
+  // TWO-COLUMN LAYOUT
+  // ----------------------------------------------------------------------
+  const renderChecklist = () => {
+    if (!activeRun) return null;
+    return (
+      <div className="w-[50%] border-r border-slate-200 flex flex-col bg-white overflow-hidden">
+        <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 shrink-0">
+          <h4 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">
+            STANDARD EVIDENCE REQUIREMENTS
+          </h4>
+          <span className="text-[11px] text-slate-400 font-medium">{activeRun.results.length} requirements</span>
+        </div>
+        
+        <div className="flex-1 overflow-auto p-4 space-y-6">
+          {Object.entries(groupedResults).map(([category, items]) => (
+            <div key={category} className="space-y-2">
+              <h5 className="text-[11px] font-bold text-slate-700 uppercase tracking-widest px-2">
+                {category}
+              </h5>
+              <div className="space-y-1">
+                {items.map(req => {
+                  const isActive = req.id === activeReqId;
+                  return (
+                    <div 
+                      key={req.id}
+                      onClick={() => setActiveReqId(req.id)}
+                      className={cn(
+                        "relative flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors border group",
+                        isActive ? "bg-slate-50 border-slate-200 shadow-sm" : "bg-white border-transparent hover:bg-slate-50/50 hover:border-slate-100"
+                      )}
+                    >
+                      <div className={cn("absolute left-0 top-2 bottom-2 w-[3px] rounded-r-md", getIndicatorColor(req.status))} />
+                      
+                      <div className="flex-1 min-w-0 pl-2">
+                        <div className="text-[13px] font-bold text-slate-800 truncate mb-1 group-hover:text-slate-900">
+                          {req.label}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className={cn("text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded-sm border", req.level === "REQUIRED" ? "text-slate-700 border-slate-300" : "text-slate-500 border-slate-200")}>
+                            {translateLevel(req.level)}
+                          </span>
+                          <span className="text-[11px] text-slate-500 truncate">
+                            {req.matchedFiles.length > 0 ? req.matchedFiles[0].name : "Belum ada file"}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <div className="shrink-0 flex items-center gap-3">
+                        <span className={cn("text-[9px] font-bold uppercase tracking-widest px-2 py-1 rounded-md border", getStatusColor(req.status))}>
+                          {translateStatus(req.status)}
+                        </span>
+                        <ChevronRight className={cn("h-4 w-4 transition-colors", isActive ? "text-slate-800" : "text-slate-300")} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const renderDetail = () => {
+    if (!activeRequirement) return (
+      <div className="w-[50%] flex items-center justify-center bg-slate-50/50">
+        <span className="text-[13px] text-slate-400 font-medium">Pilih requirement untuk melihat detail</span>
+      </div>
+    );
+
+    const req = activeRequirement;
+
+    return (
+      <div className="w-[50%] flex flex-col bg-[#f8fafc] overflow-hidden">
+        <div className="px-8 py-5 border-b border-slate-200 bg-white shrink-0">
+          <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">
+            REQUIREMENT DETAIL · {req.id.toUpperCase()}
+          </h4>
+          <h2 className="text-[16px] font-bold text-slate-900 uppercase tracking-wide mb-3 leading-snug">
+            {req.label}
+          </h2>
+          <div className="flex items-center gap-2">
+            <span className={cn("text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-md border", req.level === "REQUIRED" ? "text-slate-700 border-slate-300" : "text-slate-500 border-slate-200")}>
+              {translateLevel(req.level)}
+            </span>
+            <span className={cn("text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-md border", getStatusColor(req.status))}>
+              {translateStatus(req.status)}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-auto p-8 space-y-8">
+          
+          <div className="space-y-2">
+            <h5 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">FILE YANG DIBUTUHKAN</h5>
+            <div className="text-[13px] text-slate-700 leading-relaxed bg-white border border-slate-200 p-4 rounded-lg shadow-sm">
+              {req.requiredDesc || "Standard requirement description."}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <h5 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">FILE YANG DITEMUKAN</h5>
+            {req.matchedFiles.length > 0 ? (
+              <div className="flex flex-col gap-2">
+                {req.matchedFiles.map(mf => (
+                  <div key={mf.id} className="flex items-start gap-3 bg-white border border-slate-200 p-3 rounded-lg shadow-sm">
+                    <FileText className="h-4 w-4 text-slate-400 mt-0.5" />
+                    <div className="flex flex-col">
+                      <span className="text-[13px] font-semibold text-slate-800">{mf.name}</span>
+                      <span className="text-[11px] text-slate-500">
+                        {mf.processingStatus === "DONE" ? "Successfully Processed" : mf.processingStatus === "ERROR" ? "Processing Error" : "Unknown State"}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-[13px] text-slate-600 bg-white border border-slate-200 p-4 rounded-lg shadow-sm">
+                Belum ada file yang dipetakan ke requirement ini.
+              </div>
+            )}
+          </div>
+
+          {req.issue && (
+             <div className="space-y-2">
+               <h5 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">HASIL PEMERIKSAAN</h5>
+               <div className="text-[13px] text-slate-700 leading-relaxed bg-white border border-slate-200 p-4 rounded-lg shadow-sm">
+                 {req.issue}
+               </div>
+             </div>
+          )}
+
+          {req.impact && (
+             <div className="space-y-2">
+               <h5 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">DAMPAK KE ANALISIS</h5>
+               <div className="text-[13px] text-slate-700 leading-relaxed bg-white border border-slate-200 p-4 rounded-lg shadow-sm border-l-2 border-l-amber-400">
+                 {req.impact}
+               </div>
+             </div>
+          )}
+
+          {req.recommendation && (
+             <div className="space-y-2">
+               <h5 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">REKOMENDASI</h5>
+               <div className="text-[13px] font-semibold text-slate-900 leading-relaxed bg-white border border-slate-200 p-4 rounded-lg shadow-sm">
+                 {req.recommendation}
+               </div>
+             </div>
+          )}
+          
+          {req.status === "FULFILLED" && !req.recommendation && (
+             <div className="space-y-2">
+               <h5 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">STATUS</h5>
+               <div className="text-[13px] font-semibold text-slate-900 leading-relaxed bg-white border border-slate-200 p-4 rounded-lg shadow-sm">
+                 Tidak ada tindakan lanjutan.
+               </div>
+             </div>
+          )}
+
+        </div>
+      </div>
+    );
+  };
+
+  // ----------------------------------------------------------------------
+  // HISTORY LIST VIEW
   // ----------------------------------------------------------------------
   const renderHistory = () => (
-    <div className="flex flex-col h-full bg-[#f8fafc]">
-      <div className="px-6 py-4 bg-white border-b border-slate-100 flex items-center justify-between shrink-0 shadow-sm z-10 relative">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" className="h-8 w-8 -ml-2 text-slate-400 hover:text-slate-800 transition-colors" onClick={() => setView("RESULT")}>
-            <ChevronLeft className="h-5 w-5" />
-          </Button>
-          <h3 className="text-[12px] font-semibold text-slate-800 uppercase tracking-widest">
-            Riwayat Pemeriksaan
-          </h3>
+    <div className="flex flex-col h-full bg-slate-50">
+      <div className="px-8 py-5 border-b border-slate-200 bg-white shrink-0 flex flex-col gap-2 shadow-sm z-10">
+        <Button variant="ghost" size="sm" className="w-fit -ml-2 h-7 text-[11px] font-bold text-slate-500 hover:text-slate-900" onClick={() => setView("RESULT")}>
+          <ArrowLeft className="h-3.5 w-3.5 mr-1.5" /> Kembali ke Hasil Terbaru
+        </Button>
+        <div>
+          <h2 className="text-[16px] font-bold text-slate-900 uppercase tracking-wide">RIWAYAT PEMERIKSAAN</h2>
+          <span className="text-[12px] text-slate-500">{runs.length} pemeriksaan</span>
         </div>
-        <span className="text-[11px] font-medium text-slate-500 bg-slate-100 px-3 py-1 rounded-full border border-slate-200">
-          {runs.length} Rekaman
-        </span>
       </div>
-      <div className="flex-1 overflow-auto p-6 space-y-4">
-        {runs.map((run) => {
+
+      <div className="flex-1 overflow-auto p-8 space-y-4">
+        {runs.map(run => {
           const fulfilled = run.results.filter(c => c.status === "FULFILLED").length;
           const broken = run.results.filter(c => c.status === "BROKEN").length;
           const missing = run.results.filter(c => c.status === "MISSING").length;
@@ -106,46 +363,36 @@ export function EvidenceReadinessModal({ open, onOpenChange, onProceedToAnalysis
           
           const isNotReady = run.status === "NOT_READY";
           const isNeedsAttention = run.status === "NEEDS_ATTENTION";
-          
+
           return (
-            <div key={run.id} className="group bg-white border border-slate-200 hover:border-slate-300 hover:shadow-md transition-all rounded-xl p-5 space-y-4">
-              <div className="flex justify-between items-start">
-                <div className="space-y-1.5">
-                  <div className="flex items-center gap-2">
-                    <h4 className="text-[12px] font-bold text-slate-800 uppercase tracking-widest">Pemeriksaan #{run.runNumber}</h4>
-                  </div>
-                  <div className={cn(
-                    "text-[14px] font-bold mt-1",
-                    isNotReady ? "text-rose-700" : isNeedsAttention ? "text-amber-700" : "text-emerald-700"
-                  )}>
+            <div key={run.id} className="bg-white border border-slate-200 rounded-lg p-5 flex flex-col sm:flex-row sm:items-start justify-between gap-5 shadow-sm hover:shadow-md transition-shadow">
+              <div className="space-y-3">
+                <div>
+                  <h4 className="text-[12px] font-bold text-slate-800 uppercase tracking-widest mb-1">Pemeriksaan #{run.runNumber}</h4>
+                  <div className={cn("text-[13px] font-bold uppercase", isNotReady ? "text-rose-700" : isNeedsAttention ? "text-amber-700" : "text-emerald-700")}>
                     {isNotReady ? "BELUM SIAP" : isNeedsAttention ? "PERLU DILENGKAPI" : "SIAP DIANALISIS"}
                   </div>
                 </div>
-                <div className="text-right text-[11px] text-slate-500 font-medium">
-                  <div className="flex items-center gap-1.5 justify-end mb-1">
-                    <span className="h-5 w-5 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center font-bold text-[9px] uppercase">{run.triggeredByUser.name.substring(0, 2)}</span>
-                    {run.triggeredByUser.name}
-                  </div>
-                  <div className="flex items-center gap-1.5 text-[10px] text-slate-400 justify-end">
-                    <Calendar className="h-3 w-3" />
+                <div className="text-[12px] text-slate-600 font-medium">
+                  {fulfilled} / {run.results.length} terpenuhi<br/>
+                  {broken} bermasalah<br/>
+                  {missing} belum ada<br/>
+                  {needsVerif} perlu verifikasi
+                </div>
+              </div>
+              
+              <div className="flex flex-col items-start sm:items-end gap-3 justify-between">
+                <div className="text-left sm:text-right text-[11px] text-slate-500 font-medium">
+                  <div>{run.triggeredByUser.name} · {run.triggeredByUser.role}</div>
+                  <div>
                     {new Date(run.completedAt || run.startedAt).toLocaleString("id-ID", {
                       day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit"
                     })} WIB
                   </div>
                 </div>
-              </div>
-
-              <div className="text-[12px] text-slate-600 font-medium bg-slate-50 p-3 rounded-lg border border-slate-100 space-y-1">
-                <div>Terpenuhi: <span className="font-bold text-slate-800">{fulfilled}</span></div>
-                <div>Bermasalah: <span className="font-bold text-slate-800">{broken}</span></div>
-                <div>Belum ada: <span className="font-bold text-slate-800">{missing}</span></div>
-                <div>Perlu verifikasi: <span className="font-bold text-slate-800">{needsVerif}</span></div>
-              </div>
-
-              <div className="pt-2 flex justify-end">
                 {run.status !== "CHECKING" && (
-                  <Button variant="ghost" size="sm" className="h-8 text-[11px] font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100" onClick={() => { setSelectedRun(run); setView("ARCHIVE"); }}>
-                    Lihat Hasil <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
+                  <Button variant="outline" size="sm" className="h-8 text-[11px] font-semibold shadow-sm" onClick={() => { setSelectedRun(run); setView("ARCHIVE"); }}>
+                    Lihat Snapshot
                   </Button>
                 )}
               </div>
@@ -157,7 +404,7 @@ export function EvidenceReadinessModal({ open, onOpenChange, onProceedToAnalysis
   );
 
   // ----------------------------------------------------------------------
-  // UI: OVERRIDE VIEW
+  // OVERRIDE CONFIRMATION VIEW
   // ----------------------------------------------------------------------
   const renderOverride = () => {
     if (!latestRun) return null;
@@ -165,403 +412,198 @@ export function EvidenceReadinessModal({ open, onOpenChange, onProceedToAnalysis
     const brokenReq = latestRun.results.filter(r => r.level === "REQUIRED" && r.status === "BROKEN");
 
     return (
-      <div className="flex-1 overflow-auto flex flex-col bg-slate-50">
-        <div className="p-8 md:p-12 max-w-2xl mx-auto w-full space-y-8 animate-in slide-in-from-bottom-4 duration-300">
-          <div className="text-center space-y-5">
-            <div className="mx-auto w-16 h-16 bg-white border border-rose-100 shadow-sm text-rose-500 flex items-center justify-center rounded-2xl mb-4 relative">
-              <div className="absolute inset-0 bg-rose-400/20 blur-xl rounded-full" />
-              <AlertTriangle className="h-8 w-8 relative z-10" strokeWidth={2.5} />
+      <div className="flex-1 flex flex-col h-full bg-white overflow-hidden">
+        <div className="px-8 py-6 border-b border-slate-200 shrink-0">
+          <h2 className="text-[16px] font-bold text-slate-900 uppercase tracking-wide">KONFIRMASI ANALYSIS</h2>
+          <span className="text-[12px] text-slate-500 font-medium">Evidence Golden Gate</span>
+        </div>
+
+        <div className="flex-1 overflow-auto p-8 md:p-12">
+          <div className="max-w-2xl mx-auto space-y-8">
+            <div className="bg-rose-50 border border-rose-200 p-5 rounded-lg text-rose-800 space-y-1">
+              {missingReq.length > 0 && <div className="text-[13px] font-bold">{missingReq.length} requirement wajib belum terpenuhi</div>}
+              {brokenReq.length > 0 && <div className="text-[13px] font-bold">{brokenReq.length} requirement wajib bermasalah</div>}
             </div>
-            <h2 className="text-[20px] font-bold text-slate-900 tracking-tight uppercase">
-              LANJUTKAN DENGAN EVIDENCE YANG BELUM LENGKAP?
-            </h2>
-          </div>
 
-          <div className="bg-white border border-slate-200 p-6 rounded-xl shadow-sm space-y-5">
-            
-            {missingReq.length > 0 && (
-              <div>
-                <h4 className="text-[12px] font-bold text-slate-800 mb-2">Requirement wajib yang belum terpenuhi:</h4>
-                <ul className="list-disc pl-5 text-[13px] text-slate-600 space-y-1">
-                  {missingReq.map(r => <li key={r.id}>{r.label}</li>)}
-                </ul>
-              </div>
-            )}
-            
-            {brokenReq.length > 0 && (
-              <div className="pt-2">
-                <h4 className="text-[12px] font-bold text-slate-800 mb-2">Requirement bermasalah:</h4>
-                <ul className="list-disc pl-5 text-[13px] text-slate-600 space-y-1">
-                  {brokenReq.map(r => <li key={r.id}>{r.label}</li>)}
-                </ul>
-              </div>
-            )}
+            <div className="space-y-4">
+              <h4 className="text-[12px] font-bold text-slate-800 uppercase tracking-widest">Detail Blocker</h4>
+              <ul className="text-[13px] text-slate-700 space-y-2 pl-2 border-l-2 border-slate-200">
+                {brokenReq.map(r => (
+                  <li key={r.id} className="pl-2 flex items-start gap-2">
+                    <span className="text-slate-400 mt-0.5">•</span>
+                    <span><span className="font-semibold text-slate-900">{r.label}</span> — {r.issue || "Bermasalah"}</span>
+                  </li>
+                ))}
+                {missingReq.map(r => (
+                  <li key={r.id} className="pl-2 flex items-start gap-2">
+                    <span className="text-slate-400 mt-0.5">•</span>
+                    <span><span className="font-semibold text-slate-900">{r.label}</span> — belum ada</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
 
-            <div className="pt-4 border-t border-slate-100">
-              <label className="flex items-start gap-3.5 cursor-pointer group">
-                <div className="mt-0.5">
-                  <Checkbox 
-                    checked={overrideAck} 
-                    onCheckedChange={(c) => setOverrideAck(c === true)} 
-                    className="data-[state=checked]:bg-rose-600 data-[state=checked]:border-rose-600"
-                  />
-                </div>
-                <span className="text-[13px] font-medium text-slate-700 leading-snug group-hover:text-slate-900 transition-colors">
-                  Saya memahami bahwa analisis akan menggunakan evidence yang belum memenuhi requirement standar.
+            <div className="pt-6 border-t border-slate-100">
+              <label className="flex items-start gap-3 cursor-pointer group">
+                <Checkbox 
+                  checked={overrideAck} 
+                  onCheckedChange={(c) => setOverrideAck(c === true)} 
+                  className="mt-0.5"
+                />
+                <span className="text-[13px] font-medium text-slate-800 leading-snug group-hover:text-slate-900">
+                  Saya memahami bahwa Analysis akan menggunakan evidence yang belum memenuhi requirement standar.
                 </span>
               </label>
             </div>
-            
-            <div className="space-y-2 pt-3">
-              <div className="text-[11px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+
+            <div className="space-y-2">
+              <div className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">
                 Catatan alasan melanjutkan (Opsional)
               </div>
               <Textarea 
                 value={overrideNote}
                 onChange={(e) => setOverrideNote(e.target.value)}
-                placeholder="Tuliskan justifikasi Anda di sini..."
-                className="w-full text-[13px] min-h-[90px] border-slate-200 focus-visible:ring-rose-500 resize-none transition-all"
+                className="w-full text-[13px] min-h-[100px] resize-none"
               />
             </div>
           </div>
-
-          <div className="flex items-center justify-center gap-4 pt-4">
-            <Button variant="ghost" className="h-12 px-6 font-semibold text-[13px] text-slate-600 hover:bg-slate-200/50 hover:text-slate-900 transition-colors" onClick={() => setView("RESULT")}>
-              Kembali Lengkapi Evidence
-            </Button>
-            <Button 
-              variant="default" 
-              className="h-12 px-8 font-semibold text-[13px] bg-slate-900 hover:bg-slate-800 text-white shadow-md hover:shadow-lg transition-all disabled:opacity-50"
-              disabled={!overrideAck}
-              onClick={() => {
-                overrideAnalysis(overrideNote, overrideAck);
-                onProceedToAnalysis();
-                onOpenChange(false);
-              }}
-            >
-              Tetap Lanjutkan
-            </Button>
-          </div>
         </div>
       </div>
     );
   };
 
   // ----------------------------------------------------------------------
-  // UI: RESULT / ARCHIVE VIEW
+  // MAIN DRAWER RENDER
   // ----------------------------------------------------------------------
-  const renderRunResult = (run: ReadinessRun | null, isArchive: boolean = false) => {
-    if (!run) return null;
-
-    if (run.status === "CHECKING") {
-      return (
-        <div className="flex-1 flex flex-col items-center justify-center p-12 space-y-8 bg-slate-50/50">
-          <div className="relative flex items-center justify-center h-24 w-24">
-            <div className="absolute inset-0 bg-blue-500/10 rounded-full animate-ping duration-1000" />
-            <div className="absolute inset-2 bg-blue-500/20 rounded-full animate-pulse" />
-            <div className="h-14 w-14 bg-white border border-slate-100 rounded-full shadow-sm flex items-center justify-center relative z-10">
-              <Loader2 className="h-6 w-6 text-blue-600 animate-spin" />
+  return (
+    <>
+      {/* Backdrop */}
+      <div 
+        className={cn(
+          "fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-[2px] transition-opacity duration-300",
+          open ? "opacity-100" : "opacity-0 pointer-events-none"
+        )} 
+        onClick={handleClose}
+      />
+      
+      {/* Drawer */}
+      <div 
+        className={cn(
+          "fixed top-0 bottom-0 right-0 z-[101] w-[60vw] min-w-[760px] max-w-[980px] bg-white border-l border-slate-200 shadow-2xl flex flex-col transition-transform duration-300 ease-out",
+          open ? "translate-x-0" : "translate-x-full"
+        )}
+      >
+        {/* Header (Hidden in Override & History) */}
+        {(view === "RESULT" || view === "ARCHIVE") && (
+          <div className="px-8 py-5 border-b border-slate-200 flex items-start justify-between shrink-0 bg-white">
+            <div className="flex items-center gap-4">
+              <ShieldCheck className="h-6 w-6 text-slate-800" />
+              <div className="flex flex-col">
+                <h3 className="text-[15px] font-bold text-slate-900 uppercase tracking-wide leading-none">
+                  EVIDENCE GOLDEN GATE
+                </h3>
+                <span className="text-[12px] font-medium text-slate-500 mt-1">Pemeriksaan Kesiapan Analisis</span>
+              </div>
             </div>
-          </div>
-          <div className="text-center space-y-2">
-            <h4 className="text-[16px] font-semibold text-slate-900 tracking-tight">Memeriksa Kesiapan Evidence</h4>
-            <p className="text-[13px] text-slate-500 font-medium">Memetakan file dengan Standard Evidence Requirements...</p>
-          </div>
-        </div>
-      );
-    }
-
-    const fulfilled = run.results.filter(c => c.status === "FULFILLED").length;
-    const broken = run.results.filter(c => c.status === "BROKEN").length;
-    const missing = run.results.filter(c => c.status === "MISSING").length;
-    const needsVerif = run.results.filter(c => c.status === "NEEDS_VERIFICATION").length;
-    
-    const isReady = run.status === "READY";
-    const isNeedsAttention = run.status === "NEEDS_ATTENTION";
-    const isNotReady = run.status === "NOT_READY";
-
-    return (
-      <div className="flex-1 overflow-auto flex flex-col bg-[#f8fafc]">
-        {isArchive && (
-          <div className="px-6 py-3 bg-white border-b border-slate-200 flex items-center justify-between sticky top-0 z-10 shadow-sm">
-            <div className="flex items-center gap-2 text-[12px] text-slate-700 font-bold uppercase tracking-widest">
-              <Button variant="ghost" size="icon" className="h-7 w-7 -ml-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100" onClick={() => setView("HISTORY")}>
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              Arsip Pemeriksaan #{run.runNumber}
-            </div>
-            <div className="text-[11px] text-slate-400 font-medium flex items-center gap-1.5">
-              <Calendar className="h-3.5 w-3.5" />
-              {new Date(run.completedAt || run.startedAt).toLocaleString("id-ID", {
-                day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit"
-              })}
+            <div className="flex items-center gap-5 mt-1">
+              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200">
+                {view === "ARCHIVE" ? `Arsip #${selectedRun?.runNumber}` : latestRun ? `Pemeriksaan #${latestRun.runNumber}` : "Baru"}
+              </span>
+              
+              {runs.length > 0 && latestRun?.status !== "CHECKING" && (
+                <button 
+                  className="text-[12px] font-bold text-slate-500 hover:text-slate-900 uppercase tracking-widest transition-colors"
+                  onClick={() => setView("HISTORY")}
+                >
+                  Riwayat
+                </button>
+              )}
+              
+              <div className="w-px h-5 bg-slate-200 mx-2" />
+              
+              <button className="text-slate-400 hover:text-slate-800" onClick={handleClose}>
+                <X className="h-5 w-5" />
+              </button>
             </div>
           </div>
         )}
 
-        <div className="p-6 md:p-10 space-y-8 max-w-4xl mx-auto w-full animate-in fade-in duration-500">
-          
-          {/* Outdated Warning */}
-          {(!isArchive && isOutdated) && (
-            <div className="bg-amber-50/80 border border-amber-200/60 rounded-xl p-5 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between shadow-sm">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2 text-amber-900 font-bold text-[12px] uppercase tracking-widest">
-                  <RotateCcw className="h-4 w-4 text-amber-600" />
-                  Pemeriksaan Perlu Diperbarui
-                </div>
-                <p className="text-[13px] text-amber-700/90 font-medium">Evidence telah berubah sejak pemeriksaan terakhir. Segera periksa ulang untuk hasil pemetaan terbaru.</p>
+        {/* Content Area */}
+        <div className="flex-1 overflow-hidden flex flex-col relative bg-white">
+          {latestRun?.status === "CHECKING" ? (
+             <div className="flex-1 flex flex-col items-center justify-center space-y-4">
+               <Loader2 className="h-8 w-8 text-blue-600 animate-spin" />
+               <span className="text-[13px] font-medium text-slate-500">Memeriksa Kesiapan Evidence...</span>
+             </div>
+          ) : view === "HISTORY" ? (
+             renderHistory()
+          ) : view === "OVERRIDE" ? (
+             renderOverride()
+          ) : (
+            <div className="flex flex-col h-full">
+              {renderSummary()}
+              <div className="flex-1 flex overflow-hidden">
+                {renderChecklist()}
+                {renderDetail()}
               </div>
-              <Button variant="default" className="shrink-0 text-[11px] font-semibold tracking-wide bg-amber-600 hover:bg-amber-700 text-white h-9 px-6 rounded-lg shadow-sm" onClick={handleRecheck}>
-                Periksa Ulang
-              </Button>
             </div>
           )}
-
-          {/* Progress Tracker */}
-          {(!isArchive && run.previousRunId && !isOutdated) && (() => {
-            const prevRun = runs.find(r => r.id === run.previousRunId);
-            if (prevRun) {
-              const prevCompleted = prevRun.results.filter(c => c.status === "FULFILLED").length;
-              const currCompleted = fulfilled;
-              const diff = currCompleted - prevCompleted;
-              const label = diff > 0 ? "Membaik" : diff < 0 ? "Menurun" : "Tidak Berubah";
-              
-              const iconColor = diff > 0 ? "text-emerald-500" : diff < 0 ? "text-rose-500" : "text-slate-400";
-              const bgColor = diff > 0 ? "bg-emerald-50 border-emerald-100" : diff < 0 ? "bg-rose-50 border-rose-100" : "bg-slate-50 border-slate-100";
-
-              return (
-                <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4">
-                  <div className="flex items-center gap-2 text-[11px] font-bold text-slate-500 uppercase tracking-widest">
-                    <Activity className="h-4 w-4" /> PERKEMBANGAN
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex flex-col">
-                      <span className="text-[11px] text-slate-400 font-medium mb-1">Pemeriksaan #{prevRun.runNumber}</span>
-                      <div className="text-[14px] font-semibold text-slate-800">
-                        {prevCompleted} dari {prevRun.results.length} terpenuhi
-                      </div>
-                    </div>
-                    
-                    <div className="flex-1 px-8 flex items-center justify-center relative">
-                      <div className="absolute w-full border-t border-dashed border-slate-300" />
-                      <div className={cn("relative z-10 px-3 py-1.5 rounded-full border text-[11px] font-bold flex flex-col items-center", bgColor, iconColor)}>
-                        {label}
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col text-right">
-                      <span className="text-[11px] text-slate-400 font-medium mb-1">Pemeriksaan #{run.runNumber}</span>
-                      <div className="text-[14px] font-semibold text-slate-800">
-                        {currCompleted} dari {run.results.length} terpenuhi
-                      </div>
-                    </div>
-                  </div>
-                  {diff > 0 && (
-                     <div className="text-[12px] text-emerald-600 font-medium text-center border-t border-slate-100 pt-3">
-                       {diff} requirement berhasil dilengkapi
-                     </div>
-                  )}
-                </div>
-              );
-            }
-            return null;
-          })()}
-
-          {/* Golden Gate Summary */}
-          <div className="text-center space-y-5 py-2">
-            <h2 className={cn(
-              "text-[28px] font-black uppercase tracking-widest",
-              isNotReady ? "text-rose-700" : isNeedsAttention ? "text-amber-700" : "text-emerald-700"
-            )}>
-              {isNotReady ? "BELUM SIAP" : isNeedsAttention ? "PERLU DILENGKAPI" : "SIAP DIANALISIS"}
-            </h2>
-            
-            <div className="text-[15px] font-medium text-slate-800 space-y-1">
-              <div>{fulfilled} dari {run.results.length} requirement terpenuhi</div>
-              {broken > 0 && <div className="text-rose-600">{broken} requirement bermasalah</div>}
-              {missing > 0 && <div className="text-amber-600">{missing} requirement belum ada</div>}
-              {needsVerif > 0 && <div className="text-amber-600">{needsVerif} requirement perlu verifikasi</div>}
-            </div>
-            
-            <p className="text-[14px] leading-relaxed max-w-2xl mx-auto text-slate-600 bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
-              {isNotReady ? "Beberapa evidence wajib belum tersedia atau belum dapat digunakan. Lengkapi requirement berikut agar hasil analisis lebih kuat." :
-               isNeedsAttention ? "Beberapa evidence yang disarankan belum terpenuhi. Anda dapat melengkapinya atau langsung melanjutkan analisis." :
-               "Seluruh Standard Evidence Requirements telah terpenuhi."}
-            </p>
-          </div>
-
-          {/* Requirement Rows */}
-          <div className="space-y-4 max-w-3xl mx-auto">
-            {run.results.map(item => {
-              const isExpanded = expandedItems[item.id];
-              const statusColor = getStatusColor(item.status);
-              const iconColor = getStatusIconColor(item.status);
-              
-              return (
-                <div key={item.id} className="group bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm transition-all">
-                  <div 
-                    className="flex flex-col sm:flex-row sm:items-center justify-between p-4 cursor-pointer hover:bg-slate-50 transition-colors gap-4"
-                    onClick={() => toggleExpand(item.id)}
-                  >
-                    <div className="flex-1 space-y-2">
-                      <div className="text-[14px] font-bold text-slate-800 uppercase tracking-wide">
-                        {item.label}
-                      </div>
-                      <div className={cn(
-                        "inline-flex items-center text-[10px] font-bold uppercase tracking-widest rounded-md px-2 py-0.5 border bg-slate-50",
-                        item.level === "REQUIRED" ? "text-slate-800 border-slate-300" :
-                        item.level === "RECOMMENDED" ? "text-slate-500 border-slate-200" : "text-slate-400 border-slate-100"
-                      )}>
-                        {translateLevel(item.level)}
-                      </div>
-                    </div>
-                    
-                    <div className="flex-shrink-0 flex items-center gap-4">
-                      <div className="flex flex-col items-end gap-1.5">
-                        <div className={cn("text-[11px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-md border", statusColor)}>
-                          {translateStatus(item.status)}
-                        </div>
-                        {item.matchedFiles.length > 0 && !isExpanded && (
-                           <div className="text-[11px] text-slate-500 font-medium line-clamp-1 max-w-[200px]">
-                             {item.matchedFiles[0].name}
-                           </div>
-                        )}
-                      </div>
-                      <div className="text-slate-400">
-                        {isExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-                      </div>
-                    </div>
-                  </div>
-
-                  {isExpanded && (
-                    <div className="p-5 bg-slate-50/80 border-t border-slate-100 space-y-5">
-                      
-                      {item.matchedFiles.length > 0 ? (
-                        <div className="space-y-2">
-                          <div className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">File yang ditemukan</div>
-                          <div className="flex flex-col gap-2">
-                            {item.matchedFiles.map(mf => (
-                              <div key={mf.id} className="inline-flex items-center gap-2 text-[13px] font-semibold text-slate-700 bg-white border border-slate-200 px-3 py-1.5 rounded-lg shadow-sm">
-                                <FileText className="h-4 w-4 text-slate-400" />
-                                {mf.name}
-                                {mf.processingStatus === "ERROR" && <span className="text-[10px] text-white bg-rose-500 px-1.5 py-0.5 rounded ml-2">ERROR</span>}
-                                {mf.processingStatus === "DONE" && <span className="text-[10px] text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded ml-2">DONE</span>}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="space-y-2">
-                          <div className="text-[13px] font-medium text-slate-600 bg-white border border-slate-200 px-4 py-2.5 rounded-lg shadow-sm">
-                            Belum ada file yang memenuhi requirement ini.
-                          </div>
-                        </div>
-                      )}
-
-                      {item.impact && (
-                        <div className="space-y-1.5">
-                          <div className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Dampak</div>
-                          <div className="text-[13px] font-medium text-slate-700 leading-relaxed bg-white border border-slate-100 p-3 rounded-lg shadow-sm">
-                            {item.impact}
-                          </div>
-                        </div>
-                      )}
-                      
-                      {item.recommendation && (
-                        <div className="space-y-1.5">
-                          <div className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Rekomendasi</div>
-                          <div className="text-[13px] font-semibold text-slate-800 leading-relaxed bg-white border border-slate-200 p-3 rounded-lg shadow-sm">
-                            {item.recommendation}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
         </div>
-      </div>
-    );
-  };
 
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 md:p-6 transition-all duration-300">
-      <div className="bg-white w-full max-w-[1000px] max-h-[95vh] rounded-2xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.2)] flex flex-col overflow-hidden relative border border-slate-200/50 animate-in zoom-in-[0.98] duration-300">
-        
-        {/* Header */}
-        <div className="h-16 px-6 border-b border-slate-100 flex items-center justify-between bg-white shrink-0 z-10 relative shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-lg bg-slate-900 flex items-center justify-center shadow-sm">
-              <ShieldCheck className="h-4 w-4 text-white" />
-            </div>
-            <div className="flex flex-col">
-              <h3 className="text-[13px] font-bold text-slate-900 uppercase tracking-widest leading-none">
-                EVIDENCE GOLDEN GATE
-              </h3>
-              <span className="text-[10px] font-medium text-slate-500 mt-0.5">Pemeriksaan Kesiapan Analisis</span>
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="text-slate-500 font-semibold text-[11px] uppercase tracking-widest hidden sm:block bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200">
-              {view === "HISTORY" ? "Riwayat Pemeriksaan" : 
-               view === "ARCHIVE" ? `Arsip #${selectedRun?.runNumber}` :
-               view === "OVERRIDE" ? "Konfirmasi Analisis" :
-               latestRun ? `Pemeriksaan #${latestRun.runNumber}` : "Pemeriksaan Baru"}
-            </div>
-            
-            {view === "RESULT" && runs.length > 0 && latestRun?.status !== "CHECKING" && (
+        {/* Sticky Footer */}
+        {latestRun?.status !== "CHECKING" && (
+          <div className="px-8 py-5 border-t border-slate-200 bg-white shrink-0 flex items-center justify-between">
+            {view === "OVERRIDE" ? (
               <>
-                <div className="w-px h-5 bg-slate-200" />
-                <Button variant="ghost" size="sm" className="h-8 text-[11px] font-bold uppercase tracking-widest text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors" onClick={() => setView("HISTORY")}>
-                  Riwayat
+                <Button variant="ghost" className="text-[13px] font-semibold text-slate-600" onClick={() => setView("RESULT")}>
+                  Kembali ke Pemeriksaan
                 </Button>
-              </>
-            )}
-            
-            <div className="w-px h-5 bg-slate-200" />
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-full transition-colors" onClick={handleClose}>
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-
-        {/* Content Body */}
-        {view === "HISTORY" ? renderHistory() : 
-         view === "OVERRIDE" ? renderOverride() : 
-         renderRunResult(view === "ARCHIVE" ? selectedRun : latestRun, view === "ARCHIVE")}
-
-        {/* Footer Actions */}
-        {(view === "RESULT" && latestRun?.status !== "CHECKING") && (
-          <div className="px-6 py-4 bg-white border-t border-slate-100 flex items-center justify-between gap-3 shrink-0 shadow-[0_-5px_15px_-10px_rgba(0,0,0,0.05)]">
-            <Button variant="ghost" className="h-10 px-6 text-[12px] font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors" onClick={handleClose}>
-              Tutup
-            </Button>
-            
-            <div className="flex items-center gap-3">
-              <Button variant="outline" className="h-10 px-6 text-[12px] font-semibold text-slate-700 bg-white shadow-sm hover:bg-slate-50 border-slate-200 transition-all" onClick={handleRecheck}>
-                <RotateCcw className="h-3.5 w-3.5 mr-2 text-slate-400" /> Periksa Ulang
-              </Button>
-              
-              <Button 
-                className="h-10 px-8 text-[12px] font-semibold tracking-wide bg-slate-900 text-white shadow-md hover:shadow-lg hover:bg-slate-800 transition-all group" 
-                onClick={() => {
-                  const isNotReady = latestRun.status === "NOT_READY";
-                  if (isNotReady) {
-                    setView("OVERRIDE");
-                  } else {
+                <Button 
+                  className="px-8 text-[13px] font-semibold bg-slate-900 text-white hover:bg-slate-800"
+                  disabled={!overrideAck}
+                  onClick={() => {
+                    overrideAnalysis(overrideNote, overrideAck);
                     onProceedToAnalysis();
                     onOpenChange(false);
-                  }
-                }}
-              >
-                Lanjutkan ke Analysis <ArrowRightCircle className="h-4 w-4 ml-2 opacity-70 group-hover:opacity-100 transition-opacity" />
+                  }}
+                >
+                  Tetap Lanjutkan
+                </Button>
+              </>
+            ) : view === "HISTORY" ? (
+              <Button variant="ghost" className="text-[13px] font-semibold text-slate-600" onClick={handleClose}>
+                Tutup
               </Button>
-            </div>
+            ) : (
+              <>
+                <Button variant="ghost" className="text-[13px] font-semibold text-slate-600" onClick={handleClose}>
+                  Tutup
+                </Button>
+                <div className="flex items-center gap-3">
+                  <Button variant="outline" className="text-[13px] font-semibold text-slate-700 border-slate-300" onClick={handleRecheck}>
+                    Periksa Ulang
+                  </Button>
+                  <Button 
+                    className="px-8 text-[13px] font-semibold bg-slate-900 text-white hover:bg-slate-800"
+                    onClick={() => {
+                      const isNotReady = activeRun?.status === "NOT_READY";
+                      if (isNotReady && view !== "ARCHIVE") {
+                        setView("OVERRIDE");
+                      } else {
+                        onProceedToAnalysis();
+                        onOpenChange(false);
+                      }
+                    }}
+                  >
+                    Lanjutkan ke Analysis
+                  </Button>
+                </div>
+              </>
+            )}
           </div>
         )}
+
       </div>
-    </div>
+    </>
   );
 }

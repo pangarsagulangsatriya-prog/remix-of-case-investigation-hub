@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { AgentState, ReportStatusType, ReportSnapshot, ReportAuditEntry } from "@/types/workspace";
 import { initialAgentsState } from "@/components/workspace/Tabs/AnalysisTab";
 import { useReadiness } from "@/hooks/useReadiness";
+import { EvidenceReadinessModal } from "@/components/workspace/EvidenceReadinessModal";
 
 
 // Modular Tab Components (Lazy Loaded)
@@ -559,130 +560,14 @@ function CaseWorkspaceInner() {
             </div>
 
             
-            {/* Analysis Confirmation Modal */}
-            {isAnalysisModalOpen && (
-              <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80 backdrop-blur-sm transition-all duration-300">
-                <div className="bg-white border border-slate-200/80 w-full max-w-[500px] rounded shadow-2xl flex flex-col animate-in zoom-in-[0.98] duration-200">
-                  <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-                    <h3 className="text-[13px] font-black text-slate-900 uppercase tracking-widest">
-                      {currentStatus === "NOT_CHECKED" ? "KESIAPAN EVIDENCE BELUM DIPERIKSA" : 
-                       currentStatus === "OUTDATED" ? "HASIL PEMERIKSAAN SUDAH TIDAK TERBARU" : 
-                       "LANJUTKAN KE ANALISIS?"}
-                    </h3>
-                  </div>
-                  <div className="p-6 space-y-4">
-                    {currentStatus === "NOT_CHECKED" ? (
-                      <>
-                        <p className="text-[12px] text-slate-700 leading-relaxed font-medium">
-                          Belum ada pemeriksaan kesiapan evidence untuk data saat ini.
-                        </p>
-                        <p className="text-[11px] text-slate-500 leading-relaxed">
-                          Jalankan pemeriksaan terlebih dahulu agar Anda dapat melihat kekurangan yang dapat memengaruhi hasil analisis.
-                        </p>
-                      </>
-                    ) : currentStatus === "OUTDATED" ? (
-                      <>
-                        <p className="text-[12px] text-slate-700 leading-relaxed font-medium">
-                          Evidence telah berubah setelah pemeriksaan terakhir.
-                        </p>
-                        <p className="text-[11px] text-slate-500 leading-relaxed">
-                          Sangat disarankan untuk memeriksa ulang kesiapan evidence sebelum menjalankan analisis investigasi.
-                        </p>
-                      </>
-                    ) : (
-                      <>
-                        <div className="bg-amber-50/50 border border-amber-100 p-3 rounded space-y-1">
-                          <p className="text-[11px] font-bold text-amber-800 uppercase tracking-widest">Evidence masih memiliki:</p>
-                          <p className="text-[10px] text-amber-700">{latestRun?.results.filter(c => c.status !== "FULFILLED").length} rekomendasi aktif • {latestRun?.results.filter(c => c.level === "REQUIRED" && (c.status === "MISSING" || c.status === "BROKEN")).length} kritis</p>
-                        </div>
-                        <p className="text-[11px] text-slate-700 font-medium leading-relaxed">
-                          Analisis tetap dapat dijalankan menggunakan data yang tersedia.
-                          Kekurangan data dapat memengaruhi kelengkapan kronologi, ketepatan ekstraksi fakta, dan kekuatan kesimpulan analisis.
-                        </p>
-                        <div className="space-y-1">
-                           <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2">Temuan Utama:</div>
-                           {latestRun?.results.filter(c => c.status !== "FULFILLED").slice(0, 3).map((f, i) => (
-                             <div key={i} className="text-[11px] text-slate-700 flex items-start gap-1.5">
-                               <span className="text-slate-400 mt-0.5">•</span>
-                               <span className="leading-snug">{f.relatedFileName ? `${f.relatedFileName} ` : ''}{f.description}</span>
-                             </div>
-                           ))}
-                        </div>
-                        {hasCritical && (
-                          <div className="mt-4 pt-4 border-t border-slate-100 space-y-3">
-                            <label className="flex items-start gap-2 cursor-pointer">
-                              <input type="checkbox" checked={overrideAck} onChange={(e) => setOverrideAck(e.target.checked)} className="mt-0.5" />
-                              <span className="text-[11px] font-medium text-slate-800 leading-snug">Saya memahami bahwa analisis akan dijalankan menggunakan data yang belum lengkap.</span>
-                            </label>
-                            <div className="space-y-1.5">
-                              <div className="text-[10px] font-bold text-slate-700">Alasan melanjutkan analisis</div>
-                              <textarea 
-                                value={overrideNote}
-                                onChange={(e) => setOverrideNote(e.target.value)}
-                                placeholder="Jelaskan alasan analisis tetap dijalankan dengan data saat ini."
-                                className="w-full text-[11px] p-2 border border-slate-300 rounded focus:outline-none focus:border-amber-500 min-h-[60px]"
-                              />
-                            </div>
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </div>
-                  <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2">
-                    {currentStatus === "OUTDATED" ? (
-                      <>
-                        <Button 
-                          variant="outline" 
-                          className="text-[10px] font-bold uppercase tracking-widest h-8"
-                          onClick={() => {
-                            overrideAnalysis("Dilanjutkan meskipun data terbaru belum diperiksa", true);
-                            setIsAnalysisModalOpen(false);
-                            setCurrentStep(3);
-                            setShowAuditTrail(false);
-                          }}
-                        >
-                          Tetap Lanjutkan
-                        </Button>
-                        <Button variant="default" className="bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-bold uppercase tracking-widest h-8" onClick={() => { setIsAnalysisModalOpen(false); setCurrentStep(2); }}>Periksa Ulang</Button>
-                      </>
-                    ) : currentStatus === "NOT_CHECKED" ? (
-                      <>
-                        <Button 
-                          variant="outline" 
-                          className="text-[10px] font-bold uppercase tracking-widest h-8"
-                          onClick={() => {
-                            overrideAnalysis("Dilanjutkan tanpa pemeriksaan", true);
-                            setIsAnalysisModalOpen(false);
-                            setCurrentStep(3);
-                            setShowAuditTrail(false);
-                          }}
-                        >
-                          Tetap Lanjutkan
-                        </Button>
-                        <Button variant="default" className="bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-bold uppercase tracking-widest h-8" onClick={() => { setIsAnalysisModalOpen(false); setCurrentStep(2); }}>Kembali ke Evidence</Button>
-                      </>
-                    ) : (
-                      <>
-                        <Button variant="outline" className="text-[10px] font-bold uppercase tracking-widest h-8" onClick={() => { setIsAnalysisModalOpen(false); setCurrentStep(2); }}>Kembali ke Evidence</Button>
-                        <Button 
-                          variant="default" 
-                          className="bg-amber-600 hover:bg-amber-700 text-white text-[10px] font-bold uppercase tracking-widest h-8"
-                          disabled={hasCritical && (!overrideAck || !overrideNote.trim())}
-                          onClick={() => {
-                            overrideAnalysis(overrideNote, overrideAck);
-                            setIsAnalysisModalOpen(false);
-                            setCurrentStep(3);
-                            setShowAuditTrail(false);
-                          }}
-                        >
-                          Lanjutkan Analisis
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
+            <EvidenceReadinessModal 
+              open={isAnalysisModalOpen} 
+              onOpenChange={setIsAnalysisModalOpen} 
+              onProceedToAnalysis={() => {
+                setCurrentStep(3);
+                setShowAuditTrail(false);
+              }}
+            />
 
             {/* Delete Case Confirmation Modal */}
             {isDeleteModalOpen && (

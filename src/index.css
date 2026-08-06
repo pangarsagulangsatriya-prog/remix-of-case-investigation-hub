@@ -233,3 +233,24 @@
     overflow: visible !important;
   }
 }
+
+.form-control {
+  box-sizing: border-box;
+  border: 1px solid #d7dee8;
+  outline: none;
+  box-shadow: none;
+  transition:
+    border-color 140ms ease,
+    border-width 140ms ease;
+}
+
+.form-control:hover {
+  border-color: #aeb9c8;
+}
+
+.form-control:focus,
+.form-control:focus-visible {
+  border: 2px solid #059669;
+  outline: none;
+  box-shadow: none;
+}
