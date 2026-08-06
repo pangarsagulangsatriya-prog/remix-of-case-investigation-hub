@@ -29,6 +29,8 @@ export default function ReportsTab({
   const [isApprovalModalOpen, setIsApprovalModalOpen] = React.useState(false);
   const [approvalChecked, setApprovalChecked] = React.useState(false);
   const [isAuditDrawerOpen, setIsAuditDrawerOpen] = React.useState(false);
+  const [isGenerating, setIsGenerating] = React.useState(false);
+  const [generationStep, setGenerationStep] = React.useState(0);
 
   // Use snapshot agents if locked, otherwise use current agents
   const displayAgents = reportStatus === 'FINAL_LOCKED' && reportSnapshot ? reportSnapshot.agentsSnapshot : agents;
@@ -44,16 +46,28 @@ export default function ReportsTab({
   };
 
   const handleGeneratePreview = () => {
-    if (setReportStatus) setReportStatus('PREVIEW');
-    if (setReportAuditLogs && reportAuditLogs) {
-      setReportAuditLogs([{
-        id: `audit-${Date.now()}`,
-        timestamp: new Date().toISOString(),
-        action: 'PREVIEW_GENERATED',
-        actor: 'Administrator (admin)',
-        details: 'Report preview generated'
-      }, ...reportAuditLogs]);
-    }
+    setIsGenerating(true);
+    setGenerationStep(1);
+    
+    setTimeout(() => setGenerationStep(2), 600);
+    setTimeout(() => setGenerationStep(3), 1200);
+    setTimeout(() => setGenerationStep(4), 1800);
+    setTimeout(() => setGenerationStep(5), 2400);
+    
+    setTimeout(() => {
+      if (setReportStatus) setReportStatus('PREVIEW');
+      if (setReportAuditLogs && reportAuditLogs) {
+        setReportAuditLogs([{
+          id: `audit-${Date.now()}`,
+          timestamp: new Date().toISOString(),
+          action: 'PREVIEW_GENERATED',
+          actor: 'Administrator (admin)',
+          details: 'Report preview generated'
+        }, ...reportAuditLogs]);
+      }
+      setIsGenerating(false);
+      setGenerationStep(0);
+    }, 3000);
   };
 
   const handleApproveReport = () => {
@@ -79,20 +93,258 @@ export default function ReportsTab({
   };
 
   if (reportStatus === 'EMPTY') {
+    const readyAgents = agents.filter(a => a.status === 'COMPLETED').length;
+    const totalAgents = 5;
+    const isAllReady = readyAgents >= totalAgents;
+
     return (
-      <div className="flex h-full w-full items-center justify-center bg-slate-50/10 p-8">
-        <div className="bg-white border border-slate-200 shadow-sm p-12 flex flex-col items-center max-w-md w-full text-center rounded-sm">
-           <FileText className="h-16 w-16 text-slate-300 mb-6" strokeWidth={1} />
-           <h2 className="text-lg font-black text-slate-800 uppercase tracking-widest mb-2">Belum Ada Report</h2>
-           <p className="text-[12px] text-slate-500 mb-8 leading-relaxed">
-             Hasil analisis investigasi belum dikunci menjadi laporan final.
-           </p>
-           <Button 
-             onClick={handleGeneratePreview}
-             className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 h-10 tracking-widest uppercase text-[10px]"
-           >
-             Buat Preview Report
-           </Button>
+      <div className="flex h-full w-full items-center justify-center bg-slate-50/10 p-4 sm:p-8">
+        <div className="bg-white border border-slate-200 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] flex flex-col md:flex-row max-w-[1120px] w-full rounded-sm overflow-hidden animate-in fade-in duration-200">
+          
+          {/* LEFT COLUMN - SETUP */}
+          <div className="w-full md:w-[42%] p-8 md:p-10 flex flex-col border-b md:border-b-0 md:border-r border-slate-200">
+            {!isGenerating ? (
+              <div className="flex-1 flex flex-col animate-in fade-in duration-200">
+                <div className="mb-8">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                      REPORT INVESTIGASI
+                    </span>
+                    <span className="bg-slate-100 text-slate-500 border border-slate-200 text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-sm">
+                      Status: Belum Dibuat
+                    </span>
+                  </div>
+                  <h2 className="text-xl font-bold text-slate-900 mb-3">Buat Laporan Lengkap Investigasi</h2>
+                  <p className="text-[12px] text-slate-600 leading-relaxed">
+                    Sistem akan menyusun preview dari hasil terbaru seluruh agent analisis.
+                    Periksa isi report sebelum disahkan dan dikunci.
+                  </p>
+                </div>
+
+                <div className="mb-8">
+                  <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">
+                    BAGIAN YANG AKAN DISUSUN
+                  </h3>
+                  <div className="space-y-2.5">
+                    {[
+                      { name: 'Fakta & Kronologi', agent: factAgent },
+                      { name: 'Analisis Aktor', agent: actorAgent },
+                      { name: 'Faktor PEEPO', agent: peepoAgent },
+                      { name: 'Lapisan IPLS', agent: iplsAgent },
+                      { name: 'Rencana Pencegahan', agent: prevAgent },
+                    ].map((section, i) => {
+                      const isReady = section.agent?.status === 'COMPLETED';
+                      return (
+                        <div key={i} className="flex items-center justify-between text-[11.5px]">
+                          <div className="flex items-center gap-2">
+                            {isReady ? (
+                              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                            ) : (
+                              <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
+                            )}
+                            <span className="text-slate-800 font-medium">{section.name}</span>
+                          </div>
+                          <span className={cn(
+                            "text-[10px] font-bold uppercase tracking-wider",
+                            isReady ? "text-emerald-600" : "text-amber-600"
+                          )}>
+                            {isReady ? 'Siap' : 'Belum Selesai'}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="mb-8 bg-slate-50 border border-slate-200 rounded p-4">
+                  <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">
+                    SUMBER PREVIEW
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <div className="text-[10px] text-slate-500 mb-1">Versi data</div>
+                      <div className="text-[11px] font-bold text-slate-800">Hasil analisis terbaru</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-slate-500 mb-1">Total agent</div>
+                      <div className="text-[11px] font-bold text-slate-800">{readyAgents} dari {totalAgents} tersedia</div>
+                    </div>
+                  </div>
+                  <div className="mt-3 pt-3 border-t border-slate-200 text-[10px] text-slate-500">
+                    Perubahan yang dilakukan di tab Analysis sebelum report disahkan akan masuk ke preview terbaru.
+                  </div>
+                </div>
+
+                <div className="mt-auto">
+                  {isAllReady ? (
+                    <div className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      SIAP MEMBUAT PREVIEW
+                    </div>
+                  ) : (
+                    <div className="text-[10px] font-bold text-amber-600 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                      <AlertTriangle className="h-3.5 w-3.5" />
+                      PREVIEW DAPAT DIBUAT DENGAN CATATAN ({totalAgents - readyAgents} BAGIAN BELUM SELESAI)
+                    </div>
+                  )}
+                  
+                  <Button 
+                    onClick={handleGeneratePreview}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold h-11 tracking-widest uppercase text-[11px] shadow-sm transition-all"
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    Buat Preview Report
+                  </Button>
+                  <p className="text-[10px] text-center text-slate-400 mt-3">
+                    Preview belum mengunci data dan masih dapat diperiksa kembali.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="flex-1 flex flex-col justify-center py-10 animate-in slide-in-from-right-4 duration-300">
+                <h2 className="text-xl font-bold text-slate-900 mb-6 text-center">Menyusun Preview Report</h2>
+                <div className="space-y-4 max-w-[280px] mx-auto w-full">
+                  {[
+                    "Mengambil hasil analisis terbaru",
+                    "Menyusun Fakta & Kronologi",
+                    "Menyusun Analisis Aktor",
+                    "Menyusun Faktor PEEPO",
+                    "Menyusun Lapisan IPLS",
+                    "Menyusun Rencana Pencegahan"
+                  ].map((stepText, idx) => {
+                    const isDone = generationStep > idx;
+                    const isCurrent = generationStep === idx;
+                    return (
+                      <div key={idx} className="flex items-center gap-3">
+                        <div className="w-4 flex justify-center shrink-0">
+                          {isDone ? (
+                            <CheckCircle2 className="h-4 w-4 text-emerald-500 animate-in zoom-in duration-200" />
+                          ) : isCurrent ? (
+                            <div className="h-1.5 w-1.5 bg-blue-500 rounded-full animate-pulse" />
+                          ) : (
+                            <div className="h-1.5 w-1.5 border border-slate-300 rounded-full" />
+                          )}
+                        </div>
+                        <span className={cn(
+                          "text-[11.5px] transition-colors duration-200",
+                          isDone ? "text-slate-700 font-medium" : 
+                          isCurrent ? "text-blue-600 font-bold" : "text-slate-400"
+                        )}>
+                          {stepText}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+                <p className="text-[11px] text-center text-slate-500 mt-10 font-medium">
+                  Menyusun {Math.min(generationStep, 5)} dari 5 bagian...
+                </p>
+              </div>
+            )}
+          </div>
+          
+          {/* RIGHT COLUMN - PREVIEW MINIATURE */}
+          <div className="hidden md:flex w-[58%] bg-slate-50/80 items-center justify-center relative p-12 overflow-hidden group">
+            
+            {/* Document Stack Background */}
+            <div className="absolute w-[320px] h-[450px] bg-white border border-slate-200 shadow-sm rounded-sm translate-x-3 translate-y-3 opacity-50 pointer-events-none transition-transform duration-300 group-hover:translate-x-4 group-hover:translate-y-4" />
+            <div className="absolute w-[320px] h-[450px] bg-white border border-slate-200 shadow-md rounded-sm translate-x-1.5 translate-y-1.5 opacity-75 pointer-events-none transition-transform duration-300 group-hover:translate-x-2 group-hover:translate-y-2" />
+            
+            {/* Front Document Miniature */}
+            <div className="relative w-[320px] h-[450px] bg-white border border-slate-200 shadow-lg rounded-sm p-6 flex flex-col transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-xl pointer-events-auto">
+              
+              <div className="absolute top-4 right-4 bg-slate-900 text-white text-[8px] font-bold px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 uppercase tracking-widest pointer-events-none">
+                Preview struktur report
+              </div>
+
+              {/* Cover Layout */}
+              <div className="border-b-2 border-slate-900 pb-4 mb-4">
+                <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">LAPORAN INVESTIGASI</div>
+                <div className="text-[12px] font-black text-slate-900 uppercase leading-snug">Security and Stability Incident</div>
+                <div className="text-[8px] text-slate-500 mt-2">Case ID: 771CAA3D &middot; 27 April 2026</div>
+              </div>
+
+              {/* Section Outlines */}
+              <div className="flex-1 space-y-3">
+                 <div className="flex gap-2">
+                    <span className="text-[9px] font-mono text-slate-400">01</span>
+                    <div className="flex-1">
+                       <div className="text-[9px] font-bold text-slate-800 uppercase tracking-wider mb-1">Fakta & Kronologi</div>
+                       <div className="flex items-center gap-1 mb-1">
+                          <div className="h-1.5 w-full bg-slate-100 rounded-sm" />
+                          <div className="h-1.5 w-10 bg-slate-100 rounded-sm" />
+                       </div>
+                       <div className="flex gap-0.5">
+                          <div className="h-1 w-1/3 bg-blue-100 rounded-sm" />
+                          <div className="h-1 w-2/3 bg-slate-100 rounded-sm" />
+                       </div>
+                    </div>
+                 </div>
+
+                 <div className="flex gap-2">
+                    <span className="text-[9px] font-mono text-slate-400">02</span>
+                    <div className="flex-1">
+                       <div className="text-[9px] font-bold text-slate-800 uppercase tracking-wider mb-1">Analisis Aktor</div>
+                       <div className="grid grid-cols-2 gap-1 mb-1">
+                          <div className="h-6 bg-slate-50 border border-slate-100 rounded-sm" />
+                          <div className="h-6 bg-slate-50 border border-slate-100 rounded-sm" />
+                       </div>
+                    </div>
+                 </div>
+
+                 <div className="flex gap-2">
+                    <span className="text-[9px] font-mono text-slate-400">03</span>
+                    <div className="flex-1">
+                       <div className="text-[9px] font-bold text-slate-800 uppercase tracking-wider mb-1">Faktor PEEPO</div>
+                       <div className="h-[20px] bg-slate-50 border border-slate-100 flex flex-col justify-between p-0.5 rounded-sm">
+                          <div className="h-1 w-full bg-slate-200" />
+                          <div className="h-0.5 w-3/4 bg-slate-100" />
+                          <div className="h-0.5 w-1/2 bg-slate-100" />
+                       </div>
+                    </div>
+                 </div>
+
+                 <div className="flex gap-2">
+                    <span className="text-[9px] font-mono text-slate-400">04</span>
+                    <div className="flex-1">
+                       <div className="text-[9px] font-bold text-slate-800 uppercase tracking-wider mb-1">Lapisan IPLS</div>
+                       <div className="flex items-center gap-1">
+                         <div className="h-3 w-3 bg-red-100 rounded-full" />
+                         <div className="h-3 w-3 bg-amber-100 rounded-full" />
+                         <div className="h-3 w-3 bg-emerald-100 rounded-full" />
+                         <div className="h-1 w-full bg-slate-100 rounded-sm" />
+                       </div>
+                    </div>
+                 </div>
+                 
+                 <div className="flex gap-2">
+                    <span className="text-[9px] font-mono text-slate-400">05</span>
+                    <div className="flex-1">
+                       <div className="text-[9px] font-bold text-slate-800 uppercase tracking-wider mb-1">Rencana Pencegahan</div>
+                       <div className="h-1.5 w-1/2 bg-slate-200 mb-1 rounded-sm" />
+                       <div className="space-y-0.5">
+                          <div className="h-1 w-full bg-slate-100 rounded-sm" />
+                          <div className="h-1 w-full bg-slate-100 rounded-sm" />
+                       </div>
+                    </div>
+                 </div>
+              </div>
+
+              {/* Page Footer */}
+              <div className="mt-auto pt-3 border-t border-slate-100 flex justify-between items-center">
+                 <div className="h-1 w-8 bg-slate-200 rounded-sm" />
+                 <div className="text-[6px] font-mono text-slate-400">PAGE 1 OF 1</div>
+              </div>
+              
+              {/* Generation Overlay */}
+              {isGenerating && (
+                <div className="absolute inset-0 bg-white/80 backdrop-blur-[1px] flex items-center justify-center transition-opacity duration-300">
+                  <div className="h-8 w-8 rounded-full border-2 border-slate-200 border-t-blue-600 animate-spin" />
+                </div>
+              )}
+            </div>
+            
+          </div>
         </div>
       </div>
     );
