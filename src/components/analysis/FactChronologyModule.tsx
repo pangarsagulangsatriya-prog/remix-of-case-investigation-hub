@@ -642,11 +642,6 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
 
   const handleSaveEdit = () => {
     if (!editingId) return;
-    if (!editChangeNote.trim()) {
-      toast.error("Catatan perubahan wajib diisi!");
-      return;
-    }
-
     const ts = new Date().toISOString();
     setItems(prev => prev.map(item => {
       if (item.id === editingId) {
@@ -1225,12 +1220,6 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
                             </span>
                           </div>
 
-                          {isUpdate && log.changeNote && (
-                            <p className="text-xs text-slate-600 mb-3 bg-blue-50 p-2 rounded border border-blue-100">
-                              {log.changeNote}
-                            </p>
-                          )}
-                          
                           {isDelete && log.deletionReason && (
                             <p className="text-xs text-slate-600 mb-3 bg-rose-50 p-2 rounded border border-rose-100">
                               <span className="font-bold block mb-1">Alasan Penghapusan:</span>
@@ -1238,39 +1227,43 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
                             </p>
                           )}
 
-                          {isCreate && (
-                            <p className="text-xs text-slate-600 line-clamp-2 border-l-2 border-slate-200 pl-2 italic">
-                              "{previewText}"
-                            </p>
+                          {(isCreate || isUpdate) && (
+                            <div className="text-[11px] text-slate-800 leading-relaxed italic border-l-2 border-slate-300 pl-3 py-1 mb-3">
+                              "{isUpdate && log.after ? log.after.description : previewText}"
+                            </div>
                           )}
 
                           {isUpdate && log.before && log.after && (
-                            <div className="mt-3 flex flex-col gap-2">
-                               {log.changedFields?.includes("Time") && (
-                                  <div className="text-[11px] grid grid-cols-2 gap-2 border border-slate-200 rounded p-2 bg-slate-50">
-                                    <div>
-                                      <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">SEBELUM (Time)</div>
-                                      <div className="text-rose-700 bg-rose-50 px-1 py-0.5 rounded">{log.before.time}</div>
-                                    </div>
-                                    <div>
-                                      <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">SESUDAH (Time)</div>
-                                      <div className="text-emerald-700 bg-emerald-50 px-1 py-0.5 rounded">{log.after.time}</div>
-                                    </div>
+                            <details className="group">
+                              <summary className="text-[10px] font-bold text-blue-600 cursor-pointer hover:text-blue-700 list-none flex items-center gap-1">
+                                <span className="group-open:hidden">[Lihat Detail Perubahan]</span>
+                                <span className="hidden group-open:inline">[Tutup Detail Perubahan]</span>
+                              </summary>
+                              
+                              <div className="mt-3 space-y-3 pt-3 border-t border-slate-100">
+                                {log.changeNote && (
+                                  <div>
+                                    <div className="text-[9px] font-bold text-slate-400 mb-1">CATATAN ANOTASI</div>
+                                    <div className="text-[11px] text-slate-700 bg-slate-50 p-2 rounded border border-slate-100">{log.changeNote}</div>
                                   </div>
-                               )}
-                               {log.changedFields?.includes("Description") && (
-                                  <div className="text-[11px] grid grid-cols-1 gap-2 border border-slate-200 rounded p-2 bg-slate-50">
-                                    <div>
-                                      <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">SEBELUM (Description)</div>
-                                      <div className="text-rose-700 bg-rose-50/50 p-1.5 rounded">{log.before.description}</div>
-                                    </div>
-                                    <div className="border-t border-slate-200 pt-2">
-                                      <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">SESUDAH (Description)</div>
-                                      <div className="text-emerald-700 bg-emerald-50/50 p-1.5 rounded">{log.after.description}</div>
-                                    </div>
+                                )}
+                                
+                                <div>
+                                  <div className="text-[9px] font-bold text-slate-400 mb-1">SEBELUM</div>
+                                  <div className="bg-red-50 text-red-900 p-2 rounded text-[11px] border border-red-100">
+                                    {log.before.time && <span className="font-bold mr-1">{log.before.time} -</span>}
+                                    {log.before.description}
                                   </div>
-                               )}
-                            </div>
+                                </div>
+                                <div>
+                                  <div className="text-[9px] font-bold text-slate-400 mb-1">SESUDAH</div>
+                                  <div className="bg-emerald-50 text-emerald-900 p-2 rounded text-[11px] border border-emerald-100">
+                                    {log.after.time && <span className="font-bold mr-1">{log.after.time} -</span>}
+                                    {log.after.description}
+                                  </div>
+                                </div>
+                              </div>
+                            </details>
                           )}
 
                           <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
@@ -2049,73 +2042,51 @@ const EventCitationList: React.FC<{ item: any }> = ({ item }) => {
   if (tableRows.length === 0) return null;
 
   return (
-    <div className="mt-6 border-t border-slate-100 pt-6">
-      <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-1.5">
-         <Zap className="h-3 w-3 text-blue-600" />
-         Event & Evidence Link
+    <div className="mt-6 border-t border-slate-200 pt-6">
+      <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-3">
+         EVENT & EVIDENCE LINK
       </div>
-      <div className="border border-slate-200 rounded-sm overflow-hidden">
-        <table className="w-full text-left border-collapse">
-          <tbody className="bg-white">
-            {tableRows.map((row) => {
-              const isExpanded = !!expandedRows[row.label];
-              const hasCitations = row.citations && row.citations.length > 0;
-              
-              return (
-                <React.Fragment key={row.label}>
-                  <tr 
-                    className={cn(
-                      "border-b border-slate-100 transition-all duration-300 rounded-none",
-                      hasCitations ? "hover:bg-slate-50/80 cursor-pointer" : "bg-white",
-                      isExpanded ? "bg-slate-50" : ""
+      <div className="border border-slate-200 rounded overflow-hidden shadow-sm">
+        <div className="flex flex-col divide-y divide-slate-100">
+          {tableRows.map((row) => {
+            const isExpanded = !!expandedRows[row.label];
+            const hasCitations = row.citations && row.citations.length > 0;
+            
+            return (
+              <React.Fragment key={row.label}>
+                <div 
+                  className={cn("flex items-center p-3 bg-white transition-colors", hasCitations ? "cursor-pointer hover:bg-slate-50" : "")}
+                  onClick={() => hasCitations && toggleRow(row.label)}
+                >
+                  <div className="w-24 shrink-0 font-mono text-[10px] font-bold text-slate-500 tracking-wider flex items-center gap-2">
+                    {row.label}
+                    {hasCitations && (
+                      <span className="inline-flex items-center justify-center gap-1 px-1.5 py-0.5 text-[9px] font-bold text-slate-600 bg-slate-100 border border-slate-200 rounded">
+                        <FileText className="h-2.5 w-2.5" />
+                        {row.citations.length}
+                      </span>
                     )}
-                    onClick={() => {
-                      if (hasCitations) toggleRow(row.label);
-                    }}
-                  >
-                    <td className="px-3 py-3 align-middle border-r border-slate-100 font-mono text-[9px] font-bold text-slate-500 tracking-wider w-20 bg-slate-50">
-                      <div className="flex items-center gap-1.5">
-                        {hasCitations ? (
-                          <ChevronDown 
-                            className={cn(
-                              "h-3 w-3 shrink-0 text-slate-400 transition-transform duration-200", 
-                              isExpanded ? "rotate-180 text-blue-600" : ""
-                            )} 
-                          />
-                        ) : (
-                          <div className="w-3 shrink-0" />
-                        )}
-                        <span>{row.label}</span>
-                      </div>
-                    </td>
-                    <td className="px-3 py-3 align-middle text-[11.5px] text-slate-700 font-normal leading-normal">
-                      <span className="pr-4">{row.value}</span>
-                    </td>
-                    <td className="px-3 py-3 align-middle text-center border-l border-slate-100 bg-slate-50 w-12">
-                      {hasCitations ? (
-                        <span className="inline-flex items-center justify-center min-w-[20px] text-[10px] font-bold text-blue-600 bg-blue-50/80 px-1.5 py-0.5 border border-blue-200/50 rounded-none">
-                          {row.citations.length}
-                        </span>
-                      ) : (
-                        <span className="text-[10px] text-slate-400 font-normal">-</span>
-                      )}
-                    </td>
-                  </tr>
-                  
-                  {isExpanded && hasCitations && (
-                    <tr className="bg-white border-b border-slate-200">
-                      <td colSpan={3} className="p-0 border-l-2 border-l-blue-600">
-                        <div className="bg-slate-50/50 p-4 border-t border-slate-100 shadow-inner">
-                          {renderGroupedCitations(row.citations)}
-                        </div>
-                      </td>
-                    </tr>
+                  </div>
+                  <div className="flex-1 text-[11.5px] text-slate-800 font-normal leading-relaxed pr-4">
+                    {row.value}
+                  </div>
+                  {hasCitations ? (
+                    <div className="flex items-center justify-end w-6 shrink-0">
+                      <ChevronDown className={cn("h-4 w-4 text-slate-400 transition-transform duration-200", isExpanded ? "rotate-180" : "")} />
+                    </div>
+                  ) : (
+                    <div className="w-6 shrink-0" />
                   )}
-                </React.Fragment>
-              );
-            })}
-          </tbody>
-        </table>
+                </div>
+                {isExpanded && hasCitations && (
+                  <div className="bg-slate-50/50 p-4 border-t border-slate-100 shadow-inner border-l-2 border-l-blue-600">
+                    {renderGroupedCitations(row.citations)}
+                  </div>
+                )}
+              </React.Fragment>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
@@ -2131,9 +2102,7 @@ export const TraceabilityPanel: React.FC<{
   onUpdateChronologyText: (newText: string) => void,
   readonly?: boolean
 }> = ({ item, onClose, readonly }) => {
-  const [showHistory,
-  PanelRightOpen,
-  EllipsisVertical, setShowHistory] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
 
   // Fallback version if not defined
   const currentVersion = item.currentVersion || item.version || 1;
@@ -2163,22 +2132,10 @@ export const TraceabilityPanel: React.FC<{
                 <div className="text-[10px] text-slate-400 mb-1">
                   {item.provenanceType === 'HUMAN_MANUAL' && (item.manualRevisionCount || 0) === 0 ? 'Ditambahkan oleh' : 'Diubah oleh'}
                 </div>
-                <div className="text-[11px] font-bold text-slate-800 mb-4">{item.latestHumanChange?.userName || "Gulang Satriya"} &middot; {item.latestHumanChange?.userRole || "Lead Investigator"}</div>
+                <div className="text-[11px] font-bold text-slate-800 mb-3">{item.latestHumanChange?.userName || "Gulang Satriya"} &middot; {item.latestHumanChange?.userRole || "Lead Investigator"}</div>
                 
-                {item.latestHumanChange?.changedFields && (
-                  <div className="mb-4">
-                    <div className="text-[10px] font-bold text-slate-400 mb-1">Field yang diubah</div>
-                    <ul className="text-[11px] text-slate-700 space-y-0.5 ml-2">
-                      {item.latestHumanChange.changedFields.map((f: string) => (
-                        <li key={f} className="flex items-center gap-1.5"><div className="w-1 h-1 bg-slate-400 rounded-full"/>{f}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                
-                <div className="mb-4">
-                  <div className="text-[10px] font-bold text-slate-400 mb-1">{item.provenanceType === 'HUMAN_MANUAL' && (item.manualRevisionCount || 0) === 0 ? 'Catatan' : 'Catatan anotasi'}</div>
-                  <div className="text-[11px] text-slate-700">{item.latestHumanChange?.changeNote || "-"}</div>
+                <div className="text-[11px] text-slate-800 leading-relaxed italic border-l-2 border-slate-300 pl-3 py-1 mb-3">
+                  "{item.chronology_text}"
                 </div>
 
                 <div className="text-[10px] text-slate-400 mb-3">
@@ -2192,6 +2149,12 @@ export const TraceabilityPanel: React.FC<{
                       <span className="hidden group-open:inline">[Tutup Detail Perubahan]</span>
                     </summary>
                     <div className="mt-3 space-y-3 pt-3 border-t border-slate-100">
+                      {item.latestHumanChange?.changeNote && (
+                        <div>
+                          <div className="text-[9px] font-bold text-slate-400 mb-1">{item.provenanceType === 'HUMAN_MANUAL' && (item.manualRevisionCount || 0) === 0 ? 'Catatan' : 'Catatan anotasi'}</div>
+                          <div className="text-[11px] text-slate-700 bg-slate-50 p-2 rounded border border-slate-100">{item.latestHumanChange.changeNote}</div>
+                        </div>
+                      )}
                       <div>
                         <div className="text-[9px] font-bold text-slate-400 mb-1">SEBELUM</div>
                         <div className="bg-red-50 text-red-900 p-2 rounded text-[11px] border border-red-100">{item.history?.[0]?.chronology_text || "DMS memberikan peringatan kepada operator."}</div>
@@ -2234,22 +2197,10 @@ export const TraceabilityPanel: React.FC<{
                     <div className="text-[10px] text-slate-400 mb-1">
                       {isOriginal && histItem.provenanceType === 'HUMAN_MANUAL' ? 'Ditambahkan oleh' : 'Diubah oleh'}
                     </div>
-                    <div className="text-[11px] font-bold text-slate-800 mb-4">{histItem.userName || "Rina Mahardika"} &middot; {histItem.userRole || "Investigator"}</div>
+                    <div className="text-[11px] font-bold text-slate-800 mb-3">{histItem.userName || "Rina Mahardika"} &middot; {histItem.userRole || "Investigator"}</div>
                     
-                    {!isOriginal && histItem.changedFields && (
-                      <div className="mb-4">
-                        <div className="text-[10px] font-bold text-slate-400 mb-1">Field yang diubah</div>
-                        <ul className="text-[11px] text-slate-700 space-y-0.5 ml-2">
-                          {histItem.changedFields.map((f: string) => (
-                            <li key={f} className="flex items-center gap-1.5"><div className="w-1 h-1 bg-slate-400 rounded-full"/>{f}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                    
-                    <div className="mb-4">
-                      <div className="text-[10px] font-bold text-slate-400 mb-1">{isOriginal && histItem.provenanceType === 'HUMAN_MANUAL' ? 'Catatan' : 'Catatan anotasi'}</div>
-                      <div className="text-[11px] text-slate-700">{histItem.changeNote || "-"}</div>
+                    <div className="text-[11px] text-slate-800 leading-relaxed italic border-l-2 border-slate-300 pl-3 py-1 mb-3">
+                      "{histItem.chronology_text || item.chronology_text}"
                     </div>
 
                     <div className="text-[10px] text-slate-400 mb-3">
@@ -2263,6 +2214,12 @@ export const TraceabilityPanel: React.FC<{
                           <span className="hidden group-open:inline">[Tutup Detail Perubahan]</span>
                         </summary>
                         <div className="mt-3 space-y-3 pt-3 border-t border-slate-100">
+                          {histItem.changeNote && (
+                            <div>
+                              <div className="text-[9px] font-bold text-slate-400 mb-1">{isOriginal && histItem.provenanceType === 'HUMAN_MANUAL' ? 'Catatan' : 'Catatan anotasi'}</div>
+                              <div className="text-[11px] text-slate-700 bg-slate-50 p-2 rounded border border-slate-100">{histItem.changeNote}</div>
+                            </div>
+                          )}
                           <div>
                             <div className="text-[9px] font-bold text-slate-400 mb-1">SEBELUM</div>
                             <div className="bg-red-50 text-red-900 p-2 rounded text-[11px] border border-red-100">{history[idx + 1]?.chronology_text || "DMS memberikan peringatan kepada operator."}</div>
@@ -2329,15 +2286,19 @@ export const TraceabilityPanel: React.FC<{
           </div>
         ) : item.provenanceType === 'AI_HUMAN_ANNOTATED' ? (
           <div>
-            <div className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-widest border border-blue-200 mb-4">
-               <Pencil className="h-3 w-3" />
-               Human Annotation
+            <div className="flex items-center flex-wrap gap-2 mb-4">
+              <div className="inline-flex items-center gap-1.5 bg-indigo-50 text-indigo-700 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-widest border border-indigo-200">
+                 <Brain className="h-3 w-3" />
+                 AI Generated
+              </div>
+              <ChevronRight className="h-3 w-3 text-slate-400" />
+              <div className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-widest border border-blue-200">
+                 <Pencil className="h-3 w-3" />
+                 Annotated
+              </div>
             </div>
             <div className="text-[10px] text-slate-500 mb-3">{item.humanAnnotationCount || 2} kali anotasi</div>
             
-            <div className="text-[10px] text-slate-400 mb-1">Terakhir diubah oleh</div>
-            <div className="text-[11px] font-bold text-slate-800 mb-1">{item.latestHumanChange?.userName || "Gulang Satriya"} &middot; Lead Investigator</div>
-            <div className="text-[10px] text-slate-500 mb-1">05 Agustus 2026, 14:18 WIB</div>
             <div className="text-[10px] font-mono text-slate-400 mt-2">Versi aktif {currentVersion}</div>
           </div>
         ) : (
@@ -2355,45 +2316,61 @@ export const TraceabilityPanel: React.FC<{
 
         <hr className="border-slate-100" />
 
-        {/* Current Statement */}
-        <div>
-           <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">PERNYATAAN</div>
-           <div className="text-[12.5px] text-slate-800 leading-relaxed bg-slate-50 p-3 rounded border border-slate-100">
-             {item.chronology_text}
-           </div>
-        </div>
-
-        {/* Latest Changes (if any) */}
+        {/* 1. Anotasi / Latest Changes (Only if edited or manual) */}
         {((item.provenanceType === 'HUMAN_MANUAL' && (item.manualRevisionCount || 0) > 0) || item.provenanceType === 'AI_HUMAN_ANNOTATED') && (
-           <>
-             <hr className="border-slate-100" />
-             <div>
-                <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">PERUBAHAN TERAKHIR</div>
-                
-                {item.latestHumanChange?.changedFields && (
-                  <div className="mb-4">
-                     <div className="text-[10px] text-slate-500 mb-1">Field yang diubah</div>
-                     <ul className="text-[11px] text-slate-800 space-y-0.5 ml-2 font-medium">
-                       {item.latestHumanChange.changedFields.map((f: string) => (
-                         <li key={f} className="flex items-center gap-1.5"><div className="w-1 h-1 bg-slate-400 rounded-full"/>{f}</li>
-                       ))}
-                     </ul>
-                  </div>
-                )}
-                
-                <div className="mb-4">
-                   <div className="text-[10px] text-slate-500 mb-1">{item.provenanceType === 'HUMAN_MANUAL' ? 'Catatan perubahan' : 'Catatan anotasi'}</div>
-                   <div className="text-[11px] text-slate-800 font-medium">
-                     {item.latestHumanChange?.changeNote || "Kalimat diperjelas berdasarkan hasil konfirmasi."}
+           <div className="mb-6">
+              <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">HASIL ANOTASI TERAKHIR</div>
+              
+              <div className="bg-blue-50/30 p-4 rounded border border-blue-100 shadow-sm">
+                <div className="flex items-center gap-3 mb-4">
+                   <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center border border-blue-200 shrink-0">
+                     <User className="h-4 w-4 text-blue-600" />
+                   </div>
+                   <div>
+                     <div className="text-[11px] font-bold text-slate-800">{item.latestHumanChange?.userName || "Gulang Satriya"}</div>
+                     <div className="text-[10px] text-slate-500">{item.latestHumanChange?.timestamp ? new Date(item.latestHumanChange.timestamp).toLocaleString('id-ID', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' WIB' : '05 Agustus 2026, 14:18 WIB'}</div>
                    </div>
                 </div>
                 
-                <div className="text-[10px] text-slate-400 font-mono">
+                <div className="text-[12px] text-slate-800 leading-relaxed italic border-l-[3px] border-blue-400 pl-3 py-1 mb-4 bg-white/50">
+                  "{item.chronology_text}"
+                </div>
+                
+                {item.latestHumanChange?.changeNote && (
+                  <div className="bg-white p-3 rounded border border-slate-100 text-[11px] shadow-sm">
+                    <div className="text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-widest">
+                      {item.provenanceType === 'HUMAN_MANUAL' ? 'Catatan Perubahan' : 'Catatan Anotasi'}
+                    </div>
+                    <div className="text-slate-700 font-medium">
+                      {item.latestHumanChange.changeNote}
+                    </div>
+                  </div>
+                )}
+                
+                <div className="text-[10px] text-slate-400 font-mono mt-4 text-right">
                    Versi {currentVersion - 1} &rarr; Versi {currentVersion}
                 </div>
-             </div>
-           </>
+              </div>
+           </div>
         )}
+
+        {/* 2. Original / Current Statement with AI label */}
+        <div className="mb-6">
+           <div className="flex items-center gap-2 mb-2">
+             <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+               {item.provenanceType === 'HUMAN_MANUAL' ? 'PERNYATAAN AWAL' : 'PERNYATAAN AI GENERATED'}
+             </div>
+             {item.provenanceType !== 'HUMAN_MANUAL' && (
+               <div className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded text-[8px] font-bold uppercase border border-indigo-200 shadow-sm">
+                 <Brain className="h-2.5 w-2.5" /> AI
+               </div>
+             )}
+           </div>
+           
+           <div className="text-[12.5px] text-slate-800 leading-relaxed bg-slate-50/80 p-4 rounded border border-slate-200">
+             {item.provenanceType === 'AI_HUMAN_ANNOTATED' ? (item.original_text || item.chronology_text) : item.chronology_text}
+           </div>
+        </div>
 
         {item.provenanceType !== 'HUMAN_MANUAL' && (
           <EventCitationList item={item} />
@@ -2417,6 +2394,53 @@ export const TraceabilityPanel: React.FC<{
 };
 
 // ── Slide View Component ───────────────────────────────────────────────────
+
+
+const renderProvenanceBadge = (item: ChronologyItem) => {
+  const pType = item.provenanceType || (item.source === 'human' ? 'HUMAN_MANUAL' : (item.annotated_by_human ? 'AI_HUMAN_ANNOTATED' : 'AI_GENERATED'));
+  
+  if (pType === 'AI_GENERATED') {
+    return (
+      <TooltipProvider delayDuration={300}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="inline-flex items-center justify-center h-[18px] px-1.5 rounded bg-slate-100 text-slate-500 border border-slate-200 cursor-help transition-colors hover:bg-slate-200">
+              <span className="font-black text-[9px] uppercase tracking-wider">AI</span>
+            </span>
+          </TooltipTrigger>
+          <TooltipContent side="top" className="text-[10px] font-bold">Generated by AI</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  } else if (pType === 'AI_HUMAN_ANNOTATED') {
+    return (
+      <TooltipProvider delayDuration={300}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="inline-flex items-center justify-center h-[18px] w-[18px] rounded bg-slate-100 text-slate-500 border border-slate-200 cursor-help transition-colors hover:bg-slate-200">
+              <User className="h-3 w-3" strokeWidth={2.5} />
+            </span>
+          </TooltipTrigger>
+          <TooltipContent side="top" className="text-[10px] font-bold">Annotated by Human</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  } else if (pType === 'HUMAN_MANUAL') {
+    return (
+      <TooltipProvider delayDuration={300}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="inline-flex items-center justify-center h-[18px] w-[18px] rounded bg-slate-100 text-slate-500 border border-slate-200 cursor-help transition-colors hover:bg-slate-200">
+              <Pencil className="h-3 w-3" strokeWidth={2.5} />
+            </span>
+          </TooltipTrigger>
+          <TooltipContent side="top" className="text-[10px] font-bold">Edited Manually</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
+  return null;
+};
 
 const FactSlideView: React.FC<{ 
   metadata: FactMetadata, 
@@ -2718,6 +2742,9 @@ const FactDefaultView: React.FC<{
                                       isSelected ? "text-slate-900" : "text-slate-800"
                                     )}>
                                       {item.chronology_text}
+                                      <span className="inline-flex ml-2 align-middle">
+                                        {renderProvenanceBadge(item)}
+                                      </span>
                                     </p>
                                     {!readonly && (
                                       <div className={cn("flex items-center shrink-0 gap-1 transition-opacity duration-120", isSelected ? "opacity-100 pointer-events-auto" : "opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto")}>
@@ -2916,15 +2943,6 @@ const FactTableView: React.FC<{
                           <div className="font-bold mb-1 text-slate-600 text-[10px] flex items-center justify-between">
                             <div className="flex items-center gap-2">
                               <span>{item.time_label}</span>
-                              {item.provenanceType === 'AI_HUMAN_ANNOTATED' && (
-                                <span className="text-[8px] font-black uppercase text-blue-500 tracking-widest bg-blue-50 px-1 py-0.5 rounded" title="Human Annotated">Human Annotated &middot; {item.humanAnnotationCount}&times;</span>
-                              )}
-                              {item.provenanceType === 'HUMAN_MANUAL' && (
-                                <span className="text-[8px] font-black uppercase text-emerald-500 tracking-widest bg-emerald-50 px-1 py-0.5 rounded" title="Added Manually">Added Manually</span>
-                              )}
-                              {(!item.provenanceType || item.provenanceType === 'AI_GENERATED') && (
-                                <span className="text-[8px] font-black uppercase text-indigo-400 tracking-widest bg-indigo-50/50 px-1 py-0.5 rounded" title="AI Generated">AI Generated</span>
-                              )}
                             </div>
                           </div>
                           {isEditing ? (
@@ -2958,7 +2976,12 @@ const FactTableView: React.FC<{
                             </div>
                           ) : (
                             <>
-                              <p className={cn("whitespace-pre-wrap transition-colors", isSelected ? "text-slate-900" : "")}>{item.chronology_text}</p>
+                              <p className={cn("whitespace-pre-wrap transition-colors", isSelected ? "text-slate-900" : "")}>
+                                {item.chronology_text}
+                                <span className="inline-flex ml-2 align-middle">
+                                  {renderProvenanceBadge(item)}
+                                </span>
+                              </p>
                               {!readonly && (
                                 <div className={cn("absolute top-1 right-1 flex items-center gap-1 z-10 transition-opacity duration-120", isSelected ? "opacity-100 pointer-events-auto" : "opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto")}>
                                   <TooltipProvider delayDuration={400}>
