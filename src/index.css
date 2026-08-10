@@ -254,3 +254,77 @@
   outline: none;
   box-shadow: none;
 }
+
+@keyframes slideDown {
+  0% { transform: translateY(-100%); opacity: 0; }
+  20% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { transform: translateY(100%); opacity: 0; }
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-150%); }
+  100% { transform: translateX(350%); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .animate-badge-dot {
+    animation: badgeDot 1.4s infinite;
+  }
+  @keyframes badgeDot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.45; transform: scale(0.9); }
+  }
+
+  .animate-slow-spin {
+    animation: spin 1.6s linear infinite;
+  }
+  
+  .animate-stepper-spin {
+    animation: spin 1.5s linear infinite;
+  }
+
+  .animate-connector-travel {
+    animation: connectorTravel 1.8s linear infinite;
+  }
+  @keyframes connectorTravel {
+    0% { transform: translateY(0); opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { transform: translateY(32px); opacity: 0; }
+  }
+
+  .animate-stepper-connector {
+    animation: stepperConnector 1.6s linear infinite;
+  }
+  @keyframes stepperConnector {
+    0% { transform: translateY(-100%); opacity: 0; }
+    20% { opacity: 1; }
+    80% { opacity: 1; }
+    100% { transform: translateY(200%); opacity: 0; }
+  }
+
+  .animate-progress-track {
+    animation: progressTrack 1.6s linear infinite;
+  }
+  @keyframes progressTrack {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(300%); }
+  }
+
+  .animate-border-travel {
+    animation: borderTravel 2.2s linear infinite;
+  }
+  @keyframes borderTravel {
+    0%, 100% { opacity: 0; }
+    10%, 90% { opacity: 1; }
+    0% { top: 0; height: 0; }
+    50% { top: 0; height: 100%; }
+    100% { top: 100%; height: 0; }
+  }
+}
+
+@keyframes fill {
+  0% { width: 0%; }
+  100% { width: 100%; }
+}

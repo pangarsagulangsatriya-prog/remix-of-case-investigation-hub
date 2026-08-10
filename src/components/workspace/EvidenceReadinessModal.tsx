@@ -14,7 +14,7 @@ interface EvidenceReadinessModalProps {
 
 export function EvidenceReadinessModal({ open, onOpenChange, onProceedToAnalysis }: EvidenceReadinessModalProps) {
   const { runs, triggerManualCheck, latestRun, isOutdated, overrideAnalysis } = useReadiness();
-  const [view, setView] = useState<"RESULT" | "HISTORY" | "ARCHIVE">("RESULT");
+  const [view, setView] = useState<"RESULT" | "HISTORY" | "ARCHIVE" | "CONFIRM_OVERRIDE">("RESULT");
   const [showOverrideModal, setShowOverrideModal] = useState(false);
   const [showRecheckModal, setShowRecheckModal] = useState(false);
   const [selectedRun, setSelectedRun] = useState<ReadinessRun | null>(null);
@@ -561,6 +561,80 @@ export function EvidenceReadinessModal({ open, onOpenChange, onProceedToAnalysis
                  </div>
                </div>
              </div>
+          ) : view === "CONFIRM_OVERRIDE" && latestRun ? (
+             <div className="flex-1 flex flex-col bg-white h-full animate-in fade-in duration-300">
+                {/* Header */}
+                <div className="px-12 pt-12 pb-8 flex flex-col">
+                  <h2 className="text-[16px] font-bold text-slate-900 uppercase tracking-widest">KONFIRMASI ANALYSIS</h2>
+                  <p className="text-[13px] text-slate-500 mt-1">Evidence Golden Gate</p>
+                </div>
+                
+                <div className="flex-1 overflow-auto px-12 pb-12 custom-scrollbar">
+                  {/* Red Warning Box */}
+                  <div className="bg-[#FFF5F6] rounded-xl p-6 mb-12">
+                     {latestRun.results.filter(r => r.level === "REQUIRED" && r.status === "MISSING").length > 0 && (
+                       <div className="text-[13px] font-semibold text-rose-600">
+                         {latestRun.results.filter(r => r.level === "REQUIRED" && r.status === "MISSING").length} requirement wajib belum terpenuhi
+                       </div>
+                     )}
+                     {latestRun.results.filter(r => r.level === "REQUIRED" && r.status === "BROKEN").length > 0 && (
+                       <div className="text-[13px] font-semibold text-rose-600 mt-1.5">
+                         {latestRun.results.filter(r => r.level === "REQUIRED" && r.status === "BROKEN").length} requirement wajib bermasalah
+                       </div>
+                     )}
+                  </div>
+
+                  {/* Detail Blocker */}
+                  <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-6">DETAIL BLOCKER</h3>
+                  <ul className="list-disc pl-5 space-y-4 mb-14 text-[13px] marker:text-slate-300">
+                    {latestRun.results.filter(r => r.level === "REQUIRED" && r.status !== "FULFILLED").map(req => (
+                      <li key={req.id} className="text-slate-400 pl-1 leading-relaxed">
+                        <span className="font-bold text-slate-800">{req.label}</span> <span className="text-slate-400">— {req.issue || (req.status === "MISSING" ? "Belum ada file yang dipetakan ke requirement ini." : "bermasalah")}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  {/* Checkbox */}
+                  <label className="flex items-start gap-3.5 cursor-pointer group mb-12">
+                    <Checkbox 
+                      checked={overrideAck} 
+                      onCheckedChange={(c) => setOverrideAck(c === true)} 
+                      className="mt-0.5 border-slate-200 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500"
+                    />
+                    <span className="text-[13px] text-slate-700 leading-relaxed font-medium">
+                      Saya memahami bahwa Analysis akan menggunakan evidence yang belum memenuhi requirement standar.
+                    </span>
+                  </label>
+
+                  {/* Textarea */}
+                  <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-4">CATATAN ALASAN MELANJUTKAN (OPSIONAL)</h3>
+                  <Textarea 
+                    value={overrideNote}
+                    onChange={(e) => setOverrideNote(e.target.value)}
+                    className="w-full h-32 bg-white border-slate-200 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-emerald-400 resize-none rounded-lg text-[13px] p-4 placeholder:text-slate-400 shadow-sm"
+                    placeholder="Tambahkan catatan jika diperlukan..."
+                  />
+                </div>
+
+                {/* Footer */}
+                <div className="px-12 py-6 bg-white flex items-center justify-between mt-auto shrink-0 border-t-0">
+                  <Button variant="ghost" className="text-[13px] font-semibold text-slate-500 px-0 hover:bg-transparent hover:text-slate-800" onClick={() => setView("RESULT")}>
+                    Kembali ke Pemeriksaan
+                  </Button>
+                  <Button 
+                    className="px-8 h-10 text-[13px] font-semibold bg-slate-400 text-white hover:bg-slate-500 rounded-md shadow-sm transition-all"
+                    disabled={!overrideAck}
+                    onClick={() => {
+                      overrideAnalysis(overrideNote, overrideAck);
+                      onProceedToAnalysis();
+                      onOpenChange(false);
+                      setView("RESULT");
+                    }}
+                  >
+                    Tetap Lanjutkan
+                  </Button>
+                </div>
+             </div>
           ) : view === "HISTORY" ? (
              renderHistory()
           ) : !activeRun ? (
@@ -683,7 +757,7 @@ export function EvidenceReadinessModal({ open, onOpenChange, onProceedToAnalysis
         </div>
 
         {/* Sticky Footer */}
-        {latestRun?.status !== "CHECKING" && (
+        {latestRun?.status !== "CHECKING" && view !== "CONFIRM_OVERRIDE" && (
           <div className="px-8 py-5 border-t border-slate-200 bg-white shrink-0 flex items-center justify-between shadow-[0_-4px_10px_-4px_rgba(0,0,0,0.05)] z-20 relative">
             {view === "HISTORY" ? (
               <Button variant="ghost" className="text-[13px] font-semibold text-slate-600" onClick={() => setView("RESULT")}>
@@ -718,7 +792,7 @@ export function EvidenceReadinessModal({ open, onOpenChange, onProceedToAnalysis
                     onClick={() => {
                       const isNotReady = activeRun?.status === "NOT_READY";
                       if (isNotReady && view !== "ARCHIVE") {
-                        setShowOverrideModal(true);
+                        setView("CONFIRM_OVERRIDE");
                       } else {
                         onProceedToAnalysis();
                         onOpenChange(false);
@@ -735,53 +809,7 @@ export function EvidenceReadinessModal({ open, onOpenChange, onProceedToAnalysis
 
       </div>
 
-      {/* Override Modal */}
-      {showOverrideModal && latestRun && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/60 backdrop-blur-[2px]">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-[440px] overflow-hidden flex flex-col m-4 animate-in fade-in zoom-in-95 duration-200">
-            <div className="px-6 py-5 border-b border-slate-100 flex items-start gap-4">
-              <div className="h-10 w-10 rounded-full bg-rose-50 flex items-center justify-center shrink-0">
-                <AlertTriangle className="h-5 w-5 text-rose-600" />
-              </div>
-              <div className="flex flex-col pt-1">
-                <h3 className="text-[15px] font-bold text-slate-900">Lanjutkan ke Analysis?</h3>
-                <p className="text-[13px] text-slate-500 mt-1 leading-relaxed">
-                  {latestRun.results.filter(r => r.level === "REQUIRED" && r.status !== "FULFILLED").length} requirement wajib masih belum terpenuhi. Analisis tetap dapat dijalankan, tetapi hasil dapat memiliki keterbatasan evidence.
-                </p>
-              </div>
-            </div>
-            <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex flex-col gap-3">
-              <label className="flex items-start gap-3 cursor-pointer group">
-                <Checkbox 
-                  checked={overrideAck} 
-                  onCheckedChange={(c) => setOverrideAck(c === true)} 
-                  className="mt-0.5"
-                />
-                <span className="text-[13px] font-medium text-slate-700 leading-snug">
-                  Saya menyetujui penggunaan evidence tidak lengkap.
-                </span>
-              </label>
-            </div>
-            <div className="px-6 py-4 bg-white flex items-center justify-end gap-3 border-t border-slate-100">
-              <Button variant="ghost" className="text-[13px] font-semibold text-slate-600" onClick={() => setShowOverrideModal(false)}>
-                Kembali
-              </Button>
-              <Button 
-                className="px-6 text-[13px] font-semibold bg-rose-600 text-white hover:bg-rose-700"
-                disabled={!overrideAck}
-                onClick={() => {
-                  overrideAnalysis(overrideNote, overrideAck);
-                  onProceedToAnalysis();
-                  onOpenChange(false);
-                  setShowOverrideModal(false);
-                }}
-              >
-                Tetap Lanjutkan
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      
 
       {/* Recheck Modal */}
       {showRecheckModal && (

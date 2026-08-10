@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
+import { AgentLoadingVisuals } from './AnalysisLoadingVisuals';
 import { useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { 
@@ -87,6 +88,85 @@ export const AgentDisplayMeta: Record<string, { nodeId: string, subtitle: string
   peepo: { nodeId: 'PPO-01', subtitle: 'Analyzing environmental context' },
   ipls: { nodeId: 'LYR-09', subtitle: 'Security layer validation' },
   prev: { nodeId: 'PRV-03', subtitle: 'Generating prevention plans' }
+};
+
+
+export const AGENT_PROCESS_STEPS: Record<string, { id: string, label: string }[]> = {
+  fact: [
+    { id: 'f1', label: 'Membaca evidence' },
+    { id: 'f2', label: 'Menemukan kejadian' },
+    { id: 'f3', label: 'Mengidentifikasi waktu' },
+    { id: 'f4', label: 'Menyusun urutan kejadian' },
+    { id: 'f5', label: 'Mengelompokkan Pra-Kontak / Kontak / Pasca Kontak' },
+    { id: 'f6', label: 'Memeriksa konsistensi antar-evidence' },
+    { id: 'f7', label: 'Menyiapkan hasil kronologi' }
+  ],
+  actor: [
+    { id: 'a1', label: 'Membaca Fakta & Kronologi' },
+    { id: 'a2', label: 'Mengidentifikasi aktor' },
+    { id: 'a3', label: 'Memetakan aktor ke event' },
+    { id: 'a4', label: 'Memeriksa keterlibatan' },
+    { id: 'a5', label: 'Finalisasi hasil' }
+  ],
+  peepo: [
+    { id: 'p1', label: 'Membaca konteks investigasi' },
+    { id: 'p2', label: 'Mengidentifikasi faktor' },
+    { id: 'p3', label: 'Mengelompokkan PEEPO' },
+    { id: 'p4', label: 'Memeriksa evidence pendukung' },
+    { id: 'p5', label: 'Finalisasi hasil' }
+  ],
+  ipls: [
+    { id: 'i1', label: 'Membaca faktor investigasi' },
+    { id: 'i2', label: 'Memetakan lapisan IPLS' },
+    { id: 'i3', label: 'Memeriksa conformity' },
+    { id: 'i4', label: 'Mengidentifikasi gap' },
+    { id: 'i5', label: 'Finalisasi hasil' }
+  ],
+  prev: [
+    { id: 'v1', label: 'Membaca hasil investigasi' },
+    { id: 'v2', label: 'Memetakan penyebab' },
+    { id: 'v3', label: 'Mengidentifikasi kontrol' },
+    { id: 'v4', label: 'Menyusun tindakan pencegahan' },
+    { id: 'v5', label: 'Finalisasi rekomendasi' }
+  ]
+};
+
+export const ACTIVITY_FEED_EVENTS: Record<string, string[]> = {
+  fact: [
+    "Evidence scope disiapkan",
+    "Ekstraksi event kandidat selesai",
+    "Event dipetakan ke timeline",
+    "Konsistensi log diverifikasi",
+    "Hasil kronologi final"
+  ],
+  actor: [
+    "Konteks kronologi dibaca",
+    "Aktor terkait ditemukan",
+    "Aktor dipetakan ke event",
+    "Keterlibatan dianalisis",
+    "Matriks aktor final"
+  ],
+  peepo: [
+    "Konteks investigasi dimuat",
+    "Faktor insiden diidentifikasi",
+    "Faktor dikelompokkan (PEEPO)",
+    "Evidence pendukung diperiksa",
+    "Analisis PEEPO final"
+  ],
+  ipls: [
+    "Faktor investigasi dibaca",
+    "Lapisan IPLS dipetakan",
+    "Conformity divalidasi",
+    "Gap lapisan diidentifikasi",
+    "Analisis IPLS final"
+  ],
+  prev: [
+    "Hasil investigasi dimuat",
+    "Akar penyebab dipetakan",
+    "Kontrol saat ini dievaluasi",
+    "Tindakan pencegahan disusun",
+    "Rekomendasi final"
+  ]
 };
 
 export const initialAgentsState: AgentState[] = [
@@ -1013,18 +1093,7 @@ export default function AnalysisTab({ agents, setAgents, reportStatus }: Analysi
 
   // Timer States
   const [elapsedTimeMs, setElapsedTimeMs] = useState<number>(0);
-
-  useEffect(() => {
-    let interval: any;
-    if (globalStatus === 'running') {
-      interval = setInterval(() => {
-        setElapsedTimeMs(prev => prev + 1000);
-      }, 1000);
-    }
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [globalStatus]);
+  const [isHandoffHold, setIsHandoffHold] = useState<boolean>(false);
 
   const formatTime = (ms: number) => {
     const totalSeconds = Math.floor(ms / 1000);
@@ -1066,6 +1135,18 @@ export default function AnalysisTab({ agents, setAgents, reportStatus }: Analysi
   const isAnyAgentRunning = useMemo(() => {
     return globalStatus === "running" || agents.some(a => a.status === "running");
   }, [globalStatus, agents]);
+
+  useEffect(() => {
+    let interval: any;
+    if (isAnyAgentRunning) {
+      interval = setInterval(() => {
+        setElapsedTimeMs(prev => prev + 1000);
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isAnyAgentRunning]);
 
   useEffect(() => {
     if (isAnyAgentRunning) {
@@ -1374,11 +1455,11 @@ export default function AnalysisTab({ agents, setAgents, reportStatus }: Analysi
       } : a));
 
       const stages = [
-          'Reading evidence batches...',
-          'Mapping involved entities...',
-          'Synthesizing workspace findings...',
-          'Applying industrial safety logic...',
-          'Finalizing output schema...'
+          'Menyusun struktur kronologi...',
+          'Mengelompokkan kejadian...',
+          'Memeriksa kecocokan antar-evidence...',
+          'Memetakan keterlibatan aktor...',
+          'Menyelesaikan hasil analisis...'
       ];
       stages.forEach((msg, idx) => {
           setTimeout(() => {
@@ -1391,10 +1472,19 @@ export default function AnalysisTab({ agents, setAgents, reportStatus }: Analysi
           const a = prev.find(x => x.id === nextId);
           if (a?.status === 'running') {
             // Success: complete it and advance queue
-            setTimeout(() => {
-               setChainQueue(q => q[0] === nextId ? q.slice(1) : q);
-               setActiveTask(null);
-            }, 0);
+            if (nextId === 'fact') {
+                setIsHandoffHold(true);
+                setTimeout(() => {
+                   setIsHandoffHold(false);
+                   setChainQueue(q => q[0] === nextId ? q.slice(1) : q);
+                   setActiveTask(null);
+                }, 3000);
+            } else {
+                setTimeout(() => {
+                   setChainQueue(q => q[0] === nextId ? q.slice(1) : q);
+                   setActiveTask(null);
+                }, 0);
+            }
             return prev.map(x => x.id === nextId ? { 
               ...x, 
               status: 'completed', 
@@ -1402,7 +1492,7 @@ export default function AnalysisTab({ agents, setAgents, reportStatus }: Analysi
               lastUpdatedTimestamp: new Date().toLocaleTimeString(),
               confidence: (85 + Math.floor(Math.random() * 10)) + "%",
               dependencyState: 'Resolved',
-              microStatus: 'Synthesis complete.'
+              microStatus: 'Hasil analisis siap.'
             } : x);
           } else if (a?.status === 'paused') {
             // Paused: clear active task so it can be picked up again on resume
@@ -1410,7 +1500,7 @@ export default function AnalysisTab({ agents, setAgents, reportStatus }: Analysi
           }
           return prev;
         });
-      }, 4000);
+      }, nextId === 'fact' ? 22000 : 18000);
     } else if (globalStatus === 'running' && chainQueue.length === 0 && !activeTask) {
       setGlobalStatus('completed');
     }
@@ -1420,6 +1510,7 @@ export default function AnalysisTab({ agents, setAgents, reportStatus }: Analysi
     setPreRunAgentId(null);
     setSelectedAgentId(agentId);
     setExecMode("manual");
+    setElapsedTimeMs(0);
     
     setAgents(prev => prev.map(a => a.id === agentId ? { 
       ...a, 
@@ -1458,10 +1549,12 @@ export default function AnalysisTab({ agents, setAgents, reportStatus }: Analysi
         }
         return a;
       }));
-      const agentName = agents.find(ag => ag.id === agentId)?.name;
-      const knowledgeCount = agents.find(ag => ag.id === agentId)?.knowledgeSelection?.length;
-      toast.success(`${agentName} finished using ${knowledgeCount} evidence assets.`);
-    }, 4000);
+      if (agentId !== 'fact') {
+         const agentName = agents.find(ag => ag.id === agentId)?.name;
+         const knowledgeCount = agents.find(ag => ag.id === agentId)?.knowledgeSelection?.length;
+         toast.success(`${agentName} finished using ${knowledgeCount} evidence assets.`);
+      }
+    }, agentId === 'fact' ? 22000 : 18000);
   };
 
   const stopSingleAgent = (agentId: string) => {
@@ -1617,14 +1710,10 @@ export default function AnalysisTab({ agents, setAgents, reportStatus }: Analysi
                                  ${cardBorder}
                               `}
                            >
-                              {/* Background Scanner Effect for Running State */}
+                              {/* Active Status Border Highlight */}
                               {isRunning && (
-                                 <div className="absolute inset-0 z-0 bg-gradient-to-r from-transparent via-indigo-500/10 to-transparent -translate-x-full" style={{ animation: 'shimmer 2s infinite linear' }}>
-                                    <style>{`
-                                       @keyframes shimmer {
-                                          100% { transform: translateX(100%); }
-                                       }
-                                    `}</style>
+                                 <div className="absolute left-0 top-0 bottom-0 w-[2px] overflow-hidden rounded-l-sm">
+                                    <div className="absolute left-0 w-full bg-indigo-500 h-1/4 motion-safe:animate-[slideDown_2s_linear_infinite]" />
                                  </div>
                               )}
 
@@ -1714,11 +1803,11 @@ export default function AnalysisTab({ agents, setAgents, reportStatus }: Analysi
 
                            {/* Connector Line to Next Node */}
                            <div className="flex justify-center items-center h-8 relative">
-                              <div className={`h-full transition-colors relative overflow-hidden ${
-                                 isCompleted ? 'w-[2px] bg-emerald-400' : 'w-px border-l border-dashed border-slate-300'
+                              <div className={`h-full transition-colors duration-200 relative overflow-hidden ${
+                                 isCompleted ? 'w-[2px] bg-emerald-500' : 'w-[2px] bg-slate-200'
                               }`}>
                                  {isNextRunning && (
-                                    <div className="absolute top-0 w-full h-1/2 bg-gradient-to-b from-transparent to-blue-500 animate-pulse" />
+                                    <div className="absolute top-[-24px] left-0 w-full h-[24px] bg-indigo-500 motion-safe:animate-connector-travel" />
                                  )}
                               </div>
                               
@@ -1748,21 +1837,128 @@ export default function AnalysisTab({ agents, setAgents, reportStatus }: Analysi
                      <div className="bg-white flex-1 flex flex-col relative transition-all duration-300 origin-center overflow-hidden w-full h-full">
                         <div className="flex-1 flex flex-col relative overflow-hidden h-full">
                            {selectedAgent?.status === 'running' ? (
-                              <div className="flex flex-col items-center justify-center h-full text-center space-y-8 bg-slate-50/50">
-                                 <div className="relative flex items-center justify-center">
-                                    <div className="absolute inset-0 bg-blue-500 blur-2xl opacity-20 animate-pulse rounded-full w-32 h-32" />
-                                    <div className="h-20 w-20 bg-white rounded-full border border-blue-100 shadow-xl flex items-center justify-center relative z-10">
-                                       <Loader2 className="h-10 w-10 text-blue-600 animate-spin" />
+                              <div className="flex-1 flex flex-col bg-white relative h-full">
+                                 {/* Stable Shell Header */}
+                                 <div className="px-10 py-6 border-b border-slate-200 shrink-0 bg-white z-10 shadow-sm relative">
+                                    <div className="flex items-center justify-between mb-1">
+                                       <div className="flex flex-col">
+                                          <h2 className="text-[20px] font-bold text-slate-900 uppercase tracking-wide">
+                                             {selectedAgent.name}
+                                          </h2>
+                                          <p className="text-[13px] text-slate-500">
+                                             {selectedAgent.id === 'fact' ? 'Menyusun urutan kejadian berdasarkan evidence.' : (AgentDisplayMeta[selectedAgent.id]?.subtitle || selectedAgent.purpose)}
+                                          </p>
+                                       </div>
+                                       <div className="flex items-center gap-8">
+                                          <div className="flex flex-col text-right">
+                                             <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">EVIDENCE</span>
+                                             <span className="text-[12px] font-semibold text-slate-700">{selectedAgent.knowledgeSelection?.length || 0} digunakan</span>
+                                          </div>
+                                          <div className="flex flex-col text-right">
+                                             <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">DURASI</span>
+                                             <span className="text-[12px] font-semibold text-slate-700 font-tabular-nums">{formatTime(elapsedTimeMs)}</span>
+                                          </div>
+                                          <div className="flex flex-col text-right">
+                                             <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">STATUS</span>
+                                             <div className="flex items-center justify-end gap-1.5 mt-0.5">
+                                                <span className="h-1.5 w-1.5 rounded-full bg-blue-600 motion-safe:animate-badge-dot" />
+                                                <span className="text-[11px] font-bold text-blue-700 uppercase tracking-widest">BERJALAN</span>
+                                             </div>
+                                          </div>
+                                       </div>
                                     </div>
                                  </div>
-                                 <div className="flex flex-col items-center space-y-3">
-                                    <span className="text-[20px] font-black uppercase tracking-[0.2em] text-slate-800">{selectedAgent.microStatus || "Memproses Matriks..."}</span>
-                                    <div className="flex items-center gap-2 px-4 py-1.5 bg-blue-50 border border-blue-200 rounded-full">
-                                       <Activity className="h-3.5 w-3.5 text-blue-600 animate-pulse" />
-                                       <span className="text-[10px] font-black text-blue-700 uppercase tracking-widest">AI Sedang Bekerja</span>
+                                 
+                                 {/* Split Pane: Output Visual & Internal Stepper */}
+                                 <div className="flex-1 flex min-h-0 relative">
+                                    {/* Left: Processing Output Visual */}
+                                    <div className="w-[65%] border-r border-slate-200 bg-slate-50/50 p-8 overflow-hidden relative z-0">
+                                       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-100/50 to-transparent pointer-events-none" />
+                                       <div className="relative h-full z-10">
+                                          <AgentLoadingVisuals agentId={selectedAgent.id} elapsedTimeMs={elapsedTimeMs} />
+                                       </div>
+                                    </div>
+                                    
+                                    {/* Right: Detailed Internal Stepper */}
+                                    <div className="w-[35%] p-8 overflow-auto bg-white custom-scrollbar">
+                                       <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-6">Tahap Penyusunan</h3>
+                                       <div className="relative space-y-0">
+                                          {(() => {
+                                             const steps = AGENT_PROCESS_STEPS[selectedAgent.id] || [];
+                                             const currentStepIndex = Math.min(Math.floor(elapsedTimeMs / 3000), steps.length - 1);
+                                             
+                                             const stepDescriptions: Record<string, string[]> = {
+                                                fact: [
+                                                   "Mengekstrak berkas dokumen, transkrip, dan rekaman CCTV.",
+                                                   "Mengidentifikasi aktivitas dan anomali penting.",
+                                                   "Mencocokkan pencatatan waktu dari multi-sumber.",
+                                                   "Mengurutkan rentetan aktivitas secara kronologis.",
+                                                   "Menentukan posisi kejadian dalam struktur kronologi.",
+                                                   "Verifikasi silang integritas data antar-sumber.",
+                                                   "Menyelesaikan penyusunan hasil visualisasi akhir."
+                                                ]
+                                             };
+
+                                             return steps.map((step, idx) => {
+                                                const isActive = idx === currentStepIndex;
+                                                const isCompleted = idx < currentStepIndex;
+                                                const isWaiting = idx > currentStepIndex;
+                                                const isLast = idx === steps.length - 1;
+                                                
+                                                const description = (stepDescriptions[selectedAgent.id] && stepDescriptions[selectedAgent.id][idx]) || selectedAgent.microStatus || "Memproses...";
+                                                
+                                                return (
+                                                   <div key={step.id} className="relative flex items-start group">
+                                                      {!isLast && (
+                                                         <div className={`absolute top-6 left-[11px] w-[2px] h-[calc(100%-8px)] transition-colors duration-200 overflow-hidden ${isCompleted ? 'bg-emerald-500' : 'bg-slate-200'}`}>
+                                                            {isActive && (
+                                                               <div className="absolute top-0 left-0 w-full h-[24px] bg-blue-500 motion-safe:animate-stepper-connector" />
+                                                            )}
+                                                         </div>
+                                                      )}
+                                                      <div className="relative z-10 mr-4 mt-0.5 flex flex-col items-center">
+                                                         {isCompleted ? (
+                                                            <div className="h-6 w-6 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 border border-emerald-200 shrink-0 shadow-sm transition-all duration-300 animate-in zoom-in">
+                                                               <CheckCircle2 className="h-3.5 w-3.5" />
+                                                            </div>
+                                                         ) : isActive ? (
+                                                            <div className="h-6 w-6 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 border border-blue-200 shrink-0 shadow-sm relative transition-all duration-300">
+                                                               <div className="absolute inset-[1px] rounded-full border-[1.5px] border-slate-200 border-t-blue-500 animate-spin" />
+                                                               <div className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+                                                            </div>
+                                                         ) : (
+                                                            <div className="h-6 w-6 rounded-full bg-white flex items-center justify-center text-slate-300 border border-slate-200 shrink-0 transition-all duration-300">
+                                                               <div className="h-1.5 w-1.5 rounded-full bg-slate-200" />
+                                                            </div>
+                                                         )}
+                                                      </div>
+                                                      <div className={`flex flex-col pb-8 transition-opacity duration-300 ${isWaiting ? 'opacity-50' : 'opacity-100'}`}>
+                                                         <div className="flex items-center gap-2">
+                                                            <span className="text-[12px] font-mono text-slate-400">0{idx + 1}</span>
+                                                            <span className={`text-[13px] ${isActive ? 'text-blue-600 font-semibold' : isCompleted ? 'text-slate-800 font-medium' : 'text-slate-500'}`}>
+                                                               {step.label}
+                                                            </span>
+                                                         </div>
+                                                         {isActive && (
+                                                            <div className="mt-1 motion-safe:animate-fade-in-up-short">
+                                                               <p className="text-[11px] text-slate-500 mb-2 transition-all duration-200">
+                                                                  {description}
+                                                               </p>
+                                                               <div className="w-48 h-0.5 bg-slate-100 rounded-full overflow-hidden relative">
+                                                                  <div className="absolute top-0 bottom-0 left-0 w-1/3 bg-blue-500 rounded-full animate-[progressTrack_1.6s_linear_infinite]" />
+                                                               </div>
+                                                            </div>
+                                                         )}
+                                                      </div>
+                                                   </div>
+                                                );
+                                             });
+                                          })()}
+                                       </div>
                                     </div>
                                  </div>
-                              </div>
+                                 
+                                                               </div>
                            ) : !selectedAgent?.results ? (
                               <div className="flex flex-col h-full items-center justify-center text-center opacity-30 grayscale pointer-events-none space-y-6">
                                  <Cpu className="h-12 w-12 text-slate-300" />
@@ -1770,11 +1966,26 @@ export default function AnalysisTab({ agents, setAgents, reportStatus }: Analysi
                               </div>
                            ) : (
                               <div className="flex-1 flex flex-col h-full overflow-hidden">
-                                 {globalStatus === 'running' && (
+                                 {isHandoffHold && selectedAgentId === 'fact' ? (
+                                    <div className="flex-none bg-[#F8FAFC] border-b border-slate-200 px-6 py-3 flex items-center justify-between">
+                                       <div className="flex items-center gap-3">
+                                          <div className="h-5 w-5 rounded-full bg-emerald-100 border border-emerald-200 flex items-center justify-center text-emerald-600">
+                                             <CheckCircle2 className="h-3 w-3" />
+                                          </div>
+                                          <div className="flex flex-col">
+                                             <span className="text-[11px] font-bold text-slate-700">Fakta & Kronologi Selesai</span>
+                                             <span className="text-[10px] text-slate-500">Analisis Aktor dimulai dalam 3 detik</span>
+                                          </div>
+                                       </div>
+                                       <div className="w-32 h-1 bg-slate-200 rounded-full overflow-hidden">
+                                          <div className="h-full bg-blue-500 animate-[fill_3s_linear_forwards]" style={{ width: '0%' }} />
+                                       </div>
+                                    </div>
+                                 ) : globalStatus === 'running' && (
                                     <div className="flex-none bg-blue-50 border-b border-blue-100 px-4 py-2 flex items-center justify-between">
                                        <div className="flex items-center gap-2">
                                           <div className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
-                                          <span className="text-[11px] font-bold text-blue-700">Analisis masih berjalan...</span>
+                                          <span className="text-[11px] font-bold text-blue-700">Analisis lain sedang berjalan...</span>
                                        </div>
                                        <button 
                                           onClick={() => { setSelectedAgentId(activeTask); hasUserSelectedNode.current = false; }}
