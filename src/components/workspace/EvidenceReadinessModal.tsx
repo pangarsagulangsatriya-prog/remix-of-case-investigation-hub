@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { Loader2, ShieldCheck, X, ChevronRight, Check, ArrowLeft, ArrowRight, RotateCcw, AlertTriangle, FileText, ChevronLeft } from "lucide-react";
+import { Loader2, ShieldCheck, X, ChevronRight, Check, ArrowLeft, ArrowRight, RotateCcw, AlertTriangle, FileText, ChevronLeft, HelpCircle, Camera, Mic, Paperclip } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useReadiness, ReadinessRun, EvidenceRequirementResult } from "@/hooks/useReadiness";
 import { cn } from "@/lib/utils";
@@ -14,19 +14,45 @@ interface EvidenceReadinessModalProps {
 
 export function EvidenceReadinessModal({ open, onOpenChange, onProceedToAnalysis }: EvidenceReadinessModalProps) {
   const { runs, triggerManualCheck, latestRun, isOutdated, overrideAnalysis } = useReadiness();
-  const [view, setView] = useState<"RESULT" | "HISTORY" | "ARCHIVE" | "OVERRIDE">("RESULT");
+  const [view, setView] = useState<"RESULT" | "HISTORY" | "ARCHIVE">("RESULT");
+  const [showOverrideModal, setShowOverrideModal] = useState(false);
+  const [showRecheckModal, setShowRecheckModal] = useState(false);
   const [selectedRun, setSelectedRun] = useState<ReadinessRun | null>(null);
   const [activeReqId, setActiveReqId] = useState<string | null>(null);
   const [overrideAck, setOverrideAck] = useState(false);
   const [overrideNote, setOverrideNote] = useState("");
 
+  const [checkSequence, setCheckSequence] = useState(0);
+  const [hasEvidence, setHasEvidence] = useState(true); // Mock edge case: zero evidence
+
   const activeRun = view === "ARCHIVE" ? selectedRun : latestRun;
 
+  // Auto-select priority requirement on ready
   useEffect(() => {
-    if (open && activeRun && activeRun.results.length > 0 && !activeReqId) {
-      setActiveReqId(activeRun.results[0].id);
+    if (open && activeRun && activeRun.results.length > 0 && !activeReqId && latestRun?.status !== "CHECKING") {
+      const getPriority = (r: EvidenceRequirementResult) => {
+        if (r.status === "BROKEN") return 1;
+        if (r.status === "MISSING" && r.level === "REQUIRED") return 2;
+        if (r.status === "NEEDS_VERIFICATION") return 3;
+        if (r.status === "MISSING" && r.level !== "REQUIRED") return 4;
+        return 5;
+      };
+      const sorted = [...activeRun.results].sort((a, b) => getPriority(a) - getPriority(b));
+      setActiveReqId(sorted[0].id);
     }
-  }, [open, activeRun, activeReqId]);
+  }, [open, activeRun, activeReqId, latestRun?.status]);
+
+  // Checking sequence animation
+  useEffect(() => {
+    if (latestRun?.status === "CHECKING") {
+      setCheckSequence(1);
+      const t1 = setTimeout(() => setCheckSequence(2), 1000);
+      const t2 = setTimeout(() => setCheckSequence(3), 2200);
+      return () => { clearTimeout(t1); clearTimeout(t2); };
+    } else {
+      setCheckSequence(0);
+    }
+  }, [latestRun?.status]);
 
   const groupedResults = useMemo(() => {
     if (!activeRun) return {};
@@ -55,6 +81,7 @@ export function EvidenceReadinessModal({ open, onOpenChange, onProceedToAnalysis
   };
 
   const handleRecheck = () => {
+    setActiveReqId(null);
     triggerManualCheck();
     setView("RESULT");
   };
@@ -404,75 +431,6 @@ export function EvidenceReadinessModal({ open, onOpenChange, onProceedToAnalysis
   );
 
   // ----------------------------------------------------------------------
-  // OVERRIDE CONFIRMATION VIEW
-  // ----------------------------------------------------------------------
-  const renderOverride = () => {
-    if (!latestRun) return null;
-    const missingReq = latestRun.results.filter(r => r.level === "REQUIRED" && r.status === "MISSING");
-    const brokenReq = latestRun.results.filter(r => r.level === "REQUIRED" && r.status === "BROKEN");
-
-    return (
-      <div className="flex-1 flex flex-col h-full bg-white overflow-hidden">
-        <div className="px-8 py-6 border-b border-slate-200 shrink-0">
-          <h2 className="text-[16px] font-bold text-slate-900 uppercase tracking-wide">KONFIRMASI ANALYSIS</h2>
-          <span className="text-[12px] text-slate-500 font-medium">Evidence Golden Gate</span>
-        </div>
-
-        <div className="flex-1 overflow-auto p-8 md:p-12">
-          <div className="max-w-2xl mx-auto space-y-8">
-            <div className="bg-rose-50 border border-rose-200 p-5 rounded-lg text-rose-800 space-y-1">
-              {missingReq.length > 0 && <div className="text-[13px] font-bold">{missingReq.length} requirement wajib belum terpenuhi</div>}
-              {brokenReq.length > 0 && <div className="text-[13px] font-bold">{brokenReq.length} requirement wajib bermasalah</div>}
-            </div>
-
-            <div className="space-y-4">
-              <h4 className="text-[12px] font-bold text-slate-800 uppercase tracking-widest">Detail Blocker</h4>
-              <ul className="text-[13px] text-slate-700 space-y-2 pl-2 border-l-2 border-slate-200">
-                {brokenReq.map(r => (
-                  <li key={r.id} className="pl-2 flex items-start gap-2">
-                    <span className="text-slate-400 mt-0.5">•</span>
-                    <span><span className="font-semibold text-slate-900">{r.label}</span> — {r.issue || "Bermasalah"}</span>
-                  </li>
-                ))}
-                {missingReq.map(r => (
-                  <li key={r.id} className="pl-2 flex items-start gap-2">
-                    <span className="text-slate-400 mt-0.5">•</span>
-                    <span><span className="font-semibold text-slate-900">{r.label}</span> — belum ada</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div className="pt-6 border-t border-slate-100">
-              <label className="flex items-start gap-3 cursor-pointer group">
-                <Checkbox 
-                  checked={overrideAck} 
-                  onCheckedChange={(c) => setOverrideAck(c === true)} 
-                  className="mt-0.5"
-                />
-                <span className="text-[13px] font-medium text-slate-800 leading-snug group-hover:text-slate-900">
-                  Saya memahami bahwa Analysis akan menggunakan evidence yang belum memenuhi requirement standar.
-                </span>
-              </label>
-            </div>
-
-            <div className="space-y-2">
-              <div className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">
-                Catatan alasan melanjutkan (Opsional)
-              </div>
-              <Textarea 
-                value={overrideNote}
-                onChange={(e) => setOverrideNote(e.target.value)}
-                className="w-full text-[13px] min-h-[100px] resize-none"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // ----------------------------------------------------------------------
   // MAIN DRAWER RENDER
   // ----------------------------------------------------------------------
   return (
@@ -507,16 +465,30 @@ export function EvidenceReadinessModal({ open, onOpenChange, onProceedToAnalysis
             </div>
             <div className="flex items-center gap-5 mt-1">
               <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200">
-                {view === "ARCHIVE" ? `Arsip #${selectedRun?.runNumber}` : latestRun ? `Pemeriksaan #${latestRun.runNumber}` : "Baru"}
+                {view === "ARCHIVE" ? `Arsip #${selectedRun?.runNumber}` : 
+                 latestRun?.status === "CHECKING" ? "MEMERIKSA" : 
+                 latestRun ? `Pemeriksaan #${latestRun.runNumber}` : "BELUM DIPERIKSA"}
               </span>
               
-              {runs.length > 0 && latestRun?.status !== "CHECKING" && (
+              {runs.length > 0 && latestRun?.status !== "CHECKING" ? (
                 <button 
                   className="text-[12px] font-bold text-slate-500 hover:text-slate-900 uppercase tracking-widest transition-colors"
                   onClick={() => setView("HISTORY")}
                 >
                   Riwayat
                 </button>
+              ) : (
+                <div className="relative group flex items-center">
+                   <button 
+                     disabled
+                     className="text-[12px] font-bold text-slate-300 uppercase tracking-widest cursor-not-allowed"
+                   >
+                     Riwayat
+                   </button>
+                   <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 hidden group-hover:block w-max bg-slate-800 text-white text-[11px] px-2.5 py-1.5 rounded shadow-md z-50 pointer-events-none">
+                     Riwayat tersedia setelah pemeriksaan pertama.
+                   </div>
+                </div>
               )}
               
               <div className="w-px h-5 bg-slate-200 mx-2" />
@@ -531,14 +503,174 @@ export function EvidenceReadinessModal({ open, onOpenChange, onProceedToAnalysis
         {/* Content Area */}
         <div className="flex-1 overflow-hidden flex flex-col relative bg-white">
           {latestRun?.status === "CHECKING" ? (
-             <div className="flex-1 flex flex-col items-center justify-center space-y-4">
-               <Loader2 className="h-8 w-8 text-blue-600 animate-spin" />
-               <span className="text-[13px] font-medium text-slate-500">Memeriksa Kesiapan Evidence...</span>
+             <div className="flex-1 flex flex-col bg-white overflow-y-auto overflow-x-hidden relative">
+               <div className="p-10 mx-auto w-full max-w-[560px] flex flex-col items-center">
+                 <div className="w-full flex flex-col items-center text-center mt-6">
+                   <div className="h-10 w-10 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-center mb-4 relative">
+                     <ShieldCheck className="h-5 w-5 text-slate-700 relative z-10" />
+                     <div className="absolute inset-0 rounded-xl border-2 border-slate-900/10 animate-ping opacity-20" />
+                   </div>
+                   <h2 className="text-[19px] font-bold text-slate-900 tracking-tight mb-2">Memeriksa kesiapan evidence</h2>
+                   <p className="text-[14px] text-slate-500 max-w-[420px] mb-6 leading-relaxed">
+                     Evidence sedang dipetakan ke kebutuhan investigasi.
+                   </p>
+                   <Button 
+                     disabled
+                     className="w-[200px] h-10 text-[13px] font-semibold bg-slate-900 text-white shadow-sm"
+                   >
+                     <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Memeriksa...
+                   </Button>
+                 </div>
+
+                 <div className="space-y-4 mb-16 mt-12 px-2 w-full max-w-[320px]">
+                   <div className="flex items-center gap-4">
+                     <div className={cn("flex items-center justify-center h-5 w-5 rounded-full transition-colors duration-200 shrink-0", checkSequence >= 1 ? "bg-emerald-100 text-emerald-600" : "bg-slate-100 text-slate-400")}>
+                       {checkSequence >= 1 ? <Check className="h-3 w-3" /> : <Loader2 className="h-3 w-3 animate-spin" />}
+                     </div>
+                     <span className={cn("text-[13px] font-medium transition-colors duration-200", checkSequence >= 1 ? "text-slate-800" : "text-slate-500")}>
+                       Membaca evidence tersedia
+                     </span>
+                   </div>
+                   <div className="flex items-center gap-4">
+                     <div className={cn("flex items-center justify-center h-5 w-5 rounded-full transition-colors duration-200 shrink-0", checkSequence >= 2 ? "bg-emerald-100 text-emerald-600" : checkSequence === 1 ? "bg-slate-100 text-slate-400" : "bg-transparent")}>
+                       {checkSequence >= 2 ? <Check className="h-3 w-3" /> : checkSequence === 1 ? <Loader2 className="h-3 w-3 animate-spin" /> : <div className="h-1.5 w-1.5 rounded-full border border-slate-300" />}
+                     </div>
+                     <span className={cn("text-[13px] font-medium transition-colors duration-200", checkSequence >= 2 ? "text-slate-800" : checkSequence === 1 ? "text-slate-600" : "text-slate-400")}>
+                       Memetakan evidence ke requirement
+                     </span>
+                   </div>
+                   <div className="flex items-center gap-4">
+                     <div className={cn("flex items-center justify-center h-5 w-5 rounded-full transition-colors duration-200 shrink-0", checkSequence >= 3 ? "bg-emerald-100 text-emerald-600" : checkSequence === 2 ? "bg-slate-100 text-slate-400" : "bg-transparent")}>
+                       {checkSequence >= 3 ? <Check className="h-3 w-3" /> : checkSequence === 2 ? <Loader2 className="h-3 w-3 animate-spin" /> : <div className="h-1.5 w-1.5 rounded-full border border-slate-300" />}
+                     </div>
+                     <span className={cn("text-[13px] font-medium transition-colors duration-200", checkSequence >= 3 ? "text-slate-800" : checkSequence === 2 ? "text-slate-600" : "text-slate-400")}>
+                       Memeriksa kelengkapan dan kualitas
+                     </span>
+                   </div>
+                 </div>
+
+                 {/* Skeletons */}
+                 <div className="w-full space-y-3 pt-8 border-t border-slate-100 opacity-60">
+                   <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">STANDARD EVIDENCE REQUIREMENTS</h4>
+                   {[1, 2, 3, 4].map(i => (
+                     <div key={i} className="flex items-center gap-3 p-3 bg-white border border-slate-100 rounded-lg shadow-sm">
+                       <div className="h-full w-[3px] bg-slate-200 rounded-r-md absolute left-0 top-2 bottom-2" />
+                       <div className="h-8 w-full animate-pulse bg-slate-100/80 rounded-md" />
+                     </div>
+                   ))}
+                 </div>
+               </div>
              </div>
           ) : view === "HISTORY" ? (
              renderHistory()
-          ) : view === "OVERRIDE" ? (
-             renderOverride()
+          ) : !activeRun ? (
+            !hasEvidence ? (
+              <div className="flex-1 flex flex-col items-center justify-center bg-slate-50/50 p-8 text-center">
+                <div className="h-16 w-16 bg-white border border-slate-200 rounded-2xl flex items-center justify-center shadow-sm mb-5">
+                  <FileText className="h-8 w-8 text-slate-300" />
+                </div>
+                <h3 className="text-[18px] font-bold text-slate-900 tracking-tight mb-2">Belum ada evidence untuk diperiksa</h3>
+                <p className="text-[14px] text-slate-500 max-w-sm leading-relaxed mb-8">
+                  Tambahkan evidence kasus terlebih dahulu agar sistem dapat memeriksa kesiapan analisis.
+                </p>
+                <div className="flex items-center gap-3">
+                  <Button variant="ghost" onClick={handleClose} className="text-slate-500">Tutup</Button>
+                  <Button 
+                    className="px-8 h-10 text-[13px] font-semibold bg-slate-900 text-white hover:bg-slate-800 shadow-sm"
+                    onClick={() => {
+                      handleClose(); 
+                    }}
+                  >
+                    Tambah Evidence
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex-1 flex flex-col bg-white overflow-y-auto">
+                <div className="p-8 pb-12 flex flex-col items-center">
+                  
+                  {/* MAIN INTRO AREA */}
+                  <div className="w-full max-w-[600px] pt-8 flex flex-col items-center text-center">
+                    <div className="h-11 w-11 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-center mb-4">
+                      <ShieldCheck className="h-5 w-5 text-slate-700" />
+                    </div>
+                    <h2 className="text-[19px] font-bold text-slate-900 tracking-tight mb-2">Periksa kesiapan evidence</h2>
+                    <p className="text-[14px] text-slate-500 max-w-[460px] mb-6 leading-relaxed">
+                      Sistem akan memetakan evidence yang tersedia ke kebutuhan investigasi dan menunjukkan data yang masih perlu dilengkapi.
+                    </p>
+                    <Button 
+                      className="w-[200px] h-10 text-[13px] font-semibold bg-slate-900 text-white hover:bg-slate-800 shadow-sm transition-all active:scale-[0.98]"
+                      onClick={handleRecheck}
+                    >
+                      Periksa Kesiapan
+                    </Button>
+                    <p className="text-[12px] text-slate-400 mt-3 font-medium">
+                      File evidence tidak akan diubah.
+                    </p>
+                  </div>
+
+                  <div className="w-full max-w-[600px] h-px bg-slate-100 my-10" />
+
+                  {/* YANG AKAN DIPERIKSA */}
+                  <div className="w-full max-w-[600px] space-y-4">
+                    <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest text-center mb-4">YANG AKAN DIPERIKSA</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="flex items-start gap-3 bg-white p-3 rounded-lg border border-slate-200/60 transition-colors hover:bg-slate-50/50">
+                        <div className="p-2 bg-slate-50 rounded border border-slate-100 shrink-0"><Camera className="h-4 w-4 text-slate-500"/></div>
+                        <div className="pt-0.5">
+                          <div className="text-[13px] font-bold text-slate-800 mb-0.5">Bukti Lapangan</div>
+                          <div className="text-[12px] text-slate-500 leading-snug">Video kejadian dan foto pengamatan</div>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3 bg-white p-3 rounded-lg border border-slate-200/60 transition-colors hover:bg-slate-50/50">
+                        <div className="p-2 bg-slate-50 rounded border border-slate-100 shrink-0"><FileText className="h-4 w-4 text-slate-500"/></div>
+                        <div className="pt-0.5">
+                          <div className="text-[13px] font-bold text-slate-800 mb-0.5">Dokumen Formal</div>
+                          <div className="text-[12px] text-slate-500 leading-snug">BAP, laporan awal, dan dokumen investigasi</div>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3 bg-white p-3 rounded-lg border border-slate-200/60 transition-colors hover:bg-slate-50/50">
+                        <div className="p-2 bg-slate-50 rounded border border-slate-100 shrink-0"><Mic className="h-4 w-4 text-slate-500"/></div>
+                        <div className="pt-0.5">
+                          <div className="text-[13px] font-bold text-slate-800 mb-0.5">Wawancara & Komunikasi</div>
+                          <div className="text-[12px] text-slate-500 leading-snug">Rekaman operator, saksi, dan pihak terkait</div>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3 bg-white p-3 rounded-lg border border-slate-200/60 transition-colors hover:bg-slate-50/50">
+                        <div className="p-2 bg-slate-50 rounded border border-slate-100 shrink-0"><Paperclip className="h-4 w-4 text-slate-500"/></div>
+                        <div className="pt-0.5">
+                          <div className="text-[13px] font-bold text-slate-800 mb-0.5">Evidence Pendukung</div>
+                          <div className="text-[12px] text-slate-500 leading-snug">File tambahan yang relevan dengan analisis</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="w-full max-w-[600px] h-px bg-slate-100 my-10" />
+
+                  {/* PROSES PEMERIKSAAN */}
+                  <div className="w-full max-w-[600px] mb-4">
+                    <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest text-center mb-5">PROSES PEMERIKSAAN</h4>
+                    <div className="flex items-center justify-center text-[12px] font-medium text-slate-500 px-4">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">01</span>
+                        <span>Pemetaan Evidence</span>
+                      </div>
+                      <ArrowRight className="h-3 w-3 text-slate-300 mx-3 shrink-0" />
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">02</span>
+                        <span>Pemeriksaan Requirement</span>
+                      </div>
+                      <ArrowRight className="h-3 w-3 text-slate-300 mx-3 shrink-0" />
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">03</span>
+                        <span>Kesiapan Analisis</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )
           ) : (
             <div className="flex flex-col h-full">
               {renderSummary()}
@@ -552,35 +684,33 @@ export function EvidenceReadinessModal({ open, onOpenChange, onProceedToAnalysis
 
         {/* Sticky Footer */}
         {latestRun?.status !== "CHECKING" && (
-          <div className="px-8 py-5 border-t border-slate-200 bg-white shrink-0 flex items-center justify-between">
-            {view === "OVERRIDE" ? (
-              <>
-                <Button variant="ghost" className="text-[13px] font-semibold text-slate-600" onClick={() => setView("RESULT")}>
-                  Kembali ke Pemeriksaan
-                </Button>
-                <Button 
-                  className="px-8 text-[13px] font-semibold bg-slate-900 text-white hover:bg-slate-800"
-                  disabled={!overrideAck}
-                  onClick={() => {
-                    overrideAnalysis(overrideNote, overrideAck);
-                    onProceedToAnalysis();
-                    onOpenChange(false);
-                  }}
-                >
-                  Tetap Lanjutkan
-                </Button>
-              </>
-            ) : view === "HISTORY" ? (
-              <Button variant="ghost" className="text-[13px] font-semibold text-slate-600" onClick={handleClose}>
-                Tutup
+          <div className="px-8 py-5 border-t border-slate-200 bg-white shrink-0 flex items-center justify-between shadow-[0_-4px_10px_-4px_rgba(0,0,0,0.05)] z-20 relative">
+            {view === "HISTORY" ? (
+              <Button variant="ghost" className="text-[13px] font-semibold text-slate-600" onClick={() => setView("RESULT")}>
+                Kembali
               </Button>
+            ) : !activeRun ? (
+              hasEvidence && (
+                <>
+                  <Button variant="ghost" className="text-[13px] font-semibold text-slate-600" onClick={handleClose}>
+                    Tutup
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    className="px-8 text-[13px] font-semibold text-slate-700 border-slate-300 transition-all active:scale-[0.98]"
+                    onClick={handleRecheck}
+                  >
+                    Periksa Kesiapan
+                  </Button>
+                </>
+              )
             ) : (
               <>
                 <Button variant="ghost" className="text-[13px] font-semibold text-slate-600" onClick={handleClose}>
                   Tutup
                 </Button>
                 <div className="flex items-center gap-3">
-                  <Button variant="outline" className="text-[13px] font-semibold text-slate-700 border-slate-300" onClick={handleRecheck}>
+                  <Button variant="outline" className="text-[13px] font-semibold text-slate-700 border-slate-300" onClick={() => setShowRecheckModal(true)}>
                     Periksa Ulang
                   </Button>
                   <Button 
@@ -588,7 +718,7 @@ export function EvidenceReadinessModal({ open, onOpenChange, onProceedToAnalysis
                     onClick={() => {
                       const isNotReady = activeRun?.status === "NOT_READY";
                       if (isNotReady && view !== "ARCHIVE") {
-                        setView("OVERRIDE");
+                        setShowOverrideModal(true);
                       } else {
                         onProceedToAnalysis();
                         onOpenChange(false);
@@ -604,6 +734,87 @@ export function EvidenceReadinessModal({ open, onOpenChange, onProceedToAnalysis
         )}
 
       </div>
+
+      {/* Override Modal */}
+      {showOverrideModal && latestRun && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/60 backdrop-blur-[2px]">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-[440px] overflow-hidden flex flex-col m-4 animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-6 py-5 border-b border-slate-100 flex items-start gap-4">
+              <div className="h-10 w-10 rounded-full bg-rose-50 flex items-center justify-center shrink-0">
+                <AlertTriangle className="h-5 w-5 text-rose-600" />
+              </div>
+              <div className="flex flex-col pt-1">
+                <h3 className="text-[15px] font-bold text-slate-900">Lanjutkan ke Analysis?</h3>
+                <p className="text-[13px] text-slate-500 mt-1 leading-relaxed">
+                  {latestRun.results.filter(r => r.level === "REQUIRED" && r.status !== "FULFILLED").length} requirement wajib masih belum terpenuhi. Analisis tetap dapat dijalankan, tetapi hasil dapat memiliki keterbatasan evidence.
+                </p>
+              </div>
+            </div>
+            <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex flex-col gap-3">
+              <label className="flex items-start gap-3 cursor-pointer group">
+                <Checkbox 
+                  checked={overrideAck} 
+                  onCheckedChange={(c) => setOverrideAck(c === true)} 
+                  className="mt-0.5"
+                />
+                <span className="text-[13px] font-medium text-slate-700 leading-snug">
+                  Saya menyetujui penggunaan evidence tidak lengkap.
+                </span>
+              </label>
+            </div>
+            <div className="px-6 py-4 bg-white flex items-center justify-end gap-3 border-t border-slate-100">
+              <Button variant="ghost" className="text-[13px] font-semibold text-slate-600" onClick={() => setShowOverrideModal(false)}>
+                Kembali
+              </Button>
+              <Button 
+                className="px-6 text-[13px] font-semibold bg-rose-600 text-white hover:bg-rose-700"
+                disabled={!overrideAck}
+                onClick={() => {
+                  overrideAnalysis(overrideNote, overrideAck);
+                  onProceedToAnalysis();
+                  onOpenChange(false);
+                  setShowOverrideModal(false);
+                }}
+              >
+                Tetap Lanjutkan
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Recheck Modal */}
+      {showRecheckModal && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/60 backdrop-blur-[2px]">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-[400px] overflow-hidden flex flex-col m-4 animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-6 py-5 flex items-start gap-4">
+              <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
+                <RotateCcw className="h-5 w-5 text-slate-700" />
+              </div>
+              <div className="flex flex-col pt-1">
+                <h3 className="text-[15px] font-bold text-slate-900">Periksa ulang evidence?</h3>
+                <p className="text-[13px] text-slate-500 mt-1 leading-relaxed">
+                  Evidence terbaru akan diperiksa kembali. Hasil sebelumnya tetap tersedia di Riwayat.
+                </p>
+              </div>
+            </div>
+            <div className="px-6 py-4 bg-slate-50 flex items-center justify-end gap-3 border-t border-slate-100">
+              <Button variant="ghost" className="text-[13px] font-semibold text-slate-600" onClick={() => setShowRecheckModal(false)}>
+                Batal
+              </Button>
+              <Button 
+                className="px-6 text-[13px] font-semibold bg-slate-900 text-white hover:bg-slate-800"
+                onClick={() => {
+                  setShowRecheckModal(false);
+                  handleRecheck();
+                }}
+              >
+                Periksa Ulang
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

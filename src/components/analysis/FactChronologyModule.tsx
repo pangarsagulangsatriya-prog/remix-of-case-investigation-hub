@@ -868,6 +868,8 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
                  onAddFact={openAddModal}
                  setDisplayFormat={setDisplayFormat} 
                  readonly={readonly}
+                 editChangeNote={editChangeNote}
+                 setEditChangeNote={setEditChangeNote}
                />
             )}
         </div>
@@ -2860,7 +2862,9 @@ const FactTableView: React.FC<{
   onSelectItem: (id: string | null) => void,
   onAddFact: (phase: string) => void,
   setDisplayFormat: (val: any) => void,
-  readonly?: boolean
+  readonly?: boolean,
+  editChangeNote: string,
+  setEditChangeNote: (val: string) => void
 }> = ({ 
   groupedItems, 
   editingId, 
@@ -2874,7 +2878,9 @@ const FactTableView: React.FC<{
   onSelectItem,
   onAddFact,
   setDisplayFormat,
-  readonly
+  readonly,
+  editChangeNote,
+  setEditChangeNote
 }) => {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 

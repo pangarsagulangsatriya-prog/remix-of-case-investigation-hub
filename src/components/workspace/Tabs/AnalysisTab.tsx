@@ -37,7 +37,10 @@ import {
   Settings,
   Lock,
   Pencil,
-  Trash2
+  Trash2,
+  CheckCircle2,
+  MousePointerClick,
+  Hourglass
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -1766,8 +1769,23 @@ export default function AnalysisTab({ agents, setAgents, reportStatus }: Analysi
                                  <h2 className="text-3xl font-black uppercase tracking-[0.2em] text-slate-400">Agen Siaga</h2>
                               </div>
                            ) : (
-                              <div className="flex-1 animate-in fade-in duration-500 overflow-hidden">
-                                 {slides[activeSlide]?.type === 'chronology_module' ? (
+                              <div className="flex-1 flex flex-col h-full overflow-hidden">
+                                 {globalStatus === 'running' && (
+                                    <div className="flex-none bg-blue-50 border-b border-blue-100 px-4 py-2 flex items-center justify-between">
+                                       <div className="flex items-center gap-2">
+                                          <div className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
+                                          <span className="text-[11px] font-bold text-blue-700">Analisis masih berjalan...</span>
+                                       </div>
+                                       <button 
+                                          onClick={() => { setSelectedAgentId(activeTask); hasUserSelectedNode.current = false; }}
+                                          className="text-[10px] font-bold text-blue-600 hover:text-blue-800 uppercase tracking-widest px-2 py-1 hover:bg-blue-100/50 rounded transition-colors"
+                                       >
+                                          Lihat Proses
+                                       </button>
+                                    </div>
+                                 )}
+                                 <div className="flex-1 animate-in fade-in duration-500 overflow-hidden relative">
+                                    {slides[activeSlide]?.type === 'chronology_module' ? (
                                     <FactChronologyModule
                                        readonly={isLocked}
                                        onLogAudit={(desc) => handleLogAudit("fact", desc)}
@@ -2165,14 +2183,63 @@ export default function AnalysisTab({ agents, setAgents, reportStatus }: Analysi
                                      </div>
                                   )}
                                </div>
-                            )}
-                         </div>
+                            </div>
+                         )}
                       </div>
-                   ) : (
-                      <div className="flex-1 flex flex-col items-center justify-center p-12 text-slate-300">
-                         <Brain className="h-12 w-12 mb-4 opacity-20" />
-                         <h2 className="text-3xl font-black uppercase tracking-[0.2em] text-slate-400">Orchestration Idle</h2>
-                         <p className="text-[10px] mt-2 opacity-50 font-bold uppercase">Select a node to view intelligence results</p>
+                   </div>
+                ) : (
+                   <div className="flex-1 flex flex-col items-center justify-center p-12 bg-slate-50/30">
+                         {(() => {
+                            const completedAgents = agents.filter(a => a.status === 'completed');
+                            const isAllCompleted = completedAgents.length === agents.length;
+                            
+                            if (agents.some(a => a.status === 'running')) {
+                               return (
+                                  <div className="flex flex-col items-center text-center space-y-4 max-w-sm">
+                                     <div className="relative">
+                                        <div className="absolute inset-0 bg-blue-500 blur-xl opacity-20 animate-pulse rounded-full" />
+                                        <div className="h-16 w-16 bg-white border border-blue-100 rounded-full shadow-lg flex items-center justify-center relative z-10">
+                                           <Loader2 className="h-6 w-6 text-blue-600 animate-spin" />
+                                        </div>
+                                     </div>
+                                     <h2 className="text-sm font-bold text-slate-800 uppercase tracking-widest">Orkestrasi Berjalan</h2>
+                                     <p className="text-[11px] text-slate-500">Sistem sedang memproses data investigasi. Anda dapat memeriksa hasil node yang sudah selesai sambil menunggu.</p>
+                                  </div>
+                               );
+                            }
+                            
+                            if (agents.length > 0 && !isAllCompleted && agents.every(a => a.status !== 'running')) {
+                               return (
+                                  <div className="flex flex-col items-center text-center space-y-4 max-w-sm">
+                                     <div className="h-16 w-16 bg-white border border-slate-200 rounded-full shadow-sm flex items-center justify-center">
+                                        <MousePointerClick className="h-6 w-6 text-slate-400" />
+                                     </div>
+                                     <h2 className="text-sm font-bold text-slate-800 uppercase tracking-widest">Pilih Node Analisis</h2>
+                                     <p className="text-[11px] text-slate-500">Klik pada salah satu node di sebelah kiri untuk melihat detail hasil analisis.</p>
+                                  </div>
+                               );
+                            }
+                            
+                            if (isAllCompleted && agents.length > 0) {
+                               return (
+                                  <div className="flex flex-col items-center text-center space-y-4 max-w-sm">
+                                     <div className="h-16 w-16 bg-emerald-50 border border-emerald-100 rounded-full shadow-sm flex items-center justify-center">
+                                        <CheckCircle2 className="h-6 w-6 text-emerald-500" />
+                                     </div>
+                                     <h2 className="text-sm font-bold text-slate-800 uppercase tracking-widest">Orkestrasi Selesai</h2>
+                                     <p className="text-[11px] text-slate-500">Semua proses analisis telah selesai. Pilih node untuk meninjau hasil.</p>
+                                  </div>
+                               );
+                            }
+
+                            return (
+                               <div className="flex flex-col items-center text-center space-y-4 max-w-sm">
+                                  <Brain className="h-16 w-16 text-slate-200" />
+                                  <h2 className="text-sm font-bold text-slate-800 uppercase tracking-widest">Ruang Kerja Analisis</h2>
+                                  <p className="text-[11px] text-slate-500">Siapkan dokumen bukti dan mulai orkestrasi untuk memulai proses analisis AI.</p>
+                               </div>
+                            );
+                         })()}
                       </div>
                    )}
                </div>

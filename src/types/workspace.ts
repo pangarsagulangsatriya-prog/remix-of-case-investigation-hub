@@ -1,6 +1,6 @@
 import { LucideIcon } from "lucide-react";
 
-export type AgentStatus = 'idle' | 'queued' | 'running' | 'paused' | 'stopped' | 'completed' | 'failed' | 'cancelled';
+export type AgentStatus = 'not_started' | 'waiting' | 'preparing' | 'running' | 'completed' | 'needs_review' | 'failed';
 
 export interface AgentRunHistory {
   run_id: string;
@@ -33,6 +33,7 @@ export interface AgentState {
   // Operational Metadata
   runCount: number;
   currentRunProgress?: number;
+  activeStepId?: string | null;
   tokenEstimate?: number;
   actualTokenUsage?: number;
   durationMs?: number;

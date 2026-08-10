@@ -289,7 +289,7 @@ export const useReadiness = () => {
       const newRuns = [finalRun, ...stateAfterDelay.runs.filter(r => r.id !== checkingRun.id)];
       saveState({ ...stateAfterDelay, runs: newRuns, isOutdated: false });
 
-    }, 2500);
+    }, 3500);
   }, []);
 
   const markAsOutdated = useCallback(() => {
