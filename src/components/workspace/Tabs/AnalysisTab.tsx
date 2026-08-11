@@ -77,6 +77,7 @@ import { FactChronologyModule, TraceabilityPanel, extractStringValue } from "@/c
 import { ActorAnalysisModule, ActorDetailPanel } from "@/components/analysis/ActorAnalysisModule";
 import { mockLayers, mockFolders, mockDocuments } from "@/data/mockKnowledgeData";
 import { IplsAnalysisModule } from "@/components/analysis/IplsAnalysisModule";
+import { AnalysisEmptyState } from "./AnalysisEmptyState";
 
 // Icons mapping for local use
 const AudioIcon = Activity;
@@ -175,7 +176,7 @@ export const initialAgentsState: AgentState[] = [
      name: 'Fakta & Kronologi', 
      icon: Clock, 
      purpose: 'Merekonstruksi urutan kejadian dari bukti-bukti mentah.', 
-     status: 'completed', 
+     status: 'idle', 
      dependencies: [],
      runCount: 3,
      lastRunTimestamp: "Today, 10:42 AM",
@@ -430,8 +431,8 @@ export const initialAgentsState: AgentState[] = [
      id: 'actor', 
      name: 'Analisis Aktor', 
      icon: User, 
-     purpose: 'Mengidentifikasi dan menganalisis peran, tanggung jawab, dan hubungan aktor utama.', 
-     status: 'completed', 
+     purpose: 'Identifikasi pihak terkait dan relasinya dalam insiden.', 
+     status: 'idle', 
      dependencies: ['fact'],
      runCount: 1,
      lastRunTimestamp: "Yesterday, 4:18 PM",
@@ -618,7 +619,7 @@ export const initialAgentsState: AgentState[] = [
      name: 'Faktor PEEPO', 
      icon: Users, 
      purpose: 'Mensintesis faktor Manusia, Peralatan, Lingkungan, Prosedur, dan Organisasi.', 
-     status: 'completed', 
+     status: 'idle', 
      dependencies: ['actor'],
      runCount: 1,
      lastRunTimestamp: "Yesterday, 4:15 PM",
@@ -820,7 +821,7 @@ export const initialAgentsState: AgentState[] = [
      name: 'Lapisan IPLS', 
      icon: LayoutGrid, 
      purpose: 'Mengevaluasi Lapisan Perlindungan Awal terhadap bahaya yang teridentifikasi.', 
-     status: 'completed', 
+     status: 'idle', 
      dependencies: ['actor'],
      runCount: 1,
      lastRunTimestamp: "Yesterday, 4:20 PM",
@@ -899,8 +900,8 @@ export const initialAgentsState: AgentState[] = [
      id: 'prev', 
      name: 'Rencana Pencegahan', 
      icon: Brain, 
-     purpose: 'Membuat rencana tindakan perbaikan dan pencegahan.', 
-     status: 'completed', 
+     purpose: 'Menyusun rekomendasi perbaikan dan program pencegahan.', 
+     status: 'idle', 
      dependencies: ['ipls'],
      runCount: 1,
      lastRunTimestamp: "Yesterday, 4:25 PM",
@@ -1081,6 +1082,7 @@ export default function AnalysisTab({ agents, setAgents, reportStatus }: Analysi
   const [chainQueue, setChainQueue] = useState<string[]>([]);
   const [activeTask, setActiveTask] = useState<string | null>(null);
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
+  const [hoveredAgentId, setHoveredAgentId] = useState<string | null>(null);
   const [activeSlide, setActiveSlide] = useState(0);
   const [canvasZoom, setCanvasZoom] = useState(85);
   const [isExporting, setIsExporting] = useState(false);
@@ -1681,11 +1683,13 @@ export default function AnalysisTab({ agents, setAgents, reportStatus }: Analysi
                      const isLocked = runningAgentIdx !== -1 && index > runningAgentIdx;
                      
                      // Unstructured.io Styling
-                     const cardBorder = isRunning ? 'border-indigo-500 bg-indigo-50/40 z-20 overflow-hidden' :
+                     const cardBorder = isLocked ? 'border-slate-100 bg-slate-50/50' : 
+                                        isRunning ? 'border-indigo-500 bg-indigo-50/40 z-20 overflow-hidden' :
                                         isPaused ? 'border-amber-500 shadow-sm bg-white z-10' :
                                         isCompleted ? (isActive ? 'border-slate-400 bg-white shadow-sm' : 'border-slate-300 bg-white hover:border-slate-400') :
                                         isStopped ? 'border-rose-300 bg-slate-50 opacity-70' :
-                                        isActive ? 'border-slate-400 bg-white shadow-sm' : 'border-slate-200 bg-white/90 hover:bg-white';
+                                        isActive ? 'border-slate-400 bg-white shadow-sm' : 
+                                        hoveredAgentId === agent.id ? 'border-emerald-400 bg-white shadow-sm ring-1 ring-emerald-400/20' : 'border-slate-200 bg-white/90 hover:bg-white';
                      
                      const iconColor = isRunning ? 'text-indigo-600' :
                                        isPaused ? 'text-amber-600' :
@@ -1704,6 +1708,8 @@ export default function AnalysisTab({ agents, setAgents, reportStatus }: Analysi
                      return (
                         <div key={agent.id} className="relative">
                            <div 
+                              onMouseEnter={() => setHoveredAgentId(agent.id)}
+                              onMouseLeave={() => setHoveredAgentId(null)}
                               onClick={() => setSelectedAgentId(agent.id)}
                               className={`
                                  group flex flex-col border transition-all duration-300 cursor-pointer relative rounded-sm
@@ -1836,7 +1842,37 @@ export default function AnalysisTab({ agents, setAgents, reportStatus }: Analysi
                   {selectedAgentId ? (
                      <div className="bg-white flex-1 flex flex-col relative transition-all duration-300 origin-center overflow-hidden w-full h-full">
                         <div className="flex-1 flex flex-col relative overflow-hidden h-full">
-                           {selectedAgent?.status === 'running' ? (
+                           {selectedAgent?.status === 'idle' ? (() => {
+                              const pendingDeps = selectedAgent.dependencies.filter(depId => agents.find(a => a.id === depId)?.status !== 'completed');
+                              const isLocked = pendingDeps.length > 0;
+                              
+                              return (
+                                 <div className="flex-1 flex flex-col items-center justify-center space-y-4">
+                                    <div className="h-16 w-16 bg-slate-50 border border-slate-200 rounded-full flex items-center justify-center">
+                                       {isLocked ? <Lock className="h-6 w-6 text-slate-400" /> : <AlertTriangle className="h-6 w-6 text-slate-400" />}
+                                    </div>
+                                    <h2 className="text-sm font-bold text-slate-800 uppercase tracking-widest">
+                                       {isLocked ? "Tahap Ini Terkunci" : "Belum ada hasil untuk tahap ini"}
+                                    </h2>
+                                    <p className="text-[11px] text-slate-500 max-w-[320px] text-center leading-relaxed">
+                                       {isLocked 
+                                          ? `Tahap ini bergantung pada hasil dari tahap sebelumnya. Selesaikan tahap ${pendingDeps.map(d => agents.find(a => a.id === d)?.name).join(', ')} terlebih dahulu.` 
+                                          : "Jalankan tahap ini untuk membuat hasil analisis."}
+                                    </p>
+                                    <button
+                                       disabled={isLocked}
+                                       onClick={() => runSingleAgent(selectedAgentId, true)}
+                                       className={cn(
+                                          "mt-4 px-6 py-2.5 rounded-md text-[12px] font-bold shadow-sm transition-all flex items-center gap-2",
+                                          isLocked ? "bg-slate-100 text-slate-400 cursor-not-allowed" : "bg-slate-900 text-white hover:bg-slate-800"
+                                       )}
+                                    >
+                                       {isLocked ? <Lock className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5 fill-current" />} 
+                                       {isLocked ? "Terkunci" : "Jalankan Tahap"}
+                                    </button>
+                                 </div>
+                              );
+                           })() : selectedAgent?.status === 'running' ? (
                               <div className="flex-1 flex flex-col bg-white relative h-full">
                                  {/* Stable Shell Header */}
                                  <div className="px-10 py-6 border-b border-slate-200 shrink-0 bg-white z-10 shadow-sm relative">
@@ -2399,60 +2435,38 @@ export default function AnalysisTab({ agents, setAgents, reportStatus }: Analysi
                       </div>
                    </div>
                 ) : (
-                   <div className="flex-1 flex flex-col items-center justify-center p-12 bg-slate-50/30">
-                         {(() => {
-                            const completedAgents = agents.filter(a => a.status === 'completed');
-                            const isAllCompleted = completedAgents.length === agents.length;
-                            
-                            if (agents.some(a => a.status === 'running')) {
-                               return (
-                                  <div className="flex flex-col items-center text-center space-y-4 max-w-sm">
-                                     <div className="relative">
-                                        <div className="absolute inset-0 bg-blue-500 blur-xl opacity-20 animate-pulse rounded-full" />
-                                        <div className="h-16 w-16 bg-white border border-blue-100 rounded-full shadow-lg flex items-center justify-center relative z-10">
-                                           <Loader2 className="h-6 w-6 text-blue-600 animate-spin" />
-                                        </div>
-                                     </div>
-                                     <h2 className="text-sm font-bold text-slate-800 uppercase tracking-widest">Orkestrasi Berjalan</h2>
-                                     <p className="text-[11px] text-slate-500">Sistem sedang memproses data investigasi. Anda dapat memeriksa hasil node yang sudah selesai sambil menunggu.</p>
+                   <div className="flex-1 flex flex-col relative h-full bg-slate-50/30">
+                      {globalStatus === 'running' ? (
+                         <div className="flex-1 flex flex-col items-center justify-center p-12">
+                            <div className="flex flex-col items-center text-center space-y-4 max-w-sm">
+                               <div className="relative">
+                                  <div className="absolute inset-0 bg-blue-500 blur-xl opacity-20 animate-pulse rounded-full" />
+                                  <div className="h-16 w-16 bg-white border border-blue-100 rounded-full shadow-lg flex items-center justify-center relative z-10">
+                                     <Loader2 className="h-6 w-6 text-blue-600 animate-spin" />
                                   </div>
-                               );
-                            }
-                            
-                            if (agents.length > 0 && !isAllCompleted && agents.every(a => a.status !== 'running')) {
-                               return (
-                                  <div className="flex flex-col items-center text-center space-y-4 max-w-sm">
-                                     <div className="h-16 w-16 bg-white border border-slate-200 rounded-full shadow-sm flex items-center justify-center">
-                                        <MousePointerClick className="h-6 w-6 text-slate-400" />
-                                     </div>
-                                     <h2 className="text-sm font-bold text-slate-800 uppercase tracking-widest">Pilih Node Analisis</h2>
-                                     <p className="text-[11px] text-slate-500">Klik pada salah satu node di sebelah kiri untuk melihat detail hasil analisis.</p>
-                                  </div>
-                               );
-                            }
-                            
-                            if (isAllCompleted && agents.length > 0) {
-                               return (
-                                  <div className="flex flex-col items-center text-center space-y-4 max-w-sm">
-                                     <div className="h-16 w-16 bg-emerald-50 border border-emerald-100 rounded-full shadow-sm flex items-center justify-center">
-                                        <CheckCircle2 className="h-6 w-6 text-emerald-500" />
-                                     </div>
-                                     <h2 className="text-sm font-bold text-slate-800 uppercase tracking-widest">Orkestrasi Selesai</h2>
-                                     <p className="text-[11px] text-slate-500">Semua proses analisis telah selesai. Pilih node untuk meninjau hasil.</p>
-                                  </div>
-                               );
-                            }
-
-                            return (
-                               <div className="flex flex-col items-center text-center space-y-4 max-w-sm">
-                                  <Brain className="h-16 w-16 text-slate-200" />
-                                  <h2 className="text-sm font-bold text-slate-800 uppercase tracking-widest">Ruang Kerja Analisis</h2>
-                                  <p className="text-[11px] text-slate-500">Siapkan dokumen bukti dan mulai orkestrasi untuk memulai proses analisis AI.</p>
                                </div>
-                            );
-                         })()}
-                      </div>
-                   )}
+                               <h2 className="text-sm font-bold text-slate-800 uppercase tracking-widest">Orkestrasi Berjalan</h2>
+                               <p className="text-[11px] text-slate-500">Sistem sedang memproses data investigasi. Anda dapat memeriksa hasil node yang sudah selesai sambil menunggu.</p>
+                            </div>
+                         </div>
+                      ) : (
+                         <AnalysisEmptyState
+                            agents={agents}
+                            globalStatus={globalStatus}
+                            onStartAll={() => {
+                               if (agents.some(a => a.status === 'completed') && confirm("Semua node yang sudah selesai akan dijalankan ulang dan diganti dengan draft baru. Lanjutkan?")) {
+                                  runAllAgents();
+                               } else if (!agents.some(a => a.status === 'completed')) {
+                                  runAllAgents();
+                               }
+                            }}
+                            onSelectAgent={setSelectedAgentId}
+                            hoveredAgentId={hoveredAgentId}
+                            setHoveredAgentId={setHoveredAgentId}
+                         />
+                      )}
+                   </div>
+                )}
                </div>
 
                {selectedRowId && selectedAgentId === 'actor' && (() => {
