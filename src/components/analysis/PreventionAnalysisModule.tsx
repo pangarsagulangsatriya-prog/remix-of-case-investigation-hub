@@ -1,32 +1,27 @@
-import React, { useState } from "react";
+import React, { useState } from 'react';
 import { 
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { 
-  Shield, 
-  Trash2,
+  Crosshair, 
   History,
-  User,
-  PanelRightOpen,
-  Eye,
   Pencil,
+  Trash2,
   Check,
   X,
+  User,
+  PanelRightOpen,
   FileText,
+  Eye,
   Brain,
   ChevronRight,
   CheckCircle2,
   Table as TableIcon
-} from "lucide-react";
+} from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -34,7 +29,7 @@ import { cn } from "@/lib/utils";
 export interface AuditEntry {
   id: string;
   itemId: string;
-  category: string; // layerId as string
+  category: string;
   action: "CREATE" | "UPDATE" | "DELETE";
   actorName: string;
   actorRole: string;
@@ -46,37 +41,42 @@ export interface AuditEntry {
   after?: any;
 }
 
-export interface IplsItem {
+export interface PreventionItem {
   id: string;
-  label: string;
-  status: string; // "", "rootcause", "non-conformity", "improvement"
-  originalIndex: number;
-  description?: string;
+  no: string;
+  layer: string;
+  hierarchy: string;
+  action: string;
+  type: string; // 'rc', 'nc', 'imp'
   version?: number;
+  created_at?: string;
   provenanceType?: string;
   annotated_by_human?: boolean;
 }
 
-export interface IplsLayer {
-  id: number;
-  title: string;
-  items: IplsItem[];
+export interface PreventionData {
+  actions: PreventionItem[];
 }
 
-export interface IplsData {
-  layers: IplsLayer[];
-}
-
-interface IplsAnalysisModuleProps {
-  data: IplsData;
-  onSelectRow?: (id: string | null) => void;
-  selectedRowId?: string | null;
-  onSync: (newData: IplsData) => void;
+interface PreventionAnalysisModuleProps {
+  data: PreventionData;
   readonly?: boolean;
+  onSelectRow: (id: string | null) => void;
+  selectedRowId: string | null;
+  onSync: (updatedData: PreventionData) => void;
 }
 
+const extractStringValue = (val: any): string => {
+  if (typeof val === 'string') return val;
+  if (typeof val === 'object' && val !== null) {
+    if (val.value) return String(val.value);
+    if (val.text) return String(val.text);
+  }
+  return String(val || '');
+};
 
-export const IplsTraceabilityPanel: React.FC<{ 
+
+export const PreventionTraceabilityPanel: React.FC<{ 
   item: any, 
   onClose: () => void,
   onEdit: () => void,
@@ -113,9 +113,9 @@ export const IplsTraceabilityPanel: React.FC<{
                 </div>
                 <div className="text-[11px] font-bold text-slate-800 mb-3">{item?.latestHumanChange?.userName || "Gulang Satriya"} &middot; {item?.latestHumanChange?.userRole || "Lead Investigator"}</div>
                 
-                <div className="text-[11px] text-slate-900 font-bold mb-1">[{item?.label}]</div>
+                <div className="text-[11px] text-slate-900 font-bold mb-1">Layer: {item?.layer} &middot; Hierarchy: {item?.hierarchy}</div>
                 <div className="text-[11px] text-slate-800 leading-relaxed italic border-l-2 border-slate-300 pl-3 py-1 mb-3">
-                  "{item?.description || 'Belum ada deskripsi.'}"
+                  "{item?.action || 'Belum ada deskripsi.'}"
                 </div>
 
                 <div className="text-[10px] text-slate-400 mb-3">
@@ -137,11 +137,11 @@ export const IplsTraceabilityPanel: React.FC<{
                       )}
                       <div>
                         <div className="text-[9px] font-bold text-slate-400 mb-1">SEBELUM</div>
-                        <div className="bg-red-50 text-red-900 p-2 rounded text-[11px] border border-red-100">{history[0]?.description || "Data sebelumnya."}</div>
+                        <div className="bg-red-50 text-red-900 p-2 rounded text-[11px] border border-red-100">{history[0]?.action || "Data sebelumnya."}</div>
                       </div>
                       <div>
                         <div className="text-[9px] font-bold text-slate-400 mb-1">SESUDAH</div>
-                        <div className="bg-emerald-50 text-emerald-900 p-2 rounded text-[11px] border border-emerald-100">{item?.description}</div>
+                        <div className="bg-emerald-50 text-emerald-900 p-2 rounded text-[11px] border border-emerald-100">{item?.action}</div>
                       </div>
                     </div>
                   </details>
@@ -160,7 +160,7 @@ export const IplsTraceabilityPanel: React.FC<{
                    <div className="absolute w-3 h-3 rounded-full bg-slate-300 -left-[7px] top-1" />
                    <div className="text-[11px] font-black uppercase tracking-widest text-slate-500 mb-2">VERSI {vNum} &middot; AI GENERATED</div>
                    <div className="bg-slate-100 border border-slate-200 rounded p-4 shadow-sm">
-                      <div className="text-[11px] font-bold text-slate-800 mb-2">IPLS Analysis Agent</div>
+                      <div className="text-[11px] font-bold text-slate-800 mb-2">Prevention Agent</div>
                       <div className="text-[10px] text-slate-400">
                         {histItem.timestamp ? new Date(histItem.timestamp).toLocaleString('id-ID', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' WIB' : '05 Agustus 2026, 13:20 WIB'}
                       </div>
@@ -179,9 +179,9 @@ export const IplsTraceabilityPanel: React.FC<{
                     </div>
                     <div className="text-[11px] font-bold text-slate-800 mb-3">{histItem.userName || "Gulang Satriya"} &middot; {histItem.userRole || "Lead Investigator"}</div>
                     
-                    <div className="text-[11px] text-slate-900 font-bold mb-1">[{histItem.label || item?.label}]</div>
+                    <div className="text-[11px] text-slate-900 font-bold mb-1">Layer: {histItem.layer || item?.layer} &middot; Hierarchy: {histItem.hierarchy || item?.hierarchy}</div>
                     <div className="text-[11px] text-slate-800 leading-relaxed italic border-l-2 border-slate-300 pl-3 py-1 mb-3">
-                      "{histItem.description || item?.description}"
+                      "{histItem.action || item?.action}"
                     </div>
 
                     <div className="text-[10px] text-slate-400 mb-3">
@@ -203,11 +203,11 @@ export const IplsTraceabilityPanel: React.FC<{
                           )}
                           <div>
                             <div className="text-[9px] font-bold text-slate-400 mb-1">SEBELUM</div>
-                            <div className="bg-red-50 text-red-900 p-2 rounded text-[11px] border border-red-100">{history[idx + 1]?.description || "Data sebelumnya."}</div>
+                            <div className="bg-red-50 text-red-900 p-2 rounded text-[11px] border border-red-100">{history[idx + 1]?.action || "Data sebelumnya."}</div>
                           </div>
                           <div>
                             <div className="text-[9px] font-bold text-slate-400 mb-1">SESUDAH</div>
-                            <div className="bg-emerald-50 text-emerald-900 p-2 rounded text-[11px] border border-emerald-100">{histItem.description || item?.description}</div>
+                            <div className="bg-emerald-50 text-emerald-900 p-2 rounded text-[11px] border border-emerald-100">{histItem.action || item?.action}</div>
                           </div>
                         </div>
                       </details>
@@ -227,12 +227,12 @@ export const IplsTraceabilityPanel: React.FC<{
       {/* Panel Header */}
       <div className="p-4 border-b border-slate-200 bg-white shrink-0 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="h-8 w-8 bg-[#091b4c] flex items-center justify-center text-white rounded-none">
+          <div className="h-8 w-8 bg-[#8ba861] flex items-center justify-center text-white rounded-none">
             <TableIcon className="h-4 w-4" />
           </div>
           <div>
             <h3 className="text-[13px] font-bold text-slate-900 uppercase tracking-wider leading-none">Detail Analisis</h3>
-            <p className="text-[10px] text-slate-500 uppercase tracking-widest mt-1">Lapisan Proteksi (IPLS) &middot; Layer {item?.layerId} &middot; #{item?.originalIndex}</p>
+            <p className="text-[10px] text-slate-500 uppercase tracking-widest mt-1">Tindakan Pencegahan (Prevention) &middot; Layer {item?.layer} &middot; NO {item?.no}</p>
           </div>
         </div>
         <Button variant="ghost" size="sm" onClick={onClose} className="h-7 w-7 p-0 hover:bg-slate-100 rounded-none">
@@ -288,7 +288,7 @@ export const IplsTraceabilityPanel: React.FC<{
                AI Generated
             </div>
             <div className="text-[10px] text-slate-400 mb-1">Generated by</div>
-            <div className="text-[11px] font-bold text-slate-800 mb-1">IPLS Analysis Agent</div>
+            <div className="text-[11px] font-bold text-slate-800 mb-1">Prevention Agent</div>
             <div className="text-[10px] text-slate-500 mb-1">05 Agustus 2026, 13:20 WIB</div>
             <div className="text-[10px] font-mono text-slate-400 mt-2">Versi aktif 1</div>
           </div>
@@ -314,7 +314,7 @@ export const IplsTraceabilityPanel: React.FC<{
                 </div>
                 
                 <div className="text-[12px] text-slate-800 leading-relaxed italic border-l-[3px] border-blue-400 pl-3 py-1 mb-4 bg-white/50">
-                  "{item?.description}"
+                  "{item?.action}"
                 </div>
                 
                 {item?.latestHumanChange?.changeNote && (
@@ -339,7 +339,7 @@ export const IplsTraceabilityPanel: React.FC<{
         <div className="mb-6">
            <div className="flex items-center gap-2 mb-2">
              <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-               {item?.provenanceType === 'HUMAN_MANUAL' ? 'DESKRIPSI KEJADIAN AWAL' : 'DESKRIPSI AI GENERATED'}
+               {item?.provenanceType === 'HUMAN_MANUAL' ? 'TINDAKAN AWAL' : 'TINDAKAN AI GENERATED'}
              </div>
              {item?.provenanceType !== 'HUMAN_MANUAL' && (
                <div className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded text-[8px] font-bold uppercase border border-indigo-200 shadow-sm">
@@ -349,8 +349,8 @@ export const IplsTraceabilityPanel: React.FC<{
            </div>
            
            <div className="text-[12.5px] text-slate-800 leading-relaxed bg-slate-50/80 p-4 rounded border border-slate-200">
-             <div className="font-bold mb-2 text-slate-900">[{item?.label}]</div>
-             <div>{item?.provenanceType === 'AI_HUMAN_ANNOTATED' ? (item?.original_text || item?.description) : item?.description}</div>
+             <div className="font-bold mb-2 text-slate-900">[{item?.hierarchy}]</div>
+             <div>{item?.provenanceType === 'AI_HUMAN_ANNOTATED' ? (item?.original_text || item?.action) : item?.action}</div>
            </div>
         </div>
 
@@ -370,94 +370,95 @@ export const IplsTraceabilityPanel: React.FC<{
   );
 };
 
-export function IplsAnalysisModule({ 
-  data, 
-  onSelectRow, 
-  selectedRowId, 
-  onSync, 
-  readonly = false 
-}: IplsAnalysisModuleProps) {
-  
-  const [internalData, setInternalData] = useState<IplsData>(data);
+export const PreventionAnalysisModule: React.FC<PreventionAnalysisModuleProps> = ({
+  data,
+  readonly = false,
+  onSelectRow,
+  selectedRowId,
+  onSync
+}) => {
+  const [internalData, setInternalData] = useState<PreventionData>({ actions: data.actions || [] });
   const initialDummyAuditLogs: AuditEntry[] = [
     {
-      id: "log-1",
-      itemId: "l2-9",
-      category: "2",
+      id: "log-p1",
+      itemId: "2",
+      category: "prevention",
       action: "UPDATE",
-      actorName: "Aditya Pratama",
-      actorRole: "Safety Superintendent",
+      actorName: "Rina Mahardika",
+      actorRole: "Investigator",
       actorType: "HUMAN",
       timestamp: "2026-08-05T09:04:00Z",
       versionTo: 2,
-      before: { label: "Maintenance", status: "", description: "" },
-      after: { label: "Maintenance", status: "non-conformity", description: "Belum ada penentuan lifetime penggunaan terkait Nut Tyre pada LV" }
+      before: { no: 2, layer: "IV.4", hierarchy: "Adm", action: "Perbaikan awal", pic: "Bimo", due_date: "19 - 10 - 2025", status: "Open", type: "nc" },
+      after: { no: 2, layer: "IV.4", hierarchy: "Adm", action: "Mengidentifikasi seluruh DMS, melakukan pengujian fungsi MDVR, memperbaiki DMS yang bermasalah, dan menyerahkan hasil perbaikan kepada tim operasional", pic: "Bimo", due_date: "19 - 10 - 2025", status: "Open", type: "nc" }
     },
     {
-      id: "log-2",
-      itemId: "l3-3",
-      category: "3",
-      action: "UPDATE",
-      actorName: "Gulang Satriya",
-      actorRole: "Lead Investigator",
-      actorType: "HUMAN",
-      timestamp: "2026-08-05T09:15:00Z",
-      versionTo: 2,
-      before: { label: "P2H", status: "", description: "" },
-      after: { label: "P2H (incl. emergency equipment)", status: "rootcause", description: "Sdr. Rico tidak mendeteksi adanya bolt yang sudah terlepas pada tyre depan sebelah kiri LV BM 391" }
+      id: "log-p2",
+      itemId: "5",
+      category: "prevention",
+      action: "CREATE",
+      actorName: "System",
+      actorRole: "AI Agent",
+      actorType: "AI",
+      timestamp: "2026-08-05T08:00:00Z",
+      versionTo: 1,
+      after: { no: 5, layer: "III.3", hierarchy: "Adm", action: "Pemberian sanksi administrasi kepada Sdr. Rico", pic: "Muh Faishal", due_date: "18 - 10 - 2025", status: "Closed", type: "rc" }
     }
   ];
 
   const [auditLogs, setAuditLogs] = useState<AuditEntry[]>(initialDummyAuditLogs);
   const [isAuditDrawerOpen, setIsAuditDrawerOpen] = useState(false);
   
-  const layers = internalData?.layers || [];
+  // CRUD State
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [addDraft, setAddDraft] = useState<Partial<PreventionItem>>({
+    layer: "I.2",
+    hierarchy: "Eliminasi",
+    action: "",
+    type: "rc"
+  });
   
-  // Detail Panel
-  const [detailItem, setDetailItem] = useState<{layerId: number, item: IplsItem} | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editDraft, setEditDraft] = useState<Partial<IplsItem>>({});
+  const [editDraft, setEditDraft] = useState<Partial<PreventionItem>>({});
   
-  // Delete confirm
-  const [itemToDelete, setItemToDelete] = useState<{layerId: number, id: string, label: string} | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<{id: string, text: string} | null>(null);
   const [deleteReason, setDeleteReason] = useState("");
+  
+  const [detailItem, setDetailItem] = useState<PreventionItem | null>(null);
 
   React.useEffect(() => {
-    setInternalData(data);
+    setInternalData({ actions: data.actions || [] });
   }, [data]);
 
-  const handleAddItem = (layerId: number) => {
+  const handleAdd = () => {
+    if (!addDraft.action?.trim()) return;
+    
+    const newId = "prev-" + Date.now();
     const ts = new Date().toISOString();
-    const newId = "ipls-" + Date.now();
     
-    const targetLayer = layers.find(l => l.id === layerId);
-    if (!targetLayer) return;
+    const nextNo = internalData.actions.length > 0 
+      ? Math.max(...internalData.actions.map(a => parseInt(extractStringValue(a.no)) || 0)) + 1 
+      : 1;
     
-    const newItem: IplsItem = {
+    const newItem: PreventionItem = {
       id: newId,
-      label: "New Finding",
-      status: "non-conformity",
-      originalIndex: targetLayer.items.length + 1,
-      description: "",
-      version: 1
+      no: String(nextNo),
+      layer: addDraft.layer || "I.2",
+      hierarchy: addDraft.hierarchy || "Eliminasi",
+      action: addDraft.action,
+      type: addDraft.type || "rc",
+      version: 1,
+      created_at: ts
     };
-
-    const newLayers = layers.map((layer) => {
-      if (layer.id === layerId) {
-        return {
-          ...layer,
-          items: [...layer.items, newItem]
-        };
-      }
-      return layer;
-    });
     
-    const updatedData = { ...internalData, layers: newLayers };
+    const updatedData = {
+      actions: [...internalData.actions, newItem]
+    };
     
     const audit: AuditEntry = {
       id: "log-" + Date.now(),
       itemId: newId,
-      category: `Layer ${layerId}`,
+      category: "prevention",
       action: "CREATE",
       actorName: "Gulang Satriya",
       actorRole: "Lead Investigator",
@@ -470,10 +471,12 @@ export function IplsAnalysisModule({
     setAuditLogs([audit, ...auditLogs]);
     setInternalData(updatedData);
     onSync(updatedData);
-    toast.success("Item berhasil ditambahkan.");
+    setIsAddModalOpen(false);
+    setAddDraft({ layer: "I.2", hierarchy: "Eliminasi", action: "", type: "rc" });
+    toast.success("Tindakan perbaikan berhasil ditambahkan.");
   };
 
-  const renderProvenanceBadge = (item: IplsItem | any) => {
+  const renderProvenanceBadge = (item: PreventionItem | any) => {
     const pType = item.provenanceType || (item.source === 'human' ? 'HUMAN_MANUAL' : (item.annotated_by_human ? 'AI_HUMAN_ANNOTATED' : 'AI_GENERATED'));
     
     if (pType === 'AI_GENERATED') {
@@ -520,19 +523,19 @@ export function IplsAnalysisModule({
   };
 
   const handleSaveEdit = () => {
-    if (!editingId || !detailItem) return;
+    if (!editingId) return;
     const ts = new Date().toISOString();
     
-    const layer = layers.find(l => l.id === detailItem.layerId);
-    if (!layer) return;
+    const itemIndex = internalData.actions.findIndex(i => (i.id || (i as any)) === editingId);
+    if (itemIndex === -1) return;
     
-    const oldItem = layer.items.find(i => i.id === editingId);
-    if (!oldItem) return;
+    const oldItem = internalData.actions[itemIndex];
     
     if (
-      oldItem.label === editDraft.label &&
-      oldItem.description === editDraft.description &&
-      oldItem.status === editDraft.status
+      oldItem.action === editDraft.action &&
+      oldItem.layer === editDraft.layer &&
+      oldItem.hierarchy === editDraft.hierarchy &&
+      oldItem.type === editDraft.type
     ) {
       setEditingId(null);
       return;
@@ -540,16 +543,19 @@ export function IplsAnalysisModule({
     
     const newItem = {
       ...oldItem,
-      label: editDraft.label || oldItem.label,
-      description: editDraft.description || oldItem.description,
-      status: editDraft.status || oldItem.status,
+      id: oldItem.id || editingId,
+      layer: editDraft.layer || oldItem.layer,
+      hierarchy: editDraft.hierarchy || oldItem.hierarchy,
+      action: editDraft.action || oldItem.action,
+      type: editDraft.type || oldItem.type,
       version: (oldItem.version || 1) + 1,
       provenanceType: 'HUMAN_MANUAL',
       history: [
         {
-          label: oldItem.label,
-          description: oldItem.description,
-          status: oldItem.status,
+          layer: oldItem.layer,
+          hierarchy: oldItem.hierarchy,
+          action: oldItem.action,
+          type: oldItem.type,
           version: oldItem.version || 1,
           timestamp: ts,
           userName: "Gulang Satriya",
@@ -560,22 +566,17 @@ export function IplsAnalysisModule({
       ]
     };
     
-    const newLayers = layers.map(l => {
-      if (l.id === detailItem.layerId) {
-        return {
-          ...l,
-          items: l.items.map(it => it.id === editingId ? newItem : it)
-        };
-      }
-      return l;
-    });
+    const updatedArray = [...internalData.actions];
+    updatedArray[itemIndex] = newItem;
     
-    const updatedData = { ...internalData, layers: newLayers };
+    const updatedData = {
+      actions: updatedArray
+    };
     
     const audit: AuditEntry = {
       id: "log-" + Date.now(),
       itemId: editingId,
-      category: `Layer ${detailItem.layerId}`,
+      category: "prevention",
       action: "UPDATE",
       actorName: "Gulang Satriya",
       actorRole: "Lead Investigator",
@@ -589,7 +590,11 @@ export function IplsAnalysisModule({
     setAuditLogs([audit, ...auditLogs]);
     setInternalData(updatedData);
     onSync(updatedData);
-    setDetailItem({ layerId: detailItem.layerId, item: newItem });
+    
+    if (detailItem && detailItem.id === editingId) {
+       setDetailItem(newItem);
+    }
+    
     setEditingId(null);
     toast.success("Perubahan disimpan.");
   };
@@ -602,29 +607,20 @@ export function IplsAnalysisModule({
     }
     
     const ts = new Date().toISOString();
+    const itemIndex = internalData.actions.findIndex(i => (i.id || (i as any)) === itemToDelete.id);
+    if (itemIndex === -1) return;
     
-    const layer = layers.find(l => l.id === itemToDelete.layerId);
-    if (!layer) return;
+    const oldItem = internalData.actions[itemIndex];
     
-    const oldItem = layer.items.find(i => i.id === itemToDelete.id);
-    if (!oldItem) return;
-    
-    const newLayers = layers.map(l => {
-      if (l.id === itemToDelete.layerId) {
-        return {
-          ...l,
-          items: l.items.filter(it => it.id !== itemToDelete.id)
-        };
-      }
-      return l;
-    });
-    
-    const updatedData = { ...internalData, layers: newLayers };
+    const updatedArray = internalData.actions.filter(i => (i.id || (i as any)) !== itemToDelete.id);
+    const updatedData = {
+      actions: updatedArray
+    };
     
     const audit: AuditEntry = {
       id: "log-" + Date.now(),
       itemId: itemToDelete.id,
-      category: `Layer ${itemToDelete.layerId}`,
+      category: "prevention",
       action: "DELETE",
       actorName: "Gulang Satriya",
       actorRole: "Lead Investigator",
@@ -639,28 +635,27 @@ export function IplsAnalysisModule({
     setInternalData(updatedData);
     onSync(updatedData);
     
-    if (detailItem && detailItem.item.id === itemToDelete.id) {
+    if (detailItem && detailItem.id === itemToDelete.id) {
        setDetailItem(null);
     }
     
     setItemToDelete(null);
     setDeleteReason("");
-    toast.success("Item dihapus.");
+    toast.success("Tindakan dihapus.");
   };
 
   return (
     <div className="flex flex-col h-full bg-slate-50/10 overflow-hidden relative">
       <div className="flex-1 flex min-w-0 h-full relative">
         <div className="flex-1 flex flex-col h-full overflow-hidden z-10 shadow-sm relative transition-all duration-300">
-           {/* Title Bar */}
            <div className="shrink-0 p-4 border-b border-slate-200 bg-white flex flex-col gap-4">
               <div className="flex items-center justify-between">
                  <div>
                     <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                       <Shield className="h-4 w-4 text-slate-500" />
-                       IPLS - BUMA LMO - NM LV BM 391
+                       <Crosshair className="h-4 w-4 text-slate-500" />
+                       LEMBAR RENCANA TINDAKAN PENCEGAHAN
                     </h2>
-                    <p className="text-[11px] text-slate-500 mt-1">Validasi dan evaluasi lapisan proteksi sistem bekerja selamat.</p>
+                    <p className="text-[11px] text-slate-500 mt-1">Rumusan tindakan korektif dan preventif untuk mencegah insiden berulang.</p>
                  </div>
                  <div className="flex items-center gap-4">
                    {!readonly && (
@@ -676,269 +671,327 @@ export function IplsAnalysisModule({
                    )}
                    <div className="flex items-center gap-2">
                       <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse" />
-                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Validasi Selesai</span>
+                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Rencana Difinalisasi</span>
                    </div>
                  </div>
               </div>
            </div>
+           
+           <div className="flex-1 overflow-auto bg-slate-50 p-8 flex justify-center scrollbar-thin">
+              <div className="w-full max-w-[1300px] bg-white border border-slate-300 shadow-sm p-8 pb-16 h-fit shrink-0">
+                 <h3 className="font-bold text-[14px] text-slate-900 mb-0.5">Tindakan Perbaikan dan Pencegahan Insiden</h3>
+                 <div className="h-[2px] w-[50%] bg-[#8ba861] mb-4 mt-1"></div>
+                 <div className="border border-slate-400">
+                    <table className="w-full text-left border-collapse">
+                       <thead>
+                          <tr className="bg-slate-50/80">
+                             <th className="px-4 py-2 text-[10px] font-bold text-slate-900 text-center border-r border-b border-slate-400 w-12 uppercase tracking-widest bg-white">NO</th>
+                             <th className="px-4 py-2 text-[10px] font-bold text-slate-900 text-center border-r border-b border-slate-400 w-24 uppercase tracking-widest bg-white">LAYER</th>
+                             <th className="px-4 py-2 text-[10px] font-bold text-slate-900 text-center border-r border-b border-slate-400 w-28 uppercase tracking-widest bg-white">HIRARKI<br/>KONTROL</th>
+                             <th className="px-4 py-2 text-[10px] font-bold text-slate-900 text-left border-b border-slate-400 uppercase tracking-widest bg-white">TINDAKAN PERBAIKAN DAN PENCEGAHAN</th>
+                          </tr>
+                       </thead>
+                       <tbody>
+                          {(internalData.actions || []).map((item, idx) => {
+                             const itemId = item.id || `prev-${idx}`;
+                             let layerBg = "bg-white";
+                             let layerText = "text-slate-900";
+                             if (item.type === 'rc') {
+                                layerBg = "bg-red-500";
+                                layerText = "text-white font-black";
+                             } else if (item.type === 'nc') {
+                                layerBg = "bg-[#ffc000]";
+                             } else if (item.type === 'imp') {
+                                layerBg = "bg-[#00c950]";
+                                layerText = "text-white font-black";
+                             }
 
-           <div className="flex-1 overflow-auto bg-slate-50 p-4 lg:p-8 flex justify-center scrollbar-thin">
-              <div className="w-full max-w-[1300px] bg-white border border-slate-300 shadow-sm p-8 h-fit shrink-0 overflow-x-auto">
-                 {/* Main Content Area */}
-                 <div className="flex-1 flex flex-col">
-                    <div className="mb-4">
-                       <h3 className="font-bold text-[14px] text-slate-900 mb-0.5">Analisa Kejadian</h3>
-                       <div className="h-[2px] w-[20%] bg-blue-500 mb-4 mt-1"></div>
-
-                       {/* Header bar */}
-                       <div className="relative h-6 bg-[#a3a6aa] flex items-center justify-center w-full mb-3">
-                          <div className="absolute -left-3 top-0 w-0 h-0 border-y-[12px] border-y-transparent border-r-[12px] border-r-[#a3a6aa]"></div>
-                          <span className="text-white font-bold text-xs tracking-wide">Investigation</span>
-                       </div>
-
-                       {/* Columns Grid */}
-                       <div className="grid grid-cols-5 gap-3">
-                          {layers.map((layer: IplsLayer, colIdx: number) => {
-                             const findingItems = layer.items.filter((i: IplsItem) => i.status);
+                             const isSelected = selectedRowId === itemId;
+                             
                              return (
-                                <div key={layer.id} className="flex flex-col h-full border-r border-dashed border-slate-300 last:border-r-0 pr-3 min-h-[150px]">
-                                   {/* Layer Header */}
-                                   <div className="text-center font-bold text-[12px] mb-3 italic text-slate-800">
-                                      Layer {["I", "II", "III", "IV", "V"][colIdx]}
-                                   </div>
+                                <tr 
+                                   key={itemId} 
+                                   onClick={() => {
+                                      onSelectRow(itemId);
+                                   }}
+                                   onDoubleClick={(e) => {
+                                      if (!readonly) {
+                                         setEditingId(itemId);
+                                         setEditDraft({ 
+                                            layer: extractStringValue(item.layer), 
+                                            hierarchy: extractStringValue(item.hierarchy), 
+                                            action: extractStringValue(item.action), 
+                                            type: item.type 
+                                         });
+                                      }
+                                   }}
+                                   className={cn(
+                                      "group transition-all cursor-pointer",
+                                      isSelected ? "bg-blue-50/55" : "bg-white hover:bg-slate-100/50"
+                                   )}
+                                >
+                                   <td className="px-4 py-2 border-r border-b border-slate-400 text-center text-[10px] font-mono font-black text-slate-800 align-middle">
+                                      {extractStringValue(item.no)}
+                                   </td>
+                                   <td className={`px-4 py-2 border-r border-b border-slate-400 text-center text-[10px] font-mono font-black ${layerBg} ${layerText} align-middle`}>
+                                      {editingId === itemId ? (
+                                        <input 
+                                          type="text"
+                                          value={editDraft.layer || ""}
+                                          onChange={(e) => setEditDraft({ ...editDraft, layer: e.target.value })}
+                                          onClick={(e) => e.stopPropagation()}
+                                          className="w-full bg-white px-2 py-1 text-[11px] font-mono font-black border border-slate-300 rounded text-slate-900 focus:outline-none focus:border-blue-500"
+                                        />
+                                      ) : extractStringValue(item.layer)}
+                                   </td>
+                                   <td className={`px-4 py-2 border-r border-b border-slate-400 text-center text-[10px] font-mono font-black ${layerBg} ${layerText} align-middle`}>
+                                      {editingId === itemId ? (
+                                        <input 
+                                          type="text"
+                                          value={editDraft.hierarchy || ""}
+                                          onChange={(e) => setEditDraft({ ...editDraft, hierarchy: e.target.value })}
+                                          onClick={(e) => e.stopPropagation()}
+                                          className="w-full bg-white px-2 py-1 text-[11px] font-mono font-black border border-slate-300 rounded text-slate-900 focus:outline-none focus:border-blue-500"
+                                        />
+                                      ) : extractStringValue(item.hierarchy)}
+                                   </td>
+                                   <td className="px-4 py-3 border-b border-slate-400 text-[10px] leading-snug text-slate-900 align-top text-justify relative group">
+                                      {editingId === itemId ? (
+                                        <div className="flex flex-col gap-2 w-full animate-in fade-in duration-200" onClick={(e) => e.stopPropagation()}>
+                                           <textarea 
+                                              value={editDraft.action || ""}
+                                              onChange={(e) => setEditDraft({ ...editDraft, action: e.target.value })}
+                                              className="w-full bg-white p-2 resize-none text-[10px] min-h-[60px] border border-slate-300 rounded text-slate-900 focus:outline-none focus:border-blue-500"
+                                           />
+                                           <div className="flex items-center justify-end gap-1.5 mt-1">
+                                              <button 
+                                                 onClick={(e) => { e.stopPropagation(); setEditingId(null); setEditDraft({}); }}
+                                                 className="flex items-center gap-1 px-2 py-1 text-[10px] font-bold text-slate-600 bg-slate-50 hover:bg-slate-100 hover:text-slate-800 border border-slate-300 rounded transition-all duration-100"
+                                              >
+                                                 Batal
+                                              </button>
+                                              <button 
+                                                 onClick={(e) => { e.stopPropagation(); handleSaveEdit(); }}
+                                                 className="flex items-center gap-1 px-2 py-1 text-[10px] font-bold text-white bg-blue-600 hover:bg-blue-700 border border-blue-700 rounded transition-all duration-100"
+                                              >
+                                                 Simpan
+                                              </button>
+                                           </div>
+                                        </div>
+                                      ) : (
+                                        <div className="flex items-start justify-between gap-4">
+                                           <span className="flex-1">
+                                              {extractStringValue(item.action)}
+                                              <span className="inline-flex ml-2 align-middle">
+                                                 {renderProvenanceBadge(item)}
+                                              </span>
+                                           </span>
+                                           {!readonly && !editingId && (
+                                             <div className={cn("absolute top-0 right-0 flex items-center gap-0.5 bg-white/95 backdrop-blur-sm p-0.5 rounded shadow-sm border border-slate-200 transition-opacity duration-150 z-10", isSelected ? "opacity-100 pointer-events-auto" : "opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto")}>
+                                                <TooltipProvider delayDuration={400}>
+                                                  <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                      <button 
+                                                        onClick={(e) => { 
+                                                           e.stopPropagation(); 
+                                                           onSelectRow(itemId);
+                                                           setDetailItem({
+                                                              ...item,
+                                                              id: itemId,
+                                                              no: extractStringValue(item.no),
+                                                              action: extractStringValue(item.action),
+                                                              layer: extractStringValue(item.layer),
+                                                              hierarchy: extractStringValue(item.hierarchy),
+                                                           });
+                                                        }}
+                                                        className="p-1 rounded text-slate-500 hover:text-blue-600 hover:bg-blue-50 focus:outline-none"
+                                                      >
+                                                         <Eye className="h-3 w-3" />
+                                                      </button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent side="top" className="z-50 text-[10px] font-bold">
+                                                      Lihat detail analisis
+                                                    </TooltipContent>
+                                                  </Tooltip>
+                                                </TooltipProvider>
 
-                                   {/* Findings */}
-                                   <div className="flex-1 space-y-4">
-                                      {findingItems.map((item: IplsItem) => {
-                                         const num = item.originalIndex || 0;
-                                         let bgColor = "";
-                                         let textColor = "text-slate-900";
-                                         if (item.status === 'rootcause') {
-                                            bgColor = "bg-red-600 border-red-600 hover:bg-red-700";
-                                            textColor = "text-white";
-                                         } else if (item.status === 'non-conformity') {
-                                            bgColor = "bg-[#ffc000] border-[#ffc000] hover:bg-amber-500";
-                                         } else if (item.status === 'improvement') {
-                                            bgColor = "bg-[#00c950] border-[#00c950] hover:bg-emerald-600";
-                                         }
+                                                <TooltipProvider delayDuration={400}>
+                                                  <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                      <button 
+                                                        onClick={(e) => { 
+                                                           e.stopPropagation(); 
+                                                           onSelectRow(itemId);
+                                                           setDetailItem({
+                                                              ...item,
+                                                              id: itemId,
+                                                              no: extractStringValue(item.no),
+                                                              action: extractStringValue(item.action),
+                                                              layer: extractStringValue(item.layer),
+                                                              hierarchy: extractStringValue(item.hierarchy),
+                                                           });
+                                                           setEditingId(itemId); 
+                                                           setEditDraft({ 
+                                                              layer: extractStringValue(item.layer), 
+                                                              hierarchy: extractStringValue(item.hierarchy), 
+                                                              action: extractStringValue(item.action), 
+                                                              type: item.type 
+                                                           }); 
+                                                        }}
+                                                        className="p-1 rounded text-slate-500 hover:text-blue-600 hover:bg-blue-50 focus:outline-none"
+                                                      >
+                                                         <Pencil className="h-3 w-3" />
+                                                      </button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent side="top" className="z-50 text-center">
+                                                      <p className="text-[10px] font-bold">Edit tindakan</p>
+                                                      <p className="text-[9px] text-slate-400 mt-0.5">Double-click baris sebagai shortcut</p>
+                                                    </TooltipContent>
+                                                  </Tooltip>
+                                                </TooltipProvider>
 
-                                         const isSelected = item.id === selectedRowId;
-                                         return (
-                                            <div 
-                                               key={item.id} 
-                                               className={cn(
-                                                  "flex flex-col cursor-pointer group relative p-2 rounded-md transition-all border border-transparent",
-                                                  isSelected ? 'bg-slate-100/80 ring-1 ring-slate-300' : 'hover:bg-slate-50/50'
-                                               )}
-                                               onClick={() => {
-                                                  if (onSelectRow) onSelectRow(item.id);
-                                               }}
-                                               onDoubleClick={(e) => {
-                                                  if (!readonly) {
-                                                     setEditingId(item.id);
-                                                     setEditDraft({ label: item.label, description: item.description, status: item.status });
-                                                  }
-                                               }}
-                                            >
-                                               {editingId === item.id ? (
-                                                  <div className="flex flex-col gap-2 w-full animate-in fade-in duration-200" onClick={(e) => e.stopPropagation()}>
-                                                     <input 
-                                                        type="text"
-                                                        value={editDraft.label || ""}
-                                                        onChange={(e) => setEditDraft({ ...editDraft, label: e.target.value })}
-                                                        placeholder="Label"
-                                                        className="w-full bg-white px-2 py-1 text-[11px] font-bold border border-slate-300 rounded text-slate-900 focus:outline-none focus:border-blue-500"
-                                                     />
-                                                     <textarea 
-                                                        value={editDraft.description || ""}
-                                                        onChange={(e) => setEditDraft({ ...editDraft, description: e.target.value })}
-                                                        placeholder="Deskripsi Kejadian"
-                                                        className="w-full bg-white p-2 resize-none text-[10px] min-h-[60px] border border-slate-300 rounded text-slate-900 focus:outline-none focus:border-blue-500"
-                                                     />
-                                                     <select 
-                                                        value={editDraft.status || "non-conformity"}
-                                                        onChange={(e) => setEditDraft({ ...editDraft, status: e.target.value as any })}
-                                                        className="w-full bg-white px-2 py-1 text-[10px] border border-slate-300 rounded text-slate-900 focus:outline-none focus:border-blue-500"
-                                                     >
-                                                        <option value="rootcause">Rootcause</option>
-                                                        <option value="non-conformity">Non Conformity</option>
-                                                        <option value="improvement">Improvement</option>
-                                                     </select>
-                                                     <div className="flex items-center justify-between mt-1">
-                                                        <span className="text-[9px] text-slate-400">Tekan Simpan untuk menyimpan</span>
-                                                        <div className="flex items-center gap-1.5">
-                                                           <button 
-                                                              onClick={(e) => { e.stopPropagation(); setEditingId(null); setEditDraft({}); }}
-                                                              className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold text-slate-600 bg-slate-50 hover:bg-slate-100 hover:text-slate-800 border border-slate-300 rounded transition-all duration-100"
-                                                           >
-                                                              Batal
-                                                           </button>
-                                                           <button 
-                                                              onClick={(e) => { e.stopPropagation(); handleSaveEdit(layer.id); }}
-                                                              className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold text-white bg-blue-600 hover:bg-blue-700 border border-blue-700 rounded transition-all duration-100"
-                                                           >
-                                                              Simpan
-                                                           </button>
-                                                        </div>
-                                                     </div>
-                                                  </div>
-                                               ) : (
-                                                  <>
-                                                     <div className={`text-[10px] font-bold text-center py-1.5 px-2 rounded-sm border shadow-sm mb-1.5 transition-colors ${bgColor} ${textColor}`}>
-                                                        {num}. {item.label}
-                                                     </div>
-                                                     {item.description && (
-                                                        <p className="text-[10px] text-slate-900 mt-1 leading-snug border-l-[1.5px] border-slate-300 pl-2">
-                                                           {item.description}
-                                                        </p>
-                                                     )}
-                                                  </>
-                                               )}
-                                               
-                                               <div className="mt-1 flex items-center justify-between">
-                                                  {renderProvenanceBadge(item)}
-                                               </div>
-                                                  
-                                               {!readonly && !editingId && (
-                                                  <div className={cn(
-                                                    "absolute top-0 right-0 flex items-center gap-0.5 bg-white/95 backdrop-blur-sm p-0.5 rounded shadow-sm border border-slate-200 transition-opacity duration-150 z-10", 
-                                                    isSelected ? "opacity-100 pointer-events-auto" : "opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto"
-                                                  )}>
-                                                    <TooltipProvider delayDuration={400}>
-                                                      <Tooltip>
-                                                        <TooltipTrigger asChild>
-                                                          <button 
-                                                            onClick={(e) => { 
-                                                               e.stopPropagation(); 
-                                                               if (onSelectRow) onSelectRow(item.id);
-                                                               setDetailItem({ layerId: layer.id, item: item });
-                                                            }}
-                                                            className="p-1 rounded text-slate-500 hover:text-blue-600 hover:bg-blue-50 focus:outline-none"
-                                                          >
-                                                             <Eye className="h-3 w-3" />
-                                                          </button>
-                                                        </TooltipTrigger>
-                                                        <TooltipContent side="top" className="z-50 text-[10px] font-bold">
-                                                          Lihat detail analisis
-                                                        </TooltipContent>
-                                                      </Tooltip>
-                                                    </TooltipProvider>
-
-                                                    <TooltipProvider delayDuration={400}>
-                                                      <Tooltip>
-                                                        <TooltipTrigger asChild>
-                                                          <button 
-                                                            onClick={(e) => { 
-                                                               e.stopPropagation(); 
-                                                               setEditingId(item.id); 
-                                                               setEditDraft({ label: item.label, description: item.description, status: item.status }); 
-                                                            }}
-                                                            className="p-1 rounded text-slate-500 hover:text-blue-600 hover:bg-blue-50 focus:outline-none"
-                                                          >
-                                                             <Pencil className="h-3 w-3" />
-                                                          </button>
-                                                        </TooltipTrigger>
-                                                        <TooltipContent side="top" className="z-50 text-center">
-                                                          <p className="text-[10px] font-bold">Edit fakta</p>
-                                                          <p className="text-[9px] text-slate-400 mt-0.5">Double-click baris sebagai shortcut</p>
-                                                        </TooltipContent>
-                                                      </Tooltip>
-                                                    </TooltipProvider>
-
-                                                    <TooltipProvider delayDuration={400}>
-                                                      <Tooltip>
-                                                        <TooltipTrigger asChild>
-                                                          <button 
-                                                            onClick={(e) => { 
-                                                               e.stopPropagation(); 
-                                                               setItemToDelete({ layerId: layer.id, id: item.id, label: item.label }); 
-                                                            }}
-                                                            className="p-1 rounded text-slate-500 hover:text-red-600 hover:bg-red-50 focus:outline-none"
-                                                          >
-                                                             <Trash2 className="h-3 w-3" />
-                                                          </button>
-                                                        </TooltipTrigger>
-                                                        <TooltipContent side="top" className="z-50 text-center">
-                                                          <p className="text-[10px] font-bold text-red-600">Hapus Fakta</p>
-                                                        </TooltipContent>
-                                                      </Tooltip>
-                                                    </TooltipProvider>
-                                                  </div>
-                                               )}
-                                            </div>
-                                         );
-                                      })}
-                                      {!readonly && (
-                                         <button 
-                                            onClick={(e) => { e.stopPropagation(); handleAddItem(layer.id); }}
-                                            className="w-full mt-2 text-center py-2 text-[9px] font-bold text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 transition-colors uppercase tracking-wider border border-dashed border-slate-300 hover:border-emerald-300 rounded"
-                                         >
-                                            + Tambah Data
-                                         </button>
+                                                <TooltipProvider delayDuration={400}>
+                                                  <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                      <button 
+                                                        onClick={(e) => { 
+                                                           e.stopPropagation(); 
+                                                           setItemToDelete({ id: itemId, text: extractStringValue(item.action) }); 
+                                                        }}
+                                                        className="p-1 rounded text-slate-500 hover:text-red-600 hover:bg-red-50 focus:outline-none"
+                                                      >
+                                                         <Trash2 className="h-3 w-3" />
+                                                      </button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent side="top" className="z-50 text-center">
+                                                      <p className="text-[10px] font-bold text-red-600">Hapus Tindakan</p>
+                                                    </TooltipContent>
+                                                  </Tooltip>
+                                                </TooltipProvider>
+                                             </div>
+                                           )}
+                                        </div>
                                       )}
-                                   </div>
-                                </div>
+                                   </td>
+                                </tr>
                              );
                           })}
-                       </div>
 
-                       {/* Legend */}
-                       <div className="flex items-center gap-6 mt-6 pt-4 border-t border-slate-200">
-                          <div className="bg-[#091b4c] text-white text-[11px] font-bold px-8 py-1.5 rounded-sm uppercase tracking-wide">
-                             Legend
-                          </div>
-                          <div className="flex items-center gap-6 text-[11px] font-bold text-slate-800">
-                             <div className="flex items-center gap-2">
-                                <div className="w-5 h-3 rounded-sm bg-red-600 border border-red-700"></div>
-                                <span>Rootcause</span>
-                             </div>
-                             <div className="flex items-center gap-2">
-                                <div className="w-5 h-3 rounded-sm bg-[#ffc000] border border-amber-500"></div>
-                                <span>Non Conformity</span>
-                             </div>
-                             <div className="flex items-center gap-2">
-                                <div className="w-5 h-3 rounded-sm bg-[#00c950] border border-emerald-600"></div>
-                                <span>Improvement</span>
-                             </div>
-                          </div>
-                       </div>
-                    </div>
+                          {!readonly && (
+                            <tr>
+                               <td colSpan={4} className="px-0 py-0 border-r border-b border-slate-400 relative">
+                                  <button 
+                                    onClick={(e) => { 
+                                      e.stopPropagation(); 
+                                      setAddDraft({ layer: "I.2", hierarchy: "Eliminasi", action: "", type: "rc" });
+                                      setIsAddModalOpen(true); 
+                                    }}
+                                    className="w-full text-center py-2 text-[11px] font-bold text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 transition-colors uppercase tracking-widest bg-slate-50/50 hover:border-emerald-200 border border-transparent"
+                                  >
+                                    + Tambah Tindakan Perbaikan
+                                  </button>
+                               </td>
+                            </tr>
+                          )}
+                       </tbody>
+                    </table>
                  </div>
               </div>
            </div>
         </div>
-
+        
         {/* Right Detail Panel */}
         {detailItem && (
           <div className="w-[380px] shrink-0 border-l border-slate-200 bg-white h-full animate-in slide-in-from-right duration-300 flex flex-col z-20 shadow-[-4px_0_15px_-3px_rgba(0,0,0,0.05)]">
-            <IplsTraceabilityPanel 
-              item={{...detailItem.item, layerId: detailItem.layerId}} 
+            <PreventionTraceabilityPanel 
+              item={detailItem} 
               onClose={() => { setDetailItem(null); if(onSelectRow) onSelectRow(null); setEditingId(null); }}
               readonly={readonly}
               onEdit={() => { 
-                setEditingId(detailItem.item.id); 
-                setEditDraft({ label: detailItem.item.label, description: detailItem.item.description, status: detailItem.item.status }); 
+                setEditingId(detailItem.id); 
+                setEditDraft({ 
+                  layer: detailItem.layer, 
+                  hierarchy: detailItem.hierarchy, 
+                  action: detailItem.action, 
+                  type: detailItem.type 
+                }); 
               }} 
             />
           </div>
         )}
       </div>
 
+      {/* Add Modal */}
+      <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Tambah Tindakan Pencegahan</DialogTitle>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold text-slate-700 uppercase tracking-widest">Layer</label>
+                <Select value={addDraft.layer} onValueChange={v => setAddDraft({...addDraft, layer: v})}>
+                  <SelectTrigger className="bg-white"><SelectValue/></SelectTrigger>
+                  <SelectContent>
+                    {["I.2", "II.9", "II.9 & I.2", "II.12", "III.3", "III.10", "IV.4", "IV.6"].map(l => (
+                      <SelectItem key={l} value={l}>{l}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold text-slate-700 uppercase tracking-widest">Hirarki Kontrol</label>
+                <Select value={addDraft.hierarchy} onValueChange={v => setAddDraft({...addDraft, hierarchy: v})}>
+                  <SelectTrigger className="bg-white"><SelectValue/></SelectTrigger>
+                  <SelectContent>
+                    {["Eliminasi", "Substitusi", "Rek Eng", "Adm", "APD"].map(h => (
+                      <SelectItem key={h} value={h}>{h}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold text-slate-700 uppercase tracking-widest">Jenis Prioritas (Type)</label>
+              <Select value={addDraft.type} onValueChange={v => setAddDraft({...addDraft, type: v})}>
+                <SelectTrigger className="bg-white"><SelectValue/></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="rc">Root Cause (Merah)</SelectItem>
+                  <SelectItem value="nc">Non-Compliance (Kuning)</SelectItem>
+                  <SelectItem value="imp">Improvement (Hijau)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold text-slate-700 uppercase tracking-widest">Tindakan</label>
+              <Textarea 
+                value={addDraft.action} 
+                onChange={(e) => setAddDraft({...addDraft, action: e.target.value})} 
+                placeholder="Deskripsikan tindakan..." 
+                className="min-h-[100px]"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddModalOpen(false)}>Batal</Button>
+            <Button onClick={handleAdd} className="bg-slate-900 hover:bg-slate-800 text-white">Simpan</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
       {/* Delete Modal */}
       <Dialog open={!!itemToDelete} onOpenChange={(open) => !open && setItemToDelete(null)}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle className="text-rose-600">HAPUS ITEM IPLS?</DialogTitle>
+            <DialogTitle className="text-rose-600">HAPUS TINDAKAN?</DialogTitle>
           </DialogHeader>
           <div className="py-2 text-sm text-slate-600 space-y-4">
-            <p>Item ini akan dihapus dari analisis IPLS.</p>
+            <p>Tindakan perbaikan ini akan dihapus dari analisis aktif.</p>
             {itemToDelete && (
               <div className="bg-slate-50 border border-slate-200 p-3 rounded-md text-xs">
-                <div className="font-bold text-slate-700 mb-1">
-                  Layer {itemToDelete.layerId}
-                </div>
-                <div className="text-slate-600">
-                  {itemToDelete.label}
+                <div className="text-slate-600 line-clamp-2">
+                  {itemToDelete.text}
                 </div>
               </div>
             )}
@@ -967,7 +1020,7 @@ export function IplsAnalysisModule({
               RIWAYAT PERUBAHAN
             </SheetTitle>
             <SheetDescription className="text-xs text-slate-500 font-medium">
-              Analisis IPLS · {auditLogs.length} aktivitas
+              Analisis Pencegahan · {auditLogs.length} aktivitas
             </SheetDescription>
           </SheetHeader>
           
@@ -1015,12 +1068,6 @@ export function IplsAnalysisModule({
                       </div>
 
                       <div className="p-4 space-y-3">
-                        <div className="flex items-center gap-2">
-                           <span className="text-xs font-bold text-slate-700">
-                             {log.category}
-                           </span>
-                        </div>
-                        
                         {isDelete && log.deletionReason && (
                           <p className="text-xs text-slate-600 bg-rose-50 p-2 rounded border border-rose-100">
                             <span className="font-bold block mb-1">Alasan Penghapusan:</span>
@@ -1030,7 +1077,7 @@ export function IplsAnalysisModule({
                         
                         {(isCreate || isUpdate) && log.after && (
                           <div className="text-[11px] text-slate-800 leading-relaxed italic border-l-2 border-slate-300 pl-3 py-1">
-                            "{log.after.label}"
+                            "{log.after.action}"
                           </div>
                         )}
                         
@@ -1062,4 +1109,4 @@ export function IplsAnalysisModule({
       </Sheet>
     </div>
   );
-}
+};

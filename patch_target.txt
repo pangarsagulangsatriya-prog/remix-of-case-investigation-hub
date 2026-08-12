@@ -1,0 +1,201 @@
+                           {selectedAgent?.status === 'running' ? (
+                              <div className="flex-1 overflow-auto bg-white relative">
+                                 <div className="absolute inset-0 bg-gradient-to-br from-slate-50/50 to-white pointer-events-none" />
+                                 <div className="relative pt-12 pl-16 max-w-[800px] pb-24">
+                                    {/* Header */}
+                                    <div className="flex flex-col mb-8">
+                                       <div className="flex items-center justify-between mb-1">
+                                          <h2 className="text-[22px] font-semibold text-slate-900 uppercase tracking-wide">
+                                             {selectedAgent.name}
+                                          </h2>
+                                          <div className="flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 border border-blue-200 rounded-full shrink-0 transition-opacity duration-200">
+                                             <span className="h-1.5 w-1.5 rounded-full bg-blue-600 motion-safe:animate-badge-dot" />
+                                             <span className="text-[10px] font-bold text-blue-700 uppercase tracking-widest">BERJALAN</span>
+                                          </div>
+                                       </div>
+                                       <p className="text-[14px] text-slate-500">{AgentDisplayMeta[selectedAgent.id]?.subtitle || selectedAgent.purpose}</p>
+
+                                       <div className="mt-6 flex flex-col gap-1">
+                                          <div className="flex items-center gap-2">
+                                             <span className="text-[16px] font-semibold text-slate-800 transition-colors duration-200">
+                                                {(selectedAgent.runCount || 0) > 1 ? "Memproses ulang hasil analisis" : "Memulai proses analisis baru"}
+                                             </span>
+                                             {((selectedAgent.runCount || 0) > 1) && (
+                                                <div className="flex items-end gap-[2px] h-3 ml-2 opacity-60">
+                                                   <div className="w-[3px] h-1.5 bg-slate-400 animate-[bounce_1.4s_infinite_0ms]" />
+                                                   <div className="w-[3px] h-2.5 bg-slate-400 animate-[bounce_1.4s_infinite_150ms]" />
+                                                   <div className="w-[3px] h-1.5 bg-slate-400 animate-[bounce_1.4s_infinite_300ms]" />
+                                                </div>
+                                             )}
+                                          </div>
+                                          <p className="text-[13px] text-slate-500">
+                                             {selectedAgent.knowledgeSelection?.length || 0} evidence digunakan untuk pemrosesan {(selectedAgent.runCount || 0) > 1 ? "ulang" : "awal"}.
+                                          </p>
+                                       </div>
+                                    </div>
+
+                                    {/* Metadata Strip */}
+                                    <div className="flex items-center gap-10 py-3 border-y border-slate-200 mb-8">
+                                       <div className="flex flex-col">
+                                          <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">EVIDENCE</span>
+                                          <span className="text-[13px] font-semibold text-slate-700">{selectedAgent.knowledgeSelection?.length || 0} digunakan</span>
+                                       </div>
+                                       <div className="flex flex-col">
+                                          <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">STATUS</span>
+                                          <span className="text-[13px] font-semibold text-slate-700 font-tabular-nums">Berjalan {formatTime(elapsedTimeMs)}</span>
+                                       </div>
+                                       {(selectedAgent.runCount || 0) > 1 && (
+                                          <div className="flex flex-col">
+                                             <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">RUN TYPE</span>
+                                             <span className="text-[13px] font-semibold text-slate-700">Reprocess #{selectedAgent.runCount}</span>
+                                          </div>
+                                       )}
+                                    </div>
+
+                                    {/* Vertical Stepper & Activity Feed Row */}
+                                    <div className="flex gap-16">
+                                       {/* Process Stepper */}
+                                       <div className="flex-1">
+                                          <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-6">Proses Analisis</h3>
+                                          <div className="relative space-y-0">
+                                             {(() => {
+                                                const steps = AGENT_PROCESS_STEPS[selectedAgent.id] || [];
+                                                // Calculate pseudo active step based on elapsedTimeMs (each step = 3 seconds approx)
+                                                const currentStepIndex = Math.min(Math.floor(elapsedTimeMs / 3000), steps.length - 1);
+                                                
+                                                return steps.map((step, idx) => {
+                                                   const isActive = idx === currentStepIndex;
+                                                   const isCompleted = idx < currentStepIndex;
+                                                   const isWaiting = idx > currentStepIndex;
+                                                   const isLast = idx === steps.length - 1;
+                                                   
+                                                   return (
+                                                      <div key={step.id} className="relative flex items-start group">
+                                                         {/* Vertical Line Connector */}
+                                                         {!isLast && (
+                                                            <div className={`absolute top-6 left-[11px] w-[2px] h-[calc(100%-8px)] transition-colors duration-200 overflow-hidden ${isCompleted ? 'bg-emerald-500' : 'bg-slate-200'}`}>
+                                                               {/* Animated highlight for active connector */}
+                                                               {isActive && (
+                                                                  <div className="absolute top-0 left-0 w-full h-[24px] bg-blue-500 motion-safe:animate-stepper-connector" />
+                                                               )}
+                                                            </div>
+                                                         )}
+                                                         
+                                                         {/* Icon Container */}
+                                                         <div className="relative z-10 mr-4 mt-0.5 flex flex-col items-center">
+                                                            {isCompleted ? (
+                                                               <div className="h-6 w-6 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 border border-emerald-200 shrink-0 shadow-sm transition-all duration-300 animate-in zoom-in duration-300">
+                                                                  <CheckCircle2 className="h-3.5 w-3.5" />
+                                                               </div>
+                                                            ) : isActive ? (
+                                                               <div className="h-6 w-6 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 border border-blue-200 shrink-0 shadow-sm relative transition-all duration-300">
+                                                                  <div className="absolute inset-[-1px] rounded-full border-[1.5px] border-blue-200 border-t-blue-500 motion-safe:animate-stepper-spin" />
+                                                                  <Activity className="h-3 w-3" />
+                                                               </div>
+                                                            ) : (
+                                                               <div className="h-6 w-6 rounded-full bg-white flex items-center justify-center text-slate-300 border border-slate-200 shrink-0 transition-all duration-300">
+                                                                  <div className="h-2 w-2 rounded-full bg-slate-200" />
+                                                               </div>
+                                                            )}
+                                                         </div>
+                                                         
+                                                         {/* Content */}
+                                                         <div className={`flex flex-col pb-8 transition-opacity duration-300 ${isWaiting ? 'opacity-50' : 'opacity-100'}`}>
+                                                            <div className="flex items-center gap-2">
+                                                               <span className="text-[12px] font-mono text-slate-400">0{idx + 1}</span>
+                                                               <span className={`text-[14px] font-medium ${isActive ? 'text-blue-700' : isCompleted ? 'text-slate-800' : 'text-slate-500'}`}>
+                                                                  {step.label}
+                                                               </span>
+                                                            </div>
+                                                            
+                                                            {/* Active Status Context & Animation */}
+                                                            {isActive && (
+                                                               <div className="mt-2 motion-safe:animate-fade-in-up-short">
+                                                                  <p className="text-[12px] text-slate-500 mb-2 transition-all duration-200">
+                                                                     {selectedAgent.microStatus || "Memproses..."}
+                                                                  </p>
+                                                                  {/* Indeterminate Progress Track */}
+                                                                  <div className="w-48 h-1 bg-slate-100 rounded-full overflow-hidden relative">
+                                                                     <div className="absolute top-0 bottom-0 left-0 w-1/3 bg-blue-500 rounded-full motion-safe:animate-progress-track" />
+                                                                  </div>
+                                                               </div>
+                                                            )}
+                                                            {isCompleted && (
+                                                               <div className="mt-1 animate-in fade-in duration-300">
+                                                                  <span className="text-[11px] text-emerald-600 font-medium">Selesai</span>
+                                                               </div>
+                                                            )}
+                                                         </div>
+                                                      </div>
+                                                   );
+                                                });
+                                             })()}
+                                          </div>
+                                       </div>
+
+                                       {/* Live Activity Feed */}
+                                       <div className="w-[300px] shrink-0 border-l border-slate-100 pl-8">
+                                          <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-6">Aktivitas Terkini</h3>
+                                          <div className="flex flex-col gap-3 font-mono text-[11px]">
+                                             {(() => {
+                                                const currentStepIndex = Math.min(Math.floor(elapsedTimeMs / 3000), (AGENT_PROCESS_STEPS[selectedAgent.id] || []).length - 1);
+                                                const activities = ACTIVITY_FEED_EVENTS[selectedAgent.id] || [];
+                                                
+                                                // Only show events that have logically "completed" based on elapsed time (time per step = 3s)
+                                                // Create a stable feed array based on currentStepIndex (only render what's already completed or actively starting)
+                                                const feed = [];
+                                                // Started timestamp
+                                                const startedTime = Date.now() - elapsedTimeMs;
+                                                
+                                                for(let i = 0; i <= currentStepIndex; i++) {
+                                                   if (activities[i]) {
+                                                      const eventTime = new Date(startedTime + (i * 3000));
+                                                      feed.unshift({
+                                                         label: activities[i],
+                                                         time: eventTime.toLocaleTimeString('id-ID', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })
+                                                      });
+                                                   }
+                                                }
+                                                
+                                                return feed.slice(0, 5).map((evt, idx) => (
+                                                   <div key={idx} className="flex items-start gap-3 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                                                      <span className="text-slate-400 shrink-0 font-tabular-nums">{evt.time}</span>
+                                                      <span className="text-slate-600 leading-tight">{evt.label}</span>
+                                                   </div>
+                                                ));
+                                             })()}
+                                             
+                                             <div className="mt-4 pt-4 border-t border-slate-100">
+                                                <button className="text-slate-400 hover:text-slate-600 transition-colors uppercase tracking-widest text-[9px] font-sans font-bold">
+                                                   [ Lihat aktivitas lengkap ]
+                                                </button>
+                                             </div>
+                                          </div>
+                                       </div>
+                                    </div>
+                                    
+                                    {/* Finalization Result Skeleton */}
+                                    {(() => {
+                                       const steps = AGENT_PROCESS_STEPS[selectedAgent.id] || [];
+                                       const currentStepIndex = Math.min(Math.floor(elapsedTimeMs / 3000), steps.length - 1);
+                                       if (currentStepIndex === steps.length - 1) {
+                                          return (
+                                             <div className="mt-8 pt-8 border-t border-slate-200 animate-in fade-in slide-in-from-top-4 duration-500">
+                                                <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-4">Mempersiapkan Hasil Analisis</h3>
+                                                <div className="space-y-3 opacity-40">
+                                                   <div className="h-4 w-3/4 bg-slate-200 rounded-sm animate-pulse" />
+                                                   <div className="h-4 w-1/2 bg-slate-200 rounded-sm animate-pulse delay-75" />
+                                                   <div className="h-4 w-5/6 bg-slate-200 rounded-sm animate-pulse delay-150" />
+                                                </div>
+                                             </div>
+                                          );
+                                       }
+                                       return null;
+                                    })()}
+                                 </div>
+                              </div>
+                           ) : !selectedAgent?.results ? (
+                              <div className="flex flex-col h-full items-center justify-center text-center opacity-30 grayscale pointer-events-none space-y-6">
+                                 <Cpu className="h-12 w-12 text-slate-300" />
+                                 <h2 className="text-3xl font-black uppercase tracking-[0.2em] text-slate-400">Agen Siaga</h2>
+                              </div>

@@ -77,6 +77,8 @@ import { FactChronologyModule, TraceabilityPanel, extractStringValue } from "@/c
 import { ActorAnalysisModule, ActorDetailPanel } from "@/components/analysis/ActorAnalysisModule";
 import { mockLayers, mockFolders, mockDocuments } from "@/data/mockKnowledgeData";
 import { IplsAnalysisModule } from "@/components/analysis/IplsAnalysisModule";
+import { PeepoAnalysisModule } from "@/components/analysis/PeepoAnalysisModule";
+import { PreventionAnalysisModule } from "@/components/analysis/PreventionAnalysisModule";
 import { AnalysisEmptyState } from "./AnalysisEmptyState";
 
 // Icons mapping for local use
@@ -2057,129 +2059,17 @@ export default function AnalysisTab({ agents, setAgents, reportStatus }: Analysi
                                  ) : (
                                      <div className="flex flex-col h-full">
                                         {selectedAgentId === 'peepo' ? (
-                                            <div className="flex flex-col h-full bg-slate-50/10 animate-in fade-in duration-500 overflow-hidden">
-                                               <div className="shrink-0 p-4 border-b border-slate-200 bg-white flex flex-col gap-4">
-                                                  <div className="flex items-center justify-between">
-                                                     <div>
-                                                        <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                                                           <LayoutGrid className="h-4 w-4 text-slate-500" />
-                                                           LEMBAR ANALISIS FAKTOR PEEPO
-                                                        </h2>
-                                                        <p className="text-[11px] text-slate-500 mt-1">Sintesis temuan berdasarkan kategori People, Environment, Equipment, Procedures, dan Organisation.</p>
-                                                     </div>
-                                                     <div className="flex items-center gap-2">
-                                                        <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse" />
-                                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Sintesis Selesai</span>
-                                                     </div>
-                                                  </div>
-                                               </div>
-                                               
-                                               <div className="flex-1 overflow-auto bg-slate-50 p-8 flex justify-center scrollbar-thin">
-                                                  <div className="w-full max-w-[1300px] bg-white border border-slate-300 shadow-sm p-8 pb-16 h-fit shrink-0 space-y-8">
-                                                     {[
-                                                        { id: 'people', label: 'People (Individu)' },
-                                                        { id: 'environment', label: 'Environment (Lingkungan)' },
-                                                        { id: 'equipment', label: 'Equipment (Peralatan)' },
-                                                        { id: 'procedures', label: 'Procedures (Prosedur)' },
-                                                        { id: 'organisation', label: 'Organisation (Organisasi)' },
-                                                     ].map((section) => (
-                                                        <div key={section.id} className="space-y-3">
-                                                           <div className="flex items-center gap-3">
-                                                              <span className="px-2.5 py-1 rounded text-[9px] font-black text-white uppercase tracking-widest bg-slate-900">
-                                                                 {section.label}
-                                                              </span>
-                                                              <div className="h-px flex-1 bg-slate-200" />
-                                                           </div>
-                                                           <div className="bg-white border-l border-t border-slate-200 overflow-hidden shadow-sm">
-                                                              <table className="w-full text-left border-collapse">
-                                                                 <thead>
-                                                                    <tr className="bg-slate-50/80">
-                                                                       <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest border-r border-b border-slate-200 bg-slate-50/30">TEMUAN</th>
-                                                                    </tr>
-                                                                 </thead>
-                                                                 <tbody>
-                                                                    {(selectedAgent?.results?.[section.id] || []).map((item: any, idx: number) => {
-                                                                       const isSelected = selectedRowId === (item.id || item);
-                                                                       return (
-                                                                          <tr 
-                                                                             key={item.id || idx} 
-                                                                             onClick={() => handleSelectRow(item.id || item)}
-                                                                             onDoubleClick={() => {
-                                                                               if (isLocked) return;
-                                                                               setEditingPeepoId(String(item.id || idx));
-                                                                               setPeepoEditDraft(item.chronology_text || item.label || item);
-                                                                             }}
-                                                                             className={cn(
-                                                                                "group transition-all cursor-pointer",
-                                                                                isSelected ? "bg-slate-100/80" : "hover:bg-slate-50/50"
-                                                                             )}
-                                                                          >
-                                                                             <td className="px-5 py-4 align-top border-r border-b border-slate-200 relative">
-                                                                                <p className={cn(
-                                                                                   "text-[11px] font-bold leading-relaxed pr-8",
-                                                                                   isSelected ? "text-slate-900" : "text-slate-700"
-                                                                                )}>
-                                                                                   {item.chronology_text || item.label || item}
-                                                                                </p>
-                                                                                {!isLocked && (
-                                                                                  <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                                                                                      {deleteConfirmId === String(item.id || idx) ? (
-                                                                                         <div className="flex items-center gap-1.5 self-center animate-in fade-in bg-white p-1 rounded shadow-sm border border-slate-200" onClick={(e) => e.stopPropagation()}>
-                                                                                            <span className="text-[10px] font-bold text-red-600 mr-1 whitespace-nowrap">Yakin hapus?</span>
-                                                                                            <button className="px-2 py-1 bg-red-600 text-white rounded text-[10px] font-bold hover:bg-red-700 shadow-sm" onClick={() => { handleDeletePeepo(section.id, String(item.id || idx)); setDeleteConfirmId(null); }}>Ya</button>
-                                                                                            <button className="px-2 py-1 bg-slate-200 text-slate-800 rounded text-[10px] font-bold hover:bg-slate-300 shadow-sm" onClick={() => setDeleteConfirmId(null)}>Batal</button>
-                                                                                         </div>
-                                                                                      ) : (
-                                                                                         <>
-                                                                                            <span className="opacity-0 group-hover:opacity-100 transition-all duration-200 self-center text-[9px] text-blue-600 font-bold bg-blue-50/80 px-2 py-1 rounded border border-blue-200/60 flex items-center gap-1.5 shrink-0 shadow-sm active:scale-95">
-                                                                                               <Pencil className="h-2.5 w-2.5" /> Double-click to edit
-                                                                                            </span>
-                                                                                            <button 
-                                                                                               className="opacity-0 group-hover:opacity-100 transition-all duration-200 self-center text-slate-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded"
-                                                                                               onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(String(item.id || idx)); }}
-                                                                                            >
-                                                                                               <Trash2 className="h-3.5 w-3.5" />
-                                                                                            </button>
-                                                                                         </>
-                                                                                      )}
-                                                                                   </div>
-                                                                                )}
-                                                                             </td>
-                                                                          </tr>
-                                                                       );
-                                                                    })}
-                                                                    {!isLocked && (
-                                                                      <tr>
-                                                                          <td className="px-0 py-0 border-r border-b border-slate-200 relative">
-                                                                            <button 
-                                                                              onClick={(e) => { e.stopPropagation(); handleAddPeepo(section.id); }}
-                                                                              className="w-full text-center py-2 text-[11px] font-bold text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 transition-colors uppercase tracking-widest bg-slate-50/50 hover:border-emerald-200 border border-transparent"
-                                                                            >
-                                                                              + Tambah Data
-                                                                            </button>
-                                                                          </td>
-                                                                       </tr>
-                                                                    )}
-                                                                 </tbody>
-                                                              </table>
-                                                           </div>
-                                                        </div>
-                                                     ))}
-
-                                                     {/* Summary & Synthesis Indicator */}
-                                                     <div className="grid grid-cols-2 gap-6 pt-4">
-                                                        <div className="bg-white border-l border-t border-slate-200 p-6 shadow-sm rounded-sm">
-                                                           <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-2">Ringkasan Analisis</span>
-                                                           <p className="text-[11px] font-bold text-slate-600 leading-relaxed italic">"{selectedAgent?.results?.ringkasan}"</p>
-                                                        </div>
-                                                        <div className="bg-slate-900 p-6 shadow-sm border border-slate-800 rounded-sm">
-                                                           <span className="text-[9px] font-black text-emerald-400/50 uppercase tracking-widest block mb-2">Kecerdasan Sintesis</span>
-                                                           <p className="text-[11px] font-black text-white uppercase tracking-tight leading-relaxed">{selectedAgent?.results?.synthesis}</p>
-                                                        </div>
-                                                     </div>
-                                                  </div>
-                                               </div>
-                                            </div>
+                                            <PeepoAnalysisModule
+                                               readonly={isLocked}
+                                               data={selectedAgent?.results as any}
+                                               onSelectRow={handleSelectRow}
+                                               selectedRowId={selectedRowId}
+                                               onSync={(updatedData) => {
+                                                  setAgents(prev => prev.map(a => 
+                                                     a.id === 'peepo' ? { ...a, results: updatedData } : a
+                                                  ));
+                                               }}
+                                            />
                                          ) : selectedAgentId === 'actor' ? (
                                             <ActorAnalysisModule 
                                                readonly={isLocked}
@@ -2217,209 +2107,17 @@ export default function AnalysisTab({ agents, setAgents, reportStatus }: Analysi
                                                }}
                                             />
                                          ) : selectedAgentId === 'prev' ? (
-                                            <div className="flex flex-col h-full bg-slate-50/10 animate-in fade-in duration-500 overflow-hidden">
-                                               <div className="shrink-0 p-4 border-b border-slate-200 bg-white flex flex-col gap-4">
-                                                  <div className="flex items-center justify-between">
-                                                     <div>
-                                                        <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                                                           <Crosshair className="h-4 w-4 text-slate-500" />
-                                                           LEMBAR RENCANA TINDAKAN PENCEGAHAN
-                                                        </h2>
-                                                        <p className="text-[11px] text-slate-500 mt-1">Rumusan tindakan korektif dan preventif untuk mencegah insiden berulang.</p>
-                                                     </div>
-                                                     <div className="flex items-center gap-2">
-                                                        <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse" />
-                                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Rencana Difinalisasi</span>
-                                                     </div>
-                                                  </div>
-                                               </div>
-                                               
-                                               <div className="flex-1 overflow-auto bg-slate-50 p-8 flex justify-center scrollbar-thin">
-                                                  <div className="w-full max-w-[1300px] bg-white border border-slate-300 shadow-sm p-8 pb-16 h-fit shrink-0">
-                                                     <h3 className="font-bold text-[14px] text-slate-900 mb-0.5">5. Tindakan Perbaikan dan Pencegahan Insiden NM LV BM 391</h3>
-                                                     <div className="h-[2px] w-[50%] bg-[#8ba861] mb-4 mt-1"></div>
-                                                     <div className="border border-slate-400">
-                                                        <table className="w-full text-left border-collapse">
-                                                           <thead>
-                                                              <tr className="bg-slate-50/80">
-                                                                 <th className="px-4 py-2 text-[10px] font-bold text-slate-900 text-center border-r border-b border-slate-400 w-12 uppercase tracking-widest bg-white">NO</th>
-                                                                 <th className="px-4 py-2 text-[10px] font-bold text-slate-900 text-center border-r border-b border-slate-400 w-24 uppercase tracking-widest bg-white">LAYER</th>
-                                                                 <th className="px-4 py-2 text-[10px] font-bold text-slate-900 text-center border-r border-b border-slate-400 w-28 uppercase tracking-widest bg-white">HIRARKI<br/>KONTROL</th>
-                                                                 <th className="px-4 py-2 text-[10px] font-bold text-slate-900 text-left border-b border-slate-400 uppercase tracking-widest bg-white">TINDAKAN PERBAIKAN DAN PENCEGAHAN</th>
-                                                              </tr>
-                                                           </thead>
-                                                           <tbody>
-                                                              {(selectedAgent?.results?.actions || []).map((item: any, idx: number) => {
-                                                                 let layerBg = "bg-white";
-                                                                 let layerText = "text-slate-900";
-                                                                 if (item.type === 'rc') {
-                                                                    layerBg = "bg-red-500";
-                                                                    layerText = "text-white font-black";
-                                                                 } else if (item.type === 'nc') {
-                                                                    layerBg = "bg-[#ffc000]";
-                                                                 } else if (item.type === 'imp') {
-                                                                    layerBg = "bg-[#00c950]";
-                                                                    layerText = "text-white font-black";
-                                                                 }
-
-                                                                 const isSelected = selectedRowId === String(item.id || idx);
-                                                                 const isEditing = editingRowId === String(item.id || idx);
-                                                                 return (
-                                                                    <tr 
-                                                                       key={item.id || idx} 
-                                                                       onClick={() => handleRowClick(item.id || idx)}
-                                                                       className={cn(
-                                                                          "group transition-all cursor-pointer",
-                                                                          isSelected ? "bg-blue-50/55" : "bg-white hover:bg-slate-100/50"
-                                                                       )}
-                                                                    >
-                                                                       <td className="px-4 py-2 border-r border-b border-slate-400 text-center text-[11px] font-mono font-black text-slate-800 align-middle">
-                                                                          {extractStringValue(item.no)}
-                                                                       </td>
-                                                                       <td className={`px-4 py-2 border-r border-b border-slate-400 text-center text-[11px] font-mono font-black ${layerBg} ${layerText} align-middle`}>
-                                                                          {isEditing && editDraft ? (
-                                                                             <select 
-                                                                               value={editDraft.layer}
-                                                                               onChange={(e) => handleUpdateDraft('layer', e.target.value)}
-                                                                               disabled={savingRowId === String(item.id || idx)}
-                                                                               onKeyDown={(e) => {
-                                                                                 if (e.key === 'Escape') handleCancelEdit();
-                                                                               }}
-                                                                               className="w-full bg-white border border-blue-500/80 outline-none text-center cursor-pointer font-inherit rounded px-2 py-1 shadow-sm ring-2 ring-blue-500/10 text-slate-900 transition-all focus:border-blue-600 focus:ring-blue-500/20 text-xs font-bold disabled:opacity-60 disabled:cursor-not-allowed"
-                                                                               onClick={(e) => e.stopPropagation()}
-                                                                             >
-                                                                               <option value="I.2">I.2</option>
-                                                                               <option value="II.9">II.9</option>
-                                                                               <option value="II.9 & I.2">II.9 & I.2</option>
-                                                                               <option value="II.12">II.12</option>
-                                                                               <option value="III.3">III.3</option>
-                                                                               <option value="III.10">III.10</option>
-                                                                               <option value="IV.4">IV.4</option>
-                                                                               <option value="IV.6">IV.6</option>
-                                                                             </select>
-                                                                          ) : (
-                                                                             extractStringValue(item.layer)
-                                                                          )}
-                                                                       </td>
-                                                                       <td className={`px-4 py-2 border-r border-b border-slate-400 text-center text-[11px] font-mono font-black ${layerBg} ${layerText} align-middle`}>
-                                                                          {isEditing && editDraft ? (
-                                                                             <select
-                                                                               value={editDraft.hierarchy}
-                                                                               onChange={(e) => handleUpdateDraft('hierarchy', e.target.value)}
-                                                                               disabled={savingRowId === String(item.id || idx)}
-                                                                               onKeyDown={(e) => {
-                                                                                 if (e.key === 'Escape') handleCancelEdit();
-                                                                               }}
-                                                                               className="w-full bg-white border border-blue-500/80 outline-none text-center cursor-pointer font-inherit rounded px-2 py-1 shadow-sm ring-2 ring-blue-500/10 text-slate-900 transition-all focus:border-blue-600 focus:ring-blue-500/20 text-xs font-bold disabled:opacity-60 disabled:cursor-not-allowed"
-                                                                               onClick={(e) => e.stopPropagation()}
-                                                                             >
-                                                                               <option value="Eliminasi">Eliminasi</option>
-                                                                               <option value="Substitusi">Substitusi</option>
-                                                                               <option value="Rek Eng">Rek Eng</option>
-                                                                               <option value="Adm">Adm</option>
-                                                                               <option value="APD">APD</option>
-                                                                             </select>
-                                                                          ) : (
-                                                                             extractStringValue(item.hierarchy)
-                                                                          )}
-                                                                       </td>
-                                                                       <td className="px-4 py-3 border-b border-slate-400 text-[11px] font-medium leading-relaxed text-slate-800 align-top text-justify relative group">
-                                                                          {isEditing && editDraft ? (
-                                                                             <div className="flex flex-col gap-2.5 w-full animate-in fade-in slide-in-from-top-1 duration-200" onClick={(e) => e.stopPropagation()}>
-                                                                                <textarea 
-                                                                                  value={editDraft.action}
-                                                                                  onChange={(e) => handleUpdateDraft('action', e.target.value)}
-                                                                                  disabled={savingRowId === String(item.id || idx)}
-                                                                                  onKeyDown={(e) => {
-                                                                                    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-                                                                                      e.preventDefault();
-                                                                                      handleSaveAction(item.id || idx);
-                                                                                    } else if (e.key === 'Escape') {
-                                                                                      handleCancelEdit();
-                                                                                    }
-                                                                                  }}
-                                                                                  className="w-full bg-white p-2.5 resize-none font-inherit leading-normal min-h-[80px] border border-blue-500 outline-none rounded shadow-md ring-2 ring-blue-500/15 text-slate-900 transition-all focus:border-blue-600 focus:ring-blue-500/25 disabled:opacity-60 disabled:cursor-not-allowed"
-                                                                                  autoFocus
-                                                                                />
-                                                                                <div className="flex items-center justify-between text-[10px]">
-                                                                                  <span className="text-slate-400 font-medium">Ctrl + Enter to Save, Esc to Cancel</span>
-                                                                                  <div className="flex items-center gap-1.5">
-                                                                                    <button 
-                                                                                      onClick={() => handleCancelEdit()}
-                                                                                      disabled={savingRowId === String(item.id || idx)}
-                                                                                      className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold text-slate-600 bg-slate-50 hover:bg-slate-100 hover:text-slate-800 border border-slate-300 rounded shadow-sm transition-all active:scale-95 duration-100 disabled:opacity-50 disabled:cursor-not-allowed"
-                                                                                    >
-                                                                                      <X className="h-3 w-3" /> Cancel
-                                                                                    </button>
-                                                                                    <button 
-                                                                                      onClick={() => handleSaveAction(item.id || idx)}
-                                                                                      disabled={savingRowId === String(item.id || idx)}
-                                                                                      className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold text-white bg-blue-600 hover:bg-blue-700 border border-blue-700 rounded shadow-sm transition-all active:scale-95 duration-100 disabled:opacity-75 disabled:cursor-not-allowed min-w-[70px] justify-center"
-                                                                                    >
-                                                                                      {savingRowId === String(item.id || idx) ? (
-                                                                                         <>
-                                                                                            <Loader2 className="h-3 w-3 animate-spin" /> Saving...
-                                                                                         </>
-                                                                                      ) : (
-                                                                                         <>
-                                                                                            <Check className="h-3 w-3" /> Save
-                                                                                         </>
-                                                                                      )}
-                                                                                    </button>
-                                                                                  </div>
-                                                                                </div>
-                                                                             </div>
-                                                                          ) : (
-                                                                             <div className="flex items-start justify-between gap-4">
-                                                                                <span className="flex-1">{extractStringValue(item.action)}</span>
-                                                                                {!isLocked && (
-                                                                                  <div className="flex items-center gap-2 relative">
-                                                                                      {deleteConfirmId === String(item.id || idx) ? (
-                                                                                         <div className="flex items-center gap-1.5 self-center animate-in fade-in bg-white p-1 rounded shadow-sm border border-slate-200" onClick={(e) => e.stopPropagation()}>
-                                                                                            <span className="text-[10px] font-bold text-red-600 mr-1 whitespace-nowrap">Yakin hapus?</span>
-                                                                                            <button className="px-2 py-1 bg-red-600 text-white rounded text-[10px] font-bold hover:bg-red-700 shadow-sm" onClick={(e) => { e.stopPropagation(); handleDeletePrev(String(item.id || idx)); setDeleteConfirmId(null); }}>Ya</button>
-                                                                                            <button className="px-2 py-1 bg-slate-200 text-slate-800 rounded text-[10px] font-bold hover:bg-slate-300 shadow-sm" onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(null); }}>Batal</button>
-                                                                                         </div>
-                                                                                      ) : (
-                                                                                         <>
-                                                                                            <span className="opacity-0 group-hover:opacity-100 transition-all duration-200 self-center text-[9px] text-blue-600 font-bold bg-blue-50/80 px-2 py-1 rounded border border-blue-200/60 flex items-center gap-1.5 shrink-0 shadow-sm active:scale-95">
-                                                                                               <Pencil className="h-2.5 w-2.5" /> Double-click active row to edit
-                                                                                            </span>
-                                                                                            <button 
-                                                                                               className="opacity-0 group-hover:opacity-100 transition-all duration-200 self-center text-slate-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded"
-                                                                                               onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(String(item.id || idx)); }}
-                                                                                            >
-                                                                                               <Trash2 className="h-3.5 w-3.5" />
-                                                                                            </button>
-                                                                                         </>
-                                                                                      )}
-                                                                                   </div>
-                                                                                )}
-                                                                             </div>
-                                                                          )}
-                                                                       </td>
-                                                                    </tr>
-                                                                 );
-                                                              })}
-
-                                                              {!isLocked && (
-                                                                <tr>
-                                                                   <td colSpan={4} className="px-0 py-0 border-r border-b border-slate-400 relative">
-                                                                      <button 
-                                                                        onClick={(e) => { e.stopPropagation(); handleAddPrev(); }}
-                                                                        className="w-full text-center py-2 text-[11px] font-bold text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 transition-colors uppercase tracking-widest bg-slate-50/50 hover:border-emerald-200 border border-transparent"
-                                                                      >
-                                                                        + Tambah Tindakan Perbaikan
-                                                                      </button>
-                                                                   </td>
-                                                                </tr>
-                                                              )}
-                                                              </tbody>
-                                                              </table>
-                                                     </div>
-                                                  </div>
-                                               </div>
-                                            </div>
+                                            <PreventionAnalysisModule
+                                               readonly={isLocked}
+                                               data={selectedAgent?.results as any}
+                                               onSelectRow={handleSelectRow}
+                                               selectedRowId={selectedRowId}
+                                               onSync={(updatedData) => {
+                                                  setAgents(prev => prev.map(a => 
+                                                     a.id === 'prev' ? { ...a, results: updatedData } : a
+                                                  ));
+                                               }}
+                                            />
                                         ) : (
                                            <div className="flex-1 bg-[#1a1c23] rounded-sm p-6 overflow-hidden border border-slate-700 relative">
                                               <pre className="text-[12px] font-mono text-emerald-400/90 leading-tight h-full overflow-auto custom-scrollbar">
@@ -2475,122 +2173,6 @@ export default function AnalysisTab({ agents, setAgents, reportStatus }: Analysi
                   
                   if (!actor) return null;
                   return <ActorDetailPanel actor={actor} onClose={() => setSelectedRowId(null)} />;
-               })()}
-
-               {selectedRowId && selectedAgentId === 'peepo' && (() => {
-                  const peepoAgent = agents.find(a => a.id === 'peepo');
-                  const sections = ['people', 'environment', 'equipment', 'procedures', 'organisation'];
-                  const item = sections
-                     .flatMap(section => peepoAgent?.results?.[section] || [])
-                     .find((i: any) => i.id === selectedRowId);
-
-                  if (!item) return null;
-
-                  return (
-                     <div className="w-[420px] shrink-0 border-l border-slate-200 bg-white shadow-[-10px_0_30px_-15px_rgba(0,0,0,0.1)] z-20 flex flex-col animate-in slide-in-from-right duration-300">
-                        <TraceabilityPanel
-                           readonly={isLocked}
-                           key={item.id}
-                           item={{ ...item, agentId: 'peepo' }}
-                           onClose={() => setSelectedRowId(null)}
-                           onUpdateStatus={(status) => {
-                              setAgents(prev => prev.map(a => {
-                                 if (a.id !== 'peepo') return a;
-                                 const updatedResults = { ...a.results };
-                                 sections.forEach(sec => {
-                                    if (updatedResults[sec]) {
-                                       updatedResults[sec] = updatedResults[sec].map((i: any) => i.id === selectedRowId ? { ...i, status } : i);
-                                    }
-                                 });
-                                 return { ...a, results: updatedResults };
-                              }));
-                              toast.success("Status PEEPO updated");
-                           }}
-                           onUpdateBreakdown={(newBreakdown) => {
-                              setAgents(prev => prev.map(a => {
-                                 if (a.id !== 'peepo') return a;
-                                 const updatedResults = { ...a.results };
-                                 sections.forEach(sec => {
-                                    if (updatedResults[sec]) {
-                                       updatedResults[sec] = updatedResults[sec].map((i: any) => i.id === selectedRowId ? { ...i, breakdown: newBreakdown, annotated_by_human: true } : i);
-                                    }
-                                 });
-                                 return { ...a, results: updatedResults };
-                              }));
-                              toast.success("Dekomposisi PEEPO updated");
-                           }}
-                           onUpdateChronologyText={(newText) => {
-                              setAgents(prev => prev.map(a => {
-                                 if (a.id !== 'peepo') return a;
-                                 const updatedResults = { ...a.results };
-                                 sections.forEach(sec => {
-                                    if (updatedResults[sec]) {
-                                       updatedResults[sec] = updatedResults[sec].map((i: any) => i.id === selectedRowId ? { ...i, chronology_text: newText, annotated_by_human: true } : i);
-                                    }
-                                 });
-                                 return { ...a, results: updatedResults };
-                              }));
-                              toast.success("Temuan PEEPO updated");
-                           }}
-                           onEdit={() => {}}
-                        />
-                     </div>
-                  );
-               })()}
-               {selectedRowId && (selectedAgentId === 'ipls' || selectedAgentId === 'prev') && (() => {
-                  const agent = agents.find(a => a.id === selectedAgentId);
-                  let item: any = null;
-                  
-                  if (selectedAgentId === 'ipls') {
-                     const layers = agent?.results?.layers || [];
-                     for (const layer of layers) {
-                        const found = layer.items?.find((i: any) => i.id === selectedRowId);
-                        if (found) {
-                           item = {
-                              ...found,
-                              id: found.id,
-                              chronology_text: found.label,
-                              agentId: 'ipls',
-                              breakdown: {
-                                 action: { value: found.description }
-                              }
-                           };
-                           break;
-                        }
-                     }
-                  } else if (selectedAgentId === 'prev') {
-                     const actions = agent?.results?.actions || [];
-                     const found = actions.find((i: any, idx: number) => String(i.id || idx) === selectedRowId);
-                     if (found) {
-                        item = {
-                           ...found,
-                           id: found.id || selectedRowId,
-                           chronology_text: found.action,
-                           agentId: selectedAgentId,
-                           breakdown: {
-                              subject: { value: found.pic },
-                              time: { value: found.due_date }
-                           }
-                        };
-                     }
-                  }
-
-                  if (!item) return null;
-
-                  return (
-                     <div className="w-[420px] shrink-0 border-l border-slate-200 bg-white shadow-[-10px_0_30px_-15px_rgba(0,0,0,0.1)] z-20 flex flex-col animate-in slide-in-from-right duration-300">
-                        <TraceabilityPanel
-                           readonly={isLocked}
-                           key={item.id}
-                           item={item}
-                           onClose={() => setSelectedRowId(null)}
-                           onUpdateStatus={() => {}}
-                           onUpdateBreakdown={() => {}}
-                           onUpdateChronologyText={() => {}}
-                           onEdit={() => {}}
-                        />
-                     </div>
-                  );
                })()}
 
                {selectedRowId && selectedAgentId !== 'fact' && selectedAgentId !== 'peepo' && selectedAgentId !== 'actor' && selectedAgentId !== 'ipls' && selectedAgentId !== 'prev' && (
