@@ -328,3 +328,94 @@
   0% { width: 0%; }
   100% { width: 100%; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   REPORT CLEAN VIEW — Hide ALL non-report UI elements inside report slides
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* --- Provenance Badges (AI, Human Annotated, Added Manually) --- */
+.report-clean-view [title="AI Generated"],
+.report-clean-view [title="Human Annotated"],
+.report-clean-view [title="Added Manually"],
+.report-clean-view [title="AI generated"],
+.report-clean-view [title="Human annotated"],
+.report-clean-view [title="Added manually"] {
+  display: none !important;
+}
+
+/* --- All inline provenance badge spans (AI, HUMAN ANNOTATED, ADDED MANUALLY) --- */
+.report-clean-view span[class*="bg-indigo-50"][class*="text-indigo-"],
+.report-clean-view span[class*="bg-blue-50"][class*="text-blue-"],
+.report-clean-view span[class*="bg-emerald-50"][class*="text-emerald-"],
+.report-clean-view div[class*="bg-indigo-50"][class*="text-indigo-"][class*="uppercase"],
+.report-clean-view div[class*="bg-blue-50"][class*="text-blue-"][class*="uppercase"],
+.report-clean-view div[class*="bg-emerald-50"][class*="text-emerald-"][class*="uppercase"] {
+  display: none !important;
+}
+
+/* --- "+ TAMBAH DATA", "+ TAMBAH AKTOR" add-buttons --- */
+.report-clean-view button[class*="border-dashed"],
+.report-clean-view div[class*="border-dashed"],
+.report-clean-view [class*="border-dashed"] {
+  display: none !important;
+}
+
+/* --- Action icons: Eye, Pencil, Trash on row hover --- */
+.report-clean-view [class*="group-hover:opacity-100"] {
+  display: none !important;
+}
+
+/* --- "Double-click to edit" hints --- */
+.report-clean-view [class*="italic"][class*="text-slate-400"]:not(td):not(th) {
+  /* only hide standalone hint labels, not table cells */
+}
+
+/* --- Edit/Delete inline action containers --- */
+.report-clean-view button[title="Edit"],
+.report-clean-view button[title="Delete"],
+.report-clean-view button[title="Detail"],
+.report-clean-view button[title="History"],
+.report-clean-view button[title="Hapus"] {
+  display: none !important;
+}
+
+/* --- Legend bar at bottom of IPLS --- */
+.report-clean-view [class*="bg-slate-900"][class*="text-white"][class*="font-black"][class*="uppercase"] {
+  display: none !important;
+}
+/* IPLS legend container — the row with LEGEND / Rootcause / Non Conformity / Improvement */
+.report-clean-view > div > div:last-child > div[class*="flex"][class*="items-center"][class*="gap-"] {
+  display: none !important;
+}
+
+/* --- Audit trail / status chip badges --- */
+.report-clean-view [class*="tracking-widest"][class*="text-\\[8px\\]"],
+.report-clean-view [class*="tracking-widest"][class*="font-black"][class*="text-\\[8px\\]"] {
+  display: none !important;
+}
+
+/* --- Ensure cursor is default, no hover effects --- */
+.report-clean-view tr {
+  cursor: default !important;
+}
+.report-clean-view tr:hover {
+  background-color: inherit !important;
+}
+
+/* --- Hide any remaining tooltip providers --- */
+.report-clean-view [data-radix-popper-content-wrapper] {
+  display: none !important;
+}
+
+/* --- Small AI/pen/user inline icons next to text --- */
+.report-clean-view .inline-flex[class*="align-middle"] > span[class*="bg-indigo"],
+.report-clean-view .inline-flex[class*="align-middle"] > span[class*="bg-emerald"],
+.report-clean-view .inline-flex[class*="align-middle"] > span[class*="bg-blue"] {
+  display: none !important;
+}
+
+/* --- renderProvenanceBadge output: the inline span wrapping provenance --- */
+.report-clean-view span.inline-flex.align-middle {
+  display: none !important;
+}
+

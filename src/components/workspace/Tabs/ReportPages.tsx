@@ -16,7 +16,7 @@ export const ReportFactPage = ({
   
   return (
     <ReportPage isActive={isActive} pageNumber={pageNumber} totalPages={totalPages} title="Chronology" version={version} status={status}>
-      <div className="flex-1 overflow-auto -m-10 p-10">
+      <div className="flex-1 overflow-auto -m-10 p-10 report-clean-view">
         <FactChronologyModule 
           initialItems={items}
           metadata={{}}
@@ -37,7 +37,7 @@ export const ReportActorPage = ({
   
   return (
     <ReportPage isActive={isActive} pageNumber={pageNumber} totalPages={totalPages} title="Actor Analysis" version={version} status={status}>
-      <div className="flex-1 overflow-auto -m-10 p-10">
+      <div className="flex-1 overflow-auto -m-10 p-10 report-clean-view">
         <ActorAnalysisModule 
           data={data}
           readonly={true}
@@ -58,7 +58,7 @@ export const ReportPeepoPage = ({
 
   return (
     <ReportPage isActive={isActive} pageNumber={pageNumber} totalPages={totalPages} title="PEEPO" version={version} status={status}>
-      <div className="flex-1 overflow-auto -m-10 p-10">
+      <div className="flex-1 overflow-auto -m-10 p-10 report-clean-view">
         <PeepoAnalysisModule 
           data={data}
           readonly={true}
@@ -79,7 +79,7 @@ export const ReportIplsPage = ({
 
   return (
     <ReportPage isActive={isActive} pageNumber={pageNumber} totalPages={totalPages} title="IPLS" version={version} status={status}>
-      <div className="flex-1 overflow-auto -m-10 p-10">
+      <div className="flex-1 overflow-auto -m-10 p-10 report-clean-view">
         <IplsAnalysisModule 
           data={data}
           readonly={true}
@@ -101,7 +101,7 @@ export const ReportPreventionPage = ({
 
   return (
     <ReportPage isActive={isActive} pageNumber={pageNumber} totalPages={totalPages} title="Prevention" version={version} status={status}>
-      <div className="flex-1 overflow-auto -m-10 p-10">
+      <div className="flex-1 overflow-auto -m-10 p-10 report-clean-view">
         <PreventionAnalysisModule 
           data={data}
           readonly={true}
