@@ -605,53 +605,39 @@ export const PeepoAnalysisModule: React.FC<PeepoAnalysisModuleProps> = ({
     <div className="flex flex-col h-full bg-slate-50/10 overflow-hidden relative">
       <div className="flex-1 flex min-w-0 h-full relative">
         <div className="flex-1 flex flex-col h-full overflow-hidden z-10 shadow-sm relative transition-all duration-300">
-           <div className="shrink-0 p-4 border-b border-slate-200 bg-white flex flex-col gap-4">
-              <div className="flex items-center justify-between">
-                 <div>
-                    <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                       <LayoutGrid className="h-4 w-4 text-slate-500" />
-                       LEMBAR ANALISIS FAKTOR PEEPO
-                    </h2>
-                    <p className="text-[11px] text-slate-500 mt-1">Sintesis temuan berdasarkan kategori People, Environment, Equipment, Procedures, dan Organisation.</p>
-                 </div>
-                 <div className="flex items-center gap-4">
-                    {!readonly && (
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => setIsAuditDrawerOpen(true)}
-                        className="text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 h-8"
-                      >
-                        <History className="h-4 w-4 mr-2" />
-                        Riwayat Perubahan &middot; {auditLogs.length} aktivitas
-                      </Button>
-                    )}
-                    {/* View Switcher */}
-                    <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded border border-slate-200">
-                       <button
-                         onClick={() => setViewMode('columns')}
-                         className={cn("px-2.5 py-1 text-[10px] font-bold rounded transition-all active:scale-95 duration-100 flex items-center gap-1", 
-                           viewMode === 'columns' ? "bg-white text-slate-900 shadow-sm border border-slate-200" : "text-slate-500 hover:text-slate-800")}
-                       >
-                         <TableIcon className="h-3 w-3" /> TABLE VIEW
-                       </button>
-                       <button
-                         onClick={() => setViewMode('table')}
-                         className={cn("px-2.5 py-1 text-[10px] font-bold rounded transition-all active:scale-95 duration-100 flex items-center gap-1", 
-                           viewMode === 'table' ? "bg-white text-slate-900 shadow-sm border border-slate-200" : "text-slate-500 hover:text-slate-800")}
-                       >
-                         <LayoutGrid className="h-3 w-3" /> LIST VIEW
-                       </button>
-                    </div>
-                    <div className="flex items-center gap-2">
-                       <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse" />
-                       <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Sintesis Selesai</span>
-                    </div>
-                  </div>
-              </div>
-           </div>
            
-           <div className="flex-1 overflow-auto bg-slate-50 p-8 flex justify-center scrollbar-thin">
+           <div className="flex-1 overflow-auto bg-slate-50 p-4 lg:p-8 flex flex-col items-center scrollbar-thin">
+              <div className={cn("w-full max-w-[1300px] flex justify-end items-center mb-4 gap-4", readonly ? "hidden" : "")}>
+                 {!readonly && (
+                   <Button 
+                     variant="outline" 
+                     size="sm" 
+                     onClick={() => setIsAuditDrawerOpen(true)}
+                     className="text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 h-8 shadow-sm"
+                   >
+                     <History className="h-4 w-4 mr-2" />
+                     Riwayat Perubahan &middot; {auditLogs.length} aktivitas
+                   </Button>
+                 )}
+                 {/* View Switcher */}
+                 <div className="flex items-center gap-1 bg-white p-0.5 rounded border border-slate-200 shadow-sm">
+                    <button
+                      onClick={() => setViewMode('columns')}
+                      className={cn("px-2.5 py-1 text-[10px] font-bold rounded transition-all active:scale-95 duration-100 flex items-center gap-1", 
+                        viewMode === 'columns' ? "bg-slate-100 text-slate-900 border border-slate-300" : "text-slate-500 hover:text-slate-800")}
+                    >
+                      <TableIcon className="h-3 w-3" /> TABLE VIEW
+                    </button>
+                    <button
+                      onClick={() => setViewMode('table')}
+                      className={cn("px-2.5 py-1 text-[10px] font-bold rounded transition-all active:scale-95 duration-100 flex items-center gap-1", 
+                        viewMode === 'table' ? "bg-slate-100 text-slate-900 border border-slate-300" : "text-slate-500 hover:text-slate-800")}
+                    >
+                      <LayoutGrid className="h-3 w-3" /> LIST VIEW
+                    </button>
+                 </div>
+              </div>
+
               {viewMode === 'table' ? (
                 <div className="w-full max-w-[1300px] bg-white border border-slate-300 shadow-sm p-8 pb-16 h-fit shrink-0 space-y-8 animate-in fade-in duration-200">
                   {CATEGORIES.map((section) => (
@@ -844,9 +830,7 @@ export const PeepoAnalysisModule: React.FC<PeepoAnalysisModuleProps> = ({
                   </div>
                 </div>
               ) : (
-                <div className="w-full max-w-[1300px] p-8 pb-16 h-fit shrink-0 space-y-6 animate-in fade-in duration-200">
-                  <div className="font-black text-xl mb-4 uppercase tracking-widest text-slate-900">DATA FAKTA PEEPO</div>
-                  
+                <div className="w-full max-w-[1300px] bg-white border border-slate-300 shadow-sm p-8 pb-16 h-fit shrink-0 space-y-6 animate-in fade-in duration-200">
                   <div className="border-[1.5px] border-slate-900 bg-white shadow-sm flex flex-col">
                     <div className="grid grid-cols-5 border-b-[1.5px] border-slate-900 bg-[#78c15c]">
                       {CATEGORIES.map((section, index) => (
