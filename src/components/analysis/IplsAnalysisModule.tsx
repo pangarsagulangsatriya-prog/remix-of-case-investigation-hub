@@ -702,8 +702,8 @@ export function IplsAnalysisModule({
               </div>
            </div>
 
-           <div className="flex-1 overflow-auto bg-slate-50 p-4 lg:p-8 flex justify-center scrollbar-thin">
-              <div className="w-full max-w-[1300px] bg-white border border-slate-300 shadow-sm p-8 h-fit shrink-0 overflow-x-auto">
+           <div className={cn("flex-1 overflow-auto flex justify-center", cleanMode ? "bg-white p-0" : "bg-slate-50 p-4 lg:p-8 scrollbar-thin")}>
+              <div className={cn("w-full max-w-[1300px] h-fit shrink-0 overflow-x-auto", cleanMode ? "bg-white border-0 shadow-none p-0" : "bg-white border border-slate-300 shadow-sm p-8")}>
                  {/* Main Content Area */}
                  <div className="flex-1 flex flex-col">
                     <div className="mb-4">

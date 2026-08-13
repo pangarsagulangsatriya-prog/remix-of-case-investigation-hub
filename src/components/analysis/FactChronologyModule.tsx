@@ -516,7 +516,7 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
 }) => {
   const [items, setItems] = useState<ChronologyItem[]>(initialItems.map(item => ({ ...item, version: item.version || 1 })));
   const [internalSelectedFactId, setInternalSelectedFactId] = useState<string | null>(null);
-  const [displayFormat, setDisplayFormat] = useState<'timeline' | 'table' | 'flow'>('timeline');
+  const [displayFormat, setDisplayFormat] = useState<'timeline' | 'table' | 'flow'>(cleanMode ? 'table' : 'timeline');
   const [auditLogs, setAuditLogs] = useState<AuditEntry[]>(initialDummyAuditLogs);
   const [isAuditDrawerOpen, setIsAuditDrawerOpen] = useState(false);
   const [editChangeNote, setEditChangeNote] = useState("");
@@ -780,6 +780,7 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
     )}>
       <div className="flex-1 flex flex-col min-w-0 h-full relative">
 
+        {!cleanMode && (
         <div className="shrink-0 p-4 border-b border-slate-200 bg-white flex flex-col gap-4 z-10 shadow-sm">
            <div className="flex items-center justify-between">
               <div>
@@ -826,11 +827,12 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
                 </button>
              </div>
                 )}
-           </div>
-        </div>
-        </div>
+              </div>
+            </div>
+          </div>
+         )}
 
-        <div className="flex-1 overflow-hidden">
+         <div className="flex-1 overflow-hidden">
             {displayFormat === 'timeline' ? (
                <FactDefaultView 
                  items={items} 
@@ -856,6 +858,7 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
                />
             ) : (
                <FactTableView 
+                 cleanMode={cleanMode}
                  groupedItems={groupedItems}
                  editingId={editingId}
                  editBuffer={editBuffer}
@@ -2865,6 +2868,7 @@ const FactDefaultView: React.FC<{
 };
 
 const FactTableView: React.FC<{ 
+  cleanMode?: boolean,
   groupedItems: Record<ChronologyPhase, ChronologyItem[]>,
   editingId: string | null,
   editBuffer: Partial<ChronologyItem>,
@@ -2901,8 +2905,8 @@ const FactTableView: React.FC<{
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   return (
-    <div className="w-full h-full overflow-auto bg-slate-50 p-8 flex justify-center scrollbar-thin">
-      <div className="w-full max-w-[1300px] bg-white border border-slate-300 shadow-sm p-8 pb-16 h-fit shrink-0">
+    <div className={cn("w-full h-full overflow-auto flex justify-center", cleanMode ? "bg-white p-0" : "bg-slate-50 p-8 scrollbar-thin")}>
+      <div className={cn("w-full max-w-[1300px] h-fit shrink-0", cleanMode ? "bg-white border-0 shadow-none p-0" : "bg-white border border-slate-300 shadow-sm p-8 pb-16")}>
         {/* Header Legend */}
         <div className="flex justify-end items-start mb-6">
           <div className="flex items-center gap-4 text-[10px] font-bold">

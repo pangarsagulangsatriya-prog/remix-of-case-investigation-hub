@@ -16,11 +16,11 @@ export const ReportFactPage = ({
   
   return (
     <ReportPage isActive={isActive} pageNumber={pageNumber} totalPages={totalPages} title="Chronology" version={version} status={status}>
-      <div className="flex-1 overflow-auto -m-10 p-10 report-clean-view">
+      <div className="flex-1 overflow-auto">
         <FactChronologyModule 
           initialItems={items}
           metadata={{}}
-          readonly={true}
+          readonly={status === 'APPROVED'}
           cleanMode={true}
           viewMode="default"
         />
@@ -37,10 +37,10 @@ export const ReportActorPage = ({
   
   return (
     <ReportPage isActive={isActive} pageNumber={pageNumber} totalPages={totalPages} title="Actor Analysis" version={version} status={status}>
-      <div className="flex-1 overflow-auto -m-10 p-10 report-clean-view">
+      <div className="flex-1 overflow-auto">
         <ActorAnalysisModule 
           data={data}
-          readonly={true}
+          readonly={status === 'APPROVED'}
           cleanMode={true}
           onSelectActor={() => {}}
           selectedActorId={null}
@@ -58,10 +58,10 @@ export const ReportPeepoPage = ({
 
   return (
     <ReportPage isActive={isActive} pageNumber={pageNumber} totalPages={totalPages} title="PEEPO" version={version} status={status}>
-      <div className="flex-1 overflow-auto -m-10 p-10 report-clean-view">
+      <div className="flex-1 overflow-auto">
         <PeepoAnalysisModule 
           data={data}
-          readonly={true}
+          readonly={status === 'APPROVED'}
           cleanMode={true}
           onSelectRow={() => {}}
           selectedRowId={null}
@@ -79,10 +79,10 @@ export const ReportIplsPage = ({
 
   return (
     <ReportPage isActive={isActive} pageNumber={pageNumber} totalPages={totalPages} title="IPLS" version={version} status={status}>
-      <div className="flex-1 overflow-auto -m-10 p-10 report-clean-view">
+      <div className="flex-1 overflow-auto">
         <IplsAnalysisModule 
           data={data}
-          readonly={true}
+          readonly={status === 'APPROVED'}
           cleanMode={true}
           onSelectRow={() => {}}
           selectedRowId={null}
@@ -101,10 +101,10 @@ export const ReportPreventionPage = ({
 
   return (
     <ReportPage isActive={isActive} pageNumber={pageNumber} totalPages={totalPages} title="Prevention" version={version} status={status}>
-      <div className="flex-1 overflow-auto -m-10 p-10 report-clean-view">
+      <div className="flex-1 overflow-auto">
         <PreventionAnalysisModule 
           data={data}
-          readonly={true}
+          readonly={status === 'APPROVED'}
           cleanMode={true}
           onSelectRow={() => {}}
           selectedRowId={null}
