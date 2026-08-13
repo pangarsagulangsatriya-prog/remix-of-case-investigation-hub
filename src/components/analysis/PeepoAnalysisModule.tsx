@@ -371,6 +371,7 @@ export const PeepoTraceabilityPanel: React.FC<{
 export const PeepoAnalysisModule: React.FC<PeepoAnalysisModuleProps> = ({
   data,
   readonly = false,
+  cleanMode = false,
   onSelectRow,
   selectedRowId,
   onSync

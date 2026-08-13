@@ -375,6 +375,7 @@ export const PreventionTraceabilityPanel: React.FC<{
 export const PreventionAnalysisModule: React.FC<PreventionAnalysisModuleProps> = ({
   data,
   readonly = false,
+  cleanMode = false,
   onSelectRow,
   selectedRowId,
   onSync

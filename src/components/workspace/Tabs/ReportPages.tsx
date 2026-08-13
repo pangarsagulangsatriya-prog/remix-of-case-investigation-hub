@@ -84,8 +84,9 @@ export const ReportIplsPage = ({
           data={data}
           readonly={true}
           cleanMode={true}
-          onSelectNode={() => {}}
-          selectedNodeId={null}
+          onSelectRow={() => {}}
+          selectedRowId={null}
+          onSync={() => {}}
         />
       </div>
     </ReportPage>
@@ -105,6 +106,9 @@ export const ReportPreventionPage = ({
           data={data}
           readonly={true}
           cleanMode={true}
+          onSelectRow={() => {}}
+          selectedRowId={null}
+          onSync={() => {}}
         />
       </div>
     </ReportPage>
