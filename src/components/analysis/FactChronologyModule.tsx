@@ -835,6 +835,7 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
          <div className="flex-1 overflow-hidden">
             {displayFormat === 'timeline' ? (
                <FactDefaultView 
+                 cleanMode={cleanMode}
                  items={items} 
                  groupedItems={groupedItems} 
                  editingId={editingId} 
@@ -2593,6 +2594,7 @@ const FactSlideView: React.FC<{
 // ── Default/Operational View Component ─────────────────────────────────────
 
 const FactDefaultView: React.FC<{ 
+  cleanMode?: boolean,
   items: ChronologyItem[],
   groupedItems: Record<ChronologyPhase, ChronologyItem[]>,
   editingId: string | null,
@@ -2627,7 +2629,8 @@ const FactDefaultView: React.FC<{
   onAddFact,
   editChangeNote,
   setEditChangeNote,
-  readonly
+  readonly,
+  cleanMode
 }) => {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [showLocalAccuracy, setShowLocalAccuracy] = useState(false);
@@ -2650,8 +2653,8 @@ const FactDefaultView: React.FC<{
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto bg-slate-50 p-8 flex justify-center scrollbar-thin">
-        <div className="w-full max-w-[1300px] bg-white border border-slate-300 shadow-sm p-8 pb-16 h-fit shrink-0 space-y-8">
+      <div className={cn("w-full h-full overflow-auto flex justify-center", cleanMode ? "bg-white p-0" : "bg-slate-50 p-6 sm:p-8 scrollbar-thin")}>
+        <div className={cn("w-full h-fit shrink-0", cleanMode ? "max-w-none bg-white border-0 shadow-none p-0" : "max-w-[1300px] bg-white border border-slate-300 shadow-sm p-4 sm:p-8 pb-16 space-y-8")}>
           {(['pre_contact', 'contact', 'post_contact'] as ChronologyPhase[]).map((phase) => {
             const config = PHASE_CONFIG[phase];
             const phaseItems = groupedItems[phase];
@@ -2843,7 +2846,7 @@ const FactDefaultView: React.FC<{
                           </td>
                         </tr>
                       )}
-                      {!readonly && (
+                      {!readonly && !cleanMode && (
                         <tr>
                           <td colSpan={showLocalAccuracy ? 3 : 2} className="px-0 py-0 border-r border-b border-slate-400 relative">
                              <button 
@@ -2885,14 +2888,16 @@ const FactTableView: React.FC<{
   readonly?: boolean,
   editChangeNote: string,
   setEditChangeNote: (val: string) => void
-}> = ({ 
-  groupedItems, 
-  editingId, 
-  editBuffer, 
-  setEditBuffer, 
-  onEdit, 
-  onSave, 
+}> = ({
+  cleanMode,
+  groupedItems,
+  editingId,
+  editBuffer,
+  setEditBuffer,
+  onEdit,
+  onSave,
   onCancel,
+  onDelete,
   onOpenDetail,
   selectedFactId,
   onSelectItem,
@@ -2906,7 +2911,7 @@ const FactTableView: React.FC<{
 
   return (
     <div className={cn("w-full h-full overflow-auto flex justify-center", cleanMode ? "bg-white p-0" : "bg-slate-50 p-8 scrollbar-thin")}>
-      <div className={cn("w-full max-w-[1300px] h-fit shrink-0", cleanMode ? "bg-white border-0 shadow-none p-0" : "bg-white border border-slate-300 shadow-sm p-8 pb-16")}>
+      <div className={cn("w-full h-fit shrink-0", cleanMode ? "max-w-none bg-white border-0 shadow-none p-0" : "max-w-[1300px] bg-white border border-slate-300 shadow-sm p-8 pb-16")}>
         {/* Header Legend */}
         <div className="flex justify-end items-start mb-6">
           <div className="flex items-center gap-4 text-[10px] font-bold">
@@ -3076,7 +3081,7 @@ const FactTableView: React.FC<{
                       );
                     })}
                   </div>
-                  {!readonly && (
+                  {!readonly && !cleanMode && (
                     <div className="p-0 border-t border-slate-400">
                        <button 
                          onClick={(e) => {

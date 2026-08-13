@@ -655,7 +655,7 @@ export const PreventionAnalysisModule: React.FC<PreventionAnalysisModuleProps> =
     <div className="flex flex-col h-full bg-slate-50/10 overflow-hidden relative">
       <div className="flex-1 flex min-w-0 h-full relative">
         <div className="flex-1 flex flex-col h-full overflow-hidden z-10 shadow-sm relative transition-all duration-300">
-           <div className={cn("shrink-0 p-4 border-b border-slate-200 bg-white flex flex-col gap-4", readonly ? "hidden" : "")}>
+           <div className={cn("shrink-0 p-4 border-b border-slate-200 bg-white flex flex-col gap-4", cleanMode ? "hidden" : "")}>
               <div className="flex items-center justify-between">
                  <div>
                     <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
@@ -685,9 +685,11 @@ export const PreventionAnalysisModule: React.FC<PreventionAnalysisModuleProps> =
            </div>
            
            <div className={cn("flex-1 overflow-auto flex justify-center", cleanMode ? "bg-white p-0" : "bg-slate-50 p-8 scrollbar-thin")}>
-              <div className={cn("w-full max-w-[1300px] h-fit shrink-0", cleanMode ? "bg-white border-0 shadow-none p-0" : "bg-white border border-slate-300 shadow-sm p-8 pb-16")}>
-                 <h3 className="font-bold text-[14px] text-slate-900 mb-0.5">Tindakan Perbaikan dan Pencegahan Insiden</h3>
-                 <div className="h-[2px] w-[50%] bg-[#8ba861] mb-4 mt-1"></div>
+              <div className={cn("w-full h-fit shrink-0", cleanMode ? "max-w-none bg-white border-0 shadow-none p-0" : "max-w-[1300px] bg-white border border-slate-300 shadow-sm p-8 pb-16")}>
+                 {!cleanMode && (<>
+                    <h3 className="font-bold text-[14px] text-slate-900 mb-0.5">Tindakan Perbaikan dan Pencegahan Insiden</h3>
+                    <div className="h-[2px] w-[50%] bg-[#8ba861] mb-4 mt-1"></div>
+                 </>)}
                  <div className="border border-slate-400">
                     <table className="w-full text-left border-collapse">
                        <thead>
@@ -884,7 +886,7 @@ export const PreventionAnalysisModule: React.FC<PreventionAnalysisModuleProps> =
                              );
                           })}
 
-                          {!readonly && (
+                          {!readonly && !cleanMode && (
                             <tr>
                                <td colSpan={4} className="px-0 py-0 border-r border-b border-slate-400 relative">
                                   <button 

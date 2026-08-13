@@ -587,7 +587,7 @@ export default function ReportsTab({
           {/* Thumbnail Rail */}
           {thumbnailsOpen && (
             <div className="w-48 bg-slate-50 border-r border-slate-200 overflow-y-auto shrink-0 z-10 animate-in slide-in-from-left-4 duration-200">
-              <div className="p-4 space-y-4">
+              <div className="p-4 space-y-3">
                 {[
                   { n: 1, title: 'Chronology' },
                   { n: 2, title: 'Actor' },
@@ -595,19 +595,28 @@ export default function ReportsTab({
                   { n: 4, title: 'IPLS' },
                   { n: 5, title: 'Prevention' },
                 ].map(thumb => (
-                  <button 
+                  <div 
                     key={thumb.n}
+                    className="flex gap-2 group cursor-pointer"
                     onClick={() => setCurrentPage(thumb.n)}
-                    className={cn(
-                      "w-full text-left p-2 rounded transition-all group",
-                      currentPage === thumb.n ? "bg-white border border-blue-200 shadow-sm outline outline-1 outline-blue-500" : "hover:bg-slate-100 border border-transparent"
-                    )}
                   >
-                    <div className="text-[9px] font-mono text-slate-400 mb-1">{String(thumb.n).padStart(2, '0')}</div>
-                    <div className={cn("text-xs font-bold", currentPage === thumb.n ? "text-blue-700" : "text-slate-700 group-hover:text-slate-900")}>
-                      {thumb.title}
+                    <div className="text-[10px] font-bold text-slate-400 pt-1 w-3 text-right select-none">
+                      {thumb.n}
                     </div>
-                  </button>
+                    <div className="flex-1 flex flex-col gap-1.5">
+                      <div className={cn(
+                        "w-full aspect-video bg-white rounded-sm shadow-sm transition-all overflow-hidden relative border-2 flex flex-col",
+                        currentPage === thumb.n ? "border-blue-500" : "border-transparent group-hover:border-slate-300"
+                      )}>
+                        {/* Slide Miniature Content */}
+                        <div className="flex-1 p-2 flex items-center justify-center border border-slate-200/50 m-0.5 rounded-sm">
+                           <span className={cn("text-[9px] font-bold uppercase tracking-wider text-center", currentPage === thumb.n ? "text-blue-700" : "text-slate-400")}>
+                             {thumb.title}
+                           </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>

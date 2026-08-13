@@ -1,9 +1,9 @@
 import React, { createContext, useContext } from 'react';
 import { cn } from "@/lib/utils";
 
-// A4 Landscape Dimensions at 96dpi
-export const PAGE_WIDTH = 1123;
-export const PAGE_HEIGHT = 794;
+// Google Slide 16:9 Dimensions at 96dpi
+export const PAGE_WIDTH = 960;
+export const PAGE_HEIGHT = 540;
 
 interface ReportViewerContextType {
   zoom: number;

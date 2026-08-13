@@ -175,7 +175,7 @@ export const ActorAnalysisModule: React.FC<ActorAnalysisModuleProps> = ({ data, 
       )}
 
       <div className={cn("flex-1 overflow-auto flex justify-center", cleanMode ? "bg-white p-0" : "bg-slate-50 p-4 lg:p-8 scrollbar-thin")}>
-        <div className={cn("w-full max-w-[1300px] h-fit shrink-0", cleanMode ? "bg-white border-0 shadow-none p-0" : "bg-white border border-slate-300 shadow-sm p-8")}>
+        <div className={cn("w-full h-fit shrink-0", cleanMode ? "max-w-none bg-white border-0 shadow-none p-0" : "max-w-[1300px] bg-white border border-slate-300 shadow-sm p-8")}>
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-100/80 border-b border-slate-200">
@@ -302,7 +302,7 @@ export const ActorAnalysisModule: React.FC<ActorAnalysisModuleProps> = ({ data, 
                   </tr>
                 );
               })}
-              {!readonly && (
+              {!readonly && !cleanMode && (
                 <tr>
                   <td colSpan={4} className="px-0 py-0 border-b border-slate-100">
                     <button 

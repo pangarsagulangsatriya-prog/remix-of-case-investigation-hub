@@ -662,7 +662,7 @@ export const PeepoAnalysisModule: React.FC<PeepoAnalysisModuleProps> = ({
            
            <div className={cn("flex-1 overflow-auto flex justify-center", cleanMode ? "bg-white p-0" : "bg-slate-50 p-8 scrollbar-thin")}>
               {viewMode === 'table' ? (
-                <div className={cn("w-full max-w-[1300px] h-fit shrink-0 space-y-8 animate-in fade-in duration-200", cleanMode ? "bg-white border-0 shadow-none p-0" : "bg-white border border-slate-300 shadow-sm p-8 pb-16")}>
+                <div className={cn("w-full h-fit shrink-0 space-y-8 animate-in fade-in duration-200", cleanMode ? "max-w-none bg-white border-0 shadow-none p-0" : "max-w-[1300px] bg-white border border-slate-300 shadow-sm p-8 pb-16")}>
                   {CATEGORIES.map((section) => (
                      <div key={section.id} className="space-y-0">
                         <div className="bg-white border border-slate-400 overflow-hidden">
@@ -818,7 +818,7 @@ export const PeepoAnalysisModule: React.FC<PeepoAnalysisModuleProps> = ({
                                        </tr>
                                     );
                                  })}
-                                 {!readonly && (
+                                 {!readonly && !cleanMode && (
                                    <tr>
                                        <td className="px-0 py-0 border-r border-b border-slate-400 bg-white hover:bg-slate-50 transition-colors">
                                          <button 
@@ -843,7 +843,7 @@ export const PeepoAnalysisModule: React.FC<PeepoAnalysisModuleProps> = ({
 
                 </div>
               ) : (
-                <div className={cn("w-full max-w-[1300px] h-fit shrink-0 space-y-6 animate-in fade-in duration-200", cleanMode ? "bg-white border-0 shadow-none p-0" : "bg-white border border-slate-300 shadow-sm p-8 pb-16")}>
+                <div className={cn("w-full h-fit shrink-0 space-y-6 animate-in fade-in duration-200", cleanMode ? "max-w-none bg-white border-0 shadow-none p-0" : "max-w-[1300px] bg-white border border-slate-300 shadow-sm p-8 pb-16")}>
                   <div className="border-[1.5px] border-slate-900 bg-white shadow-sm flex flex-col">
                     <div className="grid grid-cols-5 border-b-[1.5px] border-slate-900 bg-[#78c15c]">
                       {CATEGORIES.map((section, index) => (
@@ -973,7 +973,7 @@ export const PeepoAnalysisModule: React.FC<PeepoAnalysisModuleProps> = ({
                                 </div>
                               );
                             })}
-                            {!readonly && (
+                            {!readonly && !cleanMode && (
                               <button 
                                 onClick={() => { 
                                   setAddCategory(section.id);

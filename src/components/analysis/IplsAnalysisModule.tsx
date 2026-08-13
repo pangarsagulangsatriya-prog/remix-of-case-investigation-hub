@@ -673,7 +673,7 @@ export function IplsAnalysisModule({
       <div className="flex-1 flex min-w-0 h-full relative">
         <div className="flex-1 flex flex-col h-full overflow-hidden z-10 shadow-sm relative transition-all duration-300">
            {/* Title Bar */}
-           <div className={cn("shrink-0 p-4 border-b border-slate-200 bg-white flex flex-col gap-4", readonly ? "hidden" : "")}>
+           <div className={cn("shrink-0 p-4 border-b border-slate-200 bg-white flex flex-col gap-4", cleanMode ? "hidden" : "")}>
               <div className="flex items-center justify-between">
                  <div>
                     <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
@@ -703,12 +703,14 @@ export function IplsAnalysisModule({
            </div>
 
            <div className={cn("flex-1 overflow-auto flex justify-center", cleanMode ? "bg-white p-0" : "bg-slate-50 p-4 lg:p-8 scrollbar-thin")}>
-              <div className={cn("w-full max-w-[1300px] h-fit shrink-0 overflow-x-auto", cleanMode ? "bg-white border-0 shadow-none p-0" : "bg-white border border-slate-300 shadow-sm p-8")}>
+              <div className={cn("w-full h-fit shrink-0 overflow-x-auto", cleanMode ? "max-w-none bg-white border-0 shadow-none p-0" : "max-w-[1300px] bg-white border border-slate-300 shadow-sm p-8")}>
                  {/* Main Content Area */}
                  <div className="flex-1 flex flex-col">
                     <div className="mb-4">
-                       <h3 className="font-bold text-[14px] text-slate-900 mb-0.5">Analisa Kejadian</h3>
-                       <div className="h-[2px] w-[20%] bg-blue-500 mb-4 mt-1"></div>
+                       {!cleanMode && (<>
+                          <h3 className="font-bold text-[14px] text-slate-900 mb-0.5">Analisa Kejadian</h3>
+                          <div className="h-[2px] w-[20%] bg-blue-500 mb-4 mt-1"></div>
+                       </>)}
 
                        {/* Header bar */}
                        <div className="relative h-6 bg-[#a3a6aa] flex items-center justify-center w-full mb-3">
@@ -888,7 +890,7 @@ export function IplsAnalysisModule({
                                             </div>
                                          );
                                       })}
-                                      {!readonly && (
+                                      {!readonly && !cleanMode && (
                                          <button 
                                             onClick={(e) => { 
                                                e.stopPropagation(); 
