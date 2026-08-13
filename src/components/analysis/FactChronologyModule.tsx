@@ -57,6 +57,9 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
+// Module-level default: cleanMode is false unless overridden by component props
+let cleanMode = false;
+
 export const extractStringValue = (val: any, fallback = "-"): string => {
   if (val === null || val === undefined) return fallback;
   if (typeof val === "string") return val;

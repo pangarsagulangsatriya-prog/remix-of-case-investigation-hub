@@ -32,6 +32,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
+// Module-level default: cleanMode is false unless overridden by component props
+let cleanMode = false;
+
 export interface AuditEntry {
   id: string;
   itemId: string;

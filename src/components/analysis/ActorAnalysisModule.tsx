@@ -37,6 +37,9 @@ export interface ReviewRecommendation {
 
 import { ProvenanceData, ProvenanceBlock, AnnotationHistoryView } from "./FactChronologyModule";
 
+// Module-level default: cleanMode is false unless overridden by component props
+let cleanMode = false;
+
 export interface ActorItem extends ProvenanceData {
   actor_id: string;
   beid: string | null;
