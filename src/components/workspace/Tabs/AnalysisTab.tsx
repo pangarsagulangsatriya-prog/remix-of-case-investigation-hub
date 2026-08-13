@@ -2208,9 +2208,9 @@ export default function AnalysisTab({ agents, setAgents, reportStatus }: Analysi
                             globalStatus={globalStatus}
                             onStartAll={() => {
                                if (agents.some(a => a.status === 'completed') && confirm("Semua node yang sudah selesai akan dijalankan ulang dan diganti dengan draft baru. Lanjutkan?")) {
-                                  runAllAgents();
+                                  startFullChain();
                                } else if (!agents.some(a => a.status === 'completed')) {
-                                  runAllAgents();
+                                  startFullChain();
                                }
                             }}
                             onSelectAgent={setSelectedAgentId}
