@@ -2106,7 +2106,6 @@ export const TraceabilityPanel: React.FC<{
   onUpdateChronologyText: (newText: string) => void,
   readonly?: boolean
 }> = ({ item, onClose, readonly }) => {
-  const cleanMode = false; // fallback
 
   const [showHistory, setShowHistory] = useState(false);
 

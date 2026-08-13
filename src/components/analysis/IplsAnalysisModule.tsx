@@ -84,7 +84,6 @@ export const IplsTraceabilityPanel: React.FC<{
   onEdit: () => void,
   readonly?: boolean
 }> = ({ item, onClose, readonly, onEdit }) => {
-  const cleanMode = false; // fallback to fix ReferenceError
 
   const [showHistory, setShowHistory] = React.useState(false);
 
@@ -126,7 +125,7 @@ export const IplsTraceabilityPanel: React.FC<{
                   {item?.latestHumanChange?.timestamp ? new Date(item.latestHumanChange.timestamp).toLocaleString('id-ID', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' WIB' : '05 Agustus 2026, 14:18 WIB'}
                 </div>
 
-                {!cleanMode && ((item?.provenanceType === 'HUMAN_MANUAL' && (item?.manualRevisionCount || 0) > 0) || item?.provenanceType === 'AI_HUMAN_ANNOTATED') && (
+                {((item?.provenanceType === 'HUMAN_MANUAL' && (item?.manualRevisionCount || 0) > 0) || item?.provenanceType === 'AI_HUMAN_ANNOTATED') && (
                   <details className="group">
                     <summary className="text-[10px] font-bold text-blue-600 cursor-pointer hover:text-blue-700 list-none flex items-center gap-1">
                       <span className="group-open:hidden">[Lihat Detail Perubahan]</span>
@@ -302,7 +301,7 @@ export const IplsTraceabilityPanel: React.FC<{
         
 
         {/* 1. Anotasi / Latest Changes (Only if edited or manual) */}
-        {!cleanMode && ((item?.provenanceType === 'HUMAN_MANUAL' && (item?.manualRevisionCount || 0) > 0) || item?.provenanceType === 'AI_HUMAN_ANNOTATED') && (
+        {((item?.provenanceType === 'HUMAN_MANUAL' && (item?.manualRevisionCount || 0) > 0) || item?.provenanceType === 'AI_HUMAN_ANNOTATED') && (
            <div className="mb-6">
               <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">HASIL ANOTASI TERAKHIR</div>
               
@@ -343,11 +342,11 @@ export const IplsTraceabilityPanel: React.FC<{
         <div className="mb-6">
            <div className="flex items-center gap-2 mb-2">
              <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-               {cleanMode ? 'DESKRIPSI KEJADIAN' : (item?.provenanceType === 'HUMAN_MANUAL' ? 'DESKRIPSI KEJADIAN AWAL' : 'DESKRIPSI AI GENERATED')}
+               'DESKRIPSI KEJADIAN AWAL'
              </div>
              {item?.provenanceType !== 'HUMAN_MANUAL' && (
                <div className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded text-[8px] font-bold uppercase border border-indigo-200 shadow-sm">
-                 {!cleanMode && <><Brain className="h-2.5 w-2.5" /> AI</>}
+                 <><Brain className="h-2.5 w-2.5" /> AI</>
                </div>
              )}
            </div>
