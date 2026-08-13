@@ -787,7 +787,7 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
                     <History className="h-4 w-4 text-slate-500" />
                     FAKTA & KRONOLOGI
                  </h2>
-                 <p className="text-[11px] text-slate-500 mt-1">Rangkaian peristiwa, bukti objektif, dan verifikasi silang multi-sumber.</p>
+                 {!cleanMode && <p className="text-[11px] text-slate-500 mt-1">Rangkaian peristiwa, bukti objektif, dan verifikasi silang multi-sumber.</p>}
               </div>
               <div className="flex items-center gap-4">
                 {!readonly && (
