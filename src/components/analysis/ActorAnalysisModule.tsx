@@ -64,9 +64,11 @@ interface ActorAnalysisModuleProps {
   onUpdateActors?: (actors: ActorItem[]) => void;
   onLogAudit?: (desc: string) => void;
   readonly?: boolean;
+  cleanMode?: boolean;
 }
 
-export const ActorAnalysisModule: React.FC<ActorAnalysisModuleProps> = ({ data, onSelectActor, selectedActorId, onDeleteActor, readonly = false }) => {
+export const ActorAnalysisModule: React.FC<ActorAnalysisModuleProps> = ({ data, onSelectActor, selectedActorId, onDeleteActor, readonly = false,
+  cleanMode = false }) => {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [editingActorId, setEditingActorId] = useState<string | null>(null);
   const [editActorDraft, setEditActorDraft] = useState<Partial<ActorItem>>({});
@@ -203,13 +205,13 @@ export const ActorAnalysisModule: React.FC<ActorAnalysisModuleProps> = ({ data, 
                       <div className="flex flex-col gap-1 relative">
                         <div className="flex items-center gap-2">
                           <span className="text-[12.5px] font-bold text-slate-800">{actor.name}</span>
-                          {actor.provenanceType === 'AI_HUMAN_ANNOTATED' && (
+                          {!cleanMode && actor.provenanceType === 'AI_HUMAN_ANNOTATED' && (
                             <span className="text-[8px] font-black uppercase text-blue-500 tracking-widest bg-blue-50 px-1 py-0.5 rounded" title="Human Annotated">Human Annotated &middot; {actor.humanAnnotationCount}&times;</span>
                           )}
-                          {actor.provenanceType === 'HUMAN_MANUAL' && (
+                          {!cleanMode && actor.provenanceType === 'HUMAN_MANUAL' && (
                             <span className="text-[8px] font-black uppercase text-emerald-500 tracking-widest bg-emerald-50 px-1 py-0.5 rounded" title="Added Manually">Added Manually</span>
                           )}
-                          {(!actor.provenanceType || actor.provenanceType === 'AI_GENERATED') && (
+                          {!cleanMode && (!actor.provenanceType || actor.provenanceType === 'AI_GENERATED') && (
                             <span className="text-[8px] font-black uppercase text-indigo-400 tracking-widest bg-indigo-50/50 px-1 py-0.5 rounded" title="AI Generated">AI Generated</span>
                           )}
                         </div>

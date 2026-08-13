@@ -21,6 +21,7 @@ export const ReportFactPage = ({
           initialItems={items}
           metadata={{}}
           readonly={true}
+          cleanMode={true}
           viewMode="default"
         />
       </div>
@@ -40,6 +41,7 @@ export const ReportActorPage = ({
         <ActorAnalysisModule 
           data={data}
           readonly={true}
+          cleanMode={true}
           onSelectActor={() => {}}
           selectedActorId={null}
         />
@@ -60,6 +62,7 @@ export const ReportPeepoPage = ({
         <PeepoAnalysisModule 
           data={data}
           readonly={true}
+          cleanMode={true}
           onSelectRow={() => {}}
           selectedRowId={null}
         />
@@ -80,6 +83,7 @@ export const ReportIplsPage = ({
         <IplsAnalysisModule 
           data={data}
           readonly={true}
+          cleanMode={true}
           onSelectNode={() => {}}
           selectedNodeId={null}
         />
@@ -100,6 +104,7 @@ export const ReportPreventionPage = ({
         <PreventionAnalysisModule 
           data={data}
           readonly={true}
+          cleanMode={true}
         />
       </div>
     </ReportPage>
