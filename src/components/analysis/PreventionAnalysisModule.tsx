@@ -648,7 +648,7 @@ export const PreventionAnalysisModule: React.FC<PreventionAnalysisModuleProps> =
     <div className="flex flex-col h-full bg-slate-50/10 overflow-hidden relative">
       <div className="flex-1 flex min-w-0 h-full relative">
         <div className="flex-1 flex flex-col h-full overflow-hidden z-10 shadow-sm relative transition-all duration-300">
-           <div className="shrink-0 p-4 border-b border-slate-200 bg-white flex flex-col gap-4">
+           <div className={cn("shrink-0 p-4 border-b border-slate-200 bg-white flex flex-col gap-4", readonly ? "hidden" : "")}>
               <div className="flex items-center justify-between">
                  <div>
                     <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
@@ -1006,7 +1006,7 @@ export const PreventionAnalysisModule: React.FC<PreventionAnalysisModuleProps> =
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setItemToDelete(null)}>Batal</Button>
-            <Button onClick={confirmDelete} className="bg-rose-600 hover:bg-rose-700 text-white">Hapus</Button>
+            <Button onClick={confirmDelete} className="bg-rose-600 hover:bg-rose-700 text-white" disabled={!deleteReason.trim()}>Hapus</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

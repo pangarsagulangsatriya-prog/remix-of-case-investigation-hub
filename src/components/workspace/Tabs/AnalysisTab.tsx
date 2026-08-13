@@ -863,8 +863,39 @@ export const initialAgentsState: AgentState[] = [
                   { id: 'l2-1', label: "JSA", status: "", originalIndex: 1 },
                   { id: 'l2-2', label: "Rencana kerja (weekly-up plan)/Plan Maintenance System", status: "", originalIndex: 2 },
                   { id: 'l2-3', label: "Emergency Preparedness", status: "", originalIndex: 3 },
-                  { id: 'l2-9', label: "Maintenance", status: "non-conformity", originalIndex: 9, description: "Belum ada penentuan lifetime penggunaan terkait Nut Tyre pada LV" },
-                  { id: 'l2-12', label: "Incident Investigation & Reporting", status: "non-conformity", originalIndex: 12, description: "Retorque tidak berjalan konsisten sesuai dengan rekomendasi insiden sebelumnya" }
+                  { 
+                    id: 'l2-9', label: "Maintenance", status: "non-conformity", originalIndex: 9, 
+                    description: "Belum ada penentuan lifetime penggunaan terkait Nut Tyre pada LV (Anotasi Ditambahkan)", 
+                    provenanceType: "AI_HUMAN_ANNOTATED",
+                    currentVersion: 2,
+                    humanAnnotationCount: 1,
+                    latestHumanChange: {
+                       userName: "Aditya Pratama", userRole: "Safety Superintendent", timestamp: "2026-08-05T09:04:00Z",
+                       changeNote: "Menambahkan konteks spesifik mengenai baut LV", versionFrom: 1, versionTo: 2
+                    },
+                    history: [
+                       { 
+                         provenanceType: "AI_GENERATED", label: "Maintenance", description: "Belum ada penentuan lifetime penggunaan", timestamp: "2026-08-05T08:15:00Z" 
+                       }
+                    ]
+                  },
+                  { 
+                    id: 'l2-12', label: "Incident Investigation & Reporting", status: "non-conformity", originalIndex: 12, 
+                    description: "Retorque tidak berjalan konsisten sesuai dengan rekomendasi insiden sebelumnya",
+                    provenanceType: "AI_GENERATED",
+                    currentVersion: 1
+                  },
+                  { 
+                    id: 'l2-13', label: "Inspeksi Berkala Tambahan", status: "improvement", originalIndex: 13, 
+                    description: "Memastikan inspeksi visual harian mencakup pengecekan wheel nut indicator",
+                    provenanceType: "HUMAN_MANUAL",
+                    currentVersion: 1,
+                    manualRevisionCount: 0,
+                    latestHumanChange: {
+                       userName: "Gulang Satriya", userRole: "Lead Investigator", timestamp: "2026-08-05T10:15:00Z",
+                       changeNote: "Menambahkan rekomendasi inspeksi visual", versionFrom: 0, versionTo: 1
+                    }
+                  }
                ] 
             },
             { 
@@ -913,16 +944,40 @@ export const initialAgentsState: AgentState[] = [
      results: {
          actions: [
             { 
-               no: 1, layer: "IV.4", hierarchy: "Adm", action: "Perbaikan DMS LV BM 391", pic: "Bimo", due_date: "19 - 10 - 2025", status: "Closed", type: "nc",
+               id: "prev-1", no: 1, layer: "IV.4", hierarchy: "Adm", action: "Perbaikan DMS LV BM 391", pic: "Bimo", due_date: "19 - 10 - 2025", status: "Closed", type: "nc",
                provenanceType: "HUMAN_MANUAL",
-               createdBy: { id: "usr-investigator", name: "Investigator Ops", role: "Investigator", actorType: "HUMAN" },
-               currentVersion: 1,
-               humanAnnotationCount: 0,
-               manualRevisionCount: 0
+               currentVersion: 2,
+               manualRevisionCount: 1,
+               latestHumanChange: {
+                  userName: "Gulang Satriya", userRole: "Lead Investigator", timestamp: "2026-08-05T10:20:00Z",
+                  changeNote: "Mengganti status menjadi Closed", versionFrom: 1, versionTo: 2
+               },
+               history: [
+                  { 
+                    provenanceType: "HUMAN_MANUAL", action: "Perbaikan DMS LV BM 391", status: "Open", timestamp: "2026-08-05T08:10:00Z" 
+                  }
+               ]
             },
-            { no: 2, layer: "IV.4", hierarchy: "Adm", action: "Mengidentifikasi seluruh DMS, melakukan pengujian fungsi MDVR, memperbaiki DMS yang bermasalah, dan menyerahkan hasil perbaikan kepada tim operasional", pic: "Bimo", due_date: "19 - 10 - 2025", status: "Open", type: "nc" },
-            { no: 3, layer: "IV.6", hierarchy: "Adm", action: "Perbaikan GPS LV BM 391", pic: "Bimo", due_date: "19 - 10 - 2025", status: "Closed", type: "nc" },
-            { no: 4, layer: "IV.6", hierarchy: "Adm", action: "Mengidentifikasi seluruh GPS, melakukan pengujian fungsi berjalan dengan baik, dan membuat laporan hasil pengujian", pic: "Bimo", due_date: "19 - 10 - 2025", status: "Open", type: "nc" },
+            { 
+               id: "prev-2", no: 2, layer: "IV.4", hierarchy: "Adm", action: "Mengidentifikasi seluruh DMS, melakukan pengujian fungsi MDVR, memperbaiki DMS yang bermasalah, dan menyerahkan hasil perbaikan kepada tim operasional", pic: "Bimo", due_date: "19 - 10 - 2025", status: "Open", type: "nc",
+               provenanceType: "AI_GENERATED",
+               currentVersion: 1
+            },
+            { 
+               id: "prev-3", no: 3, layer: "IV.6", hierarchy: "Adm", action: "Perbaikan GPS LV BM 391 dan Pemasangan Alarm (Anotasi Ditambahkan)", pic: "Bimo", due_date: "19 - 10 - 2025", status: "Closed", type: "nc",
+               provenanceType: "AI_HUMAN_ANNOTATED",
+               currentVersion: 2,
+               humanAnnotationCount: 1,
+               latestHumanChange: {
+                  userName: "Bimo", userRole: "Safety Officer", timestamp: "2026-08-05T09:30:00Z",
+                  changeNote: "Menambahkan ruang lingkup pemasangan alarm", versionFrom: 1, versionTo: 2
+               },
+               history: [
+                  { 
+                    provenanceType: "AI_GENERATED", action: "Perbaikan GPS LV BM 391", timestamp: "2026-08-05T08:15:00Z" 
+                  }
+               ]
+            },
             { no: 5, layer: "III.3", hierarchy: "Adm", action: "Pemberian sanksi administrasi kepada Sdr. Rico", pic: "Muh Faishal", due_date: "18 - 10 - 2025", status: "Closed", type: "rc" },
             { no: 6, layer: "III.3", hierarchy: "Adm", action: "Melakukan campaign terkait P2H yang baik dan benar, memeriksa pemahaman seluruh peserta, dan menetapkan standar baru operasional", pic: "Adi Sucipto", due_date: "19 - 10 - 2025", status: "Closed", type: "rc" },
             { no: 7, layer: "III.3", hierarchy: "Adm", action: "Melakukan RSCS oleh security / FS terkait kualitas P2H pada saat unit dioperasikan", pic: "Sonar H", due_date: "21 - 10 - 2025", status: "Closed", type: "rc" },

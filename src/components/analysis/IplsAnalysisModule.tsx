@@ -27,6 +27,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -426,24 +427,36 @@ export function IplsAnalysisModule({
     setInternalData(data);
   }, [data]);
 
-  const handleAddItem = (layerId: number) => {
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [addLayerId, setAddLayerId] = useState<number>(1);
+  const [addLabel, setAddLabel] = useState("");
+  const [addDescription, setAddDescription] = useState("");
+  const [addStatus, setAddStatus] = useState("non-conformity");
+
+  const handleAddItemSubmit = () => {
+    if (!addLabel.trim()) {
+      toast.error("Label harus diisi");
+      return;
+    }
+    
     const ts = new Date().toISOString();
     const newId = "ipls-" + Date.now();
     
-    const targetLayer = layers.find(l => l.id === layerId);
+    const targetLayer = layers.find(l => l.id === addLayerId);
     if (!targetLayer) return;
     
     const newItem: IplsItem = {
       id: newId,
-      label: "New Finding",
-      status: "non-conformity",
+      label: addLabel,
+      status: addStatus,
       originalIndex: targetLayer.items.length + 1,
-      description: "",
-      version: 1
+      description: addDescription,
+      version: 1,
+      provenanceType: 'HUMAN_MANUAL'
     };
 
     const newLayers = layers.map((layer) => {
-      if (layer.id === layerId) {
+      if (layer.id === addLayerId) {
         return {
           ...layer,
           items: [...layer.items, newItem]
@@ -457,7 +470,7 @@ export function IplsAnalysisModule({
     const audit: AuditEntry = {
       id: "log-" + Date.now(),
       itemId: newId,
-      category: `Layer ${layerId}`,
+      category: `Layer ${addLayerId}`,
       action: "CREATE",
       actorName: "Gulang Satriya",
       actorRole: "Lead Investigator",
@@ -470,7 +483,8 @@ export function IplsAnalysisModule({
     setAuditLogs([audit, ...auditLogs]);
     setInternalData(updatedData);
     onSync(updatedData);
-    toast.success("Item berhasil ditambahkan.");
+    setIsAddModalOpen(false);
+    toast.success("Data berhasil ditambahkan.");
   };
 
   const renderProvenanceBadge = (item: IplsItem | any) => {
@@ -653,7 +667,7 @@ export function IplsAnalysisModule({
       <div className="flex-1 flex min-w-0 h-full relative">
         <div className="flex-1 flex flex-col h-full overflow-hidden z-10 shadow-sm relative transition-all duration-300">
            {/* Title Bar */}
-           <div className="shrink-0 p-4 border-b border-slate-200 bg-white flex flex-col gap-4">
+           <div className={cn("shrink-0 p-4 border-b border-slate-200 bg-white flex flex-col gap-4", readonly ? "hidden" : "")}>
               <div className="flex items-center justify-between">
                  <div>
                     <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
@@ -870,7 +884,14 @@ export function IplsAnalysisModule({
                                       })}
                                       {!readonly && (
                                          <button 
-                                            onClick={(e) => { e.stopPropagation(); handleAddItem(layer.id); }}
+                                            onClick={(e) => { 
+                                               e.stopPropagation(); 
+                                               setAddLayerId(layer.id);
+                                               setAddLabel("");
+                                               setAddDescription("");
+                                               setAddStatus("non-conformity");
+                                               setIsAddModalOpen(true);
+                                            }}
                                             className="w-full mt-2 text-center py-2 text-[9px] font-bold text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 transition-colors uppercase tracking-wider border border-dashed border-slate-300 hover:border-emerald-300 rounded"
                                          >
                                             + Tambah Data
@@ -924,6 +945,52 @@ export function IplsAnalysisModule({
         )}
       </div>
 
+      {/* Add Modal */}
+      <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+        <DialogContent className="sm:max-w-[480px]">
+          <DialogHeader>
+            <DialogTitle>Tambah Data IPLS</DialogTitle>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-700 uppercase">Label / Fakta Singkat</label>
+              <Input 
+                value={addLabel}
+                onChange={(e) => setAddLabel(e.target.value)}
+                placeholder="Contoh: Unit LV overspeed..."
+                autoFocus
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-700 uppercase">Deskripsi Detail</label>
+              <Textarea 
+                value={addDescription}
+                onChange={(e) => setAddDescription(e.target.value)}
+                placeholder="Konteks tambahan mengenai fakta ini..."
+                rows={3}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-700 uppercase">Status</label>
+              <Select value={addStatus} onValueChange={setAddStatus}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="improvement">Improvement / Need Enhancement</SelectItem>
+                  <SelectItem value="non-conformity">Non-Conformity</SelectItem>
+                  <SelectItem value="success">Success / Implemented</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddModalOpen(false)}>Batal</Button>
+            <Button onClick={handleAddItemSubmit} className="bg-emerald-600 hover:bg-emerald-700 text-white">Simpan Data</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Delete Modal */}
       <Dialog open={!!itemToDelete} onOpenChange={(open) => !open && setItemToDelete(null)}>
         <DialogContent className="sm:max-w-[425px]">
@@ -953,7 +1020,7 @@ export function IplsAnalysisModule({
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setItemToDelete(null)}>Batal</Button>
-            <Button onClick={confirmDelete} className="bg-rose-600 hover:bg-rose-700 text-white">Hapus</Button>
+            <Button onClick={confirmDelete} className="bg-rose-600 hover:bg-rose-700 text-white" disabled={!deleteReason.trim()}>Hapus</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
