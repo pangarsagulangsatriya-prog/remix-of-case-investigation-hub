@@ -82,6 +82,8 @@ export const PeepoTraceabilityPanel: React.FC<{
   onEdit: () => void,
   readonly?: boolean
 }> = ({ item, onClose, readonly, onEdit }) => {
+  const cleanMode = false; // fallback to fix ReferenceError
+
   const [showHistory, setShowHistory] = React.useState(false);
 
   // Fallback version if not defined

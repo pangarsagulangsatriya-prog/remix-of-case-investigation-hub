@@ -84,6 +84,8 @@ export const IplsTraceabilityPanel: React.FC<{
   onEdit: () => void,
   readonly?: boolean
 }> = ({ item, onClose, readonly, onEdit }) => {
+  const cleanMode = false; // fallback to fix ReferenceError
+
   const [showHistory, setShowHistory] = React.useState(false);
 
   const currentVersion = item?.currentVersion || item?.version || 1;
