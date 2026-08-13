@@ -1,11 +1,17 @@
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { AgentState, ReportStatusType, ReportSnapshot, ReportAuditEntry } from "@/types/workspace";
-import { FactChronologyModule } from "@/components/analysis/FactChronologyModule";
-import { ActorAnalysisModule } from "@/components/analysis/ActorAnalysisModule";
-import { IplsAnalysisModule } from "@/components/analysis/IplsAnalysisModule";
-import { Download, LayoutGrid, LayoutTemplate, AlertTriangle, FileText, CheckCircle2, History, X } from "lucide-react";
+import { 
+  FileText, CheckCircle2, AlertTriangle, History, X, Maximize2, Minimize2, Layout, 
+  ChevronLeft, ChevronRight, Lock, FileDown, Loader2, Save, FileCheck
+} from "lucide-react";
 import { cn } from "@/lib/utils";
+import { 
+  ReportCoverPage, ReportFactPage, ReportActorPage, 
+  ReportPeepoPage, ReportIplsPage, ReportPreventionPage 
+} from "./ReportPages";
+import { ReportViewerContext, PAGE_WIDTH, PAGE_HEIGHT } from "./ReportDocumentCanvas";
+import { Hand, MousePointer2, ZoomIn, ZoomOut, Search } from "lucide-react";
 
 interface ReportsTabProps {
   agents: AgentState[];
@@ -17,6 +23,8 @@ interface ReportsTabProps {
   setReportAuditLogs?: (logs: ReportAuditEntry[]) => void;
 }
 
+const TOTAL_PAGES = 5;
+
 export default function ReportsTab({ 
   agents,
   reportStatus = 'EMPTY',
@@ -26,26 +34,129 @@ export default function ReportsTab({
   reportAuditLogs = [],
   setReportAuditLogs
 }: ReportsTabProps) {
-  const [isApprovalModalOpen, setIsApprovalModalOpen] = React.useState(false);
-  const [approvalChecked, setApprovalChecked] = React.useState(false);
-  const [isAuditDrawerOpen, setIsAuditDrawerOpen] = React.useState(false);
-  const [isGenerating, setIsGenerating] = React.useState(false);
-  const [generationStep, setGenerationStep] = React.useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [thumbnailsOpen, setThumbnailsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generationStep, setGenerationStep] = useState(0);
+  const [isApproving, setIsApproving] = useState(false);
+  const [showApprovalModal, setShowApprovalModal] = useState(false);
+  
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportProgressText, setExportProgressText] = useState("");
 
-  // Use snapshot agents if locked, otherwise use current agents
-  const displayAgents = reportStatus === 'FINAL_LOCKED' && reportSnapshot ? reportSnapshot.agentsSnapshot : agents;
+  // --- NEW VIEWER STATE ---
+  const [zoomMode, setZoomMode] = useState<number | 'fit-page' | 'fit-width'>('fit-page');
+  const [actualZoom, setActualZoom] = useState(1);
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
+  const [activeTool, setActiveTool] = useState<'pointer' | 'hand'>('pointer');
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const canvasContainerRef = useRef<HTMLDivElement>(null);
+  
+  // Fit logic
+  useEffect(() => {
+    if (!canvasContainerRef.current) return;
+    const calculateFit = () => {
+      const container = canvasContainerRef.current;
+      if (!container) return;
+      const cw = container.clientWidth;
+      const ch = container.clientHeight;
+      if (zoomMode === 'fit-page') {
+        const scaleX = Math.max(0.1, (cw - 96) / PAGE_WIDTH);
+        const scaleY = Math.max(0.1, (ch - 96) / PAGE_HEIGHT);
+        setActualZoom(Math.min(scaleX, scaleY));
+        setPanOffset({ x: 0, y: 0 });
+      } else if (zoomMode === 'fit-width') {
+        setActualZoom(Math.max(0.1, (cw - 96) / PAGE_WIDTH));
+        setPanOffset({ x: 0, y: 0 });
+      } else if (typeof zoomMode === 'number') {
+        setActualZoom(zoomMode);
+      }
+    };
+    
+    calculateFit();
+    const ro = new ResizeObserver(calculateFit);
+    ro.observe(canvasContainerRef.current);
+    return () => ro.disconnect();
+  }, [zoomMode, thumbnailsOpen]);
 
-  const factAgent = displayAgents.find(a => a.id === "fact");
-  const peepoAgent = displayAgents.find(a => a.id === "peepo");
-  const prevAgent = displayAgents.find(a => a.id === "prev");
-  const actorAgent = displayAgents.find(a => a.id === "actor");
-  const iplsAgent = displayAgents.find(a => a.id === "ipls");
+  // Keyboard Shortcuts
+  useEffect(() => {
+    if (reportStatus === 'EMPTY') return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      
+      if (e.key === 'ArrowRight' || e.key === 'PageDown') {
+        setCurrentPage(p => Math.min(TOTAL_PAGES, p + 1));
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        setCurrentPage(p => Math.max(1, p - 1));
+      } else if ((e.ctrlKey || e.metaKey) && e.key === '=') {
+        e.preventDefault();
+        setZoomMode(prev => typeof prev === 'number' ? Math.min(prev + 0.1, 3) : actualZoom + 0.1);
+      } else if ((e.ctrlKey || e.metaKey) && e.key === '-') {
+        e.preventDefault();
+        setZoomMode(prev => typeof prev === 'number' ? Math.max(prev - 0.1, 0.4) : actualZoom - 0.1);
+      } else if ((e.ctrlKey || e.metaKey) && e.key === '0') {
+        e.preventDefault();
+        setZoomMode('fit-page');
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [reportStatus, actualZoom]);
 
-  const handlePrint = () => {
-    window.print();
+  // Pan handlers
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (activeTool !== 'hand') return;
+    setIsDragging(true);
+    setDragStart({ x: e.clientX - panOffset.x, y: e.clientY - panOffset.y });
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!isDragging) return;
+    setPanOffset({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y });
+  };
+  const handlePointerUp = (e: React.PointerEvent) => {
+    setIsDragging(false);
+    e.currentTarget.releasePointerCapture(e.pointerId);
   };
 
-  const handleGeneratePreview = () => {
+  
+  // Autosave simulation
+  const [autosaveState, setAutosaveState] = useState<'IDLE' | 'SAVING' | 'SAVED'>('SAVED');
+  
+  useEffect(() => {
+    if (reportStatus === 'DRAFT') {
+      const interval = setInterval(() => {
+        setAutosaveState('SAVING');
+        setTimeout(() => setAutosaveState('SAVED'), 1500);
+      }, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [reportStatus]);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      containerRef.current?.requestFullscreen().catch(err => {
+        console.error(`Error attempting to enable fullscreen: ${err.message}`);
+      });
+    } else {
+      document.exitFullscreen();
+    }
+  };
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
+  }, []);
+
+  const handleGenerate = () => {
     setIsGenerating(true);
     setGenerationStep(1);
     
@@ -53,48 +164,82 @@ export default function ReportsTab({
     setTimeout(() => setGenerationStep(3), 1200);
     setTimeout(() => setGenerationStep(4), 1800);
     setTimeout(() => setGenerationStep(5), 2400);
-    
+
     setTimeout(() => {
-      if (setReportStatus) setReportStatus('PREVIEW');
-      if (setReportAuditLogs && reportAuditLogs) {
-        setReportAuditLogs([{
-          id: `audit-${Date.now()}`,
-          timestamp: new Date().toISOString(),
-          action: 'PREVIEW_GENERATED',
-          actor: 'Administrator (admin)',
-          details: 'Report preview generated'
-        }, ...reportAuditLogs]);
-      }
       setIsGenerating(false);
       setGenerationStep(0);
+      setReportStatus?.('DRAFT');
+      setReportSnapshot?.({
+        reportId: `REP-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
+        version: '1.0',
+        generatedAt: new Date().toISOString(),
+        lastSavedAt: new Date().toISOString(),
+        agentsSnapshot: JSON.parse(JSON.stringify(agents))
+      });
+      if (setReportAuditLogs) {
+        setReportAuditLogs([{
+          id: `audit-${Date.now()}`, timestamp: new Date().toISOString(),
+          action: 'REPORT_GENERATED', actor: 'System', version: '1.0'
+        }, ...reportAuditLogs]);
+      }
     }, 3000);
   };
 
-  const handleApproveReport = () => {
-    if (setReportStatus) setReportStatus('FINAL_LOCKED');
-    if (setReportSnapshot) {
-      setReportSnapshot({
-        lockedAt: new Date().toISOString(),
-        lockedBy: 'Administrator (admin)',
-        reportId: `REP-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
-        agentsSnapshot: JSON.parse(JSON.stringify(agents)) // deep copy
-      });
-    }
-    if (setReportAuditLogs && reportAuditLogs) {
-      setReportAuditLogs([{
-        id: `audit-${Date.now()}`,
-        timestamp: new Date().toISOString(),
-        action: 'REPORT_LOCKED',
-        actor: 'Administrator (admin)',
-        details: 'Report finalized and locked'
-      }, ...reportAuditLogs]);
-    }
-    setIsApprovalModalOpen(false);
+  const handleApprove = () => {
+    setIsApproving(true);
+    setTimeout(() => {
+      setIsApproving(false);
+      setShowApprovalModal(false);
+      setReportStatus?.('APPROVED');
+      
+      const updatedSnapshot = reportSnapshot ? { ...reportSnapshot } : ({} as any);
+      updatedSnapshot.lockedAt = new Date().toISOString();
+      updatedSnapshot.lockedBy = 'Gulang Satriya';
+      setReportSnapshot?.(updatedSnapshot);
+      
+      if (setReportAuditLogs) {
+        setReportAuditLogs([{
+          id: `audit-${Date.now()}`, timestamp: new Date().toISOString(),
+          action: 'REPORT_APPROVED', actor: 'Gulang Satriya', version: reportSnapshot?.version || '1.0'
+        }, ...reportAuditLogs]);
+      }
+    }, 1500);
   };
 
+  const handleExport = () => {
+    setIsExporting(true);
+    setExportProgressText("Preparing report...");
+    setTimeout(() => setExportProgressText("Rendering 6 pages..."), 800);
+    setTimeout(() => {
+      setExportProgressText("✓ PDF ready");
+      setTimeout(() => {
+        setIsExporting(false);
+        const updatedSnapshot = reportSnapshot ? { ...reportSnapshot } : ({} as any);
+        updatedSnapshot.lastExportedAt = new Date().toISOString();
+        setReportSnapshot?.(updatedSnapshot);
+        
+        if (setReportAuditLogs) {
+          setReportAuditLogs([{
+            id: `audit-${Date.now()}`, timestamp: new Date().toISOString(),
+            action: 'PDF_EXPORTED', actor: 'Gulang Satriya', version: reportSnapshot?.version || '1.0'
+          }, ...reportAuditLogs]);
+        }
+      }, 1500);
+    }, 2000);
+  };
+
+  // Content Selection
+  const displayAgents = (reportStatus === 'APPROVED' && reportSnapshot) ? reportSnapshot.agentsSnapshot : agents;
+  
   if (reportStatus === 'EMPTY') {
     const readyAgents = agents.filter(a => a.status === 'COMPLETED').length;
     const totalAgents = 5;
+    const factAgent = agents.find(a => a.id === "fact");
+    const peepoAgent = agents.find(a => a.id === "peepo");
+    const prevAgent = agents.find(a => a.id === "prev");
+    const actorAgent = agents.find(a => a.id === "actor");
+    const iplsAgent = agents.find(a => a.id === "ipls");
+
     const isAllReady = readyAgents >= totalAgents;
 
     return (
@@ -189,7 +334,7 @@ export default function ReportsTab({
                   )}
                   
                   <Button 
-                    onClick={handleGeneratePreview}
+                    onClick={handleGenerate}
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold h-11 tracking-widest uppercase text-[11px] shadow-sm transition-all"
                   >
                     <FileText className="h-4 w-4 mr-2" />
@@ -257,17 +402,12 @@ export default function ReportsTab({
                 Preview struktur report
               </div>
 
-              {/* Cover Layout */}
-              <div className="border-b-2 border-slate-900 pb-4 mb-4">
-                <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">LAPORAN INVESTIGASI</div>
-                <div className="text-[12px] font-black text-slate-900 uppercase leading-snug">Security and Stability Incident</div>
-                <div className="text-[8px] text-slate-500 mt-2">Case ID: 771CAA3D &middot; 27 April 2026</div>
-              </div>
+
 
               {/* Section Outlines */}
               <div className="flex-1 space-y-3">
                  <div className="flex gap-2">
-                    <span className="text-[9px] font-mono text-slate-400">01</span>
+                    <span className="text-[9px] font-mono text-slate-400">P1</span>
                     <div className="flex-1">
                        <div className="text-[9px] font-bold text-slate-800 uppercase tracking-wider mb-1">Fakta & Kronologi</div>
                        <div className="flex items-center gap-1 mb-1">
@@ -282,7 +422,7 @@ export default function ReportsTab({
                  </div>
 
                  <div className="flex gap-2">
-                    <span className="text-[9px] font-mono text-slate-400">02</span>
+                    <span className="text-[9px] font-mono text-slate-400">P2</span>
                     <div className="flex-1">
                        <div className="text-[9px] font-bold text-slate-800 uppercase tracking-wider mb-1">Analisis Aktor</div>
                        <div className="grid grid-cols-2 gap-1 mb-1">
@@ -293,7 +433,7 @@ export default function ReportsTab({
                  </div>
 
                  <div className="flex gap-2">
-                    <span className="text-[9px] font-mono text-slate-400">03</span>
+                    <span className="text-[9px] font-mono text-slate-400">P3</span>
                     <div className="flex-1">
                        <div className="text-[9px] font-bold text-slate-800 uppercase tracking-wider mb-1">Faktor PEEPO</div>
                        <div className="h-[20px] bg-slate-50 border border-slate-100 flex flex-col justify-between p-0.5 rounded-sm">
@@ -305,7 +445,7 @@ export default function ReportsTab({
                  </div>
 
                  <div className="flex gap-2">
-                    <span className="text-[9px] font-mono text-slate-400">04</span>
+                    <span className="text-[9px] font-mono text-slate-400">P4</span>
                     <div className="flex-1">
                        <div className="text-[9px] font-bold text-slate-800 uppercase tracking-wider mb-1">Lapisan IPLS</div>
                        <div className="flex items-center gap-1">
@@ -318,7 +458,7 @@ export default function ReportsTab({
                  </div>
                  
                  <div className="flex gap-2">
-                    <span className="text-[9px] font-mono text-slate-400">05</span>
+                    <span className="text-[9px] font-mono text-slate-400">P5</span>
                     <div className="flex-1">
                        <div className="text-[9px] font-bold text-slate-800 uppercase tracking-wider mb-1">Rencana Pencegahan</div>
                        <div className="h-1.5 w-1/2 bg-slate-200 mb-1 rounded-sm" />
@@ -350,285 +490,334 @@ export default function ReportsTab({
     );
   }
 
+
+
+  // --- Document Workspace View ---
   return (
-    <div className="flex h-full w-full bg-slate-50/10 overflow-auto relative print-container">
-      <div className="flex-1 flex flex-col items-center p-8 w-full mx-auto print:p-0">
-         
-         {/* Top Banner based on status */}
-         <div className="w-full max-w-[1300px] mb-6 no-print">
-           {reportStatus === 'PREVIEW' && (
-             <div className="bg-amber-50 border border-amber-200 rounded-sm p-4 flex items-center justify-between shadow-sm">
-               <div className="flex items-center gap-3">
-                 <AlertTriangle className="h-5 w-5 text-amber-600" />
-                 <div>
-                   <h3 className="text-sm font-bold text-amber-900 uppercase tracking-widest">Mode Preview Laporan</h3>
-                   <p className="text-[11px] text-amber-700">Tinjau laporan ini sebelum mengesahkan. Laporan yang sudah disahkan tidak dapat diubah lagi.</p>
-                 </div>
-               </div>
-               <div className="flex items-center gap-2">
-                 <Button onClick={() => setReportStatus && setReportStatus('EMPTY')} variant="outline" className="h-8 text-xs font-bold bg-white border-amber-300 text-amber-700 hover:bg-amber-100">Batal</Button>
-                 <Button onClick={() => setIsApprovalModalOpen(true)} className="h-8 text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white uppercase tracking-widest px-6">Sahkan Laporan</Button>
-               </div>
-             </div>
-           )}
-
-           {reportStatus === 'FINAL_LOCKED' && reportSnapshot && (
-             <div className="bg-emerald-50 border border-emerald-200 rounded-sm p-4 flex items-center justify-between shadow-sm">
-               <div className="flex items-center gap-3">
-                 <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-                 <div>
-                   <h3 className="text-sm font-bold text-emerald-900 uppercase tracking-widest flex items-center gap-2">
-                     Laporan Disahkan 
-                     <span className="bg-emerald-200 text-emerald-800 text-[9px] px-1.5 py-0.5 rounded font-mono">{reportSnapshot.reportId}</span>
-                   </h3>
-                   <p className="text-[11px] text-emerald-700">Dikunci oleh <span className="font-bold">{reportSnapshot.lockedBy}</span> pada {new Date(reportSnapshot.lockedAt).toLocaleString('id-ID')}</p>
-                 </div>
-               </div>
-               <div className="flex items-center gap-2">
-                 <Button onClick={() => setIsAuditDrawerOpen(true)} variant="outline" className="h-8 text-[11px] font-bold bg-white border-emerald-300 text-emerald-700 hover:bg-emerald-100 uppercase tracking-widest">
-                   <History className="h-3.5 w-3.5 mr-1.5" /> Riwayat Laporan
-                 </Button>
-                 <Button onClick={handlePrint} className="h-8 text-[11px] font-bold bg-blue-600 hover:bg-blue-700 text-white uppercase tracking-widest px-4">
-                   <Download className="h-3.5 w-3.5 mr-1.5" /> Cetak PDF
-                 </Button>
-               </div>
-             </div>
-           )}
-         </div>
-
-         {/* Print Header (Only visible in print or empty state if we wanted) */}
-         <div className="w-full max-w-[1300px] flex items-center justify-between bg-white px-6 py-4 rounded-sm border mb-8 no-print shadow-sm">
-            <h2 className="text-lg font-bold text-slate-900 border-none p-0">Laporan Lengkap Analisis Investigasi</h2>
-            {reportStatus === 'PREVIEW' && (
-              <span className="bg-amber-100 text-amber-800 text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded border border-amber-200">DRAFT PREVIEW</span>
-            )}
-         </div>
-
-         {/* Report Body */}
-         <div className="w-full max-w-[1300px] space-y-12 print:space-y-8 pb-32 print:pb-0 print-bg-white print-m-0">
-            
-            {/* 1. Fakta & Kronologi */}
-            {factAgent && factAgent.results && (
-              <div className="w-full print-break-inside-avoid">
-                 <div className="pointer-events-none">
-                    <FactChronologyModule 
-                       initialItems={factAgent.results.chronology_items || []}
-                       metadata={factAgent.results.ringkasan}
-                       tableData={factAgent.results.tableData}
-                       viewMode="default"
-                       readonly={true}
-                    />
-                 </div>
-              </div>
-            )}
-
-            {/* 2. PEEPO Analysis */}
-            {peepoAgent && peepoAgent.results && (
-              <div className="w-full flex flex-col print-break-inside-avoid border border-slate-200 shadow-sm rounded-sm overflow-hidden bg-white print:border-none print:shadow-none print:rounded-none">
-                 <div className="bg-white px-6 py-4 flex items-center justify-between shrink-0 border-b border-slate-200">
-                    <div>
-                       <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                          <LayoutGrid className="h-4 w-4 text-slate-500" />
-                          LEMBAR ANALISIS FAKTOR PEEPO
-                       </h2>
-                       <p className="text-[11px] text-slate-500 mt-1">Sintesis temuan berdasarkan kategori People, Environment, Equipment, Procedures, dan Organisation.</p>
-                    </div>
-                 </div>
-                 <div className="flex-1 bg-white p-6 md:p-8 flex justify-center print:p-0">
-                    <div className="w-full h-fit shrink-0 space-y-8">
-                       {[
-                          { id: 'people', label: 'People (Individu)' },
-                          { id: 'environment', label: 'Environment (Lingkungan)' },
-                          { id: 'equipment', label: 'Equipment (Peralatan)' },
-                          { id: 'procedures', label: 'Procedures (Prosedur)' },
-                          { id: 'organisation', label: 'Organisation (Organisasi)' },
-                       ].map((section) => (
-                          <div key={section.id} className="space-y-3 print-break-inside-avoid">
-                             <div className="flex items-center gap-3">
-                                <span className="px-2.5 py-1 rounded text-[9px] font-black text-white uppercase tracking-widest bg-slate-900">
-                                   {section.label}
-                                </span>
-                                <div className="h-px flex-1 bg-slate-200" />
-                             </div>
-                             <div className="bg-white border-l border-t border-slate-200 overflow-hidden shadow-sm">
-                                <table className="w-full text-left border-collapse">
-                                   <thead>
-                                      <tr className="bg-slate-50/80">
-                                         <th className="px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest border-r border-b border-slate-200 bg-slate-50/30">TEMUAN</th>
-                                      </tr>
-                                   </thead>
-                                   <tbody>
-                                      {peepoAgent.results[section.id]?.length > 0 ? (
-                                         peepoAgent.results[section.id].map((item: any, idx: number) => (
-                                            <tr key={idx} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/50">
-                                               <td className="px-5 py-4 align-top border-r border-b border-slate-200 relative">
-                                                  <p className="text-[11px] font-bold leading-relaxed pr-8 text-slate-700">
-                                                     {typeof item === 'string' ? item : (item.chronology_text || item.label || item.id || '-')}
-                                                  </p>
-                                               </td>
-                                            </tr>
-                                         ))
-                                      ) : (
-                                         <tr><td className="px-5 py-4 text-[11px] text-slate-400 italic">Tidak ada temuan.</td></tr>
-                                      )}
-                                   </tbody>
-                                </table>
-                             </div>
-                          </div>
-                       ))}
-                    </div>
-                 </div>
-              </div>
-            )}
-
-            {/* 3. Aktor */}
-            {actorAgent && actorAgent.results && (
-              <div className="w-full print-break-inside-avoid pointer-events-none">
-                 <ActorAnalysisModule data={actorAgent.results} readonly={true} />
-              </div>
-            )}
-
-            {/* 4. IPLS */}
-            {iplsAgent && iplsAgent.results && (
-              <div className="w-full print-break-inside-avoid pointer-events-none">
-                 <IplsAnalysisModule data={iplsAgent.results} readonly={true} onSync={() => {}} />
-              </div>
-            )}
-
-            {/* 5. Prevention */}
-            {prevAgent && prevAgent.results && (
-              <div className="w-full flex flex-col print-break-inside-avoid border border-slate-200 shadow-sm rounded-sm overflow-hidden bg-white print:border-none print:shadow-none print:rounded-none">
-                 <div className="bg-white px-6 py-4 flex items-center justify-between shrink-0 border-b border-slate-200">
-                    <div>
-                       <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                          <LayoutTemplate className="h-4 w-4 text-slate-500" />
-                          RENCANA TINDAKAN PENCEGAHAN (PREVENTION)
-                       </h2>
-                       <p className="text-[11px] text-slate-500 mt-1">Langkah-langkah perbaikan dan pencegahan insiden untuk meminimalisasi risiko.</p>
-                    </div>
-                 </div>
-                 <div className="flex-1 bg-white p-6 md:p-8 flex justify-center print:p-0">
-                    <div className="w-full h-fit shrink-0 print:border-none print:shadow-none print:p-2">
-                       <h3 className="font-bold text-[14px] text-slate-900 mb-0.5">5. Tindakan Perbaikan dan Pencegahan Insiden NM LV BM 391</h3>
-                       <div className="h-[2px] w-[50%] bg-[#8ba861] mb-4 mt-1"></div>
-                       <div className="border border-slate-400">
-                          <table className="w-full text-left border-collapse">
-                             <thead>
-                                <tr className="bg-slate-50/80">
-                                   <th className="px-4 py-2 text-[10px] font-bold text-slate-900 text-center border-r border-b border-slate-400 w-12 uppercase tracking-widest bg-white">NO</th>
-                                   <th className="px-4 py-2 text-[10px] font-bold text-slate-900 text-center border-r border-b border-slate-400 w-24 uppercase tracking-widest bg-white">LAYER</th>
-                                   <th className="px-4 py-2 text-[10px] font-bold text-slate-900 text-center border-r border-b border-slate-400 w-28 uppercase tracking-widest bg-white">HIRARKI<br/>KONTROL</th>
-                                   <th className="px-4 py-2 text-[10px] font-bold text-slate-900 text-left border-b border-slate-400 uppercase tracking-widest bg-white">TINDAKAN PERBAIKAN DAN PENCEGAHAN</th>
-                                </tr>
-                             </thead>
-                             <tbody>
-                                {prevAgent.results.actions?.map((item: any, idx: number) => {
-                                   let layerBg = "bg-white";
-                                   let layerText = "text-slate-900";
-                                   if (item.type === 'rc') {
-                                      layerBg = "bg-red-500";
-                                      layerText = "text-white font-black";
-                                   } else if (item.type === 'nc') {
-                                      layerBg = "bg-[#ffc000]";
-                                   } else if (item.type === 'imp') {
-                                      layerBg = "bg-[#00c950]";
-                                      layerText = "text-white font-black";
-                                   }
-                                   
-                                   const getVal = (v: any) => typeof v === 'object' ? v?.text || v?.value || String(v) : String(v || '');
-                                   
-                                   return (
-                                      <tr key={idx} className="bg-white hover:bg-slate-100/50">
-                                         <td className="px-4 py-2 border-r border-b border-slate-400 text-center text-[11px] font-mono font-black text-slate-800 align-middle">
-                                            {getVal(item.no)}
-                                         </td>
-                                         <td className={`px-4 py-2 border-r border-b border-slate-400 text-center text-[11px] font-mono font-black ${layerBg} ${layerText} align-middle`}>
-                                            {getVal(item.layer)}
-                                         </td>
-                                         <td className="px-4 py-2 border-r border-b border-slate-400 text-center text-[11px] font-bold text-slate-700 align-middle uppercase">
-                                            {getVal(item.hierarchy)}
-                                         </td>
-                                         <td className="px-4 py-2 border-b border-slate-400 text-[11px] font-bold text-slate-800 leading-relaxed align-middle">
-                                            {getVal(item.action)}
-                                         </td>
-                                      </tr>
-                                   );
-                                })}
-                             </tbody>
-                          </table>
-                       </div>
-                    </div>
-                 </div>
-              </div>
-            )}
-         </div>
-      </div>
+    <div ref={containerRef} className="flex h-full w-full bg-slate-200/50 overflow-hidden font-sans">
       
-      {/* Approval Modal */}
-      {isApprovalModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/50 z-[100] flex items-center justify-center p-4 backdrop-blur-sm print:hidden">
-          <div className="bg-white rounded-md shadow-2xl max-w-md w-full overflow-hidden flex flex-col border border-slate-200 animate-in zoom-in-95 duration-200">
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-              <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                Pengesahan Laporan Final
-              </h3>
-              <button onClick={() => setIsApprovalModalOpen(false)} className="text-slate-400 hover:text-slate-700">
-                <X className="h-4 w-4" />
-              </button>
+      {/* LEFT: 75-80% DOCUMENT CANVAS */}
+      <div className="flex-1 flex flex-col min-w-0 relative">
+        
+        {/* Toolbar */}
+        <div className="h-12 bg-white border-b border-slate-200 flex items-center justify-between px-4 shrink-0 z-20 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+          
+          {/* Left: Branding & Tool toggle */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-slate-800 mr-4">Report Preview</span>
+            <div className="h-4 w-px bg-slate-200 mr-2" />
+            
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className={cn("h-8 w-8 transition-colors", activeTool === 'hand' ? "bg-slate-100 text-slate-900" : "text-slate-500 hover:bg-slate-50")}
+              onClick={() => setActiveTool('hand')}
+              title="Pan (Hand Tool)"
+            >
+              <Hand className="h-4 w-4" />
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className={cn("h-8 w-8 transition-colors", activeTool === 'pointer' ? "bg-slate-100 text-slate-900" : "text-slate-500 hover:bg-slate-50")}
+              onClick={() => setActiveTool('pointer')}
+              title="Select (Pointer)"
+            >
+              <MousePointer2 className="h-4 w-4" />
+            </Button>
+            
+            <div className="h-4 w-px bg-slate-200 mx-2" />
+            
+            {/* Zoom Controls */}
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:bg-slate-50" onClick={() => setZoomMode(z => typeof z === 'number' ? Math.max(0.4, z - 0.1) : Math.max(0.4, actualZoom - 0.1))}>
+              <ZoomOut className="h-4 w-4" />
+            </Button>
+            
+            <select 
+              className="h-8 text-xs font-medium text-slate-700 bg-transparent border-none outline-none cursor-pointer hover:bg-slate-50 px-1 rounded"
+              value={zoomMode}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === 'fit-page' || val === 'fit-width') setZoomMode(val);
+                else setZoomMode(Number(val));
+              }}
+            >
+              <option value="fit-page">Fit Page</option>
+              <option value="fit-width">Fit Width</option>
+              <option value="0.5">50%</option>
+              <option value="0.75">75%</option>
+              <option value="0.9">90%</option>
+              <option value="1">100%</option>
+              <option value="1.25">125%</option>
+              <option value="1.5">150%</option>
+              <option value="2">200%</option>
+            </select>
+            
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:bg-slate-50" onClick={() => setZoomMode(z => typeof z === 'number' ? Math.min(3, z + 0.1) : Math.min(3, actualZoom + 0.1))}>
+              <ZoomIn className="h-4 w-4" />
+            </Button>
+          </div>
+          
+          {/* Center: Pagination */}
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:bg-slate-50" onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} disabled={currentPage === 1}>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="text-xs font-mono font-bold text-slate-600 w-16 text-center">
+              {String(currentPage).padStart(2, '0')} / {String(TOTAL_PAGES).padStart(2, '0')}
+            </span>
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:bg-slate-50" onClick={() => setCurrentPage(Math.min(TOTAL_PAGES, currentPage + 1))} disabled={currentPage === TOTAL_PAGES}>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+          
+          {/* Right: View Toggles */}
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" className={cn("h-8 text-xs font-bold", thumbnailsOpen ? "bg-blue-50 text-blue-700" : "text-slate-600 hover:bg-slate-50")} onClick={() => setThumbnailsOpen(!thumbnailsOpen)}>
+              <Layout className="h-4 w-4 mr-1.5" /> Thumbnails
+            </Button>
+            <Button variant="ghost" size="sm" className="h-8 text-xs font-bold text-slate-600 hover:bg-slate-50" onClick={toggleFullscreen}>
+              {isFullscreen ? <Minimize2 className="h-4 w-4 mr-1.5" /> : <Maximize2 className="h-4 w-4 mr-1.5" />}
+              {isFullscreen ? 'Exit' : 'Fullscreen'}
+            </Button>
+          </div>
+        </div>
+
+        <div className="flex-1 flex overflow-hidden relative">
+          {/* Thumbnail Rail */}
+          {thumbnailsOpen && (
+            <div className="w-48 bg-slate-50 border-r border-slate-200 overflow-y-auto shrink-0 z-10 animate-in slide-in-from-left-4 duration-200">
+              <div className="p-4 space-y-4">
+                {[
+                  { n: 1, title: 'Chronology' },
+                  { n: 2, title: 'Actor' },
+                  { n: 3, title: 'PEEPO' },
+                  { n: 4, title: 'IPLS' },
+                  { n: 5, title: 'Prevention' },
+                ].map(thumb => (
+                  <button 
+                    key={thumb.n}
+                    onClick={() => setCurrentPage(thumb.n)}
+                    className={cn(
+                      "w-full text-left p-2 rounded transition-all group",
+                      currentPage === thumb.n ? "bg-white border border-blue-200 shadow-sm outline outline-1 outline-blue-500" : "hover:bg-slate-100 border border-transparent"
+                    )}
+                  >
+                    <div className="text-[9px] font-mono text-slate-400 mb-1">{String(thumb.n).padStart(2, '0')}</div>
+                    <div className={cn("text-xs font-bold", currentPage === thumb.n ? "text-blue-700" : "text-slate-700 group-hover:text-slate-900")}>
+                      {thumb.title}
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="p-6 space-y-5">
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Anda akan mengesahkan laporan ini. Setelah disahkan, laporan akan dikunci dan <span className="font-bold text-slate-900">tidak dapat diubah kembali</span>. Laporan ini akan menjadi rekaman resmi dari hasil investigasi.
-              </p>
-              <label className="flex gap-3 items-start cursor-pointer group bg-slate-50 p-3 rounded border border-slate-200 hover:bg-slate-100 transition-colors">
-                <input 
-                  type="checkbox" 
-                  checked={approvalChecked} 
-                  onChange={(e) => setApprovalChecked(e.target.checked)}
-                  className="mt-0.5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
-                />
-                <span className="text-[11px] font-bold text-slate-700 leading-relaxed group-hover:text-slate-900">
-                  Saya menyatakan bahwa saya telah meninjau seluruh hasil analisis pada preview laporan ini dan menyetujui isinya untuk disahkan.
-                </span>
-              </label>
+          )}
+
+          {/* Canvas Area */}
+          <div 
+            ref={canvasContainerRef}
+            className={cn(
+              "flex-1 relative overflow-auto bg-[#F8FAFC]", 
+              activeTool === 'hand' ? (isDragging ? 'cursor-grabbing' : 'cursor-grab') : 'cursor-default'
+            )}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerLeave={handlePointerUp}
+          >
+            <ReportViewerContext.Provider value={{ zoom: actualZoom, panOffset }}>
+            
+            <ReportFactPage 
+              isActive={currentPage === 1} pageNumber={2} totalPages={TOTAL_PAGES}
+              version={reportSnapshot?.version || "1.0"} status={reportStatus} factAgent={displayAgents.find(a=>a.id==='fact')}
+            />
+            <ReportActorPage 
+              isActive={currentPage === 2} pageNumber={3} totalPages={TOTAL_PAGES}
+              version={reportSnapshot?.version || "1.0"} status={reportStatus} actorAgent={displayAgents.find(a=>a.id==='actor')}
+            />
+            <ReportPeepoPage 
+              isActive={currentPage === 3} pageNumber={4} totalPages={TOTAL_PAGES}
+              version={reportSnapshot?.version || "1.0"} status={reportStatus} peepoAgent={displayAgents.find(a=>a.id==='peepo')}
+            />
+            <ReportIplsPage 
+              isActive={currentPage === 4} pageNumber={5} totalPages={TOTAL_PAGES}
+              version={reportSnapshot?.version || "1.0"} status={reportStatus} iplsAgent={displayAgents.find(a=>a.id==='ipls')}
+            />
+            <ReportPreventionPage 
+              isActive={currentPage === 5} pageNumber={5} totalPages={TOTAL_PAGES}
+              version={reportSnapshot?.version || "1.0"} status={reportStatus} prevAgent={displayAgents.find(a=>a.id==='prev')}
+            />
+            </ReportViewerContext.Provider>
+          </div>
+        </div>
+      </div>
+
+      {/* RIGHT: 20-25% REPORT CONTROL */}
+      {!isFullscreen && (
+        <div className="w-[320px] bg-white border-l border-slate-200 shrink-0 flex flex-col z-20 relative">
+          <div className="p-5 border-b border-slate-100">
+            <h3 className="text-[14px] font-bold text-slate-900">Report Control</h3>
+          </div>
+          
+          <div className="flex-1 overflow-y-auto p-5 space-y-8">
+            
+            {/* Status Section */}
+            <div>
+              <div className="mb-5">
+                {reportStatus === 'DRAFT' && (
+                  <div className="inline-flex items-center gap-2 bg-amber-50 text-amber-700 px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-widest border border-amber-200">
+                    <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+                    DRAFT PREVIEW
+                  </div>
+                )}
+                {reportStatus === 'READY_FOR_REVIEW' && (
+                  <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-widest border border-blue-200">
+                    <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+                    READY FOR REVIEW
+                  </div>
+                )}
+                {reportStatus === 'APPROVED' && (
+                  <div className="inline-flex items-center gap-2 bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-widest border border-emerald-200">
+                    <CheckCircle2 className="h-3 w-3" />
+                    APPROVED
+                  </div>
+                )}
+                
+                {reportStatus === 'DRAFT' && (
+                  <div className="text-[11px] font-medium text-slate-500 mt-3 flex items-center gap-1.5">
+                    {autosaveState === 'SAVING' ? (
+                      <><span className="h-1 w-1 rounded-full border border-slate-400" /> Saving...</>
+                    ) : (
+                      <><span className="h-1 w-1 rounded-full bg-slate-400" /> Saved &middot; {new Date().toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'})} WITA</>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Metadata */}
+              <div className="space-y-4">
+                <div>
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Version</div>
+                  <div className="text-[12px] font-bold text-slate-900">v{reportSnapshot?.version || "1.0"}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Generated</div>
+                  <div className="text-[12px] font-bold text-slate-900">{new Date(reportSnapshot?.generatedAt || Date.now()).toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric'})} &middot; {new Date(reportSnapshot?.generatedAt || Date.now()).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'})}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Pages</div>
+                  <div className="text-[12px] font-bold text-slate-900">{TOTAL_PAGES} pages</div>
+                </div>
+                
+                {reportStatus === 'APPROVED' && reportSnapshot?.lockedAt && (
+                  <div>
+                    <div className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-0.5">Approved</div>
+                    <div className="text-[12px] font-bold text-slate-900">{new Date(reportSnapshot.lockedAt).toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric'})} &middot; {new Date(reportSnapshot.lockedAt).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'})}</div>
+                    <div className="text-[11px] text-slate-500">by {reportSnapshot.lockedBy}</div>
+                  </div>
+                )}
+              </div>
             </div>
-            <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2">
-              <Button onClick={() => setIsApprovalModalOpen(false)} variant="outline" className="h-9 text-xs font-bold uppercase tracking-widest">Batal</Button>
-              <Button onClick={handleApproveReport} disabled={!approvalChecked} className="h-9 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-widest">Ya, Sahkan & Kunci</Button>
+
+            <hr className="border-slate-100" />
+
+            {/* Actions */}
+            <div>
+              {reportStatus !== 'APPROVED' ? (
+                <div className="space-y-3">
+                  <div className="flex gap-2 items-start bg-slate-50 p-3 rounded border border-slate-100 mb-3">
+                    <Lock className="h-3.5 w-3.5 text-slate-400 shrink-0 mt-0.5" />
+                    <p className="text-[11px] text-slate-600 leading-relaxed">
+                      Setelah laporan disahkan, isi laporan akan dikunci dan tercatat di Audit Trail.
+                    </p>
+                  </div>
+                  <Button 
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold h-10 text-[11px] uppercase tracking-widest transition-transform active:scale-[0.98]"
+                    onClick={() => setShowApprovalModal(true)}
+                  >
+                    Sahkan Laporan
+                  </Button>
+                  <Button variant="outline" className="w-full text-slate-600 font-bold h-9 text-[11px] hover:bg-slate-50">
+                    Preview PDF
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <Button 
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold h-10 text-[11px] uppercase tracking-widest"
+                    onClick={handleExport}
+                    disabled={isExporting}
+                  >
+                    {isExporting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <FileDown className="h-4 w-4 mr-2" />}
+                    Export PDF
+                  </Button>
+                  
+                  {isExporting && (
+                    <div className="text-center text-[11px] font-bold text-blue-600 animate-pulse">
+                      {exportProgressText}
+                    </div>
+                  )}
+
+                  {reportSnapshot?.lastExportedAt && !isExporting && (
+                    <div>
+                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Last Export</div>
+                      <div className="text-[11px] font-bold text-slate-800">
+                        {new Date(reportSnapshot.lastExportedAt).toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric'})} &middot; {new Date(reportSnapshot.lastExportedAt).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'})} WITA
+                      </div>
+                      <div className="text-[10px] text-slate-500 mb-2">PDF &middot; Version {reportSnapshot.version}</div>
+                      <button className="text-[10px] font-bold text-blue-600 hover:underline">View export history</button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
+
+            <hr className="border-slate-100" />
+
+            {/* Audit Trail Preview */}
+            <div>
+              <div className="text-[11px] font-bold text-slate-900 uppercase tracking-widest mb-4">Report Activity</div>
+              <div className="space-y-4 border-l border-slate-200 ml-2 pl-3">
+                {reportAuditLogs.slice(0, 3).map((log, i) => (
+                  <div key={log.id || i} className="relative">
+                    <div className="absolute -left-[17px] top-1.5 h-2 w-2 rounded-full bg-slate-300 border-2 border-white" />
+                    <div className="text-[11px] font-bold text-slate-800">{log.action === 'PDF_EXPORTED' ? 'PDF Exported' : log.action === 'REPORT_APPROVED' ? 'Report Approved' : log.action === 'REPORT_GENERATED' ? 'Report Generated' : log.action}</div>
+                    <div className="text-[10px] text-slate-500 mt-0.5">{new Date(log.timestamp).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'})} WITA</div>
+                    <div className="text-[10px] text-slate-500">{log.actor}</div>
+                  </div>
+                ))}
+              </div>
+              <button className="text-[10px] font-bold text-blue-600 mt-4 hover:underline">View full activity &rarr;</button>
+            </div>
+            
           </div>
         </div>
       )}
 
-      {/* Audit Drawer */}
-      {isAuditDrawerOpen && (
-        <div className="fixed inset-y-0 right-0 w-80 bg-white border-l border-slate-200 shadow-2xl z-[90] flex flex-col animate-in slide-in-from-right duration-200 print:hidden">
-          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-            <h3 className="text-[11px] font-bold text-slate-900 uppercase tracking-widest flex items-center gap-2">
-              <History className="h-4 w-4 text-slate-500" />
-              Riwayat Laporan
-            </h3>
-            <button onClick={() => setIsAuditDrawerOpen(false)} className="text-slate-400 hover:text-slate-700">
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-          <div className="flex-1 overflow-y-auto p-6 space-y-6">
-            {reportAuditLogs.map((log) => (
-              <div key={log.id} className="relative pl-4 border-l-2 border-slate-200">
-                <div className="absolute -left-[5px] top-1.5 h-2 w-2 rounded-full bg-slate-400" />
-                <div className="text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-widest">{new Date(log.timestamp).toLocaleString('id-ID')}</div>
-                <div className="text-xs font-bold text-slate-900 mb-0.5">{log.details}</div>
-                <div className="text-[10px] text-slate-500 font-mono">Oleh: {log.actor}</div>
-              </div>
-            ))}
-            {reportAuditLogs.length === 0 && (
-              <div className="text-center text-xs text-slate-500 py-10">Belum ada riwayat.</div>
-            )}
+      {/* Approval Modal */}
+      {showApprovalModal && (
+        <div className="absolute inset-0 bg-slate-900/40 z-[100] flex items-center justify-center backdrop-blur-[1px]">
+          <div className="bg-white rounded-lg shadow-2xl p-6 w-[340px] animate-in zoom-in-[0.98] duration-150">
+            <h3 className="text-[16px] font-bold text-slate-900 mb-2">Sahkan laporan?</h3>
+            <p className="text-[12px] text-slate-600 leading-relaxed mb-4">
+              Versi {reportSnapshot?.version || "1.0"} akan dikunci sebagai laporan resmi investigasi.
+            </p>
+            <div className="bg-slate-50 p-3 rounded border border-slate-100 mb-6 space-y-1">
+              <div className="text-[11px] text-slate-600">{TOTAL_PAGES} halaman</div>
+              <div className="text-[11px] text-slate-600">Terakhir disimpan {new Date().toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'})} WITA</div>
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button variant="ghost" className="text-[11px] font-bold h-8 text-slate-600" onClick={() => setShowApprovalModal(false)} disabled={isApproving}>
+                Kembali
+              </Button>
+              <Button className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] h-8 transition-transform active:scale-[0.98]" onClick={handleApprove} disabled={isApproving}>
+                {isApproving ? <Loader2 className="h-3 w-3 animate-spin mr-1.5" /> : null}
+                {isApproving ? "Mengesahkan..." : "Sahkan Laporan"}
+              </Button>
+            </div>
           </div>
         </div>
       )}
     </div>
   );
 }
-

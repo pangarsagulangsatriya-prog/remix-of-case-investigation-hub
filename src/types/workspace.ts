@@ -90,19 +90,24 @@ export interface EnhancedChronologyItem {
   updatedAt: string;
 }
 
-export type ReportStatusType = 'EMPTY' | 'PREVIEW' | 'FINAL_LOCKED';
+export type ReportStatusType = 'EMPTY' | 'DRAFT' | 'READY_FOR_REVIEW' | 'APPROVED';
 
 export interface ReportSnapshot {
-  lockedAt: string;
-  lockedBy: string;
+  lockedAt?: string;
+  lockedBy?: string;
   reportId: string;
+  version: string;
+  generatedAt?: string;
+  lastSavedAt?: string;
+  lastExportedAt?: string;
   agentsSnapshot: AgentState[];
 }
 
 export interface ReportAuditEntry {
   id: string;
   timestamp: string;
-  action: 'PREVIEW_GENERATED' | 'REPORT_APPROVED' | 'REPORT_LOCKED';
+  action: 'REPORT_GENERATED' | 'DRAFT_SAVED' | 'REPORT_APPROVED' | 'PDF_EXPORTED' | 'EXPORT_FAILED';
   actor: string;
   details?: string;
+  version?: string;
 }
