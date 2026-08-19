@@ -12,6 +12,10 @@ import {
 } from "./ReportPages";
 import { ReportViewerContext, PAGE_WIDTH, PAGE_HEIGHT } from "./ReportDocumentCanvas";
 import { Hand, MousePointer2, ZoomIn, ZoomOut, Search } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
 
 interface ReportsTabProps {
   agents: AgentState[];
@@ -83,15 +87,25 @@ export default function ReportsTab({
     return () => ro.disconnect();
   }, [zoomMode, thumbnailsOpen]);
 
+  // Thumbnail Auto-scroll
+  useEffect(() => {
+    if (thumbnailsOpen) {
+      const activeThumb = document.getElementById(`thumbnail-rail-${currentPage}`);
+      if (activeThumb) {
+        activeThumb.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+  }, [currentPage, thumbnailsOpen]);
+
   // Keyboard Shortcuts
   useEffect(() => {
     if (reportStatus === 'EMPTY') return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
       
-      if (e.key === 'ArrowRight' || e.key === 'PageDown') {
+      if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === 'ArrowDown') {
         setCurrentPage(p => Math.min(TOTAL_PAGES, p + 1));
-      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp' || e.key === 'ArrowUp') {
         setCurrentPage(p => Math.max(1, p - 1));
       } else if ((e.ctrlKey || e.metaKey) && e.key === '=') {
         e.preventDefault();
@@ -158,31 +172,32 @@ export default function ReportsTab({
 
   const handleGenerate = () => {
     setIsGenerating(true);
-    setGenerationStep(1);
+    setReportStatus?.('DRAFT');
+    setReportSnapshot?.({
+      reportId: `REP-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
+      version: '1.0',
+      generatedAt: new Date().toISOString(),
+      lastSavedAt: new Date().toISOString(),
+      agentsSnapshot: JSON.parse(JSON.stringify(agents))
+    });
     
-    setTimeout(() => setGenerationStep(2), 600);
-    setTimeout(() => setGenerationStep(3), 1200);
-    setTimeout(() => setGenerationStep(4), 1800);
-    setTimeout(() => setGenerationStep(5), 2400);
+    // Simulate generation sequence
+    setGenerationStep(1);
+    setTimeout(() => setGenerationStep(2), 500);
+    setTimeout(() => setGenerationStep(3), 1000);
+    setTimeout(() => setGenerationStep(4), 1500);
+    setTimeout(() => setGenerationStep(5), 2000);
 
     setTimeout(() => {
       setIsGenerating(false);
       setGenerationStep(0);
-      setReportStatus?.('DRAFT');
-      setReportSnapshot?.({
-        reportId: `REP-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
-        version: '1.0',
-        generatedAt: new Date().toISOString(),
-        lastSavedAt: new Date().toISOString(),
-        agentsSnapshot: JSON.parse(JSON.stringify(agents))
-      });
       if (setReportAuditLogs) {
         setReportAuditLogs([{
           id: `audit-${Date.now()}`, timestamp: new Date().toISOString(),
           action: 'REPORT_GENERATED', actor: 'System', version: '1.0'
         }, ...reportAuditLogs]);
       }
-    }, 3000);
+    }, 2500);
   };
 
   const handleApprove = () => {
@@ -206,26 +221,33 @@ export default function ReportsTab({
     }, 1500);
   };
 
-  const handleExport = () => {
+  const handleExport = (format: 'pdf' | 'word') => {
     setIsExporting(true);
-    setExportProgressText("Preparing report...");
-    setTimeout(() => setExportProgressText("Rendering 6 pages..."), 800);
-    setTimeout(() => {
-      setExportProgressText("✓ PDF ready");
-      setTimeout(() => {
-        setIsExporting(false);
-        const updatedSnapshot = reportSnapshot ? { ...reportSnapshot } : ({} as any);
-        updatedSnapshot.lastExportedAt = new Date().toISOString();
-        setReportSnapshot?.(updatedSnapshot);
-        
-        if (setReportAuditLogs) {
-          setReportAuditLogs([{
-            id: `audit-${Date.now()}`, timestamp: new Date().toISOString(),
-            action: 'PDF_EXPORTED', actor: 'Gulang Satriya', version: reportSnapshot?.version || '1.0'
-          }, ...reportAuditLogs]);
-        }
-      }, 1500);
-    }, 2000);
+    const docName = format === 'pdf' ? 'PDF' : 'Word';
+    
+    toast.promise(
+      new Promise((resolve) => {
+        setTimeout(() => {
+          setIsExporting(false);
+          const updatedSnapshot = reportSnapshot ? { ...reportSnapshot } : ({} as any);
+          updatedSnapshot.lastExportedAt = new Date().toISOString();
+          setReportSnapshot?.(updatedSnapshot);
+          
+          if (setReportAuditLogs) {
+            setReportAuditLogs([{
+              id: `audit-${Date.now()}`, timestamp: new Date().toISOString(),
+              action: `${docName.toUpperCase()}_EXPORTED`, actor: 'Gulang Satriya', version: reportSnapshot?.version || '1.0'
+            }, ...reportAuditLogs]);
+          }
+          resolve(true);
+        }, 2500);
+      }),
+      {
+        loading: `Generating ${docName} document...`,
+        success: `Report exported successfully as ${docName}.`,
+        error: `Failed to export ${docName}.`
+      }
+    );
   };
 
   // Content Selection
@@ -500,6 +522,7 @@ export default function ReportsTab({
       <div className="flex-1 flex flex-col min-w-0 relative">
         
         {/* Toolbar */}
+        <TooltipProvider delayDuration={400}>
         <div className="h-12 bg-white border-b border-slate-200 flex items-center justify-between px-4 shrink-0 z-20 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
           
           {/* Left: Branding & Tool toggle */}
@@ -507,31 +530,44 @@ export default function ReportsTab({
             <span className="text-xs font-bold text-slate-800 mr-4">Report Preview</span>
             <div className="h-4 w-px bg-slate-200 mr-2" />
             
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className={cn("h-8 w-8 transition-colors", activeTool === 'hand' ? "bg-slate-100 text-slate-900" : "text-slate-500 hover:bg-slate-50")}
-              onClick={() => setActiveTool('hand')}
-              title="Pan (Hand Tool)"
-            >
-              <Hand className="h-4 w-4" />
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className={cn("h-8 w-8 transition-colors", activeTool === 'pointer' ? "bg-slate-100 text-slate-900" : "text-slate-500 hover:bg-slate-50")}
-              onClick={() => setActiveTool('pointer')}
-              title="Select (Pointer)"
-            >
-              <MousePointer2 className="h-4 w-4" />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className={cn("h-8 w-8 transition-colors", activeTool === 'hand' ? "bg-slate-100 text-slate-900" : "text-slate-500 hover:bg-slate-50")}
+                  onClick={() => setActiveTool('hand')}
+                >
+                  <Hand className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-[10px] font-bold">Pan Tool</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className={cn("h-8 w-8 transition-colors", activeTool === 'pointer' ? "bg-slate-100 text-slate-900" : "text-slate-500 hover:bg-slate-50")}
+                  onClick={() => setActiveTool('pointer')}
+                >
+                  <MousePointer2 className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-[10px] font-bold">Select</TooltipContent>
+            </Tooltip>
             
             <div className="h-4 w-px bg-slate-200 mx-2" />
             
             {/* Zoom Controls */}
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:bg-slate-50" onClick={() => setZoomMode(z => typeof z === 'number' ? Math.max(0.4, z - 0.1) : Math.max(0.4, actualZoom - 0.1))}>
-              <ZoomOut className="h-4 w-4" />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:bg-slate-50" onClick={() => setZoomMode(z => typeof z === 'number' ? Math.max(0.4, z - 0.1) : Math.max(0.4, actualZoom - 0.1))}>
+                  <ZoomOut className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-[10px] font-bold">Zoom Out (-)</TooltipContent>
+            </Tooltip>
             
             <select 
               className="h-8 text-xs font-medium text-slate-700 bg-transparent border-none outline-none cursor-pointer hover:bg-slate-50 px-1 rounded"
@@ -553,22 +589,37 @@ export default function ReportsTab({
               <option value="2">200%</option>
             </select>
             
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:bg-slate-50" onClick={() => setZoomMode(z => typeof z === 'number' ? Math.min(3, z + 0.1) : Math.min(3, actualZoom + 0.1))}>
-              <ZoomIn className="h-4 w-4" />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:bg-slate-50" onClick={() => setZoomMode(z => typeof z === 'number' ? Math.min(3, z + 0.1) : Math.min(3, actualZoom + 0.1))}>
+                  <ZoomIn className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-[10px] font-bold">Zoom In (+)</TooltipContent>
+            </Tooltip>
           </div>
           
           {/* Center: Pagination */}
           <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:bg-slate-50" onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} disabled={currentPage === 1}>
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:bg-slate-50" onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} disabled={currentPage === 1}>
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-[10px] font-bold">Previous Page (↑/←)</TooltipContent>
+            </Tooltip>
             <span className="text-xs font-mono font-bold text-slate-600 w-16 text-center">
               {String(currentPage).padStart(2, '0')} / {String(TOTAL_PAGES).padStart(2, '0')}
             </span>
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:bg-slate-50" onClick={() => setCurrentPage(Math.min(TOTAL_PAGES, currentPage + 1))} disabled={currentPage === TOTAL_PAGES}>
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:bg-slate-50" onClick={() => setCurrentPage(Math.min(TOTAL_PAGES, currentPage + 1))} disabled={currentPage === TOTAL_PAGES}>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-[10px] font-bold">Next Page (↓/→)</TooltipContent>
+            </Tooltip>
           </div>
           
           {/* Right: View Toggles */}
@@ -576,44 +627,51 @@ export default function ReportsTab({
             <Button variant="ghost" size="sm" className={cn("h-8 text-xs font-bold", thumbnailsOpen ? "bg-blue-50 text-blue-700" : "text-slate-600 hover:bg-slate-50")} onClick={() => setThumbnailsOpen(!thumbnailsOpen)}>
               <Layout className="h-4 w-4 mr-1.5" /> Thumbnails
             </Button>
-            <Button variant="ghost" size="sm" className="h-8 text-xs font-bold text-slate-600 hover:bg-slate-50" onClick={toggleFullscreen}>
-              {isFullscreen ? <Minimize2 className="h-4 w-4 mr-1.5" /> : <Maximize2 className="h-4 w-4 mr-1.5" />}
-              {isFullscreen ? 'Exit' : 'Fullscreen'}
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 text-xs font-bold text-slate-600 hover:bg-slate-50" onClick={toggleFullscreen}>
+                  {isFullscreen ? <Minimize2 className="h-4 w-4 mr-1.5" /> : <Maximize2 className="h-4 w-4 mr-1.5" />}
+                  {isFullscreen ? 'Exit' : 'Fullscreen'}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-[10px] font-bold">Toggle Fullscreen (Esc to exit)</TooltipContent>
+            </Tooltip>
           </div>
         </div>
+        </TooltipProvider>
 
         <div className="flex-1 flex overflow-hidden relative">
           {/* Thumbnail Rail */}
           {thumbnailsOpen && (
             <div className="w-48 bg-slate-50 border-r border-slate-200 overflow-y-auto shrink-0 z-10 animate-in slide-in-from-left-4 duration-200">
-              <div className="p-4 space-y-3">
+              <div className="p-4 space-y-4">
                 {[
-                  { n: 1, title: 'Chronology' },
-                  { n: 2, title: 'Actor' },
-                  { n: 3, title: 'PEEPO' },
-                  { n: 4, title: 'IPLS' },
-                  { n: 5, title: 'Prevention' },
+                  { n: 1, title: 'Chronology', cmp: <ReportFactPage isActive isThumbnail isLoading={isGenerating} pageNumber={1} totalPages={TOTAL_PAGES} version={reportSnapshot?.version || "1.0"} status={reportStatus} factAgent={displayAgents.find(a=>a.id==='fact')} /> },
+                  { n: 2, title: 'Actor Analysis', cmp: <ReportActorPage isActive isThumbnail isLoading={isGenerating} pageNumber={2} totalPages={TOTAL_PAGES} version={reportSnapshot?.version || "1.0"} status={reportStatus} actorAgent={displayAgents.find(a=>a.id==='actor')} /> },
+                  { n: 3, title: 'PEEPO', cmp: <ReportPeepoPage isActive isThumbnail isLoading={isGenerating} pageNumber={3} totalPages={TOTAL_PAGES} version={reportSnapshot?.version || "1.0"} status={reportStatus} peepoAgent={displayAgents.find(a=>a.id==='peepo')} /> },
+                  { n: 4, title: 'IPLS', cmp: <ReportIplsPage isActive isThumbnail isLoading={isGenerating} pageNumber={4} totalPages={TOTAL_PAGES} version={reportSnapshot?.version || "1.0"} status={reportStatus} iplsAgent={displayAgents.find(a=>a.id==='ipls')} /> },
+                  { n: 5, title: 'Prevention', cmp: <ReportPreventionPage isActive isThumbnail isLoading={isGenerating} pageNumber={5} totalPages={TOTAL_PAGES} version={reportSnapshot?.version || "1.0"} status={reportStatus} prevAgent={displayAgents.find(a=>a.id==='prev')} /> },
                 ].map(thumb => (
                   <div 
+                    id={`thumbnail-rail-${thumb.n}`}
                     key={thumb.n}
                     className="flex gap-2 group cursor-pointer"
                     onClick={() => setCurrentPage(thumb.n)}
                   >
-                    <div className="text-[10px] font-bold text-slate-400 pt-1 w-3 text-right select-none">
+                    <div className={cn("text-[10px] font-bold pt-1 w-3 text-right select-none transition-colors", currentPage === thumb.n ? "text-blue-600" : "text-slate-400")}>
                       {thumb.n}
                     </div>
                     <div className="flex-1 flex flex-col gap-1.5">
                       <div className={cn(
                         "w-full aspect-video bg-white rounded-sm shadow-sm transition-all overflow-hidden relative border-2 flex flex-col",
-                        currentPage === thumb.n ? "border-blue-500" : "border-transparent group-hover:border-slate-300"
+                        currentPage === thumb.n ? "border-blue-500 ring-4 ring-blue-500/10 shadow-md" : "border-transparent hover:border-slate-300 hover:shadow-md hover:-translate-y-[1px]"
                       )}>
                         {/* Slide Miniature Content */}
-                        <div className="flex-1 p-2 flex items-center justify-center border border-slate-200/50 m-0.5 rounded-sm">
-                           <span className={cn("text-[9px] font-bold uppercase tracking-wider text-center", currentPage === thumb.n ? "text-blue-700" : "text-slate-400")}>
-                             {thumb.title}
-                           </span>
+                        <div className="absolute inset-0 bg-white pointer-events-none">
+                           {thumb.cmp}
                         </div>
+                        {/* Overlay to catch clicks and prevent interaction with thumbnail content */}
+                        <div className="absolute inset-0 z-10" />
                       </div>
                     </div>
                   </div>
@@ -637,23 +695,23 @@ export default function ReportsTab({
             <ReportViewerContext.Provider value={{ zoom: actualZoom, panOffset }}>
             
             <ReportFactPage 
-              isActive={currentPage === 1} pageNumber={2} totalPages={TOTAL_PAGES}
+              isActive={currentPage === 1} isLoading={isGenerating} pageNumber={2} totalPages={TOTAL_PAGES}
               version={reportSnapshot?.version || "1.0"} status={reportStatus} factAgent={displayAgents.find(a=>a.id==='fact')}
             />
             <ReportActorPage 
-              isActive={currentPage === 2} pageNumber={3} totalPages={TOTAL_PAGES}
+              isActive={currentPage === 2} isLoading={isGenerating} pageNumber={3} totalPages={TOTAL_PAGES}
               version={reportSnapshot?.version || "1.0"} status={reportStatus} actorAgent={displayAgents.find(a=>a.id==='actor')}
             />
             <ReportPeepoPage 
-              isActive={currentPage === 3} pageNumber={4} totalPages={TOTAL_PAGES}
+              isActive={currentPage === 3} isLoading={isGenerating} pageNumber={4} totalPages={TOTAL_PAGES}
               version={reportSnapshot?.version || "1.0"} status={reportStatus} peepoAgent={displayAgents.find(a=>a.id==='peepo')}
             />
             <ReportIplsPage 
-              isActive={currentPage === 4} pageNumber={5} totalPages={TOTAL_PAGES}
+              isActive={currentPage === 4} isLoading={isGenerating} pageNumber={5} totalPages={TOTAL_PAGES}
               version={reportSnapshot?.version || "1.0"} status={reportStatus} iplsAgent={displayAgents.find(a=>a.id==='ipls')}
             />
             <ReportPreventionPage 
-              isActive={currentPage === 5} pageNumber={5} totalPages={TOTAL_PAGES}
+              isActive={currentPage === 5} isLoading={isGenerating} pageNumber={5} totalPages={TOTAL_PAGES}
               version={reportSnapshot?.version || "1.0"} status={reportStatus} prevAgent={displayAgents.find(a=>a.id==='prev')}
             />
             </ReportViewerContext.Provider>
@@ -752,21 +810,26 @@ export default function ReportsTab({
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <Button 
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold h-10 text-[11px] uppercase tracking-widest"
-                    onClick={handleExport}
-                    disabled={isExporting}
-                  >
-                    {isExporting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <FileDown className="h-4 w-4 mr-2" />}
-                    Export PDF
-                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button 
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold h-10 text-[11px] uppercase tracking-widest"
+                        disabled={isExporting}
+                      >
+                        {isExporting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <FileDown className="h-4 w-4 mr-2" />}
+                        Export Report
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-[280px]">
+                      <DropdownMenuItem onClick={() => handleExport('pdf')} className="cursor-pointer font-medium text-xs py-2.5">
+                        PDF Document (.pdf)
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleExport('word')} className="cursor-pointer font-medium text-xs py-2.5">
+                        Microsoft Word (.docx)
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                   
-                  {isExporting && (
-                    <div className="text-center text-[11px] font-bold text-blue-600 animate-pulse">
-                      {exportProgressText}
-                    </div>
-                  )}
-
                   {reportSnapshot?.lastExportedAt && !isExporting && (
                     <div>
                       <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Last Export</div>
@@ -786,17 +849,17 @@ export default function ReportsTab({
             {/* Audit Trail Preview */}
             <div>
               <div className="text-[11px] font-bold text-slate-900 uppercase tracking-widest mb-4">Report Activity</div>
-              <div className="space-y-4 border-l border-slate-200 ml-2 pl-3">
+              <div className="space-y-4 border-l-2 border-slate-100 ml-2 pl-4">
                 {reportAuditLogs.slice(0, 3).map((log, i) => (
                   <div key={log.id || i} className="relative">
-                    <div className="absolute -left-[17px] top-1.5 h-2 w-2 rounded-full bg-slate-300 border-2 border-white" />
-                    <div className="text-[11px] font-bold text-slate-800">{log.action === 'PDF_EXPORTED' ? 'PDF Exported' : log.action === 'REPORT_APPROVED' ? 'Report Approved' : log.action === 'REPORT_GENERATED' ? 'Report Generated' : log.action}</div>
+                    <div className="absolute -left-[23px] top-1 h-2.5 w-2.5 rounded-full bg-blue-500 border-2 border-white shadow-sm" />
+                    <div className="text-[11px] font-bold text-slate-800">{log.action === 'PDF_EXPORTED' ? 'PDF Exported' : log.action === 'WORD_EXPORTED' ? 'Word Exported' : log.action === 'REPORT_APPROVED' ? 'Report Approved' : log.action === 'REPORT_GENERATED' ? 'Report Generated' : log.action}</div>
                     <div className="text-[10px] text-slate-500 mt-0.5">{new Date(log.timestamp).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'})} WITA</div>
                     <div className="text-[10px] text-slate-500">{log.actor}</div>
                   </div>
                 ))}
               </div>
-              <button className="text-[10px] font-bold text-blue-600 mt-4 hover:underline">View full activity &rarr;</button>
+              <button className="text-[10px] font-bold text-blue-600 mt-5 hover:underline flex items-center gap-1">View full activity &rarr;</button>
             </div>
             
           </div>
