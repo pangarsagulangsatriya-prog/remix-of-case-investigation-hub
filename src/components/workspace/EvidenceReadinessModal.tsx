@@ -1,10 +1,38 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { Loader2, ShieldCheck, X, ChevronRight, Check, ArrowLeft, ArrowRight, RotateCcw, AlertTriangle, FileText, ChevronLeft, HelpCircle, Camera, Mic, Paperclip } from "lucide-react";
+import { Loader2, ShieldCheck, X, ChevronRight, Check, ArrowLeft, ArrowRight, RotateCcw, AlertTriangle, FileText, ChevronLeft, HelpCircle, Camera, Mic, Paperclip, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useReadiness, ReadinessRun, EvidenceRequirementResult } from "@/hooks/useReadiness";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
+const InfoTooltip = ({ content, children, className }: { content: React.ReactNode, children?: React.ReactNode, className?: string }) => {
+  return (
+    <TooltipProvider delayDuration={150}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className={cn("inline-flex items-center gap-1.5 cursor-help group", className)}>
+            {children}
+            <Info className="h-3.5 w-3.5 text-slate-400 group-hover:text-blue-500 transition-colors shrink-0 outline-none" />
+          </span>
+        </TooltipTrigger>
+        <TooltipContent side="top" sideOffset={6} className="max-w-[280px] bg-slate-900 text-slate-50 border-slate-800 shadow-md p-3 rounded-lg z-[120]">
+          <p className="text-[12px] font-medium leading-relaxed">{content}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+};
+
+const getCategoryDisplayName = (name: string) => {
+  const lower = name.toLowerCase();
+  if (lower.includes("event truth")) return "Fakta Kejadian";
+  // For others like "Human Testimony" or "People", the user said English is fine.
+  // We'll strip the leading numbers like "01 EVENT TRUTH" -> "Event Truth"
+  return name.replace(/^\d+\s*/, "").replace(/\b\w/g, c => c.toUpperCase());
+};
+
 
 interface EvidenceReadinessModalProps {
   open: boolean;
@@ -24,6 +52,7 @@ export function EvidenceReadinessModal({ open, onOpenChange, onProceedToAnalysis
 
   const [checkSequence, setCheckSequence] = useState(0);
   const [hasEvidence, setHasEvidence] = useState(true); // Mock edge case: zero evidence
+  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
 
   const activeRun = view === "ARCHIVE" ? selectedRun : latestRun;
 
@@ -39,6 +68,17 @@ export function EvidenceReadinessModal({ open, onOpenChange, onProceedToAnalysis
       };
       const sorted = [...activeRun.results].sort((a, b) => getPriority(a) - getPriority(b));
       setActiveReqId(sorted[0].id);
+
+      // Auto-expand categories with issues
+      const newExpanded: Record<string, boolean> = {};
+      activeRun.categories?.forEach(cat => {
+        if (cat.status === "NOT_READY" || cat.status === "NEEDS_ATTENTION") {
+          newExpanded[cat.name] = true;
+        } else {
+          newExpanded[cat.name] = false;
+        }
+      });
+      setExpandedCategories(newExpanded);
     }
   }, [open, activeRun, activeReqId, latestRun?.status]);
 
@@ -128,10 +168,11 @@ export function EvidenceReadinessModal({ open, onOpenChange, onProceedToAnalysis
   // ----------------------------------------------------------------------
   const renderSummary = () => {
     if (!activeRun) return null;
-    const fulfilled = activeRun.results.filter(c => c.status === "FULFILLED").length;
-    const broken = activeRun.results.filter(c => c.status === "BROKEN").length;
-    const missing = activeRun.results.filter(c => c.status === "MISSING").length;
-    const needsVerif = activeRun.results.filter(c => c.status === "NEEDS_VERIFICATION").length;
+    const categoriesReady = activeRun.categories?.filter(c => c.status === "READY").length || 0;
+    const totalCategories = activeRun.categories?.length || 6;
+    
+    const needsAttentionItems = activeRun.results.filter(c => c.status === "BROKEN" || (c.status === "MISSING" && c.level === "REQUIRED")).length;
+    const needsVerifItems = activeRun.results.filter(c => c.status === "NEEDS_VERIFICATION").length;
     
     const isReady = activeRun.status === "READY";
     const isNeedsAttention = activeRun.status === "NEEDS_ATTENTION";
@@ -141,22 +182,70 @@ export function EvidenceReadinessModal({ open, onOpenChange, onProceedToAnalysis
     if (activeRun.previousRunId) {
       const prevRun = runs.find(r => r.id === activeRun.previousRunId);
       if (prevRun) {
-        const prevFulfilled = prevRun.results.filter(c => c.status === "FULFILLED").length;
-        const diff = fulfilled - prevFulfilled;
-        const label = diff > 0 ? "Membaik" : diff < 0 ? "Menurun" : "Tidak Berubah";
-        diffText = `Perkembangan dari Pemeriksaan #${prevRun.runNumber} — ${label} · ${prevFulfilled} dari ${prevRun.results.length} terpenuhi`;
+        const prevReady = prevRun.categories?.filter(c => c.status === "READY").length || 0;
+        const diff = categoriesReady - prevReady;
+        if (diff !== 0) {
+          diffText = `${diff > 0 ? '+' : ''}${diff} kategori siap dari Pemeriksaan #${prevRun.runNumber}`;
+        } else {
+          diffText = `Tidak ada perubahan kategori dari Pemeriksaan #${prevRun.runNumber}`;
+        }
       }
     }
 
+    // Calculate Analysis Readiness
+    const analysisStatus: Record<string, "Ready" | "Needs Verification" | "Limited Evidence" | "Insufficient Evidence"> = {};
+    const ALL_ANALYSES = ["Fact & Chronology", "Fact", "Actor", "PEEPO", "IPLS", "Chronology"];
+    
+    ALL_ANALYSES.forEach(analysis => {
+      // Find all categories that impact this analysis
+      const impactingCats = activeRun.categories?.filter(c => c.downstreamImpact.includes(analysis)) || [];
+      if (impactingCats.length === 0) return;
+      
+      let worstStatus = 0; // 0=Ready, 1=Needs Verif, 2=Limited, 3=Insufficient
+      
+      impactingCats.forEach(cat => {
+        if (cat.status === "NOT_READY") worstStatus = Math.max(worstStatus, 3);
+        else if (cat.status === "NEEDS_ATTENTION") {
+          // check if it's needs attention because of verification or missing recommended
+          const catItems = activeRun.results.filter(r => r.category === cat.name);
+          if (catItems.some(r => r.status === "NEEDS_VERIFICATION")) {
+            worstStatus = Math.max(worstStatus, 1);
+          } else {
+            worstStatus = Math.max(worstStatus, 2);
+          }
+        }
+      });
+      
+      if (worstStatus === 3) analysisStatus[analysis] = "Insufficient Evidence";
+      else if (worstStatus === 2) analysisStatus[analysis] = "Limited Evidence";
+      else if (worstStatus === 1) analysisStatus[analysis] = "Needs Verification";
+      else analysisStatus[analysis] = "Ready";
+    });
+
+    const readyCount = Object.values(analysisStatus).filter(s => s === "Ready").length;
+    const limitedCount = Object.values(analysisStatus).filter(s => s === "Limited Evidence").length;
+    const insufficientCount = Object.values(analysisStatus).filter(s => s === "Insufficient Evidence").length;
+
+    const summaryParts = [];
+    if (readyCount > 0) summaryParts.push(`${readyCount} siap`);
+    if (limitedCount > 0) summaryParts.push(`${limitedCount} terbatas`);
+    if (insufficientCount > 0) summaryParts.push(`${insufficientCount} belum cukup`);
+    
+    const summaryLine = summaryParts.join(" · ");
+
     return (
-      <div className="px-8 py-5 border-b border-slate-200 bg-slate-50/50 shrink-0">
-        <h4 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-3">GATE SUMMARY</h4>
+      <div className="px-6 py-4 border-b border-slate-200 bg-slate-50/50 shrink-0">
+        <h4 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-2 flex items-center">
+          <InfoTooltip content="Ringkasan kesiapan evidence untuk melanjutkan analisis AI. Bagian ini membantu melihat status umum case secara cepat.">
+            GATE SUMMARY
+          </InfoTooltip>
+        </h4>
         
-        <div className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm flex flex-col gap-4">
+        <div className="bg-white border border-slate-200 rounded-lg p-3.5 shadow-sm flex flex-col gap-3">
           <div className="flex items-center gap-4">
-            <span className="text-[12px] font-semibold text-slate-500 w-24">Status</span>
+            <span className="text-[12px] font-semibold text-slate-500 w-32">Status</span>
             <div className={cn(
-              "text-[11px] font-bold uppercase px-2.5 py-1 rounded-md border",
+              "text-[11px] font-bold uppercase px-2.5 py-1 rounded-md border transition-colors duration-300",
               isNotReady ? "bg-rose-50 text-rose-700 border-rose-200" :
               isNeedsAttention ? "bg-amber-50 text-amber-700 border-amber-200" :
               "bg-emerald-50 text-emerald-700 border-emerald-200"
@@ -165,37 +254,110 @@ export function EvidenceReadinessModal({ open, onOpenChange, onProceedToAnalysis
             </div>
           </div>
           
-          <div className="grid grid-cols-4 gap-4 pt-4 border-t border-slate-100">
+          <div className="grid grid-cols-3 gap-4 pt-3 border-t border-slate-100">
             <div>
-              <div className="text-[11px] font-semibold text-slate-500 mb-1">Terpenuhi</div>
-              <div className="text-[14px] font-bold text-slate-800">{fulfilled} / {activeRun.results.length}</div>
+              <div className="text-[11px] font-semibold text-slate-500 mb-0.5 flex items-center">
+                <InfoTooltip content="Menunjukkan berapa banyak kategori evidence yang sudah cukup siap digunakan dalam analisis.">
+                  Semantic Coverage
+                </InfoTooltip>
+              </div>
+              <div className="text-[14px] font-bold text-slate-800">{categoriesReady} / {totalCategories} siap</div>
             </div>
             <div>
-              <div className="text-[11px] font-semibold text-slate-500 mb-1">Bermasalah</div>
-              <div className="text-[14px] font-bold text-slate-800">{broken}</div>
+              <div className="text-[11px] font-semibold text-slate-500 mb-0.5 flex items-center">
+                <InfoTooltip content="Jumlah kategori atau evidence yang punya masalah dan perlu ditindaklanjuti.">
+                  Needs Attention
+                </InfoTooltip>
+              </div>
+              <div className="text-[14px] font-bold text-rose-600">{needsAttentionItems}</div>
             </div>
             <div>
-              <div className="text-[11px] font-semibold text-slate-500 mb-1">Belum Ada</div>
-              <div className="text-[14px] font-bold text-slate-800">{missing}</div>
-            </div>
-            <div>
-              <div className="text-[11px] font-semibold text-slate-500 mb-1">Perlu Verifikasi</div>
-              <div className="text-[14px] font-bold text-slate-800">{needsVerif}</div>
+              <div className="text-[11px] font-semibold text-slate-500 mb-0.5 flex items-center">
+                <InfoTooltip content="Jumlah evidence yang terdeteksi sistem tetapi masih perlu konfirmasi dari pengguna.">
+                  Needs Verification
+                </InfoTooltip>
+              </div>
+              <div className="text-[14px] font-bold text-amber-600">{needsVerifItems}</div>
             </div>
           </div>
 
           {diffText && (
-             <div className="text-[11px] font-medium text-slate-500 pt-3 border-t border-slate-100">
+             <div className="text-[11px] font-medium text-slate-500 pt-2 border-t border-slate-100">
                {diffText}
              </div>
           )}
         </div>
         
-        <p className="text-[12px] text-slate-600 mt-4 leading-relaxed">
-          {isNotReady ? "Beberapa requirement wajib belum tersedia atau belum dapat digunakan. Periksa requirement di bawah sebelum melanjutkan ke Analysis." :
-           isNeedsAttention ? "Beberapa requirement yang disarankan belum terpenuhi sepenuhnya." : 
-           "Seluruh standard requirement telah terpenuhi."}
-        </p>
+        {/* KESIAPAN ANALISIS */}
+        <div className="mt-3 bg-white border border-slate-200 rounded-lg p-3.5 shadow-sm">
+          <div className="flex items-start justify-between mb-3">
+            <div>
+              <h4 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest flex items-center mb-0.5">
+                <InfoTooltip content="Ringkasan kesiapan tiap modul analisis berdasarkan evidence yang sudah tersedia saat ini.">
+                  KESIAPAN ANALISIS
+                </InfoTooltip>
+              </h4>
+              <p className="text-[10px] text-slate-400 font-medium">Berdasarkan evidence saat ini</p>
+            </div>
+            <div className="text-[11px] font-semibold text-slate-600 bg-slate-50 px-2.5 py-1 rounded border border-slate-100 shadow-sm transition-all duration-300">
+              {summaryLine || "Belum dievaluasi"}
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-3 gap-2">
+            {Object.entries(analysisStatus).map(([analysis, status]) => {
+              let localizedAnalysis = analysis;
+              if (analysis === "Fact & Chronology") localizedAnalysis = "Fakta & Kronologi";
+              else if (analysis === "Fact") localizedAnalysis = "Fakta";
+              else if (analysis === "Actor") localizedAnalysis = "Aktor";
+              else if (analysis === "Chronology") localizedAnalysis = "Kronologi";
+
+              let analysisTooltip = "";
+              if (analysis === "Fact & Chronology") analysisTooltip = "Modul ini menyusun fakta kejadian dan urutan waktunya berdasarkan bukti lapangan dan sumber pendukung.";
+              else if (analysis === "Fact") analysisTooltip = "Modul ini membantu menyusun fakta-fakta utama yang relevan dengan kejadian.";
+              else if (analysis === "Actor") analysisTooltip = "Modul ini membantu mengenali pihak yang terlibat, peran, dan hubungan antarorang dalam kejadian.";
+              else if (analysis === "PEEPO") analysisTooltip = "Modul ini membantu analisis dari sisi People, Environment, Equipment, Process, dan Organization.";
+              else if (analysis === "IPLS") analysisTooltip = "Modul ini membantu analisis lapisan pengendalian dan titik kelemahan dalam sistem kerja.";
+              else if (analysis === "Chronology") analysisTooltip = "Modul ini fokus pada urutan kejadian dari awal sampai akhir berdasarkan evidence yang tersedia.";
+
+              let localizedStatus = "";
+              if (status === "Ready") localizedStatus = "Siap";
+              else if (status === "Limited Evidence") localizedStatus = "Terbatas";
+              else if (status === "Insufficient Evidence") localizedStatus = "Belum Cukup";
+              else if (status === "Needs Verification") localizedStatus = "Perlu Verifikasi";
+
+              let statusTooltip = "";
+              if (status === "Ready") statusTooltip = "Evidence untuk modul ini sudah cukup mendukung analisis.";
+              else if (status === "Limited Evidence") statusTooltip = "Modul ini bisa berjalan, tetapi evidence yang tersedia masih terbatas.";
+              else if (status === "Insufficient Evidence") statusTooltip = "Evidence untuk modul ini belum cukup untuk menghasilkan analisis yang kuat.";
+              else if (status === "Needs Verification") statusTooltip = "Masih ada evidence yang menunggu konfirmasi pengguna.";
+
+              return (
+                <div key={analysis} className="flex flex-col bg-slate-50/50 border border-slate-200 px-2 py-1.5 rounded-md hover:border-slate-300 transition-colors group cursor-default">
+                  <div className="flex items-center gap-1 mb-1">
+                    <span className="text-[10px] font-bold text-slate-700 truncate">{localizedAnalysis}</span>
+                    <InfoTooltip content={analysisTooltip} className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                  <TooltipProvider delayDuration={150}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className={cn(
+                          "text-[9px] font-bold uppercase w-fit outline-none transition-colors",
+                          status === "Ready" ? "text-emerald-600" :
+                          status === "Insufficient Evidence" ? "text-rose-600" :
+                          "text-amber-600"
+                        )}>{localizedStatus}</span>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" sideOffset={6} className="max-w-[280px] bg-slate-900 text-slate-50 border-slate-800 shadow-md p-3 rounded-lg z-[120]">
+                        <p className="text-[12px] font-medium leading-relaxed">{statusTooltip}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </div>
     );
   };
@@ -208,58 +370,133 @@ export function EvidenceReadinessModal({ open, onOpenChange, onProceedToAnalysis
     return (
       <div className="w-[50%] border-r border-slate-200 flex flex-col bg-white overflow-hidden">
         <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 shrink-0">
-          <h4 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">
-            STANDARD EVIDENCE REQUIREMENTS
+          <h4 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest flex items-center">
+            <InfoTooltip content="Daftar kategori evidence yang dibutuhkan sistem untuk menilai kesiapan analisis secara semantik, bukan sekadar jumlah file.">
+              SEMANTIC EVIDENCE REQUIREMENTS
+            </InfoTooltip>
           </h4>
-          <span className="text-[11px] text-slate-400 font-medium">{activeRun.results.length} requirements</span>
+          <span className="text-[11px] text-slate-400 font-medium">{activeRun.categories?.length || 0} categories</span>
         </div>
         
-        <div className="flex-1 overflow-auto p-4 space-y-6">
-          {Object.entries(groupedResults).map(([category, items]) => (
-            <div key={category} className="space-y-2">
-              <h5 className="text-[11px] font-bold text-slate-700 uppercase tracking-widest px-2">
-                {category}
-              </h5>
-              <div className="space-y-1">
-                {items.map(req => {
-                  const isActive = req.id === activeReqId;
-                  return (
-                    <div 
-                      key={req.id}
-                      onClick={() => setActiveReqId(req.id)}
-                      className={cn(
-                        "relative flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors border group",
-                        isActive ? "bg-slate-50 border-slate-200 shadow-sm" : "bg-white border-transparent hover:bg-slate-50/50 hover:border-slate-100"
-                      )}
-                    >
-                      <div className={cn("absolute left-0 top-2 bottom-2 w-[3px] rounded-r-md", getIndicatorColor(req.status))} />
-                      
-                      <div className="flex-1 min-w-0 pl-2">
-                        <div className="text-[13px] font-bold text-slate-800 truncate mb-1 group-hover:text-slate-900">
-                          {req.label}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className={cn("text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded-sm border", req.level === "REQUIRED" ? "text-slate-700 border-slate-300" : "text-slate-500 border-slate-200")}>
-                            {translateLevel(req.level)}
-                          </span>
-                          <span className="text-[11px] text-slate-500 truncate">
-                            {req.matchedFiles.length > 0 ? req.matchedFiles[0].name : "Belum ada file"}
-                          </span>
-                        </div>
-                      </div>
-                      
-                      <div className="shrink-0 flex items-center gap-3">
-                        <span className={cn("text-[9px] font-bold uppercase tracking-widest px-2 py-1 rounded-md border", getStatusColor(req.status))}>
-                          {translateStatus(req.status)}
-                        </span>
-                        <ChevronRight className={cn("h-4 w-4 transition-colors", isActive ? "text-slate-800" : "text-slate-300")} />
+        <div className="flex-1 overflow-auto p-4 space-y-4">
+          {activeRun.categories?.map(category => {
+            const isExpanded = expandedCategories[category.name];
+            const items = activeRun.results.filter(r => r.category === category.name);
+            const toggleCategory = () => setExpandedCategories(prev => ({ ...prev, [category.name]: !isExpanded }));
+            
+            let catTooltip = "";
+            const catNameLower = category.name.toLowerCase();
+            if (catNameLower.includes("event truth")) catTooltip = "Evidence yang membantu memastikan apa yang terjadi, kapan terjadi, dan di mana kejadian berlangsung.";
+            else if (catNameLower.includes("human testimony")) catTooltip = "Evidence berupa keterangan manusia, seperti wawancara, BAP, audio, atau transkrip.";
+            else if (catNameLower.includes("people")) catTooltip = "Evidence yang menjelaskan siapa saja yang terlibat, peran mereka, dan konteks personel yang relevan.";
+            else if (catNameLower.includes("part") || catNameLower.includes("technical")) catTooltip = "Evidence teknis terkait alat, komponen, kondisi peralatan, inspeksi, atau riwayat perawatan.";
+            else if (catNameLower.includes("position")) catTooltip = "Evidence yang menunjukkan posisi, tata letak, hubungan ruang, atau lokasi kejadian secara visual.";
+            else if (catNameLower.includes("paper") || catNameLower.includes("control")) catTooltip = "Evidence berupa dokumen pengendalian kerja, seperti SOP, IK, JSA, HIRA, permit, atau dokumen kerja lain.";
+
+            let catStatusTooltip = "";
+            if (category.status === "READY") catStatusTooltip = "Kategori ini sudah memiliki evidence yang cukup untuk mendukung analisis terkait.";
+            else if (category.status === "NEEDS_ATTENTION") catStatusTooltip = "Ada evidence pada kategori ini, tetapi ada masalah yang perlu dicek atau diperbaiki.";
+            else if (category.status === "NOT_READY") catStatusTooltip = "Kategori ini belum memiliki evidence yang cukup dan masih memerlukan pelengkapan.";
+
+            return (
+              <div key={category.name} className="flex flex-col border border-slate-200 rounded-lg overflow-hidden transition-all bg-white shadow-sm">
+                {/* Category Header */}
+                <div 
+                  className="flex items-center justify-between p-3.5 bg-slate-50/80 hover:bg-slate-100/50 cursor-pointer transition-colors"
+                  onClick={toggleCategory}
+                >
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex items-center gap-2">
+                      <h5 className="text-[12px] font-bold text-slate-800 uppercase tracking-widest flex items-center">
+                        <InfoTooltip content={catTooltip}>
+                          {getCategoryDisplayName(category.name)}
+                        </InfoTooltip>
+                      </h5>
+                      <span className="text-[11px] text-slate-500 font-medium bg-white px-2 py-0.5 rounded border border-slate-200 shadow-sm">{category.fulfilledCount}/{category.totalCount} siap</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Impact:</span>
+                      <div className="flex flex-wrap gap-1">
+                        {category.downstreamImpact.map(imp => {
+                          let impTooltip = `Evidence pada kategori ini digunakan untuk membantu analisis ${imp}.`;
+                          if (imp === "Fact & Chronology") impTooltip = "Evidence pada kategori ini digunakan untuk membantu penyusunan fakta dan kronologi kejadian.";
+                          else if (imp === "PEEPO") impTooltip = "Evidence pada kategori ini akan dipakai dalam analisis PEEPO.";
+                          else if (imp === "IPLS") impTooltip = "Evidence pada kategori ini akan dipakai dalam analisis IPLS.";
+                          
+                          return (
+                            <TooltipProvider delayDuration={150} key={imp}>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span className="text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded-sm bg-blue-50 text-blue-700 border border-blue-100 cursor-help outline-none">
+                                    {imp}
+                                  </span>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" sideOffset={6} className="max-w-[280px] bg-slate-900 text-slate-50 border-slate-800 shadow-md p-3 rounded-lg z-[120]">
+                                  <p className="text-[12px] font-medium leading-relaxed">{impTooltip}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          );
+                        })}
                       </div>
                     </div>
-                  );
-                })}
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className={cn(
+                      "text-[10px] font-bold uppercase px-2 py-1 rounded-md border",
+                      category.status === "READY" ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
+                      category.status === "NEEDS_ATTENTION" ? "bg-amber-50 text-amber-700 border-amber-200" :
+                      "bg-rose-50 text-rose-700 border-rose-200"
+                    )}>
+                      {category.status === "READY" ? "SIAP" : category.status === "NEEDS_ATTENTION" ? "PERLU PERHATIAN" : "BELUM SIAP"}
+                    </span>
+                    <ChevronRight className={cn("h-4 w-4 text-slate-400 transition-transform", isExpanded ? "rotate-90" : "")} />
+                  </div>
+                </div>
+
+                {/* Items */}
+                <div className={cn("flex-col divide-y divide-slate-100 border-t border-slate-100", isExpanded ? "flex" : "hidden")}>
+                  {items.length === 0 && (
+                     <div className="p-4 text-[12px] text-slate-500 text-center">
+                       Belum ada evidence untuk kategori ini.
+                     </div>
+                  )}
+                  {items.map(req => {
+                    const isActive = req.id === activeReqId;
+                    return (
+                      <div 
+                        key={req.id}
+                        onClick={() => setActiveReqId(req.id)}
+                        className={cn(
+                          "relative flex items-center gap-3 p-3 cursor-pointer transition-colors group",
+                          isActive ? "bg-blue-50/30" : "bg-white hover:bg-slate-50/50"
+                        )}
+                      >
+                        <div className={cn("absolute left-0 top-0 bottom-0 w-[3px]", isActive ? getIndicatorColor(req.status) : "bg-transparent group-hover:bg-slate-200")} />
+                        
+                        <div className="flex-1 min-w-0 pl-2">
+                          <div className={cn("text-[13px] font-bold truncate mb-1 transition-colors", isActive ? "text-blue-900" : "text-slate-700 group-hover:text-slate-900")}>
+                            {req.label}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[11px] text-slate-500 truncate">
+                              {req.matchedFiles.length > 0 ? req.matchedFiles.map(f => f.name).join(", ") : "Belum ada file"}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        <div className="shrink-0">
+                          <span className={cn("text-[9px] font-bold uppercase tracking-widest px-2 py-1 rounded-md border", getStatusColor(req.status))}>
+                            {translateStatus(req.status)}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     );
@@ -278,43 +515,91 @@ export function EvidenceReadinessModal({ open, onOpenChange, onProceedToAnalysis
       <div className="w-[50%] flex flex-col bg-[#f8fafc] overflow-hidden">
         <div className="px-8 py-5 border-b border-slate-200 bg-white shrink-0">
           <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">
-            REQUIREMENT DETAIL · {req.id.toUpperCase()}
+            {getCategoryDisplayName(req.category)}
           </h4>
           <h2 className="text-[16px] font-bold text-slate-900 uppercase tracking-wide mb-3 leading-snug">
             {req.label}
           </h2>
           <div className="flex items-center gap-2">
-            <span className={cn("text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-md border", req.level === "REQUIRED" ? "text-slate-700 border-slate-300" : "text-slate-500 border-slate-200")}>
-              {translateLevel(req.level)}
-            </span>
-            <span className={cn("text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-md border", getStatusColor(req.status))}>
-              {translateStatus(req.status)}
-            </span>
+            <TooltipProvider delayDuration={150}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className={cn("text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-md border cursor-help outline-none", getStatusColor(req.status))}>
+                    {translateStatus(req.status)}
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent side="top" sideOffset={6} className="max-w-[280px] bg-slate-900 text-slate-50 border-slate-800 shadow-md p-3 rounded-lg z-[120]">
+                  <p className="text-[12px] font-medium leading-relaxed">
+                    {req.status === "FULFILLED" ? "Evidence sudah tersedia dan berhasil dibaca atau dipakai sistem." : 
+                     req.status === "MISSING" ? "Sistem belum menemukan evidence yang sesuai untuk kebutuhan ini." : 
+                     req.status === "BROKEN" ? "Evidence tersedia, tetapi belum bisa digunakan karena ada kendala seperti file rusak, gagal diproses, atau isi tidak terbaca." : 
+                     req.status === "NEEDS_VERIFICATION" ? "Sistem mendeteksi evidence yang mungkin sesuai, tetapi masih butuh konfirmasi pengguna." : ""}
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
         </div>
 
         <div className="flex-1 overflow-auto p-8 space-y-8">
           
           <div className="space-y-2">
-            <h5 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">FILE YANG DIBUTUHKAN</h5>
+            <h5 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest flex items-center">
+              <InfoTooltip content="Menjelaskan jenis evidence yang dicari sistem untuk memenuhi kebutuhan ini.">
+                EVIDENCE YANG DIBUTUHKAN
+              </InfoTooltip>
+            </h5>
             <div className="text-[13px] text-slate-700 leading-relaxed bg-white border border-slate-200 p-4 rounded-lg shadow-sm">
               {req.requiredDesc || "Standard requirement description."}
             </div>
           </div>
 
           <div className="space-y-2">
-            <h5 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">FILE YANG DITEMUKAN</h5>
+            <h5 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest flex items-center">
+              <InfoTooltip content="Menampilkan file atau dokumen yang berhasil ditemukan dan dikaitkan ke kebutuhan evidence ini.">
+                EVIDENCE YANG DITEMUKAN
+              </InfoTooltip>
+            </h5>
             {req.matchedFiles.length > 0 ? (
               <div className="flex flex-col gap-2">
                 {req.matchedFiles.map(mf => (
-                  <div key={mf.id} className="flex items-start gap-3 bg-white border border-slate-200 p-3 rounded-lg shadow-sm">
-                    <FileText className="h-4 w-4 text-slate-400 mt-0.5" />
-                    <div className="flex flex-col">
-                      <span className="text-[13px] font-semibold text-slate-800">{mf.name}</span>
-                      <span className="text-[11px] text-slate-500">
-                        {mf.processingStatus === "DONE" ? "Successfully Processed" : mf.processingStatus === "ERROR" ? "Processing Error" : "Unknown State"}
-                      </span>
+                  <div key={mf.id} className="flex flex-col gap-3 bg-white border border-slate-200 p-4 rounded-lg shadow-sm">
+                    <div className="flex items-start gap-3">
+                      <FileText className="h-4 w-4 text-slate-400 mt-0.5" />
+                      <div className="flex flex-col">
+                        <span className="text-[13px] font-semibold text-slate-800">{mf.name}</span>
+                        <span className="text-[11px] text-slate-500">
+                          Status: <span className="font-bold">{mf.processingStatus === "DONE" ? "Success" : mf.processingStatus === "ERROR" ? "Processing Error" : "Unknown State"}</span>
+                        </span>
+                      </div>
                     </div>
+                    {req.status === "NEEDS_VERIFICATION" && mf.aiMatchCategory && (
+                      <div className="mt-2 pt-3 border-t border-slate-100 flex flex-col gap-3">
+                        <div className="flex flex-col">
+                          <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1">AI MENDETEKSI</span>
+                          <span className="text-[12px] text-slate-700 font-medium">Possible category: <span className="font-bold">{mf.aiMatchCategory}</span></span>
+                          <span className="text-[11px] text-slate-400">Confidence: {mf.aiMatchConfidence || "Medium"}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="h-8 text-[11px] font-semibold bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 hover:text-emerald-800"
+                            onClick={() => confirmVerification(req.id, true)}
+                          >
+                            Konfirmasi Evidence
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="h-8 text-[11px] font-semibold text-slate-600 hover:text-rose-600"
+                            onClick={() => confirmVerification(req.id, false)}
+                          >
+                            Bukan Evidence Ini
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -325,41 +610,54 @@ export function EvidenceReadinessModal({ open, onOpenChange, onProceedToAnalysis
             )}
           </div>
 
-          {req.issue && (
+          {req.issue && req.status !== "NEEDS_VERIFICATION" && (
              <div className="space-y-2">
-               <h5 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">HASIL PEMERIKSAAN</h5>
+               <h5 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest flex items-center">
+                 <InfoTooltip content="Menjelaskan hasil pengecekan sistem terhadap evidence yang ditemukan.">
+                   HASIL PEMERIKSAAN
+                 </InfoTooltip>
+               </h5>
                <div className="text-[13px] text-slate-700 leading-relaxed bg-white border border-slate-200 p-4 rounded-lg shadow-sm">
                  {req.issue}
                </div>
              </div>
           )}
 
-          {req.impact && (
-             <div className="space-y-2">
-               <h5 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">DAMPAK KE ANALISIS</h5>
-               <div className="text-[13px] text-slate-700 leading-relaxed bg-white border border-slate-200 p-4 rounded-lg shadow-sm border-l-2 border-l-amber-400">
-                 {req.impact}
-               </div>
-             </div>
-          )}
+          <div className="space-y-2">
+            <h5 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest flex items-center">
+              <InfoTooltip content="Menjelaskan modul analisis mana yang terpengaruh oleh kondisi evidence ini.">
+                DAMPAK KE ANALISIS
+              </InfoTooltip>
+            </h5>
+            <div className="text-[13px] text-slate-700 leading-relaxed bg-white border border-slate-200 p-4 rounded-lg shadow-sm border-l-2 border-l-blue-400 flex flex-col gap-3">
+              <div className="flex flex-wrap gap-1.5">
+                {req.downstreamImpact.map(imp => {
+                  let impTooltip = `Evidence pada kategori ini digunakan untuk membantu analisis ${imp}.`;
+                  if (imp === "Fact & Chronology") impTooltip = "Evidence pada kategori ini digunakan untuk membantu penyusunan fakta dan kronologi kejadian.";
+                  else if (imp === "PEEPO") impTooltip = "Evidence pada kategori ini akan dipakai dalam analisis PEEPO.";
+                  else if (imp === "IPLS") impTooltip = "Evidence pada kategori ini akan dipakai dalam analisis IPLS.";
 
-          {req.recommendation && (
-             <div className="space-y-2">
-               <h5 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">REKOMENDASI</h5>
-               <div className="text-[13px] font-semibold text-slate-900 leading-relaxed bg-white border border-slate-200 p-4 rounded-lg shadow-sm">
-                 {req.recommendation}
-               </div>
-             </div>
-          )}
-          
-          {req.status === "FULFILLED" && !req.recommendation && (
-             <div className="space-y-2">
-               <h5 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">STATUS</h5>
-               <div className="text-[13px] font-semibold text-slate-900 leading-relaxed bg-white border border-slate-200 p-4 rounded-lg shadow-sm">
-                 Tidak ada tindakan lanjutan.
-               </div>
-             </div>
-          )}
+                  return (
+                    <TooltipProvider delayDuration={150} key={imp}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-sm bg-blue-50 text-blue-700 border border-blue-100 cursor-help outline-none">
+                            {imp}
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" sideOffset={6} className="max-w-[280px] bg-slate-900 text-slate-50 border-slate-800 shadow-md p-3 rounded-lg z-[120]">
+                          <p className="text-[12px] font-medium leading-relaxed">{impTooltip}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  );
+                })}
+              </div>
+              {req.impact && (
+                <span className="text-[12px]">{req.impact}</span>
+              )}
+            </div>
+          </div>
 
         </div>
       </div>

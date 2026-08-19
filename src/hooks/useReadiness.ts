@@ -17,10 +17,13 @@ export interface EvidenceRequirementResult {
   category: string;
   level: RequirementLevel;
   status: RequirementStatus;
+  downstreamImpact: string[];
   matchedFiles: {
     id: string;
     name: string;
     processingStatus: string;
+    aiMatchConfidence?: "High" | "Medium" | "Low";
+    aiMatchCategory?: string;
   }[];
   requiredDesc?: string;
   issue?: string;
@@ -51,6 +54,13 @@ export interface ReadinessRun {
   evidenceSnapshot: EvidenceSnapshot;
   results: EvidenceRequirementResult[];
   previousRunId?: string;
+  categories: {
+    name: string;
+    status: ReadinessStatus;
+    fulfilledCount: number;
+    totalCount: number;
+    downstreamImpact: string[];
+  }[];
 }
 
 export interface AnalysisOverride {
@@ -65,8 +75,8 @@ export interface AnalysisOverride {
   brokenRequired: string[];
 }
 
-const STORAGE_KEY = "investigation_readiness_state_v5";
-const EVENT_KEY = "readiness_state_changed_v5";
+const STORAGE_KEY = "investigation_readiness_state_v6";
+const EVENT_KEY = "readiness_state_changed_v6";
 
 interface ReadinessState {
   runs: ReadinessRun[];
@@ -115,10 +125,85 @@ export const useReadiness = () => {
     ? (state.isOutdated ? "OUTDATED" : latestRun.status)
     : "NOT_CHECKED";
 
+  const confirmVerification = useCallback((reqId: string, isMatch: boolean) => {
+    const currentState = loadState();
+    if (!currentState.runs || currentState.runs.length === 0) return;
+    
+    const latest = currentState.runs[0];
+    if (latest.status === "CHECKING") return;
+    
+    const updatedResults = latest.results.map(req => {
+      if (req.id === reqId) {
+        return {
+          ...req,
+          status: (isMatch ? "FULFILLED" : "MISSING") as RequirementStatus,
+          issue: undefined,
+          matchedFiles: isMatch ? req.matchedFiles : []
+        };
+      }
+      return req;
+    });
+    
+    const { categories, finalStatus } = evaluateReadiness(updatedResults);
+    
+    const updatedRun: ReadinessRun = {
+      ...latest,
+      results: updatedResults,
+      categories,
+      status: finalStatus
+    };
+    
+    const newRuns = [updatedRun, ...currentState.runs.slice(1)];
+    saveState({ ...currentState, runs: newRuns });
+  }, []);
+
+  const evaluateReadiness = (results: EvidenceRequirementResult[]) => {
+    const CATEGORIES = [
+      { name: "01 EVENT TRUTH", impact: ["Fact & Chronology"] },
+      { name: "02 HUMAN TESTIMONY", impact: ["Fact", "Actor", "PEEPO"] },
+      { name: "03 PEOPLE", impact: ["Actor", "PEEPO"] },
+      { name: "04 PART / TECHNICAL", impact: ["Fact", "PEEPO", "IPLS"] },
+      { name: "05 POSITION", impact: ["Fact", "Chronology", "PEEPO"] },
+      { name: "06 PAPER / CONTROL", impact: ["PEEPO", "IPLS"] }
+    ];
+
+    const categories = CATEGORIES.map(cat => {
+      const catResults = results.filter(r => r.category === cat.name);
+      const totalCount = catResults.length;
+      const fulfilledCount = catResults.filter(r => r.status === "FULFILLED").length;
+      const missingRequired = catResults.filter(r => r.level === "REQUIRED" && r.status === "MISSING").length;
+      const brokenRequired = catResults.filter(r => r.level === "REQUIRED" && r.status === "BROKEN").length;
+      const needsVerification = catResults.filter(r => r.status === "NEEDS_VERIFICATION").length;
+      
+      let status: ReadinessStatus = "READY";
+      if (missingRequired > 0 || brokenRequired > 0 || catResults.some(r => r.status === "BROKEN")) {
+        status = "NOT_READY";
+      } else if (needsVerification > 0 || catResults.some(r => r.status === "MISSING")) {
+        status = "NEEDS_ATTENTION";
+      }
+      
+      return {
+        name: cat.name,
+        status,
+        fulfilledCount,
+        totalCount,
+        downstreamImpact: cat.impact
+      };
+    });
+
+    let finalStatus: ReadinessStatus = "READY";
+    if (categories.some(c => c.status === "NOT_READY")) {
+      finalStatus = "NOT_READY";
+    } else if (categories.some(c => c.status === "NEEDS_ATTENTION")) {
+      finalStatus = "NEEDS_ATTENTION";
+    }
+    
+    return { categories, finalStatus };
+  };
+
   const triggerManualCheck = useCallback(() => {
     const currentState = loadState();
     
-    // Create checking run
     const ts = new Date().toISOString();
     const runNumber = currentState.runs.length + 1;
     const previousRunId = currentState.runs.length > 0 ? currentState.runs[0].id : undefined;
@@ -133,16 +218,17 @@ export const useReadiness = () => {
         role: "Lead Investigator"
       },
       startedAt: ts,
-      completedAt: "", // empty while checking
+      completedAt: "", 
       status: "CHECKING",
       evidenceSnapshot: {
-        totalFiles: 2,
-        completedFiles: 1,
+        totalFiles: 4,
+        completedFiles: 3,
         errorFiles: 1,
         processingFiles: 0,
-        fileIds: ["file-1", "file-2"]
+        fileIds: ["file-1", "file-2", "file-3", "file-4"]
       },
       results: [],
+      categories: [],
       previousRunId
     };
 
@@ -154,136 +240,145 @@ export const useReadiness = () => {
       
       const dummyResults: EvidenceRequirementResult[] = [
         {
-          id: "req-1",
+          id: "req-et-1",
           label: "Video kejadian lapangan",
-          category: "BUKTI LAPANGAN",
+          category: "01 EVENT TRUTH",
           level: "REQUIRED",
           status: "BROKEN",
+          downstreamImpact: ["Fact & Chronology"],
           matchedFiles: [
             { id: "file-1", name: "HOPPER_1_converted.mp4", processingStatus: "ERROR" }
           ],
           requiredDesc: "Video utama yang merekam kejadian atau kondisi area lapangan.",
-          issue: "File tersedia, namun sistem gagal membaca konten video.",
-          impact: "Informasi visual dan audio dari kejadian utama tidak dapat digunakan\nuntuk menyusun kronologi dan memverifikasi fakta.",
-          recommendation: "Unggah ulang file asli atau gunakan versi video lain yang dapat diproses."
+          issue: "File ditemukan, namun konten video belum berhasil diproses.",
+          impact: "Rekonstruksi urutan kejadian belum dapat menggunakan evidence video ini.",
         },
         {
-          id: "req-2",
+          id: "req-et-2",
+          label: "CCTV",
+          category: "01 EVENT TRUTH",
+          level: "RECOMMENDED",
+          status: "MISSING",
+          downstreamImpact: ["Fact & Chronology"],
+          matchedFiles: [],
+          requiredDesc: "Rekaman CCTV di sekitar lokasi kejadian.",
+          issue: "Belum ada rekaman CCTV yang tersedia.",
+        },
+        {
+          id: "req-et-3",
           label: "Foto pengamatan lapangan",
-          category: "BUKTI LAPANGAN",
+          category: "01 EVENT TRUTH",
           level: "REQUIRED",
-          status: "FULFILLED",
+          status: "NEEDS_VERIFICATION",
+          downstreamImpact: ["Fact & Chronology"],
           matchedFiles: [
-            { id: "file-2", name: "Screenshot 2026-07-01 at 10.20.17.png", processingStatus: "DONE" }
+            { 
+              id: "file-2", 
+              name: "Screenshot_2026-07-01.png", 
+              processingStatus: "DONE",
+              aiMatchConfidence: "High",
+              aiMatchCategory: "Event Truth → Scene Photo"
+            }
           ],
           requiredDesc: "Dokumentasi foto yang memperlihatkan kondisi peralatan, area, atau posisi setelah kejadian.",
-          issue: "File tersedia, dapat dibaca, dan sesuai dengan requirement\nfoto pengamatan lapangan.",
-          impact: "",
-          recommendation: "Tidak ada tindakan lanjutan."
+          issue: "Sistem mendeteksi foto lapangan, namun perlu konfirmasi dari investigator.",
         },
         {
-          id: "req-3",
+          id: "req-et-4",
+          label: "Reliable event timestamp",
+          category: "01 EVENT TRUTH",
+          level: "REQUIRED",
+          status: "FULFILLED",
+          downstreamImpact: ["Fact & Chronology"],
+          matchedFiles: [
+            { id: "file-3", name: "GPS_Log_HD785.csv", processingStatus: "DONE" }
+          ],
+        },
+        {
+          id: "req-ht-1",
           label: "BAP / Berita Acara Pemeriksaan",
-          category: "DOKUMEN FORMAL",
+          category: "02 HUMAN TESTIMONY",
+          level: "REQUIRED",
+          status: "FULFILLED",
+          downstreamImpact: ["Fact", "Actor", "PEEPO"],
+          matchedFiles: [
+            { id: "file-4", name: "BAP_Operator_HD785.pdf", processingStatus: "DONE" }
+          ],
+        },
+        {
+          id: "req-ht-2",
+          label: "Audio wawancara",
+          category: "02 HUMAN TESTIMONY",
+          level: "RECOMMENDED",
+          status: "FULFILLED",
+          downstreamImpact: ["Fact", "Actor", "PEEPO"],
+          matchedFiles: [
+            { id: "file-5", name: "wawancara_operator_01.mp3", processingStatus: "DONE" }
+          ],
+        },
+        {
+          id: "req-ht-3",
+          label: "Transcript wawancara",
+          category: "02 HUMAN TESTIMONY",
+          level: "RECOMMENDED",
+          status: "FULFILLED",
+          downstreamImpact: ["Fact", "Actor", "PEEPO"],
+          matchedFiles: [
+            { id: "file-6", name: "transcript_operator_01.pdf", processingStatus: "DONE" }
+          ],
+        },
+        {
+          id: "req-ppl-1",
+          label: "Identity & Competency",
+          category: "03 PEOPLE",
           level: "REQUIRED",
           status: "MISSING",
+          downstreamImpact: ["Actor", "PEEPO"],
           matchedFiles: [],
-          requiredDesc: "BAP atau dokumen pemeriksaan resmi yang mencatat hasil klarifikasi awal.",
-          issue: "Belum ada file yang dipetakan ke requirement ini.",
-          impact: "Keterangan formal dari pihak terkait belum tersedia untuk verifikasi silang.",
-          recommendation: "Unggah BAP atau dokumen pemeriksaan resmi sebelum Analysis dijalankan."
+          issue: "Dokumen identitas dan kompetensi belum tersedia.",
         },
         {
-          id: "req-4",
-          label: "Dokumen kronologi awal / laporan awal",
-          category: "DOKUMEN FORMAL",
+          id: "req-pt-1",
+          label: "Component / equipment photo",
+          category: "04 PART / TECHNICAL",
+          level: "RECOMMENDED",
+          status: "MISSING",
+          downstreamImpact: ["Fact", "PEEPO", "IPLS"],
+          matchedFiles: [],
+        },
+        {
+          id: "req-pos-1",
+          label: "Layout / map",
+          category: "05 POSITION",
+          level: "REQUIRED",
+          status: "FULFILLED",
+          downstreamImpact: ["Fact", "Chronology", "PEEPO"],
+          matchedFiles: [
+            { id: "file-7", name: "Site_Plan_Pit_A.pdf", processingStatus: "DONE" }
+          ],
+        },
+        {
+          id: "req-pc-1",
+          label: "SOP / IK",
+          category: "06 PAPER / CONTROL",
           level: "REQUIRED",
           status: "MISSING",
+          downstreamImpact: ["PEEPO", "IPLS"],
           matchedFiles: [],
-          requiredDesc: "Dokumen tertulis yang mendeskripsikan runtutan kejadian secara kronologis dari laporan awal.",
-          issue: "Belum ada file yang dipetakan ke requirement ini.",
-          impact: "Kerangka dasar kronologi untuk memandu proses investigasi tidak tersedia.",
-          recommendation: "Unggah laporan awal atau dokumen kronologi resmi."
-        },
-        {
-          id: "req-5",
-          label: "Audio wawancara operator",
-          category: "WAWANCARA & KOMUNIKASI",
-          level: "RECOMMENDED",
-          status: "MISSING",
-          matchedFiles: [],
-          requiredDesc: "Rekaman suara dari wawancara langsung dengan operator alat berat yang bertugas.",
-          issue: "Belum ada file yang dipetakan ke requirement ini.",
-          impact: "Konteks operasional langsung dari sudut pandang operator tidak dapat dianalisis.",
-          recommendation: "Unggah rekaman wawancara operator (opsional tapi disarankan)."
-        },
-        {
-          id: "req-6",
-          label: "Audio wawancara saksi",
-          category: "WAWANCARA & KOMUNIKASI",
-          level: "RECOMMENDED",
-          status: "MISSING",
-          matchedFiles: [],
-          requiredDesc: "Rekaman suara dari saksi mata atau rekan kerja di sekitar lokasi kejadian.",
-          issue: "Belum ada file yang dipetakan ke requirement ini.",
-          impact: "Perspektif pihak ketiga untuk menguatkan atau menantang kronologi utama tidak tersedia.",
-          recommendation: "Unggah rekaman wawancara saksi mata jika ada."
-        },
-        {
-          id: "req-7",
-          label: "Data waktu kejadian / timestamp pendukung",
-          category: "KONTEKS KEJADIAN",
-          level: "RECOMMENDED",
-          status: "NEEDS_VERIFICATION",
-          matchedFiles: [],
-          requiredDesc: "Catatan waktu operasional seperti log radio, dispatch log, atau GPS log.",
-          issue: "Waktu kejadian tidak dapat divalidasi dari file yang ada.",
-          impact: "Sistem tidak dapat mengurutkan kronologi dan mengkorelasikan kejadian secara otomatis.",
-          recommendation: "Pastikan file yang diunggah memiliki metadata waktu atau unggah log sistem."
-        },
-        {
-          id: "req-8",
-          label: "Bukti fase kontak utama",
-          category: "KONTEKS KEJADIAN",
-          level: "REQUIRED",
-          status: "MISSING",
-          matchedFiles: [],
-          requiredDesc: "Titik data spesifik yang membuktikan terjadinya titik kontak fisik dalam insiden.",
-          issue: "Belum ada file yang dipetakan ke requirement ini.",
-          impact: "Sebab akibat utama tidak dapat dipastikan karena tidak ada bukti visual fase kontak.",
-          recommendation: "Unggah foto spesifik atau data telemetri yang menunjukkan saat kejadian."
+          issue: "Belum ada SOP, IK, JSA/HIRA, P5M/DOP, atau permit yang dapat digunakan.",
+          impact: "Operational control comparison cannot yet be fully evaluated."
         }
       ];
 
-      let missingRequired = 0;
-      let brokenRequired = 0;
-      let missingRecommended = 0;
-      let verificationRequired = 0;
-
-      dummyResults.forEach(r => {
-        if (r.level === "REQUIRED") {
-          if (r.status === "MISSING") missingRequired++;
-          if (r.status === "BROKEN") brokenRequired++;
-        } else {
-          if (r.status === "MISSING") missingRecommended++;
-          if (r.status === "NEEDS_VERIFICATION") verificationRequired++;
-        }
-      });
-
-      let finalStatus: ReadinessStatus = "READY";
-      if (missingRequired > 0 || brokenRequired > 0) {
-        finalStatus = "NOT_READY";
-      } else if (missingRecommended > 0 || verificationRequired > 0) {
-        finalStatus = "NEEDS_ATTENTION";
-      }
-
+      const { categories, finalStatus } = evaluateReadiness(dummyResults);
       const completedAt = new Date().toISOString();
 
       const finalRun: ReadinessRun = {
         ...checkingRun,
         status: finalStatus,
         completedAt,
-        results: dummyResults
+        results: dummyResults,
+        categories
       };
 
       const newRuns = [finalRun, ...stateAfterDelay.runs.filter(r => r.id !== checkingRun.id)];
@@ -338,6 +433,7 @@ export const useReadiness = () => {
     triggerManualCheck,
     markAsOutdated,
     overrideAnalysis,
-    clearHistory
+    clearHistory,
+    confirmVerification
   };
 };
