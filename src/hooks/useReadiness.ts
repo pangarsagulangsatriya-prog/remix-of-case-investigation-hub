@@ -75,8 +75,8 @@ export interface AnalysisOverride {
   brokenRequired: string[];
 }
 
-const STORAGE_KEY = "investigation_readiness_state_v6";
-const EVENT_KEY = "readiness_state_changed_v6";
+const STORAGE_KEY_PREFIX = "investigation_readiness_state_v6";
+const EVENT_KEY_PREFIX = "readiness_state_changed_v6";
 
 interface ReadinessState {
   runs: ReadinessRun[];
@@ -90,34 +90,51 @@ const getDefaultState = (): ReadinessState => ({
   isOutdated: false,
 });
 
-const loadState = (): ReadinessState => {
+const getStorageKey = (caseId?: string) => caseId ? `${STORAGE_KEY_PREFIX}_${caseId}` : STORAGE_KEY_PREFIX;
+const getEventKey = (caseId?: string) => caseId ? `${EVENT_KEY_PREFIX}_${caseId}` : EVENT_KEY_PREFIX;
+
+const loadState = (caseId?: string): ReadinessState => {
   try {
-    const data = localStorage.getItem(STORAGE_KEY);
+    const data = localStorage.getItem(getStorageKey(caseId));
     return data ? JSON.parse(data) : getDefaultState();
   } catch {
     return getDefaultState();
   }
 };
 
-const saveState = (state: ReadinessState) => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  window.dispatchEvent(new Event(EVENT_KEY));
+const saveState = (caseId: string | undefined, state: ReadinessState) => {
+  localStorage.setItem(getStorageKey(caseId), JSON.stringify(state));
+  window.dispatchEvent(new Event(getEventKey(caseId)));
 };
 
-export const useReadiness = () => {
-  const [state, setState] = useState<ReadinessState>(loadState());
+const DEMO_CASES = ["1CC209A3"];
+let hasResetDemoCases = false;
+
+export const useReadiness = (caseId?: string) => {
+  const [state, setState] = useState<ReadinessState>(() => loadState(caseId));
+
+  useEffect(() => {
+    // Reset state on full page reload for demo cases
+    if (caseId && DEMO_CASES.includes(caseId) && !hasResetDemoCases) {
+      localStorage.removeItem(getStorageKey(caseId));
+      hasResetDemoCases = true;
+      const emptyState = getDefaultState();
+      setState(emptyState);
+      window.dispatchEvent(new Event(getEventKey(caseId)));
+    }
+  }, [caseId]);
 
   useEffect(() => {
     const handleSync = () => {
-      setState(loadState());
+      setState(loadState(caseId));
     };
-    window.addEventListener(EVENT_KEY, handleSync);
+    window.addEventListener(getEventKey(caseId), handleSync);
     window.addEventListener("storage", handleSync);
     return () => {
-      window.removeEventListener(EVENT_KEY, handleSync);
+      window.removeEventListener(getEventKey(caseId), handleSync);
       window.removeEventListener("storage", handleSync);
     };
-  }, []);
+  }, [caseId]);
 
   const latestRun = state.runs.length > 0 ? state.runs[0] : null;
 
@@ -126,7 +143,7 @@ export const useReadiness = () => {
     : "NOT_CHECKED";
 
   const confirmVerification = useCallback((reqId: string, isMatch: boolean) => {
-    const currentState = loadState();
+    const currentState = loadState(caseId);
     if (!currentState.runs || currentState.runs.length === 0) return;
     
     const latest = currentState.runs[0];
@@ -154,8 +171,8 @@ export const useReadiness = () => {
     };
     
     const newRuns = [updatedRun, ...currentState.runs.slice(1)];
-    saveState({ ...currentState, runs: newRuns });
-  }, []);
+    saveState(caseId, { ...currentState, runs: newRuns });
+  }, [caseId]);
 
   const evaluateReadiness = (results: EvidenceRequirementResult[]) => {
     const CATEGORIES = [
@@ -202,13 +219,19 @@ export const useReadiness = () => {
   };
 
   const triggerManualCheck = useCallback(() => {
-    const currentState = loadState();
+    const currentState = loadState(caseId);
     
     const ts = new Date().toISOString();
     const runNumber = currentState.runs.length + 1;
-    const previousRunId = currentState.runs.length > 0 ? currentState.runs[0].id : undefined;
+    const evidenceSnapshot = {
+        totalFiles: 4,
+        completedFiles: 3,
+        errorFiles: 1,
+        processingFiles: 0,
+        fileIds: ["file-1", "file-2", "file-3", "file-4"]
+    };
 
-    const checkingRun: ReadinessRun = {
+    const newRun: ReadinessRun = {
       id: `run-${Date.now()}`,
       runNumber,
       triggeredBy: "MANUAL",
@@ -220,23 +243,21 @@ export const useReadiness = () => {
       startedAt: ts,
       completedAt: "", 
       status: "CHECKING",
-      evidenceSnapshot: {
-        totalFiles: 4,
-        completedFiles: 3,
-        errorFiles: 1,
-        processingFiles: 0,
-        fileIds: ["file-1", "file-2", "file-3", "file-4"]
-      },
+      evidenceSnapshot,
       results: [],
       categories: [],
-      previousRunId
+      previousRunId: loadState(caseId).runs[0]?.id
     };
 
-    saveState({ ...currentState, runs: [checkingRun, ...currentState.runs], isOutdated: false });
+    saveState(caseId, {
+      ...loadState(caseId),
+      runs: [newRun, ...loadState(caseId).runs],
+      isOutdated: false
+    });
 
     // Simulate analysis delay
     setTimeout(() => {
-      const stateAfterDelay = loadState();
+      const stateAfterDelay = loadState(caseId);
       
       const dummyResults: EvidenceRequirementResult[] = [
         {
@@ -374,28 +395,31 @@ export const useReadiness = () => {
       const completedAt = new Date().toISOString();
 
       const finalRun: ReadinessRun = {
-        ...checkingRun,
+        ...newRun,
         status: finalStatus,
         completedAt,
         results: dummyResults,
         categories
       };
 
-      const newRuns = [finalRun, ...stateAfterDelay.runs.filter(r => r.id !== checkingRun.id)];
-      saveState({ ...stateAfterDelay, runs: newRuns, isOutdated: false });
+      const newRuns = [finalRun, ...stateAfterDelay.runs.filter(r => r.id !== newRun.id)];
+      saveState(caseId, { ...stateAfterDelay, runs: newRuns, isOutdated: false });
 
     }, 3500);
-  }, []);
+  }, [caseId]);
 
   const markAsOutdated = useCallback(() => {
-    const currentState = loadState();
-    if (currentState.runs.length > 0 && !currentState.isOutdated && currentState.runs[0].status !== "CHECKING") {
-      saveState({ ...currentState, isOutdated: true });
+    const currentState = loadState(caseId);
+    if (!currentState.isOutdated && currentState.runs.length > 0) {
+      saveState(caseId, {
+        ...currentState,
+        isOutdated: true
+      });
     }
-  }, []);
+  }, [caseId]);
 
-  const overrideAnalysis = useCallback((reason: string, ack: boolean) => {
-    const currentState = loadState();
+  const overrideAnalysis = useCallback((userName: string, userRole: string, reason?: string) => {
+    const currentState = loadState(caseId);
     if (!currentState.runs || currentState.runs.length === 0) return;
     
     const latest = currentState.runs[0];
@@ -406,21 +430,69 @@ export const useReadiness = () => {
     const newOverride: AnalysisOverride = {
       id: `ovr-${Date.now()}`,
       readinessRunId: latest.id,
-      userName: "Gulang Satriya",
-      userRole: "Lead Investigator",
+      userName: userName,
+      userRole: userRole,
       timestamp: new Date().toISOString(),
       missingRequired: missingReq,
       brokenRequired: brokenReq,
-      acknowledgement: ack,
+      acknowledgement: true,
       reason
     };
 
-    saveState({ ...currentState, overrides: [newOverride, ...currentState.overrides] });
-  }, []);
+    const newOverrides = [newOverride, ...currentState.overrides];
+    saveState(caseId, {
+      ...currentState,
+      overrides: newOverrides
+    });
+  }, [caseId]);
 
   const clearHistory = useCallback(() => {
-    saveState(getDefaultState());
-  }, []);
+    saveState(caseId, getDefaultState());
+  }, [caseId]);
+
+  const recheckRequirement = useCallback((reqId: string) => {
+    const currentState = loadState(caseId);
+    if (!currentState.runs || currentState.runs.length === 0) return;
+    
+    const latest = currentState.runs[0];
+    if (latest.status === "CHECKING") return;
+    
+    // Create a promise to simulate network delay so the UI can show a spinner
+    return new Promise<void>((resolve) => {
+      setTimeout(() => {
+        const stateAfterDelay = loadState(caseId);
+        const currentLatest = stateAfterDelay.runs[0];
+        
+        const updatedResults = currentLatest.results.map(req => {
+          if (req.id === reqId) {
+            return {
+              ...req,
+              status: "FULFILLED" as RequirementStatus,
+              issue: undefined,
+              matchedFiles: req.matchedFiles.map(mf => ({
+                ...mf,
+                processingStatus: "DONE"
+              }))
+            };
+          }
+          return req;
+        });
+        
+        const { categories, finalStatus } = evaluateReadiness(updatedResults);
+        
+        const updatedRun: ReadinessRun = {
+          ...currentLatest,
+          results: updatedResults,
+          categories,
+          status: finalStatus
+        };
+        
+        const newRuns = [updatedRun, ...stateAfterDelay.runs.slice(1)];
+        saveState(caseId, { ...stateAfterDelay, runs: newRuns });
+        resolve();
+      }, 1500); // 1.5s delay for spinner
+    });
+  }, [caseId]);
 
   const isOverrideActive = state.overrides.length > 0 && latestRun && state.overrides[0].readinessRunId === latestRun.id;
 
@@ -434,6 +506,7 @@ export const useReadiness = () => {
     markAsOutdated,
     overrideAnalysis,
     clearHistory,
-    confirmVerification
+    confirmVerification,
+    recheckRequirement
   };
 };

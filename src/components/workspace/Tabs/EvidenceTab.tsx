@@ -72,12 +72,12 @@ interface EvidenceTabProps {
 
 export default function EvidenceTab({ onProceedToAnalysis }: EvidenceTabProps) {
   const { currentStep: tourStep, isActive: isTourActive } = useTour();
-  const { runs, currentStatus, triggerManualCheck, markAsOutdated, latestRun } = useReadiness();
+  const { caseId } = useParams<{ caseId: string }>();
+  const { runs, currentStatus, triggerManualCheck, markAsOutdated, latestRun } = useReadiness(caseId);
   const [isReadinessModalOpen, setIsReadinessModalOpen] = useState(false);
 
   const [isHistoryDrawerOpen, setIsHistoryDrawerOpen] = useState(false);
   const [historyFile, setHistoryFile] = useState<any>(null);
-  const { caseId } = useParams<{ caseId: string }>();
   const queryClient = useQueryClient();
   const { data: evidence, isLoading } = useEvidence(caseId!);
   const files = evidence?.files || [];
@@ -85,36 +85,16 @@ export default function EvidenceTab({ onProceedToAnalysis }: EvidenceTabProps) {
 
   // State
   const [primaryEvidences, setPrimaryEvidences] = useState<any[]>(() => {
-    // Force the new dual-file setup for the demo, ignoring previous localStorage state
-    return [
-      {
-        id: "dummy-primary-1",
-        name: "Form_Insiden_Lengkap.pdf",
-        type: "document",
-        size: 152300,
-        created_at: "2026-06-09T20:59:00Z",
-        extraction_status: "completed",
-        batch_id: "UTAMA",
-        url: "https://hseautomation.beraucoal.co.id/beats2/file/15354568"
-      },
-      {
-        id: "dummy-primary-2",
-        name: "Metadata_Insiden_2161.json",
-        type: "case-metadata",
-        size: 4096,
-        created_at: "2026-06-09T21:05:00Z",
-        extraction_status: "completed",
-        batch_id: "UTAMA",
-        url: "https://dummy-hse.local/files/metadata_2161"
-      }
-    ];
+    const saved = localStorage.getItem(`primary_evidences_demo_global_${caseId}`);
+    if (saved) return JSON.parse(saved);
+    return [];
   });
   const [isPrimaryUploadModalOpen, setIsPrimaryUploadModalOpen] = useState(false);
 
   const savePrimaryEvidences = (newEvidences: any[]) => {
     setPrimaryEvidences(newEvidences);
     const toSave = newEvidences.map(({ url, ...rest }) => rest);
-    localStorage.setItem(`primary_evidences_demo_global`, JSON.stringify(toSave));
+    localStorage.setItem(`primary_evidences_demo_global_${caseId}`, JSON.stringify(toSave));
   };
 
   const handleDeletePrimaryEvidence = (id: string) => {

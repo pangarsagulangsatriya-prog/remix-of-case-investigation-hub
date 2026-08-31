@@ -86,7 +86,7 @@ function CaseWorkspaceInner() {
   const [showAuditTrail, setShowAuditTrail] = useState(false);
   const [hasDemoDerivation, setHasDemoDerivation] = useState(false);
 
-  const { currentStatus, latestRun, isOutdated, isOverrideActive, overrideAnalysis } = useReadiness();
+  const { currentStatus, latestRun, isOutdated, isOverrideActive, overrideAnalysis } = useReadiness(caseId);
   const [isAnalysisModalOpen, setIsAnalysisModalOpen] = useState(false);
   const [overrideNote, setOverrideNote] = useState("");
   const [overrideAck, setOverrideAck] = useState(false);

@@ -1,11 +1,12 @@
-import React, { useState, useMemo, useEffect } from "react";
-import { Loader2, ShieldCheck, X, ChevronRight, Check, ArrowLeft, ArrowRight, RotateCcw, AlertTriangle, FileText, ChevronLeft, HelpCircle, Camera, Mic, Paperclip, Info } from "lucide-react";
+import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { useParams } from "react-router-dom";
+import { Loader2, ShieldCheck, X, ChevronRight, ChevronLeft, Check, RotateCcw, AlertTriangle, FileText, Info, Search, Upload, Eye, User, Users, Wrench, MapPin, Folder, ArrowRight, Image as ImageIcon, Video, Mic } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useReadiness, ReadinessRun, EvidenceRequirementResult } from "@/hooks/useReadiness";
+import { useReadiness, ReadinessRun, EvidenceRequirementResult, RequirementStatus } from "@/hooks/useReadiness";
 import { cn } from "@/lib/utils";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const InfoTooltip = ({ content, children, className }: { content: React.ReactNode, children?: React.ReactNode, className?: string }) => {
   return (
@@ -28,9 +29,26 @@ const InfoTooltip = ({ content, children, className }: { content: React.ReactNod
 const getCategoryDisplayName = (name: string) => {
   const lower = name.toLowerCase();
   if (lower.includes("event truth")) return "Fakta Kejadian";
-  // For others like "Human Testimony" or "People", the user said English is fine.
-  // We'll strip the leading numbers like "01 EVENT TRUTH" -> "Event Truth"
   return name.replace(/^\d+\s*/, "").replace(/\b\w/g, c => c.toUpperCase());
+};
+
+const getCategoryIcon = (name: string) => {
+  const lower = name.toLowerCase();
+  if (lower.includes("event truth")) return <FileText className="h-4 w-4" />;
+  if (lower.includes("human testimony")) return <User className="h-4 w-4" />;
+  if (lower.includes("people")) return <Users className="h-4 w-4" />;
+  if (lower.includes("part")) return <Wrench className="h-4 w-4" />;
+  if (lower.includes("position")) return <MapPin className="h-4 w-4" />;
+  if (lower.includes("paper")) return <Folder className="h-4 w-4" />;
+  return <Folder className="h-4 w-4" />;
+};
+
+const getRequirementIcon = (label: string) => {
+  const lower = label.toLowerCase();
+  if (lower.includes("video") || lower.includes("cctv") || lower.includes("rekaman")) return <Video className="h-4 w-4 text-rose-500" />;
+  if (lower.includes("foto") || lower.includes("gambar") || lower.includes("image") || lower.includes("visual")) return <ImageIcon className="h-4 w-4 text-emerald-500" />;
+  if (lower.includes("audio") || lower.includes("suara") || lower.includes("wawancara") || lower.includes("testimony")) return <Mic className="h-4 w-4 text-indigo-500" />;
+  return <FileText className="h-4 w-4 text-slate-400" />;
 };
 
 
@@ -41,24 +59,39 @@ interface EvidenceReadinessModalProps {
 }
 
 export function EvidenceReadinessModal({ open, onOpenChange, onProceedToAnalysis }: EvidenceReadinessModalProps) {
-  const { runs, triggerManualCheck, latestRun, isOutdated, overrideAnalysis } = useReadiness();
-  const [view, setView] = useState<"RESULT" | "HISTORY" | "ARCHIVE" | "CONFIRM_OVERRIDE">("RESULT");
-  const [showOverrideModal, setShowOverrideModal] = useState(false);
-  const [showRecheckModal, setShowRecheckModal] = useState(false);
+  const { caseId } = useParams<{ caseId: string }>();
+  const { runs, triggerManualCheck, latestRun, overrideAnalysis, recheckRequirement } = useReadiness(caseId);
+  const [view, setView] = useState<"RESULT" | "HISTORY" | "ARCHIVE">("RESULT");
   const [selectedRun, setSelectedRun] = useState<ReadinessRun | null>(null);
+  
   const [activeReqId, setActiveReqId] = useState<string | null>(null);
-  const [overrideAck, setOverrideAck] = useState(false);
-  const [overrideNote, setOverrideNote] = useState("");
-
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [checkSequence, setCheckSequence] = useState(0);
-  const [hasEvidence, setHasEvidence] = useState(true); // Mock edge case: zero evidence
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
+  
+  const [recheckingIds, setRecheckingIds] = useState<Record<string, boolean>>({});
+  const [uploadingIds, setUploadingIds] = useState<Record<string, { status: "uploading" | "processing", progress: number }>>({});
+  const [understood, setUnderstood] = useState(false);
+  const [confirmNote, setConfirmNote] = useState("");
 
   const activeRun = view === "ARCHIVE" ? selectedRun : latestRun;
+  
+  const itemRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
-  // Auto-select priority requirement on ready
+  // Flattened list of results for navigation
+  const flatResults = useMemo(() => {
+    if (!activeRun) return [];
+    return activeRun.results || [];
+  }, [activeRun]);
+  
+  const currentIndex = useMemo(() => {
+    if (!activeReqId || flatResults.length === 0) return -1;
+    return flatResults.findIndex(r => r.id === activeReqId);
+  }, [activeReqId, flatResults]);
+
+  // Initial expand logic
   useEffect(() => {
-    if (open && activeRun && activeRun.results.length > 0 && !activeReqId && latestRun?.status !== "CHECKING") {
+    if (open && activeRun && activeRun.results.length > 0 && latestRun?.status !== "CHECKING") {
       const getPriority = (r: EvidenceRequirementResult) => {
         if (r.status === "BROKEN") return 1;
         if (r.status === "MISSING" && r.level === "REQUIRED") return 2;
@@ -66,23 +99,17 @@ export function EvidenceReadinessModal({ open, onOpenChange, onProceedToAnalysis
         if (r.status === "MISSING" && r.level !== "REQUIRED") return 4;
         return 5;
       };
+      
       const sorted = [...activeRun.results].sort((a, b) => getPriority(a) - getPriority(b));
-      setActiveReqId(sorted[0].id);
-
-      // Auto-expand categories with issues
-      const newExpanded: Record<string, boolean> = {};
-      activeRun.categories?.forEach(cat => {
-        if (cat.status === "NOT_READY" || cat.status === "NEEDS_ATTENTION") {
-          newExpanded[cat.name] = true;
-        } else {
-          newExpanded[cat.name] = false;
-        }
-      });
-      setExpandedCategories(newExpanded);
+      const target = sorted[0];
+      
+      if (Object.keys(expandedCategories).length === 0 && target) {
+        setExpandedCategories({ [target.category]: true });
+      }
     }
-  }, [open, activeRun, activeReqId, latestRun?.status]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, activeRun, latestRun?.status]);
 
-  // Checking sequence animation
   useEffect(() => {
     if (latestRun?.status === "CHECKING") {
       setCheckSequence(1);
@@ -94,20 +121,140 @@ export function EvidenceReadinessModal({ open, onOpenChange, onProceedToAnalysis
     }
   }, [latestRun?.status]);
 
-  const groupedResults = useMemo(() => {
-    if (!activeRun) return {};
-    return activeRun.results.reduce((acc, req) => {
-      const cat = req.category;
-      if (!acc[cat]) acc[cat] = [];
-      acc[cat].push(req);
-      return acc;
-    }, {} as Record<string, EvidenceRequirementResult[]>);
-  }, [activeRun]);
+  const selectItemAndScroll = useCallback((reqId: string, category: string) => {
+    setActiveReqId(reqId);
+    setExpandedCategories(prev => ({ ...prev, [category]: true }));
+    setTimeout(() => {
+      const el = itemRefs.current[reqId];
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }, 120);
+  }, []);
+
+  const handleNext = useCallback(() => {
+    if (currentIndex >= 0 && currentIndex < flatResults.length - 1) {
+      const nextItem = flatResults[currentIndex + 1];
+      selectItemAndScroll(nextItem.id, nextItem.category);
+    }
+  }, [currentIndex, flatResults, selectItemAndScroll]);
+
+  const handlePrev = useCallback(() => {
+    if (currentIndex > 0) {
+      const prevItem = flatResults[currentIndex - 1];
+      selectItemAndScroll(prevItem.id, prevItem.category);
+    }
+  }, [currentIndex, flatResults, selectItemAndScroll]);
+
+  const handleNextGap = useCallback(() => {
+    if (currentIndex >= 0 && currentIndex < flatResults.length) {
+      const nextIssueIndex = flatResults.findIndex((r, idx) => idx > currentIndex && r.status !== "FULFILLED");
+      if (nextIssueIndex !== -1) {
+        const nextItem = flatResults[nextIssueIndex];
+        selectItemAndScroll(nextItem.id, nextItem.category);
+      } else {
+        // If no more issues after current, loop from start to find any remaining issue
+        const anyIssueIndex = flatResults.findIndex(r => r.status !== "FULFILLED");
+        if (anyIssueIndex !== -1 && anyIssueIndex !== currentIndex) {
+          const nextItem = flatResults[anyIssueIndex];
+          selectItemAndScroll(nextItem.id, nextItem.category);
+        }
+      }
+    }
+  }, [currentIndex, flatResults, selectItemAndScroll]);
+
+  const hasNextGap = useMemo(() => {
+    if (flatResults.length === 0) return false;
+    return flatResults.some((r, idx) => idx !== currentIndex && r.status !== "FULFILLED");
+  }, [flatResults, currentIndex]);
+
+  // Keyboard navigation
+  useEffect(() => {
+    if (!open || latestRun?.status === "CHECKING") return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't interfere with inputs/textareas
+      if (document.activeElement?.tagName === "INPUT" || document.activeElement?.tagName === "TEXTAREA") {
+        return;
+      }
+      
+      switch (e.key) {
+        case "ArrowDown":
+          e.preventDefault();
+          handleNext();
+          break;
+        case "ArrowUp":
+          e.preventDefault();
+          handlePrev();
+          break;
+        case "ArrowRight":
+          e.preventDefault();
+          handleNext();
+          break;
+        case "ArrowLeft":
+          e.preventDefault();
+          handlePrev();
+          break;
+        case "Escape":
+          // Radix Dialog handles ESC, but we can hook if needed
+          break;
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [open, handleNext, handlePrev, latestRun?.status]);
 
   const activeRequirement = useMemo(() => {
-    if (!activeRun || !activeReqId) return null;
-    return activeRun.results.find(r => r.id === activeReqId) || null;
-  }, [activeRun, activeReqId]);
+    if (currentIndex === -1) return null;
+    return flatResults[currentIndex];
+  }, [currentIndex, flatResults]);
+
+  const gapCount = useMemo(() => {
+    if (!activeRun) return 0;
+    return activeRun.results.filter(r => r.status === "MISSING" || r.status === "BROKEN").length;
+  }, [activeRun]);
+
+  const checkCount = useMemo(() => {
+    if (!activeRun) return 0;
+    return activeRun.results.filter(r => r.status === "NEEDS_VERIFICATION").length;
+  }, [activeRun]);
+  
+  const readyCount = useMemo(() => {
+    if (!activeRun) return 0;
+    return activeRun.results.filter(r => r.status === "FULFILLED").length;
+  }, [activeRun]);
+
+  // Map analysis modules to evidence items causing gaps
+  const impactMap = useMemo(() => {
+    if (!activeRun) return {};
+    const ALL_ANALYSES = ["Fact & Chronology", "Fact", "Actor", "PEEPO", "IPLS", "Chronology"];
+    const map: Record<string, { status: "Ready" | "Needs Verification" | "Blocked", count: number }> = {};
+    
+    ALL_ANALYSES.forEach(analysis => {
+      const impactingCats = activeRun.categories?.filter(c => c.downstreamImpact.includes(analysis)) || [];
+      if (impactingCats.length === 0) {
+        map[analysis] = { status: "Ready", count: 0 };
+        return;
+      }
+      
+      let blockingCount = 0;
+      let reviewCount = 0;
+      
+      impactingCats.forEach(cat => {
+        const items = activeRun.results.filter(r => r.category === cat.name);
+        items.forEach(req => {
+          if (req.status === "BROKEN" || req.status === "MISSING") blockingCount++;
+          else if (req.status === "NEEDS_VERIFICATION") reviewCount++;
+        });
+      });
+      
+      if (blockingCount > 0) map[analysis] = { status: "Blocked", count: blockingCount };
+      else if (reviewCount > 0) map[analysis] = { status: "Needs Verification", count: reviewCount };
+      else map[analysis] = { status: "Ready", count: 0 };
+    });
+    return map;
+  }, [activeRun]);
 
   if (!open) return null;
 
@@ -115,381 +262,215 @@ export function EvidenceReadinessModal({ open, onOpenChange, onProceedToAnalysis
     onOpenChange(false);
     setTimeout(() => {
       setView("RESULT");
-      setOverrideAck(false);
-      setOverrideNote("");
+      setActiveReqId(null);
     }, 300);
   };
 
-  const handleRecheck = () => {
-    setActiveReqId(null);
-    triggerManualCheck();
-    setView("RESULT");
+  const handleInlineRecheck = async (reqId: string) => {
+    setRecheckingIds(prev => ({ ...prev, [reqId]: true }));
+    if (recheckRequirement) {
+      await recheckRequirement(reqId);
+    }
+    setRecheckingIds(prev => ({ ...prev, [reqId]: false }));
   };
 
-  const translateLevel = (level: string) => {
-    switch (level) {
-      case "REQUIRED": return "WAJIB";
-      case "RECOMMENDED": return "DISARANKAN";
-      case "OPTIONAL": return "OPSIONAL";
-      default: return level;
-    }
-  };
-
-  const translateStatus = (status: string) => {
-    switch (status) {
-      case "FULFILLED": return "TERPENUHI";
-      case "MISSING": return "BELUM ADA";
-      case "BROKEN": return "ADA TAPI BERMASALAH";
-      case "NEEDS_VERIFICATION": return "PERLU VERIFIKASI";
-      default: return status;
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "FULFILLED": return "bg-emerald-50 text-emerald-700 border-emerald-200";
-      case "BROKEN": return "bg-rose-50 text-rose-700 border-rose-200";
-      case "MISSING": 
-      case "NEEDS_VERIFICATION": return "bg-amber-50 text-amber-700 border-amber-200";
-      default: return "bg-slate-50 text-slate-700 border-slate-200";
-    }
-  };
-  
-  const getIndicatorColor = (status: string) => {
-    switch (status) {
-      case "FULFILLED": return "bg-emerald-500";
-      case "BROKEN": return "bg-rose-500";
-      case "MISSING": 
-      case "NEEDS_VERIFICATION": return "bg-amber-500";
-      default: return "bg-slate-300";
-    }
-  };
-  // COMPACT GATE SUMMARY
-  // ----------------------------------------------------------------------
-  const renderSummary = () => {
-    if (!activeRun) return null;
-    const categoriesReady = activeRun.categories?.filter(c => c.status === "READY").length || 0;
-    const totalCategories = activeRun.categories?.length || 6;
+  const handleSimulateUpload = (reqId: string) => {
+    setUploadingIds(prev => ({ ...prev, [reqId]: { status: "uploading", progress: 0 } }));
     
-    const needsAttentionItems = activeRun.results.filter(c => c.status === "BROKEN" || (c.status === "MISSING" && c.level === "REQUIRED")).length;
-    const needsVerifItems = activeRun.results.filter(c => c.status === "NEEDS_VERIFICATION").length;
-    
-    const isReady = activeRun.status === "READY";
-    const isNeedsAttention = activeRun.status === "NEEDS_ATTENTION";
-    const isNotReady = activeRun.status === "NOT_READY";
+    let prog = 0;
+    const interval = setInterval(() => {
+      prog += Math.floor(Math.random() * 25) + 15;
+      if (prog > 90) prog = 90;
+      setUploadingIds(prev => ({ ...prev, [reqId]: { status: "uploading", progress: prog } }));
+    }, 200);
 
-    let diffText = "";
-    if (activeRun.previousRunId) {
-      const prevRun = runs.find(r => r.id === activeRun.previousRunId);
-      if (prevRun) {
-        const prevReady = prevRun.categories?.filter(c => c.status === "READY").length || 0;
-        const diff = categoriesReady - prevReady;
-        if (diff !== 0) {
-          diffText = `${diff > 0 ? '+' : ''}${diff} kategori siap dari Pemeriksaan #${prevRun.runNumber}`;
-        } else {
-          diffText = `Tidak ada perubahan kategori dari Pemeriksaan #${prevRun.runNumber}`;
+    setTimeout(() => {
+      clearInterval(interval);
+      setUploadingIds(prev => ({ ...prev, [reqId]: { status: "processing", progress: 100 } }));
+      
+      setTimeout(async () => {
+        if (recheckRequirement) {
+          await recheckRequirement(reqId);
         }
-      }
-    }
-
-    // Calculate Analysis Readiness
-    const analysisStatus: Record<string, "Ready" | "Needs Verification" | "Limited Evidence" | "Insufficient Evidence"> = {};
-    const ALL_ANALYSES = ["Fact & Chronology", "Fact", "Actor", "PEEPO", "IPLS", "Chronology"];
-    
-    ALL_ANALYSES.forEach(analysis => {
-      // Find all categories that impact this analysis
-      const impactingCats = activeRun.categories?.filter(c => c.downstreamImpact.includes(analysis)) || [];
-      if (impactingCats.length === 0) return;
-      
-      let worstStatus = 0; // 0=Ready, 1=Needs Verif, 2=Limited, 3=Insufficient
-      
-      impactingCats.forEach(cat => {
-        if (cat.status === "NOT_READY") worstStatus = Math.max(worstStatus, 3);
-        else if (cat.status === "NEEDS_ATTENTION") {
-          // check if it's needs attention because of verification or missing recommended
-          const catItems = activeRun.results.filter(r => r.category === cat.name);
-          if (catItems.some(r => r.status === "NEEDS_VERIFICATION")) {
-            worstStatus = Math.max(worstStatus, 1);
-          } else {
-            worstStatus = Math.max(worstStatus, 2);
-          }
-        }
-      });
-      
-      if (worstStatus === 3) analysisStatus[analysis] = "Insufficient Evidence";
-      else if (worstStatus === 2) analysisStatus[analysis] = "Limited Evidence";
-      else if (worstStatus === 1) analysisStatus[analysis] = "Needs Verification";
-      else analysisStatus[analysis] = "Ready";
-    });
-
-    const readyCount = Object.values(analysisStatus).filter(s => s === "Ready").length;
-    const limitedCount = Object.values(analysisStatus).filter(s => s === "Limited Evidence").length;
-    const insufficientCount = Object.values(analysisStatus).filter(s => s === "Insufficient Evidence").length;
-
-    const summaryParts = [];
-    if (readyCount > 0) summaryParts.push(`${readyCount} siap`);
-    if (limitedCount > 0) summaryParts.push(`${limitedCount} terbatas`);
-    if (insufficientCount > 0) summaryParts.push(`${insufficientCount} belum cukup`);
-    
-    const summaryLine = summaryParts.join(" · ");
-
-    return (
-      <div className="px-6 py-4 border-b border-slate-200 bg-slate-50/50 shrink-0">
-        <h4 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-2 flex items-center">
-          <InfoTooltip content="Ringkasan kesiapan evidence untuk melanjutkan analisis AI. Bagian ini membantu melihat status umum case secara cepat.">
-            GATE SUMMARY
-          </InfoTooltip>
-        </h4>
-        
-        <div className="bg-white border border-slate-200 rounded-lg p-3.5 shadow-sm flex flex-col gap-3">
-          <div className="flex items-center gap-4">
-            <span className="text-[12px] font-semibold text-slate-500 w-32">Status</span>
-            <div className={cn(
-              "text-[11px] font-bold uppercase px-2.5 py-1 rounded-md border transition-colors duration-300",
-              isNotReady ? "bg-rose-50 text-rose-700 border-rose-200" :
-              isNeedsAttention ? "bg-amber-50 text-amber-700 border-amber-200" :
-              "bg-emerald-50 text-emerald-700 border-emerald-200"
-            )}>
-              {isNotReady ? "BELUM SIAP" : isNeedsAttention ? "PERLU DILENGKAPI" : "SIAP DIANALISIS"}
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-3 gap-4 pt-3 border-t border-slate-100">
-            <div>
-              <div className="text-[11px] font-semibold text-slate-500 mb-0.5 flex items-center">
-                <InfoTooltip content="Menunjukkan berapa banyak kategori evidence yang sudah cukup siap digunakan dalam analisis.">
-                  Semantic Coverage
-                </InfoTooltip>
-              </div>
-              <div className="text-[14px] font-bold text-slate-800">{categoriesReady} / {totalCategories} siap</div>
-            </div>
-            <div>
-              <div className="text-[11px] font-semibold text-slate-500 mb-0.5 flex items-center">
-                <InfoTooltip content="Jumlah kategori atau evidence yang punya masalah dan perlu ditindaklanjuti.">
-                  Needs Attention
-                </InfoTooltip>
-              </div>
-              <div className="text-[14px] font-bold text-rose-600">{needsAttentionItems}</div>
-            </div>
-            <div>
-              <div className="text-[11px] font-semibold text-slate-500 mb-0.5 flex items-center">
-                <InfoTooltip content="Jumlah evidence yang terdeteksi sistem tetapi masih perlu konfirmasi dari pengguna.">
-                  Needs Verification
-                </InfoTooltip>
-              </div>
-              <div className="text-[14px] font-bold text-amber-600">{needsVerifItems}</div>
-            </div>
-          </div>
-
-          {diffText && (
-             <div className="text-[11px] font-medium text-slate-500 pt-2 border-t border-slate-100">
-               {diffText}
-             </div>
-          )}
-        </div>
-        
-        {/* KESIAPAN ANALISIS */}
-        <div className="mt-3 bg-white border border-slate-200 rounded-lg p-3.5 shadow-sm">
-          <div className="flex items-start justify-between mb-3">
-            <div>
-              <h4 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest flex items-center mb-0.5">
-                <InfoTooltip content="Ringkasan kesiapan tiap modul analisis berdasarkan evidence yang sudah tersedia saat ini.">
-                  KESIAPAN ANALISIS
-                </InfoTooltip>
-              </h4>
-              <p className="text-[10px] text-slate-400 font-medium">Berdasarkan evidence saat ini</p>
-            </div>
-            <div className="text-[11px] font-semibold text-slate-600 bg-slate-50 px-2.5 py-1 rounded border border-slate-100 shadow-sm transition-all duration-300">
-              {summaryLine || "Belum dievaluasi"}
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-3 gap-2">
-            {Object.entries(analysisStatus).map(([analysis, status]) => {
-              let localizedAnalysis = analysis;
-              if (analysis === "Fact & Chronology") localizedAnalysis = "Fakta & Kronologi";
-              else if (analysis === "Fact") localizedAnalysis = "Fakta";
-              else if (analysis === "Actor") localizedAnalysis = "Aktor";
-              else if (analysis === "Chronology") localizedAnalysis = "Kronologi";
-
-              let analysisTooltip = "";
-              if (analysis === "Fact & Chronology") analysisTooltip = "Modul ini menyusun fakta kejadian dan urutan waktunya berdasarkan bukti lapangan dan sumber pendukung.";
-              else if (analysis === "Fact") analysisTooltip = "Modul ini membantu menyusun fakta-fakta utama yang relevan dengan kejadian.";
-              else if (analysis === "Actor") analysisTooltip = "Modul ini membantu mengenali pihak yang terlibat, peran, dan hubungan antarorang dalam kejadian.";
-              else if (analysis === "PEEPO") analysisTooltip = "Modul ini membantu analisis dari sisi People, Environment, Equipment, Process, dan Organization.";
-              else if (analysis === "IPLS") analysisTooltip = "Modul ini membantu analisis lapisan pengendalian dan titik kelemahan dalam sistem kerja.";
-              else if (analysis === "Chronology") analysisTooltip = "Modul ini fokus pada urutan kejadian dari awal sampai akhir berdasarkan evidence yang tersedia.";
-
-              let localizedStatus = "";
-              if (status === "Ready") localizedStatus = "Siap";
-              else if (status === "Limited Evidence") localizedStatus = "Terbatas";
-              else if (status === "Insufficient Evidence") localizedStatus = "Belum Cukup";
-              else if (status === "Needs Verification") localizedStatus = "Perlu Verifikasi";
-
-              let statusTooltip = "";
-              if (status === "Ready") statusTooltip = "Evidence untuk modul ini sudah cukup mendukung analisis.";
-              else if (status === "Limited Evidence") statusTooltip = "Modul ini bisa berjalan, tetapi evidence yang tersedia masih terbatas.";
-              else if (status === "Insufficient Evidence") statusTooltip = "Evidence untuk modul ini belum cukup untuk menghasilkan analisis yang kuat.";
-              else if (status === "Needs Verification") statusTooltip = "Masih ada evidence yang menunggu konfirmasi pengguna.";
-
-              return (
-                <div key={analysis} className="flex flex-col bg-slate-50/50 border border-slate-200 px-2 py-1.5 rounded-md hover:border-slate-300 transition-colors group cursor-default">
-                  <div className="flex items-center gap-1 mb-1">
-                    <span className="text-[10px] font-bold text-slate-700 truncate">{localizedAnalysis}</span>
-                    <InfoTooltip content={analysisTooltip} className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </div>
-                  <TooltipProvider delayDuration={150}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span className={cn(
-                          "text-[9px] font-bold uppercase w-fit outline-none transition-colors",
-                          status === "Ready" ? "text-emerald-600" :
-                          status === "Insufficient Evidence" ? "text-rose-600" :
-                          "text-amber-600"
-                        )}>{localizedStatus}</span>
-                      </TooltipTrigger>
-                      <TooltipContent side="top" sideOffset={6} className="max-w-[280px] bg-slate-900 text-slate-50 border-slate-800 shadow-md p-3 rounded-lg z-[120]">
-                        <p className="text-[12px] font-medium leading-relaxed">{statusTooltip}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-    );
+        setUploadingIds(prev => {
+          const newState = { ...prev };
+          delete newState[reqId];
+          return newState;
+        });
+      }, 800);
+    }, 1200);
   };
 
-  // ----------------------------------------------------------------------
-  // TWO-COLUMN LAYOUT
-  // ----------------------------------------------------------------------
+  const handleViewPriorityGap = () => {
+    if (!activeRun) return;
+    const getPriority = (r: EvidenceRequirementResult) => {
+      if (r.status === "BROKEN") return 1;
+      if (r.status === "MISSING" && r.level === "REQUIRED") return 2;
+      if (r.status === "NEEDS_VERIFICATION") return 3;
+      if (r.status === "MISSING" && r.level !== "REQUIRED") return 4;
+      return 5;
+    };
+    
+    const issues = activeRun.results.filter(r => r.status !== "FULFILLED");
+    if (issues.length === 0) return;
+    
+    const sorted = [...issues].sort((a, b) => getPriority(a) - getPriority(b));
+    const target = sorted[0];
+    
+    selectItemAndScroll(target.id, target.category);
+  };
+
+  const getStatusIcon = (status: RequirementStatus, className?: string) => {
+    switch (status) {
+      case "FULFILLED": return <Check className={cn("text-emerald-500", className)} />;
+      case "NEEDS_VERIFICATION": return <AlertTriangle className={cn("text-amber-500", className)} />;
+      case "BROKEN":
+      case "MISSING": return <X className={cn("text-rose-500", className)} />;
+    }
+  };
+
+  const getStatusReason = (req: EvidenceRequirementResult) => {
+    if (req.status === "FULFILLED") return "Evidence siap digunakan";
+    if (req.status === "NEEDS_VERIFICATION") return req.issue || "Evidence perlu diperiksa";
+    if (req.status === "BROKEN") return req.issue || "Evidence belum dapat digunakan";
+    if (req.status === "MISSING") return "Evidence belum dapat digunakan";
+    return "";
+  };
+
   const renderChecklist = () => {
     if (!activeRun) return null;
+
     return (
-      <div className="w-[50%] border-r border-slate-200 flex flex-col bg-white overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 shrink-0">
-          <h4 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest flex items-center">
-            <InfoTooltip content="Daftar kategori evidence yang dibutuhkan sistem untuk menilai kesiapan analisis secara semantik, bukan sekadar jumlah file.">
-              SEMANTIC EVIDENCE REQUIREMENTS
-            </InfoTooltip>
-          </h4>
-          <span className="text-[11px] text-slate-400 font-medium">{activeRun.categories?.length || 0} categories</span>
+      <div className="w-[38%] border-r border-slate-200 flex flex-col bg-white overflow-hidden z-10">
+        <div className="px-5 py-4 border-b border-slate-100 bg-white shrink-0 flex items-center justify-between">
+          <div className="flex flex-col gap-0.5">
+            <span className="text-[12px] font-medium">
+              <span className="text-emerald-600 font-semibold">{readyCount} siap</span>
+              <span className="text-slate-400 mx-1.5">·</span>
+              <span className={checkCount > 0 ? "text-amber-600 font-semibold" : "text-slate-500"}>{checkCount} cek</span>
+              <span className="text-slate-400 mx-1.5">·</span>
+              <span className={gapCount > 0 ? "text-rose-600 font-semibold" : "text-slate-500"}>{gapCount} gap</span>
+            </span>
+          </div>
         </div>
         
-        <div className="flex-1 overflow-auto p-4 space-y-4">
+        <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
           {activeRun.categories?.map(category => {
             const isExpanded = expandedCategories[category.name];
             const items = activeRun.results.filter(r => r.category === category.name);
             const toggleCategory = () => setExpandedCategories(prev => ({ ...prev, [category.name]: !isExpanded }));
             
-            let catTooltip = "";
-            const catNameLower = category.name.toLowerCase();
-            if (catNameLower.includes("event truth")) catTooltip = "Evidence yang membantu memastikan apa yang terjadi, kapan terjadi, dan di mana kejadian berlangsung.";
-            else if (catNameLower.includes("human testimony")) catTooltip = "Evidence berupa keterangan manusia, seperti wawancara, BAP, audio, atau transkrip.";
-            else if (catNameLower.includes("people")) catTooltip = "Evidence yang menjelaskan siapa saja yang terlibat, peran mereka, dan konteks personel yang relevan.";
-            else if (catNameLower.includes("part") || catNameLower.includes("technical")) catTooltip = "Evidence teknis terkait alat, komponen, kondisi peralatan, inspeksi, atau riwayat perawatan.";
-            else if (catNameLower.includes("position")) catTooltip = "Evidence yang menunjukkan posisi, tata letak, hubungan ruang, atau lokasi kejadian secara visual.";
-            else if (catNameLower.includes("paper") || catNameLower.includes("control")) catTooltip = "Evidence berupa dokumen pengendalian kerja, seperti SOP, IK, JSA, HIRA, permit, atau dokumen kerja lain.";
-
-            let catStatusTooltip = "";
-            if (category.status === "READY") catStatusTooltip = "Kategori ini sudah memiliki evidence yang cukup untuk mendukung analisis terkait.";
-            else if (category.status === "NEEDS_ATTENTION") catStatusTooltip = "Ada evidence pada kategori ini, tetapi ada masalah yang perlu dicek atau diperbaiki.";
-            else if (category.status === "NOT_READY") catStatusTooltip = "Kategori ini belum memiliki evidence yang cukup dan masih memerlukan pelengkapan.";
+            const blockingItems = items.filter(r => r.status === "BROKEN" || r.status === "MISSING").length;
+            const reviewItems = items.filter(r => r.status === "NEEDS_VERIFICATION").length;
+            
+            const isComplete = blockingItems === 0 && reviewItems === 0;
+            
+            let statusColor = "bg-emerald-500";
+            let textColor = "text-emerald-600";
+            let statusIcon = <Check className="h-3.5 w-3.5" />;
+            let statusText = "Siap";
+            
+            if (blockingItems > 0) {
+              statusColor = "bg-rose-500";
+              textColor = "text-rose-600";
+              statusIcon = <X className="h-3.5 w-3.5" />;
+              statusText = `${blockingItems} gap`;
+            } else if (reviewItems > 0) {
+              statusColor = "bg-amber-500";
+              textColor = "text-amber-600";
+              statusIcon = <AlertTriangle className="h-3.5 w-3.5" />;
+              statusText = `${reviewItems} perlu cek`;
+            }
 
             return (
-              <div key={category.name} className="flex flex-col border border-slate-200 rounded-lg overflow-hidden transition-all bg-white shadow-sm">
-                {/* Category Header */}
+              <div key={category.name} className="flex flex-col overflow-hidden bg-white relative">
                 <div 
-                  className="flex items-center justify-between p-3.5 bg-slate-50/80 hover:bg-slate-100/50 cursor-pointer transition-colors"
+                  className={cn(
+                    "flex items-center justify-between px-4 py-3 cursor-pointer transition-colors h-[48px]",
+                    "bg-slate-50 hover:bg-slate-100/70"
+                  )}
                   onClick={toggleCategory}
                 >
-                  <div className="flex flex-col gap-1.5">
-                    <div className="flex items-center gap-2">
-                      <h5 className="text-[12px] font-bold text-slate-800 uppercase tracking-widest flex items-center">
-                        <InfoTooltip content={catTooltip}>
-                          {getCategoryDisplayName(category.name)}
-                        </InfoTooltip>
-                      </h5>
-                      <span className="text-[11px] text-slate-500 font-medium bg-white px-2 py-0.5 rounded border border-slate-200 shadow-sm">{category.fulfilledCount}/{category.totalCount} siap</span>
+                  <div className="flex items-center gap-3 flex-1 pl-1">
+                    <div className="text-slate-500">
+                      {getCategoryIcon(category.name)}
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Impact:</span>
-                      <div className="flex flex-wrap gap-1">
-                        {category.downstreamImpact.map(imp => {
-                          let impTooltip = `Evidence pada kategori ini digunakan untuk membantu analisis ${imp}.`;
-                          if (imp === "Fact & Chronology") impTooltip = "Evidence pada kategori ini digunakan untuk membantu penyusunan fakta dan kronologi kejadian.";
-                          else if (imp === "PEEPO") impTooltip = "Evidence pada kategori ini akan dipakai dalam analisis PEEPO.";
-                          else if (imp === "IPLS") impTooltip = "Evidence pada kategori ini akan dipakai dalam analisis IPLS.";
-                          
-                          return (
-                            <TooltipProvider delayDuration={150} key={imp}>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <span className="text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded-sm bg-blue-50 text-blue-700 border border-blue-100 cursor-help outline-none">
-                                    {imp}
-                                  </span>
-                                </TooltipTrigger>
-                                <TooltipContent side="top" sideOffset={6} className="max-w-[280px] bg-slate-900 text-slate-50 border-slate-800 shadow-md p-3 rounded-lg z-[120]">
-                                  <p className="text-[12px] font-medium leading-relaxed">{impTooltip}</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className={cn(
-                      "text-[10px] font-bold uppercase px-2 py-1 rounded-md border",
-                      category.status === "READY" ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
-                      category.status === "NEEDS_ATTENTION" ? "bg-amber-50 text-amber-700 border-amber-200" :
-                      "bg-rose-50 text-rose-700 border-rose-200"
-                    )}>
-                      {category.status === "READY" ? "SIAP" : category.status === "NEEDS_ATTENTION" ? "PERLU PERHATIAN" : "BELUM SIAP"}
+                    <h5 className="text-[13.5px] font-bold text-slate-800 tracking-tight">
+                      {getCategoryDisplayName(category.name)}
+                    </h5>
+                    <span className="text-[12px] font-medium text-slate-400 px-1">
+                      {category.fulfilledCount}/{category.totalCount}
                     </span>
-                    <ChevronRight className={cn("h-4 w-4 text-slate-400 transition-transform", isExpanded ? "rotate-90" : "")} />
+                    <TooltipProvider delayDuration={300}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className={cn("flex items-center gap-1 ml-auto mr-2", textColor)}>
+                            {statusIcon}
+                            <span className="text-[12px] font-bold tracking-tight">{statusText}</span>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent side="top">
+                          <p className="text-[12px] font-medium">
+                            {blockingItems > 0 ? `${blockingItems} evidence masih menghambat analisis` : 
+                             reviewItems > 0 ? `${reviewItems} evidence perlu diperiksa` : "Semua evidence siap digunakan"}
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </div>
+                  <ChevronRight className={cn("h-4 w-4 text-slate-400 transition-transform duration-200 shrink-0", isExpanded ? "rotate-90" : "")} />
                 </div>
-
-                {/* Items */}
-                <div className={cn("flex-col divide-y divide-slate-100 border-t border-slate-100", isExpanded ? "flex" : "hidden")}>
-                  {items.length === 0 && (
-                     <div className="p-4 text-[12px] text-slate-500 text-center">
-                       Belum ada evidence untuk kategori ini.
-                     </div>
+                
+                {/* Child Evidence Hierarchy */}
+                <div 
+                  className={cn(
+                    "relative flex-col bg-white transition-all overflow-hidden ease-out duration-200",
+                    isExpanded ? "max-h-[800px] opacity-100" : "max-h-0 opacity-0"
                   )}
+                >
+                  {items.length === 0 && (
+                     <div className="p-3 pl-10 text-[12px] text-slate-500">Belum ada evidence.</div>
+                  )}
+                  
                   {items.map(req => {
                     const isActive = req.id === activeReqId;
                     return (
                       <div 
                         key={req.id}
+                        ref={(el) => (itemRefs.current[req.id] = el)}
                         onClick={() => setActiveReqId(req.id)}
                         className={cn(
-                          "relative flex items-center gap-3 p-3 cursor-pointer transition-colors group",
-                          isActive ? "bg-blue-50/30" : "bg-white hover:bg-slate-50/50"
+                          "relative flex items-center justify-between py-2.5 px-4 pl-[48px] cursor-pointer group min-h-[44px]",
+                          isActive ? "bg-blue-50/50" : "hover:bg-slate-50/70 transition-colors"
                         )}
                       >
-                        <div className={cn("absolute left-0 top-0 bottom-0 w-[3px]", isActive ? getIndicatorColor(req.status) : "bg-transparent group-hover:bg-slate-200")} />
+                        {/* Selected accent line */}
+                        {isActive && <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-blue-500 z-20" />}
                         
-                        <div className="flex-1 min-w-0 pl-2">
-                          <div className={cn("text-[13px] font-bold truncate mb-1 transition-colors", isActive ? "text-blue-900" : "text-slate-700 group-hover:text-slate-900")}>
-                            {req.label}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-[11px] text-slate-500 truncate">
-                              {req.matchedFiles.length > 0 ? req.matchedFiles.map(f => f.name).join(", ") : "Belum ada file"}
-                            </span>
-                          </div>
+                        {/* Child Icon */}
+                        <div className="absolute left-[20px] top-1/2 -translate-y-1/2 flex items-center justify-center w-6 h-6 rounded bg-slate-50 border border-slate-100 group-hover:bg-white transition-colors z-10">
+                          {getRequirementIcon(req.label)}
                         </div>
                         
-                        <div className="shrink-0">
-                          <span className={cn("text-[9px] font-bold uppercase tracking-widest px-2 py-1 rounded-md border", getStatusColor(req.status))}>
-                            {translateStatus(req.status)}
-                          </span>
+                        <div className={cn(
+                          "text-[12.5px] truncate flex-1 pr-4 transition-colors duration-150 ml-1.5", 
+                          isActive ? "text-slate-900 font-semibold" : "text-slate-600 font-medium"
+                        )}>
+                          {req.label}
                         </div>
+                        
+                        <TooltipProvider delayDuration={200}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="shrink-0 p-1 outline-none">
+                                {getStatusIcon(req.status, "h-4 w-4")}
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent side="right" className="bg-slate-900 text-slate-50 border-slate-800 shadow-md">
+                              <p className="text-[12px] font-medium">{getStatusReason(req)}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       </div>
                     );
                   })}
@@ -502,161 +483,247 @@ export function EvidenceReadinessModal({ open, onOpenChange, onProceedToAnalysis
     );
   };
 
-  const renderDetail = () => {
-    if (!activeRequirement) return (
-      <div className="w-[50%] flex items-center justify-center bg-slate-50/50">
-        <span className="text-[13px] text-slate-400 font-medium">Pilih requirement untuk melihat detail</span>
+  const renderEmptyState = () => (
+    <div className="w-[62%] flex flex-col items-center justify-center bg-white">
+      <div className="flex flex-col items-center max-w-[320px] text-center">
+        <div className="mb-4">
+          <Search className="h-10 w-10 text-slate-300 stroke-[1.5]" />
+        </div>
+        <h3 className="text-[16px] font-bold text-slate-900 mb-2">Pilih evidence</h3>
+        <p className="text-[13.5px] text-slate-500 leading-relaxed mb-8">
+          Pilih item dari daftar untuk melihat file, hasil pemeriksaan, dan dampaknya ke analisis.
+        </p>
+        
+        {gapCount > 0 ? (
+          <div className="flex flex-col items-center gap-4 w-full">
+            <Button 
+              className="h-10 px-8 text-[13px] font-semibold bg-slate-900 text-white hover:bg-slate-800 shadow-sm transition-all"
+              onClick={handleViewPriorityGap}
+            >
+              Lihat gap prioritas
+            </Button>
+            <button className="text-[13px] font-medium text-slate-500 hover:text-slate-800 transition-colors" disabled>
+              Pilih dari daftar
+            </button>
+          </div>
+        ) : (
+          <span className="text-[13px] font-medium text-slate-500">
+            Belum ada evidence yang dipilih
+          </span>
+        )}
       </div>
-    );
+    </div>
+  );
+
+  const renderDetail = () => {
+    if (!activeRequirement) return renderEmptyState();
 
     const req = activeRequirement;
+    const isRechecking = recheckingIds[req.id];
+    const uploadState = uploadingIds[req.id];
 
     return (
-      <div className="w-[50%] flex flex-col bg-[#f8fafc] overflow-hidden">
-        <div className="px-8 py-5 border-b border-slate-200 bg-white shrink-0">
-          <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">
-            {getCategoryDisplayName(req.category)}
-          </h4>
-          <h2 className="text-[16px] font-bold text-slate-900 uppercase tracking-wide mb-3 leading-snug">
-            {req.label}
-          </h2>
-          <div className="flex items-center gap-2">
-            <TooltipProvider delayDuration={150}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span className={cn("text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-md border cursor-help outline-none", getStatusColor(req.status))}>
-                    {translateStatus(req.status)}
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent side="top" sideOffset={6} className="max-w-[280px] bg-slate-900 text-slate-50 border-slate-800 shadow-md p-3 rounded-lg z-[120]">
-                  <p className="text-[12px] font-medium leading-relaxed">
-                    {req.status === "FULFILLED" ? "Evidence sudah tersedia dan berhasil dibaca atau dipakai sistem." : 
-                     req.status === "MISSING" ? "Sistem belum menemukan evidence yang sesuai untuk kebutuhan ini." : 
-                     req.status === "BROKEN" ? "Evidence tersedia, tetapi belum bisa digunakan karena ada kendala seperti file rusak, gagal diproses, atau isi tidak terbaca." : 
-                     req.status === "NEEDS_VERIFICATION" ? "Sistem mendeteksi evidence yang mungkin sesuai, tetapi masih butuh konfirmasi pengguna." : ""}
-                  </p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+      <div className="w-[62%] flex flex-col bg-white overflow-hidden animate-in fade-in duration-200 relative">
+        <div className="px-10 py-8 border-b border-slate-100 shrink-0">
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">{getCategoryDisplayName(req.category)}</span>
+            
+            <div className="flex items-start justify-between gap-4">
+              <h2 className="text-[22px] font-bold text-slate-900 leading-snug">
+                {req.label}
+              </h2>
+              
+              <div className="flex items-center gap-1.5 mt-1 bg-slate-50 rounded-md p-1 border border-slate-100">
+                <TooltipProvider delayDuration={200}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button 
+                        onClick={handlePrev} 
+                        disabled={currentIndex <= 0}
+                        className="p-1.5 text-slate-400 hover:text-slate-800 hover:bg-slate-200 rounded transition-colors disabled:opacity-30 disabled:hover:bg-transparent outline-none"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="text-[11px] font-semibold bg-slate-800 text-white border-none">
+                      Sebelumnya (↑)
+                    </TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button 
+                        onClick={handleNext} 
+                        disabled={currentIndex >= flatResults.length - 1}
+                        className="p-1.5 text-slate-400 hover:text-slate-800 hover:bg-slate-200 rounded transition-colors disabled:opacity-30 disabled:hover:bg-transparent outline-none"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="text-[11px] font-semibold bg-slate-800 text-white border-none">
+                      Berikutnya (↓)
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex items-center justify-between mt-4">
+            <div className="flex items-center gap-2">
+              {getStatusIcon(req.status, "h-4 w-4")}
+              <span className={cn(
+                "text-[12px] font-bold uppercase tracking-widest",
+                req.status === "FULFILLED" ? "text-emerald-700" :
+                req.status === "NEEDS_VERIFICATION" ? "text-amber-700" : "text-rose-700"
+              )}>
+                {req.status === "FULFILLED" ? "SIAP" : req.status === "NEEDS_VERIFICATION" ? "PERLU CEK" : "MENGHAMBAT"}
+              </span>
+            </div>
+            
+            {hasNextGap && req.status === "FULFILLED" && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={handleNextGap}
+                className="h-7 px-3 text-[12px] font-semibold text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+              >
+                Next gap <ArrowRight className="h-3 w-3 ml-1" />
+              </Button>
+            )}
           </div>
         </div>
 
-        <div className="flex-1 overflow-auto p-8 space-y-8">
+        <div className="flex-1 overflow-y-auto px-10 py-8 space-y-8 custom-scrollbar">
           
           <div className="space-y-2">
-            <h5 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest flex items-center">
-              <InfoTooltip content="Menjelaskan jenis evidence yang dicari sistem untuk memenuhi kebutuhan ini.">
-                EVIDENCE YANG DIBUTUHKAN
-              </InfoTooltip>
-            </h5>
-            <div className="text-[13px] text-slate-700 leading-relaxed bg-white border border-slate-200 p-4 rounded-lg shadow-sm">
+            <h5 className="text-[13px] font-bold text-slate-800">Yang dibutuhkan</h5>
+            <div className="text-[14px] text-slate-600 leading-relaxed">
               {req.requiredDesc || "Standard requirement description."}
             </div>
           </div>
 
-          <div className="space-y-2">
-            <h5 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest flex items-center">
-              <InfoTooltip content="Menampilkan file atau dokumen yang berhasil ditemukan dan dikaitkan ke kebutuhan evidence ini.">
-                EVIDENCE YANG DITEMUKAN
-              </InfoTooltip>
-            </h5>
-            {req.matchedFiles.length > 0 ? (
-              <div className="flex flex-col gap-2">
+          <div className="w-full h-px bg-slate-100" />
+
+          <div className="space-y-4">
+            <h5 className="text-[13px] font-bold text-slate-800">Ditemukan</h5>
+            
+            {uploadState ? (
+              <div className="flex items-center gap-4 bg-white border border-slate-200 p-4 rounded-lg shadow-sm">
+                <FileText className="h-5 w-5 text-blue-500" />
+                <div className="flex flex-col flex-1 gap-1.5">
+                  <span className="text-[13px] font-semibold text-slate-800">Upload_File_New.mp4</span>
+                  <div className="flex items-center gap-2 text-[12px] text-slate-500 font-medium">
+                    {uploadState.status === "uploading" ? (
+                      <><span>Uploading...</span><span className="text-blue-600 font-bold">{uploadState.progress}%</span></>
+                    ) : (
+                      <><Loader2 className="h-3 w-3 animate-spin"/> Processing...</>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : req.matchedFiles.length > 0 ? (
+              <div className="flex flex-col gap-3">
                 {req.matchedFiles.map(mf => (
-                  <div key={mf.id} className="flex flex-col gap-3 bg-white border border-slate-200 p-4 rounded-lg shadow-sm">
-                    <div className="flex items-start gap-3">
-                      <FileText className="h-4 w-4 text-slate-400 mt-0.5" />
-                      <div className="flex flex-col">
-                        <span className="text-[13px] font-semibold text-slate-800">{mf.name}</span>
-                        <span className="text-[11px] text-slate-500">
-                          Status: <span className="font-bold">{mf.processingStatus === "DONE" ? "Success" : mf.processingStatus === "ERROR" ? "Processing Error" : "Unknown State"}</span>
-                        </span>
-                      </div>
-                    </div>
-                    {req.status === "NEEDS_VERIFICATION" && mf.aiMatchCategory && (
-                      <div className="mt-2 pt-3 border-t border-slate-100 flex flex-col gap-3">
+                  <div key={mf.id} className="flex flex-col gap-4 bg-white border border-slate-200 p-4 rounded-lg shadow-sm group">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start gap-3">
+                        <div className="p-2 bg-slate-50 rounded text-slate-500 mt-0.5">
+                          <FileText className="h-4 w-4" />
+                        </div>
                         <div className="flex flex-col">
-                          <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1">AI MENDETEKSI</span>
-                          <span className="text-[12px] text-slate-700 font-medium">Possible category: <span className="font-bold">{mf.aiMatchCategory}</span></span>
-                          <span className="text-[11px] text-slate-400">Confidence: {mf.aiMatchConfidence || "Medium"}</span>
+                          <span className="text-[13.5px] font-semibold text-slate-900 mb-1">{mf.name}</span>
+                          
+                          {req.status === "FULFILLED" ? (
+                            <>
+                              <div className="flex items-center gap-1.5 text-emerald-600 font-medium text-[12.5px] mb-1.5">
+                                <Check className="h-3.5 w-3.5" /> Siap digunakan
+                              </div>
+                              <span className="text-[12px] text-slate-400 font-medium">
+                                CSV · 248 KB · diperiksa 20:03
+                              </span>
+                            </>
+                          ) : mf.processingStatus === "ERROR" || req.status === "BROKEN" ? (
+                            <span className="text-[12.5px] text-rose-600 font-medium">{req.issue || "Processing error"}</span>
+                          ) : req.status === "NEEDS_VERIFICATION" ? (
+                            <span className="text-[12.5px] text-amber-600 font-medium">Perlu verifikasi investigator.</span>
+                          ) : (
+                            <span className="text-[12.5px] text-slate-500 font-medium">Ditemukan</span>
+                          )}
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="h-8 text-[11px] font-semibold bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 hover:text-emerald-800"
-                            onClick={() => confirmVerification(req.id, true)}
-                          >
-                            Konfirmasi Evidence
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="h-8 text-[11px] font-semibold text-slate-600 hover:text-rose-600"
-                            onClick={() => confirmVerification(req.id, false)}
-                          >
-                            Bukan Evidence Ini
-                          </Button>
-                        </div>
+                      </div>
+                      
+                      {req.status === "FULFILLED" && (
+                        <Button variant="ghost" size="sm" className="h-8 px-3 text-[12.5px] font-semibold text-slate-700 hover:text-blue-600 hover:bg-blue-50 transition-colors">
+                          <Eye className="h-4 w-4 mr-1.5 text-slate-400 group-hover:text-blue-500 transition-colors" /> Buka evidence &rarr;
+                        </Button>
+                      )}
+                    </div>
+                    
+                    {req.status !== "FULFILLED" && (
+                      <div className="flex items-center pt-3 border-t border-slate-100">
+                        <Button 
+                          variant="secondary" 
+                          size="sm" 
+                          className="h-8 text-[12.5px] font-semibold bg-slate-100 hover:bg-slate-200 text-slate-800"
+                          onClick={() => handleInlineRecheck(req.id)}
+                          disabled={isRechecking}
+                        >
+                          {isRechecking ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <RotateCcw className="h-3.5 w-3.5 mr-1.5" />}
+                          {isRechecking ? "Memeriksa..." : "Periksa ulang"}
+                        </Button>
                       </div>
                     )}
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="text-[13px] text-slate-600 bg-white border border-slate-200 p-4 rounded-lg shadow-sm">
-                Belum ada file yang dipetakan ke requirement ini.
+              <div className="flex flex-col gap-4">
+                <span className="text-[14px] text-slate-600">Belum ada file yang dipetakan.</span>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="h-9 w-fit text-[13px] font-semibold border-slate-300 bg-white shadow-sm hover:bg-slate-50 text-slate-700"
+                  onClick={() => handleSimulateUpload(req.id)}
+                >
+                  <Upload className="h-4 w-4 mr-2 text-slate-500" />
+                  Upload file
+                </Button>
               </div>
             )}
           </div>
 
-          {req.issue && req.status !== "NEEDS_VERIFICATION" && (
-             <div className="space-y-2">
-               <h5 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest flex items-center">
-                 <InfoTooltip content="Menjelaskan hasil pengecekan sistem terhadap evidence yang ditemukan.">
-                   HASIL PEMERIKSAAN
-                 </InfoTooltip>
-               </h5>
-               <div className="text-[13px] text-slate-700 leading-relaxed bg-white border border-slate-200 p-4 rounded-lg shadow-sm">
-                 {req.issue}
-               </div>
-             </div>
-          )}
+          <div className="w-full h-px bg-slate-100" />
 
-          <div className="space-y-2">
-            <h5 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest flex items-center">
-              <InfoTooltip content="Menjelaskan modul analisis mana yang terpengaruh oleh kondisi evidence ini.">
-                DAMPAK KE ANALISIS
-              </InfoTooltip>
+          <div className="space-y-4">
+            <h5 className="text-[13px] font-bold text-slate-800">
+              {req.status === "FULFILLED" ? "Digunakan untuk" : "Dampak"}
             </h5>
-            <div className="text-[13px] text-slate-700 leading-relaxed bg-white border border-slate-200 p-4 rounded-lg shadow-sm border-l-2 border-l-blue-400 flex flex-col gap-3">
-              <div className="flex flex-wrap gap-1.5">
+            
+            {req.status === "FULFILLED" ? (
+               <div className="flex flex-wrap items-center gap-2">
+                 {req.downstreamImpact.map(imp => (
+                   <div key={imp} className="bg-slate-100 text-slate-700 font-semibold text-[12.5px] px-3 py-1.5 rounded-md border border-slate-200/60">
+                     {imp}
+                   </div>
+                 ))}
+               </div>
+            ) : (
+              <div className="flex flex-col gap-3">
                 {req.downstreamImpact.map(imp => {
-                  let impTooltip = `Evidence pada kategori ini digunakan untuk membantu analisis ${imp}.`;
-                  if (imp === "Fact & Chronology") impTooltip = "Evidence pada kategori ini digunakan untuk membantu penyusunan fakta dan kronologi kejadian.";
-                  else if (imp === "PEEPO") impTooltip = "Evidence pada kategori ini akan dipakai dalam analisis PEEPO.";
-                  else if (imp === "IPLS") impTooltip = "Evidence pada kategori ini akan dipakai dalam analisis IPLS.";
-
+                  let impDesc = `Analisis ${imp} belum dapat diproses sepenuhnya.`;
+                  if (imp === "Fact & Chronology" && req.status !== "FULFILLED") impDesc = "Rekonstruksi kejadian belum dapat memakai evidence ini.";
+  
                   return (
-                    <TooltipProvider delayDuration={150} key={imp}>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-sm bg-blue-50 text-blue-700 border border-blue-100 cursor-help outline-none">
-                            {imp}
-                          </span>
-                        </TooltipTrigger>
-                        <TooltipContent side="top" sideOffset={6} className="max-w-[280px] bg-slate-900 text-slate-50 border-slate-800 shadow-md p-3 rounded-lg z-[120]">
-                          <p className="text-[12px] font-medium leading-relaxed">{impTooltip}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+                    <div key={imp} className="flex flex-col gap-1 text-[14px] text-slate-600">
+                      <div className="flex items-center">
+                        <span className="bg-slate-100 text-slate-700 font-semibold text-[12px] px-2 py-1 rounded border border-slate-200/60">{imp}</span>
+                      </div>
+                      <span className="mt-1">{req.impact || impDesc}</span>
+                    </div>
                   );
                 })}
               </div>
-              {req.impact && (
-                <span className="text-[12px]">{req.impact}</span>
-              )}
-            </div>
+            )}
           </div>
 
         </div>
@@ -664,79 +731,188 @@ export function EvidenceReadinessModal({ open, onOpenChange, onProceedToAnalysis
     );
   };
 
-  // ----------------------------------------------------------------------
-  // HISTORY LIST VIEW
-  // ----------------------------------------------------------------------
-  const renderHistory = () => (
-    <div className="flex flex-col h-full bg-slate-50">
-      <div className="px-8 py-5 border-b border-slate-200 bg-white shrink-0 flex flex-col gap-2 shadow-sm z-10">
-        <Button variant="ghost" size="sm" className="w-fit -ml-2 h-7 text-[11px] font-bold text-slate-500 hover:text-slate-900" onClick={() => setView("RESULT")}>
-          <ArrowLeft className="h-3.5 w-3.5 mr-1.5" /> Kembali ke Hasil Terbaru
-        </Button>
-        <div>
-          <h2 className="text-[16px] font-bold text-slate-900 uppercase tracking-wide">RIWAYAT PEMERIKSAAN</h2>
-          <span className="text-[12px] text-slate-500">{runs.length} pemeriksaan</span>
-        </div>
-      </div>
+  const renderBottomBar = () => {
+    if (!activeRun || view !== "RESULT") return null;
 
-      <div className="flex-1 overflow-auto p-8 space-y-4">
-        {runs.map(run => {
-          const fulfilled = run.results.filter(c => c.status === "FULFILLED").length;
-          const broken = run.results.filter(c => c.status === "BROKEN").length;
-          const missing = run.results.filter(c => c.status === "MISSING").length;
-          const needsVerif = run.results.filter(c => c.status === "NEEDS_VERIFICATION").length;
-          
-          const isNotReady = run.status === "NOT_READY";
-          const isNeedsAttention = run.status === "NEEDS_ATTENTION";
-
-          return (
-            <div key={run.id} className="bg-white border border-slate-200 rounded-lg p-5 flex flex-col sm:flex-row sm:items-start justify-between gap-5 shadow-sm hover:shadow-md transition-shadow">
-              <div className="space-y-3">
-                <div>
-                  <h4 className="text-[12px] font-bold text-slate-800 uppercase tracking-widest mb-1">Pemeriksaan #{run.runNumber}</h4>
-                  <div className={cn("text-[13px] font-bold uppercase", isNotReady ? "text-rose-700" : isNeedsAttention ? "text-amber-700" : "text-emerald-700")}>
-                    {isNotReady ? "BELUM SIAP" : isNeedsAttention ? "PERLU DILENGKAPI" : "SIAP DIANALISIS"}
-                  </div>
+    const blockingIssues = gapCount;
+    const hasIssues = blockingIssues > 0 || checkCount > 0;
+    
+    // Calculate total impacts
+    const totalImpacts = Object.values(impactMap).filter(m => m.status !== "Ready").length;
+    
+    return (
+      <div className="h-[76px] bg-white border-t border-slate-200 shrink-0 px-6 flex items-center justify-between z-20 relative shadow-[0_-4px_12px_rgba(0,0,0,0.02)]">
+        <div className="flex items-center gap-4">
+          {hasIssues ? (
+            <div className="flex items-center gap-3">
+              <div className="flex flex-col">
+                <div className="flex items-center gap-2">
+                  <X className="h-4 w-4 text-rose-600" />
+                  <span className="text-[14px] font-bold text-slate-900">
+                    {blockingIssues > 0 ? `${blockingIssues} gap menghambat analisis` : "Semua requirement terpenuhi"}
+                  </span>
                 </div>
-                <div className="text-[12px] text-slate-600 font-medium">
-                  {fulfilled} / {run.results.length} terpenuhi<br/>
-                  {broken} bermasalah<br/>
-                  {missing} belum ada<br/>
-                  {needsVerif} perlu verifikasi
-                </div>
+                {checkCount > 0 && <span className="text-[12.5px] text-slate-500 font-medium pl-6">{checkCount} perlu diperiksa</span>}
               </div>
               
-              <div className="flex flex-col items-start sm:items-end gap-3 justify-between">
-                <div className="text-left sm:text-right text-[11px] text-slate-500 font-medium">
-                  <div>{run.triggeredByUser.name} · {run.triggeredByUser.role}</div>
-                  <div>
-                    {new Date(run.completedAt || run.startedAt).toLocaleString("id-ID", {
-                      day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit"
-                    })} WIB
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button className="text-[13px] text-blue-600 hover:text-blue-800 font-semibold ml-4 px-3 py-1.5 rounded-md hover:bg-blue-50 transition-colors outline-none">
+                    Lihat {totalImpacts} dampak &rarr;
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent side="top" align="start" className="w-[320px] p-5 bg-white rounded-xl shadow-xl border-slate-200 z-[110]">
+                  <h4 className="text-[13px] font-bold text-slate-800 mb-4">Dampak ke analisis</h4>
+                  <div className="flex flex-col gap-3">
+                    {Object.entries(impactMap).map(([mod, data]) => {
+                      if (data.status === "Ready") {
+                        return (
+                          <div key={mod} className="flex items-center justify-between">
+                            <span className="text-[13.5px] text-slate-700 font-medium">{mod}</span>
+                            <span className="flex items-center gap-1.5 text-[12.5px] font-semibold text-emerald-600">
+                              <Check className="h-3.5 w-3.5"/> Siap
+                            </span>
+                          </div>
+                        );
+                      }
+                      return (
+                        <div key={mod} className="flex items-center justify-between">
+                          <span className="flex items-center gap-2 text-[13.5px] text-slate-800 font-medium">
+                            {data.status === "Blocked" ? <X className="h-3.5 w-3.5 text-rose-500"/> : <AlertTriangle className="h-3.5 w-3.5 text-amber-500"/>}
+                            {mod}
+                          </span>
+                          <span className="text-[12.5px] font-semibold text-slate-500">
+                            {data.count} evidence
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
-                </div>
-                {run.status !== "CHECKING" && (
-                  <Button variant="outline" size="sm" className="h-8 text-[11px] font-semibold shadow-sm" onClick={() => { setSelectedRun(run); setView("ARCHIVE"); }}>
-                    Lihat Snapshot
-                  </Button>
-                )}
-              </div>
+                </PopoverContent>
+              </Popover>
             </div>
-          );
-        })}
+          ) : (
+            <div className="flex items-center gap-2">
+              <Check className="h-4 w-4 text-emerald-600" />
+              <span className="text-[14px] font-bold text-emerald-800">
+                Evidence siap untuk analisis
+              </span>
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center gap-3">
+          {hasIssues ? (
+            <Button 
+              className="h-10 px-6 text-[13.5px] font-semibold bg-slate-900 hover:bg-slate-800 text-white shadow-sm transition-all"
+              onClick={() => {
+                setUnderstood(false);
+                setConfirmNote("");
+                setShowConfirmModal(true);
+              }}
+            >
+              Lanjutkan dengan {blockingIssues} gap
+            </Button>
+          ) : (
+            <Button 
+              className="h-10 px-6 text-[13.5px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-all"
+              onClick={() => {
+                onProceedToAnalysis();
+                onOpenChange(false);
+              }}
+            >
+              Lanjutkan ke Analisis
+            </Button>
+          )}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
+
+
+  const renderConfirmation = () => {
+    const missingReqs = activeRun?.results.filter(r => r.status === "MISSING") || [];
+    const brokenReqs = activeRun?.results.filter(r => r.status === "BROKEN" || r.status === "NEEDS_VERIFICATION") || [];
+    const allIssues = [...missingReqs, ...brokenReqs];
+
+    return (
+      <div className="flex flex-col h-full bg-white animate-in slide-in-from-right-8 duration-300">
+        <div className="px-12 py-10 flex-1 overflow-y-auto custom-scrollbar">
+          <h2 className="text-[22px] font-bold text-slate-900 tracking-tight">KONFIRMASI ANALYSIS</h2>
+          <p className="text-[14px] text-slate-500 mb-8 mt-1">Evidence Golden Gate</p>
+          
+          <div className="bg-rose-50/50 border border-rose-100 rounded-xl p-5 mb-10 flex flex-col gap-1.5">
+            {missingReqs.length > 0 && <div className="text-[14px] font-semibold text-rose-600">{missingReqs.length} requirement wajib belum terpenuhi</div>}
+            {brokenReqs.length > 0 && <div className="text-[14px] font-semibold text-rose-600">{brokenReqs.length} requirement wajib bermasalah</div>}
+          </div>
+
+          <h4 className="text-[12px] font-bold text-slate-500 uppercase tracking-widest mb-4">DETAIL BLOCKER</h4>
+          <div className="flex flex-col gap-4 mb-10">
+            {allIssues.map(req => (
+              <div key={req.id} className="flex items-start gap-3">
+                <div className="w-1.5 h-1.5 rounded-full bg-slate-300 mt-2 shrink-0" />
+                <p className="text-[14px] text-slate-600 leading-relaxed">
+                  <span className="font-bold text-slate-800">{req.label}</span> &mdash; {req.issue || getStatusReason(req)}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <label className="flex items-center gap-3 mb-10 cursor-pointer group w-fit">
+            <input 
+              type="checkbox" 
+              checked={understood}
+              onChange={(e) => setUnderstood(e.target.checked)}
+              className="w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
+            />
+            <span className="text-[14px] text-slate-700 font-medium group-hover:text-slate-900">
+              Saya memahami bahwa Analysis akan menggunakan evidence yang belum memenuhi requirement standar.
+            </span>
+          </label>
+
+          <h4 className="text-[12px] font-bold text-slate-500 uppercase tracking-widest mb-4">CATATAN ALASAN MELANJUTKAN (OPSIONAL)</h4>
+          <textarea 
+            value={confirmNote}
+            onChange={(e) => setConfirmNote(e.target.value)}
+            placeholder="Tambahkan catatan jika diperlukan..."
+            className="w-full h-[120px] rounded-xl border border-slate-200 p-4 text-[14px] text-slate-700 resize-none focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all"
+          />
+        </div>
+
+        <div className="px-12 py-6 border-t border-slate-100 flex items-center justify-between bg-white shrink-0">
+          <button 
+            onClick={() => setShowConfirmModal(false)}
+            className="text-[14px] font-semibold text-slate-500 hover:text-slate-900 transition-colors outline-none"
+          >
+            Kembali ke Pemeriksaan
+          </button>
+          <Button 
+            disabled={!understood}
+            onClick={() => {
+              overrideAnalysis(confirmNote, true);
+              onProceedToAnalysis();
+              setShowConfirmModal(false);
+              onOpenChange(false);
+              setView("RESULT");
+            }}
+            className="h-10 px-8 text-[14px] font-semibold bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50 disabled:bg-slate-300 disabled:text-slate-500 transition-all"
+          >
+            Tetap Lanjutkan
+          </Button>
+        </div>
+      </div>
+    );
+  };
 
   // ----------------------------------------------------------------------
-  // MAIN DRAWER RENDER
+  // MAIN RENDER
   // ----------------------------------------------------------------------
   return (
     <>
       {/* Backdrop */}
       <div 
         className={cn(
-          "fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-[2px] transition-opacity duration-300",
+          "fixed inset-0 z-[100] bg-slate-900/40 backdrop-blur-[1px] transition-opacity duration-300",
           open ? "opacity-100" : "opacity-0 pointer-events-none"
         )} 
         onClick={handleClose}
@@ -745,402 +921,70 @@ export function EvidenceReadinessModal({ open, onOpenChange, onProceedToAnalysis
       {/* Drawer */}
       <div 
         className={cn(
-          "fixed top-0 bottom-0 right-0 z-[101] w-[60vw] min-w-[760px] max-w-[980px] bg-white border-l border-slate-200 shadow-2xl flex flex-col transition-transform duration-300 ease-out",
+          "fixed top-0 bottom-0 right-0 z-[101] w-[64vw] min-w-[860px] max-w-[1100px] bg-white shadow-2xl flex flex-col transition-transform duration-300 ease-out",
           open ? "translate-x-0" : "translate-x-full"
         )}
       >
-        {/* Header (Hidden in Override & History) */}
-        {(view === "RESULT" || view === "ARCHIVE") && (
-          <div className="px-8 py-5 border-b border-slate-200 flex items-start justify-between shrink-0 bg-white">
-            <div className="flex items-center gap-4">
-              <ShieldCheck className="h-6 w-6 text-slate-800" />
-              <div className="flex flex-col">
-                <h3 className="text-[15px] font-bold text-slate-900 uppercase tracking-wide leading-none">
+        {showConfirmModal ? renderConfirmation() : (
+          <>
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between shrink-0 bg-white">
+              <div className="flex items-center gap-3">
+                <h3 className="text-[14px] font-bold text-slate-800 uppercase tracking-widest">
                   EVIDENCE GOLDEN GATE
                 </h3>
-                <span className="text-[12px] font-medium text-slate-500 mt-1">Pemeriksaan Kesiapan Analisis</span>
               </div>
-            </div>
-            <div className="flex items-center gap-5 mt-1">
-              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200">
-                {view === "ARCHIVE" ? `Arsip #${selectedRun?.runNumber}` : 
-                 latestRun?.status === "CHECKING" ? "MEMERIKSA" : 
-                 latestRun ? `Pemeriksaan #${latestRun.runNumber}` : "BELUM DIPERIKSA"}
-              </span>
-              
-              {runs.length > 0 && latestRun?.status !== "CHECKING" ? (
-                <button 
-                  className="text-[12px] font-bold text-slate-500 hover:text-slate-900 uppercase tracking-widest transition-colors"
-                  onClick={() => setView("HISTORY")}
-                >
-                  Riwayat
+              <div className="flex items-center gap-4">
+                <button className="text-slate-400 hover:text-slate-800 transition-colors p-1 outline-none" onClick={handleClose}>
+                  <X className="h-5 w-5" />
                 </button>
+              </div>
+            </div>
+
+            {/* Content Area */}
+            <div className="flex-1 overflow-hidden flex flex-col relative bg-white">
+              {latestRun?.status === "CHECKING" ? (
+                 <div className="flex-1 flex flex-col bg-white overflow-y-auto overflow-x-hidden relative">
+                   <div className="p-10 mx-auto w-full max-w-[560px] flex flex-col items-center">
+                     <div className="w-full flex flex-col items-center text-center mt-6">
+                       <div className="h-12 w-12 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-center mb-5 relative">
+                         <ShieldCheck className="h-6 w-6 text-slate-700 relative z-10" />
+                         <div className="absolute inset-0 rounded-xl border-2 border-slate-900/10 animate-ping opacity-20" />
+                       </div>
+                       <h2 className="text-[20px] font-bold text-slate-900 tracking-tight mb-2">Memeriksa kesiapan evidence</h2>
+                       <p className="text-[14px] text-slate-500 max-w-[420px] mb-8 leading-relaxed">
+                         Evidence sedang dipetakan ke kebutuhan investigasi.
+                       </p>
+                     </div>
+                   </div>
+                 </div>
+              ) : !activeRun ? (
+                <div className="flex-1 flex flex-col items-center justify-center bg-white p-8 text-center">
+                  <div className="h-16 w-16 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-center shadow-sm mb-5">
+                    <FileText className="h-8 w-8 text-slate-300" />
+                  </div>
+                  <h3 className="text-[18px] font-bold text-slate-900 tracking-tight mb-2">Belum ada evidence untuk diperiksa</h3>
+                  <p className="text-[14px] text-slate-500 max-w-sm leading-relaxed mb-8">
+                    Tambahkan evidence kasus terlebih dahulu agar sistem dapat memeriksa kesiapan analisis.
+                  </p>
+                  <div className="flex items-center gap-3">
+                    <Button variant="ghost" onClick={handleClose} className="text-slate-500">Tutup</Button>
+                    <Button className="px-8 h-10 text-[13px] font-semibold bg-slate-900 text-white shadow-sm">Tambah Evidence</Button>
+                  </div>
+                </div>
               ) : (
-                <div className="relative group flex items-center">
-                   <button 
-                     disabled
-                     className="text-[12px] font-bold text-slate-300 uppercase tracking-widest cursor-not-allowed"
-                   >
-                     Riwayat
-                   </button>
-                   <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 hidden group-hover:block w-max bg-slate-800 text-white text-[11px] px-2.5 py-1.5 rounded shadow-md z-50 pointer-events-none">
-                     Riwayat tersedia setelah pemeriksaan pertama.
+                 <div className="flex-1 flex flex-col relative overflow-hidden">
+                   <div className="flex flex-1 overflow-hidden">
+                     {renderChecklist()}
+                     {renderDetail()}
                    </div>
-                </div>
+                   {renderBottomBar()}
+                 </div>
               )}
-              
-              <div className="w-px h-5 bg-slate-200 mx-2" />
-              
-              <button className="text-slate-400 hover:text-slate-800" onClick={handleClose}>
-                <X className="h-5 w-5" />
-              </button>
             </div>
-          </div>
+          </>
         )}
-
-        {/* Content Area */}
-        <div className="flex-1 overflow-hidden flex flex-col relative bg-white">
-          {latestRun?.status === "CHECKING" ? (
-             <div className="flex-1 flex flex-col bg-white overflow-y-auto overflow-x-hidden relative">
-               <div className="p-10 mx-auto w-full max-w-[560px] flex flex-col items-center">
-                 <div className="w-full flex flex-col items-center text-center mt-6">
-                   <div className="h-10 w-10 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-center mb-4 relative">
-                     <ShieldCheck className="h-5 w-5 text-slate-700 relative z-10" />
-                     <div className="absolute inset-0 rounded-xl border-2 border-slate-900/10 animate-ping opacity-20" />
-                   </div>
-                   <h2 className="text-[19px] font-bold text-slate-900 tracking-tight mb-2">Memeriksa kesiapan evidence</h2>
-                   <p className="text-[14px] text-slate-500 max-w-[420px] mb-6 leading-relaxed">
-                     Evidence sedang dipetakan ke kebutuhan investigasi.
-                   </p>
-                   <Button 
-                     disabled
-                     className="w-[200px] h-10 text-[13px] font-semibold bg-slate-900 text-white shadow-sm"
-                   >
-                     <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Memeriksa...
-                   </Button>
-                 </div>
-
-                 <div className="space-y-4 mb-16 mt-12 px-2 w-full max-w-[320px]">
-                   <div className="flex items-center gap-4">
-                     <div className={cn("flex items-center justify-center h-5 w-5 rounded-full transition-colors duration-200 shrink-0", checkSequence >= 1 ? "bg-emerald-100 text-emerald-600" : "bg-slate-100 text-slate-400")}>
-                       {checkSequence >= 1 ? <Check className="h-3 w-3" /> : <Loader2 className="h-3 w-3 animate-spin" />}
-                     </div>
-                     <span className={cn("text-[13px] font-medium transition-colors duration-200", checkSequence >= 1 ? "text-slate-800" : "text-slate-500")}>
-                       Membaca evidence tersedia
-                     </span>
-                   </div>
-                   <div className="flex items-center gap-4">
-                     <div className={cn("flex items-center justify-center h-5 w-5 rounded-full transition-colors duration-200 shrink-0", checkSequence >= 2 ? "bg-emerald-100 text-emerald-600" : checkSequence === 1 ? "bg-slate-100 text-slate-400" : "bg-transparent")}>
-                       {checkSequence >= 2 ? <Check className="h-3 w-3" /> : checkSequence === 1 ? <Loader2 className="h-3 w-3 animate-spin" /> : <div className="h-1.5 w-1.5 rounded-full border border-slate-300" />}
-                     </div>
-                     <span className={cn("text-[13px] font-medium transition-colors duration-200", checkSequence >= 2 ? "text-slate-800" : checkSequence === 1 ? "text-slate-600" : "text-slate-400")}>
-                       Memetakan evidence ke requirement
-                     </span>
-                   </div>
-                   <div className="flex items-center gap-4">
-                     <div className={cn("flex items-center justify-center h-5 w-5 rounded-full transition-colors duration-200 shrink-0", checkSequence >= 3 ? "bg-emerald-100 text-emerald-600" : checkSequence === 2 ? "bg-slate-100 text-slate-400" : "bg-transparent")}>
-                       {checkSequence >= 3 ? <Check className="h-3 w-3" /> : checkSequence === 2 ? <Loader2 className="h-3 w-3 animate-spin" /> : <div className="h-1.5 w-1.5 rounded-full border border-slate-300" />}
-                     </div>
-                     <span className={cn("text-[13px] font-medium transition-colors duration-200", checkSequence >= 3 ? "text-slate-800" : checkSequence === 2 ? "text-slate-600" : "text-slate-400")}>
-                       Memeriksa kelengkapan dan kualitas
-                     </span>
-                   </div>
-                 </div>
-
-                 {/* Skeletons */}
-                 <div className="w-full space-y-3 pt-8 border-t border-slate-100 opacity-60">
-                   <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">STANDARD EVIDENCE REQUIREMENTS</h4>
-                   {[1, 2, 3, 4].map(i => (
-                     <div key={i} className="flex items-center gap-3 p-3 bg-white border border-slate-100 rounded-lg shadow-sm">
-                       <div className="h-full w-[3px] bg-slate-200 rounded-r-md absolute left-0 top-2 bottom-2" />
-                       <div className="h-8 w-full animate-pulse bg-slate-100/80 rounded-md" />
-                     </div>
-                   ))}
-                 </div>
-               </div>
-             </div>
-          ) : view === "CONFIRM_OVERRIDE" && latestRun ? (
-             <div className="flex-1 flex flex-col bg-white h-full animate-in fade-in duration-300">
-                {/* Header */}
-                <div className="px-12 pt-12 pb-8 flex flex-col">
-                  <h2 className="text-[16px] font-bold text-slate-900 uppercase tracking-widest">KONFIRMASI ANALYSIS</h2>
-                  <p className="text-[13px] text-slate-500 mt-1">Evidence Golden Gate</p>
-                </div>
-                
-                <div className="flex-1 overflow-auto px-12 pb-12 custom-scrollbar">
-                  {/* Red Warning Box */}
-                  <div className="bg-[#FFF5F6] rounded-xl p-6 mb-12">
-                     {latestRun.results.filter(r => r.level === "REQUIRED" && r.status === "MISSING").length > 0 && (
-                       <div className="text-[13px] font-semibold text-rose-600">
-                         {latestRun.results.filter(r => r.level === "REQUIRED" && r.status === "MISSING").length} requirement wajib belum terpenuhi
-                       </div>
-                     )}
-                     {latestRun.results.filter(r => r.level === "REQUIRED" && r.status === "BROKEN").length > 0 && (
-                       <div className="text-[13px] font-semibold text-rose-600 mt-1.5">
-                         {latestRun.results.filter(r => r.level === "REQUIRED" && r.status === "BROKEN").length} requirement wajib bermasalah
-                       </div>
-                     )}
-                  </div>
-
-                  {/* Detail Blocker */}
-                  <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-6">DETAIL BLOCKER</h3>
-                  <ul className="list-disc pl-5 space-y-4 mb-14 text-[13px] marker:text-slate-300">
-                    {latestRun.results.filter(r => r.level === "REQUIRED" && r.status !== "FULFILLED").map(req => (
-                      <li key={req.id} className="text-slate-400 pl-1 leading-relaxed">
-                        <span className="font-bold text-slate-800">{req.label}</span> <span className="text-slate-400">— {req.issue || (req.status === "MISSING" ? "Belum ada file yang dipetakan ke requirement ini." : "bermasalah")}</span>
-                      </li>
-                    ))}
-                  </ul>
-
-                  {/* Checkbox */}
-                  <label className="flex items-start gap-3.5 cursor-pointer group mb-12">
-                    <Checkbox 
-                      checked={overrideAck} 
-                      onCheckedChange={(c) => setOverrideAck(c === true)} 
-                      className="mt-0.5 border-slate-200 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500"
-                    />
-                    <span className="text-[13px] text-slate-700 leading-relaxed font-medium">
-                      Saya memahami bahwa Analysis akan menggunakan evidence yang belum memenuhi requirement standar.
-                    </span>
-                  </label>
-
-                  {/* Textarea */}
-                  <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-4">CATATAN ALASAN MELANJUTKAN (OPSIONAL)</h3>
-                  <Textarea 
-                    value={overrideNote}
-                    onChange={(e) => setOverrideNote(e.target.value)}
-                    className="w-full h-32 bg-white border-slate-200 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-emerald-400 resize-none rounded-lg text-[13px] p-4 placeholder:text-slate-400 shadow-sm"
-                    placeholder="Tambahkan catatan jika diperlukan..."
-                  />
-                </div>
-
-                {/* Footer */}
-                <div className="px-12 py-6 bg-white flex items-center justify-between mt-auto shrink-0 border-t-0">
-                  <Button variant="ghost" className="text-[13px] font-semibold text-slate-500 px-0 hover:bg-transparent hover:text-slate-800" onClick={() => setView("RESULT")}>
-                    Kembali ke Pemeriksaan
-                  </Button>
-                  <Button 
-                    className="px-8 h-10 text-[13px] font-semibold bg-slate-400 text-white hover:bg-slate-500 rounded-md shadow-sm transition-all"
-                    disabled={!overrideAck}
-                    onClick={() => {
-                      overrideAnalysis(overrideNote, overrideAck);
-                      onProceedToAnalysis();
-                      onOpenChange(false);
-                      setView("RESULT");
-                    }}
-                  >
-                    Tetap Lanjutkan
-                  </Button>
-                </div>
-             </div>
-          ) : view === "HISTORY" ? (
-             renderHistory()
-          ) : !activeRun ? (
-            !hasEvidence ? (
-              <div className="flex-1 flex flex-col items-center justify-center bg-slate-50/50 p-8 text-center">
-                <div className="h-16 w-16 bg-white border border-slate-200 rounded-2xl flex items-center justify-center shadow-sm mb-5">
-                  <FileText className="h-8 w-8 text-slate-300" />
-                </div>
-                <h3 className="text-[18px] font-bold text-slate-900 tracking-tight mb-2">Belum ada evidence untuk diperiksa</h3>
-                <p className="text-[14px] text-slate-500 max-w-sm leading-relaxed mb-8">
-                  Tambahkan evidence kasus terlebih dahulu agar sistem dapat memeriksa kesiapan analisis.
-                </p>
-                <div className="flex items-center gap-3">
-                  <Button variant="ghost" onClick={handleClose} className="text-slate-500">Tutup</Button>
-                  <Button 
-                    className="px-8 h-10 text-[13px] font-semibold bg-slate-900 text-white hover:bg-slate-800 shadow-sm"
-                    onClick={() => {
-                      handleClose(); 
-                    }}
-                  >
-                    Tambah Evidence
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div className="flex-1 flex flex-col bg-white overflow-y-auto">
-                <div className="p-8 pb-12 flex flex-col items-center">
-                  
-                  {/* MAIN INTRO AREA */}
-                  <div className="w-full max-w-[600px] pt-8 flex flex-col items-center text-center">
-                    <div className="h-11 w-11 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-center mb-4">
-                      <ShieldCheck className="h-5 w-5 text-slate-700" />
-                    </div>
-                    <h2 className="text-[19px] font-bold text-slate-900 tracking-tight mb-2">Periksa kesiapan evidence</h2>
-                    <p className="text-[14px] text-slate-500 max-w-[460px] mb-6 leading-relaxed">
-                      Sistem akan memetakan evidence yang tersedia ke kebutuhan investigasi dan menunjukkan data yang masih perlu dilengkapi.
-                    </p>
-                    <Button 
-                      className="w-[200px] h-10 text-[13px] font-semibold bg-slate-900 text-white hover:bg-slate-800 shadow-sm transition-all active:scale-[0.98]"
-                      onClick={handleRecheck}
-                    >
-                      Periksa Kesiapan
-                    </Button>
-                    <p className="text-[12px] text-slate-400 mt-3 font-medium">
-                      File evidence tidak akan diubah.
-                    </p>
-                  </div>
-
-                  <div className="w-full max-w-[600px] h-px bg-slate-100 my-10" />
-
-                  {/* YANG AKAN DIPERIKSA */}
-                  <div className="w-full max-w-[600px] space-y-4">
-                    <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest text-center mb-4">YANG AKAN DIPERIKSA</h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div className="flex items-start gap-3 bg-white p-3 rounded-lg border border-slate-200/60 transition-colors hover:bg-slate-50/50">
-                        <div className="p-2 bg-slate-50 rounded border border-slate-100 shrink-0"><Camera className="h-4 w-4 text-slate-500"/></div>
-                        <div className="pt-0.5">
-                          <div className="text-[13px] font-bold text-slate-800 mb-0.5">Bukti Lapangan</div>
-                          <div className="text-[12px] text-slate-500 leading-snug">Video kejadian dan foto pengamatan</div>
-                        </div>
-                      </div>
-                      <div className="flex items-start gap-3 bg-white p-3 rounded-lg border border-slate-200/60 transition-colors hover:bg-slate-50/50">
-                        <div className="p-2 bg-slate-50 rounded border border-slate-100 shrink-0"><FileText className="h-4 w-4 text-slate-500"/></div>
-                        <div className="pt-0.5">
-                          <div className="text-[13px] font-bold text-slate-800 mb-0.5">Dokumen Formal</div>
-                          <div className="text-[12px] text-slate-500 leading-snug">BAP, laporan awal, dan dokumen investigasi</div>
-                        </div>
-                      </div>
-                      <div className="flex items-start gap-3 bg-white p-3 rounded-lg border border-slate-200/60 transition-colors hover:bg-slate-50/50">
-                        <div className="p-2 bg-slate-50 rounded border border-slate-100 shrink-0"><Mic className="h-4 w-4 text-slate-500"/></div>
-                        <div className="pt-0.5">
-                          <div className="text-[13px] font-bold text-slate-800 mb-0.5">Wawancara & Komunikasi</div>
-                          <div className="text-[12px] text-slate-500 leading-snug">Rekaman operator, saksi, dan pihak terkait</div>
-                        </div>
-                      </div>
-                      <div className="flex items-start gap-3 bg-white p-3 rounded-lg border border-slate-200/60 transition-colors hover:bg-slate-50/50">
-                        <div className="p-2 bg-slate-50 rounded border border-slate-100 shrink-0"><Paperclip className="h-4 w-4 text-slate-500"/></div>
-                        <div className="pt-0.5">
-                          <div className="text-[13px] font-bold text-slate-800 mb-0.5">Evidence Pendukung</div>
-                          <div className="text-[12px] text-slate-500 leading-snug">File tambahan yang relevan dengan analisis</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="w-full max-w-[600px] h-px bg-slate-100 my-10" />
-
-                  {/* PROSES PEMERIKSAAN */}
-                  <div className="w-full max-w-[600px] mb-4">
-                    <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest text-center mb-5">PROSES PEMERIKSAAN</h4>
-                    <div className="flex items-center justify-center text-[12px] font-medium text-slate-500 px-4">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-bold bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">01</span>
-                        <span>Pemetaan Evidence</span>
-                      </div>
-                      <ArrowRight className="h-3 w-3 text-slate-300 mx-3 shrink-0" />
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-bold bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">02</span>
-                        <span>Pemeriksaan Requirement</span>
-                      </div>
-                      <ArrowRight className="h-3 w-3 text-slate-300 mx-3 shrink-0" />
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-bold bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">03</span>
-                        <span>Kesiapan Analisis</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )
-          ) : (
-            <div className="flex flex-col h-full">
-              {renderSummary()}
-              <div className="flex-1 flex overflow-hidden">
-                {renderChecklist()}
-                {renderDetail()}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Sticky Footer */}
-        {latestRun?.status !== "CHECKING" && view !== "CONFIRM_OVERRIDE" && (
-          <div className="px-8 py-5 border-t border-slate-200 bg-white shrink-0 flex items-center justify-between shadow-[0_-4px_10px_-4px_rgba(0,0,0,0.05)] z-20 relative">
-            {view === "HISTORY" ? (
-              <Button variant="ghost" className="text-[13px] font-semibold text-slate-600" onClick={() => setView("RESULT")}>
-                Kembali
-              </Button>
-            ) : !activeRun ? (
-              hasEvidence && (
-                <>
-                  <Button variant="ghost" className="text-[13px] font-semibold text-slate-600" onClick={handleClose}>
-                    Tutup
-                  </Button>
-                  <Button 
-                    variant="outline"
-                    className="px-8 text-[13px] font-semibold text-slate-700 border-slate-300 transition-all active:scale-[0.98]"
-                    onClick={handleRecheck}
-                  >
-                    Periksa Kesiapan
-                  </Button>
-                </>
-              )
-            ) : (
-              <>
-                <Button variant="ghost" className="text-[13px] font-semibold text-slate-600" onClick={handleClose}>
-                  Tutup
-                </Button>
-                <div className="flex items-center gap-3">
-                  <Button variant="outline" className="text-[13px] font-semibold text-slate-700 border-slate-300" onClick={() => setShowRecheckModal(true)}>
-                    Periksa Ulang
-                  </Button>
-                  <Button 
-                    className="px-8 text-[13px] font-semibold bg-slate-900 text-white hover:bg-slate-800"
-                    onClick={() => {
-                      const isNotReady = activeRun?.status === "NOT_READY";
-                      if (isNotReady && view !== "ARCHIVE") {
-                        setView("CONFIRM_OVERRIDE");
-                      } else {
-                        onProceedToAnalysis();
-                        onOpenChange(false);
-                      }
-                    }}
-                  >
-                    Lanjutkan ke Analysis
-                  </Button>
-                </div>
-              </>
-            )}
-          </div>
-        )}
-
       </div>
-
-      
-
-      {/* Recheck Modal */}
-      {showRecheckModal && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/60 backdrop-blur-[2px]">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-[400px] overflow-hidden flex flex-col m-4 animate-in fade-in zoom-in-95 duration-200">
-            <div className="px-6 py-5 flex items-start gap-4">
-              <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
-                <RotateCcw className="h-5 w-5 text-slate-700" />
-              </div>
-              <div className="flex flex-col pt-1">
-                <h3 className="text-[15px] font-bold text-slate-900">Periksa ulang evidence?</h3>
-                <p className="text-[13px] text-slate-500 mt-1 leading-relaxed">
-                  Evidence terbaru akan diperiksa kembali. Hasil sebelumnya tetap tersedia di Riwayat.
-                </p>
-              </div>
-            </div>
-            <div className="px-6 py-4 bg-slate-50 flex items-center justify-end gap-3 border-t border-slate-100">
-              <Button variant="ghost" className="text-[13px] font-semibold text-slate-600" onClick={() => setShowRecheckModal(false)}>
-                Batal
-              </Button>
-              <Button 
-                className="px-6 text-[13px] font-semibold bg-slate-900 text-white hover:bg-slate-800"
-                onClick={() => {
-                  setShowRecheckModal(false);
-                  handleRecheck();
-                }}
-              >
-                Periksa Ulang
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 }
