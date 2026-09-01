@@ -1554,7 +1554,7 @@ const calculateItemAccuracy = (item: ChronologyItem): AccuracyResult => {
 
 
 
-const renderGroupedCitations = (citations: any[]) => {
+export const renderGroupedCitations = (citations: any[]) => {
   const grouped: Record<string, Record<string, any[]>> = {};
 
   citations.forEach((cite: any) => {
@@ -1965,7 +1965,7 @@ const CATEGORY_EXPLANATIONS: Record<string, { title: string, subtitle: string, t
 
 // ── Provenance & Annotation Components ─────────────────────────────────────
 
-const EventCitationList: React.FC<{ item: any }> = ({ item }) => {
+export const EventCitationList: React.FC<{ item: any }> = ({ item }) => {
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
 
   const toggleRow = (label: string) => {
@@ -2010,30 +2010,34 @@ const EventCitationList: React.FC<{ item: any }> = ({ item }) => {
       .replace(/^trial\b/i, 'Melakukan trial')
       .replace(/^campaign\b/i, 'Melakukan campaign');
 
-    const verbRegex = /^(membuat|menetapkan|memeriksa|memperbaiki|memasang|menguji|memverifikasi|menyerahkan|mengawasi|melakukan|mengidentifikasi|memberikan)\b/i;
+    const verbRegex = /^(membuat|menetapkan|memeriksa|memperbaiki|memasang|menguji|memverifikasi|menyerahkan|mengawasi|melakukan|mengidentifikasi|memberikan|menyebabkan|mengakibatkan|berpotensi|sehingga|mengalami|terdapat|belum)\b/i;
     
-    const rawParts = normalized.split(/,\s*dan\s+|\s+dan\s+|,\s*/i);
+    const sentences = normalized.split(/[.;]\s+/).filter(s => s.trim().length > 0);
     const events: string[] = [];
     
-    let currentEvent = "";
-    for (let i = 0; i < rawParts.length; i++) {
-      let part = rawParts[i].trim();
-      if (!part) continue;
+    sentences.forEach(sentence => {
+      const rawParts = sentence.split(/,\s*dan\s+|\s+dan\s+|,\s*sehingga\s+|\s+sehingga\s+|,\s*/i);
       
-      if (i === 0) {
-        currentEvent = part;
-      } else {
-        if (verbRegex.test(part)) {
-          events.push(currentEvent);
+      let currentEvent = "";
+      for (let i = 0; i < rawParts.length; i++) {
+        let part = rawParts[i].trim();
+        if (!part) continue;
+        
+        if (i === 0) {
           currentEvent = part;
         } else {
-          currentEvent += " dan " + part;
+          if (verbRegex.test(part) || part.split(' ').length > 5) {
+            events.push(currentEvent);
+            currentEvent = part;
+          } else {
+            currentEvent += " dan " + part;
+          }
         }
       }
-    }
-    if (currentEvent) {
-      events.push(currentEvent);
-    }
+      if (currentEvent) {
+        events.push(currentEvent);
+      }
+    });
 
     return events.map((ev, i) => {
       let clean = ev.trim();

@@ -14,6 +14,7 @@ import {
   CheckCircle2,
   Table as TableIcon
 } from 'lucide-react';
+import { EventCitationList } from './FactChronologyModule';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -355,6 +356,8 @@ export const PeepoTraceabilityPanel: React.FC<{
              {item?.provenanceType === 'AI_HUMAN_ANNOTATED' ? (item?.original_text || item?.chronology_text || item?.text) : (item?.chronology_text || item?.text)}
            </div>
         </div>
+
+        <EventCitationList item={item} />
 
         {/* Action Button */}
         <div className="pt-4">
