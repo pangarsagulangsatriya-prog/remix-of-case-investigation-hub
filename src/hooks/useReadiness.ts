@@ -26,9 +26,16 @@ export interface EvidenceRequirementResult {
     aiMatchCategory?: string;
   }[];
   requiredDesc?: string;
+  uploadAdvice?: string;
+  formatHint?: string;
   issue?: string;
   impact?: string;
   recommendation?: string;
+  relatedInfo?: { title: string; type: string; desc: string; statusBadge: string; typeDesc?: string };
+  verificationFocus?: { issue: string; advice: string };
+  actionAdvice?: { title: string; helper: string };
+  impactDetails?: { label: string; desc: string }[];
+  extractedValues?: { value: string; label: string }[];
 }
 
 export interface EvidenceSnapshot {
@@ -75,7 +82,7 @@ export interface AnalysisOverride {
   brokenRequired: string[];
 }
 
-const STORAGE_KEY_PREFIX = "investigation_readiness_state_v6";
+const STORAGE_KEY_PREFIX = "investigation_readiness_state_v7";
 const EVENT_KEY_PREFIX = "readiness_state_changed_v6";
 
 interface ReadinessState {
@@ -175,13 +182,13 @@ export const useReadiness = (caseId?: string) => {
   }, [caseId]);
 
   const evaluateReadiness = (results: EvidenceRequirementResult[]) => {
-    const CATEGORIES = [
-      { name: "01 EVENT TRUTH", impact: ["Fact & Chronology"] },
-      { name: "02 HUMAN TESTIMONY", impact: ["Fact", "Actor", "PEEPO"] },
-      { name: "03 PEOPLE", impact: ["Actor", "PEEPO"] },
-      { name: "04 PART / TECHNICAL", impact: ["Fact", "PEEPO", "IPLS"] },
-      { name: "05 POSITION", impact: ["Fact", "Chronology", "PEEPO"] },
-      { name: "06 PAPER / CONTROL", impact: ["PEEPO", "IPLS"] }
+        const CATEGORIES = [
+      { name: "01 FAKTA KEJADIAN", impact: ["Fact & Chronology", "PEEPO"] },
+      { name: "02 WAWANCARA INVESTIGASI", impact: ["Fact & Chronology", "Actor", "PEEPO", "IPLS"] },
+      { name: "03 PEOPLE / PERSONEL", impact: ["Actor", "PEEPO", "IPLS"] },
+      { name: "04 PART / UNIT & KOMPONEN", impact: ["Fact & Chronology", "PEEPO", "IPLS"] },
+      { name: "05 POSITION / LOKASI KEJADIAN", impact: ["Fact & Chronology", "PEEPO", "IPLS"] },
+      { name: "06 PAPER / DOKUMEN KERJA", impact: ["PEEPO", "IPLS", "Prevention"] }
     ];
 
     const categories = CATEGORIES.map(cat => {
@@ -260,136 +267,330 @@ export const useReadiness = (caseId?: string) => {
       const stateAfterDelay = loadState(caseId);
       
       const dummyResults: EvidenceRequirementResult[] = [
-        {
-          id: "req-et-1",
-          label: "Video kejadian lapangan",
-          category: "01 EVENT TRUTH",
-          level: "REQUIRED",
-          status: "BROKEN",
-          downstreamImpact: ["Fact & Chronology"],
-          matchedFiles: [
-            { id: "file-1", name: "HOPPER_1_converted.mp4", processingStatus: "ERROR" }
-          ],
-          requiredDesc: "Video utama yang merekam kejadian atau kondisi area lapangan.",
-          issue: "File ditemukan, namun konten video belum berhasil diproses.",
-          impact: "Rekonstruksi urutan kejadian belum dapat menggunakan evidence video ini.",
-        },
-        {
-          id: "req-et-2",
-          label: "CCTV",
-          category: "01 EVENT TRUTH",
-          level: "RECOMMENDED",
-          status: "MISSING",
-          downstreamImpact: ["Fact & Chronology"],
-          matchedFiles: [],
-          requiredDesc: "Rekaman CCTV di sekitar lokasi kejadian.",
-          issue: "Belum ada rekaman CCTV yang tersedia.",
-        },
-        {
-          id: "req-et-3",
-          label: "Foto pengamatan lapangan",
-          category: "01 EVENT TRUTH",
-          level: "REQUIRED",
-          status: "NEEDS_VERIFICATION",
-          downstreamImpact: ["Fact & Chronology"],
-          matchedFiles: [
-            { 
-              id: "file-2", 
-              name: "Screenshot_2026-07-01.png", 
-              processingStatus: "DONE",
-              aiMatchConfidence: "High",
-              aiMatchCategory: "Event Truth → Scene Photo"
-            }
-          ],
-          requiredDesc: "Dokumentasi foto yang memperlihatkan kondisi peralatan, area, atau posisi setelah kejadian.",
-          issue: "Sistem mendeteksi foto lapangan, namun perlu konfirmasi dari investigator.",
-        },
-        {
-          id: "req-et-4",
-          label: "Reliable event timestamp",
-          category: "01 EVENT TRUTH",
-          level: "REQUIRED",
-          status: "FULFILLED",
-          downstreamImpact: ["Fact & Chronology"],
-          matchedFiles: [
-            { id: "file-3", name: "GPS_Log_HD785.csv", processingStatus: "DONE" }
-          ],
-        },
-        {
-          id: "req-ht-1",
-          label: "BAP / Berita Acara Pemeriksaan",
-          category: "02 HUMAN TESTIMONY",
-          level: "REQUIRED",
-          status: "FULFILLED",
-          downstreamImpact: ["Fact", "Actor", "PEEPO"],
-          matchedFiles: [
-            { id: "file-4", name: "BAP_Operator_HD785.pdf", processingStatus: "DONE" }
-          ],
-        },
-        {
-          id: "req-ht-2",
-          label: "Audio wawancara",
-          category: "02 HUMAN TESTIMONY",
-          level: "RECOMMENDED",
-          status: "FULFILLED",
-          downstreamImpact: ["Fact", "Actor", "PEEPO"],
-          matchedFiles: [
-            { id: "file-5", name: "wawancara_operator_01.mp3", processingStatus: "DONE" }
-          ],
-        },
-        {
-          id: "req-ht-3",
-          label: "Transcript wawancara",
-          category: "02 HUMAN TESTIMONY",
-          level: "RECOMMENDED",
-          status: "FULFILLED",
-          downstreamImpact: ["Fact", "Actor", "PEEPO"],
-          matchedFiles: [
-            { id: "file-6", name: "transcript_operator_01.pdf", processingStatus: "DONE" }
-          ],
-        },
-        {
-          id: "req-ppl-1",
-          label: "Identity & Competency",
-          category: "03 PEOPLE",
-          level: "REQUIRED",
-          status: "MISSING",
-          downstreamImpact: ["Actor", "PEEPO"],
-          matchedFiles: [],
-          issue: "Dokumen identitas dan kompetensi belum tersedia.",
-        },
-        {
-          id: "req-pt-1",
-          label: "Component / equipment photo",
-          category: "04 PART / TECHNICAL",
-          level: "RECOMMENDED",
-          status: "MISSING",
-          downstreamImpact: ["Fact", "PEEPO", "IPLS"],
-          matchedFiles: [],
-        },
-        {
-          id: "req-pos-1",
-          label: "Layout / map",
-          category: "05 POSITION",
-          level: "REQUIRED",
-          status: "FULFILLED",
-          downstreamImpact: ["Fact", "Chronology", "PEEPO"],
-          matchedFiles: [
-            { id: "file-7", name: "Site_Plan_Pit_A.pdf", processingStatus: "DONE" }
-          ],
-        },
-        {
-          id: "req-pc-1",
-          label: "SOP / IK",
-          category: "06 PAPER / CONTROL",
-          level: "REQUIRED",
-          status: "MISSING",
-          downstreamImpact: ["PEEPO", "IPLS"],
-          matchedFiles: [],
-          issue: "Belum ada SOP, IK, JSA/HIRA, P5M/DOP, atau permit yang dapat digunakan.",
-          impact: "Operational control comparison cannot yet be fully evaluated."
-        }
-      ];
+  // A. FAKTA KEJADIAN
+  {
+    id: "req-fakta-1",
+    label: "CCTV / Video Kejadian",
+    category: "01 FAKTA KEJADIAN",
+    level: "REQUIRED",
+    status: "FULFILLED",
+    downstreamImpact: ["Fact & Chronology", "PEEPO"],
+    matchedFiles: [
+      { id: "file-1", name: "CCTV_Front_Cam_0857.mp4", processingStatus: "DONE" },
+      { id: "file-1b", name: "CCTV_Dashcam_TR3219.mp4", processingStatus: "DONE" },
+      { id: "file-1c", name: "Video_Amatir_Operator.mp4", processingStatus: "DONE" },
+      { id: "file-1d", name: "Rekaman_Drone_Pasca_Kejadian.mp4", processingStatus: "DONE" }
+    ],
+    requiredDesc: "Rekaman yang memperlihatkan kejadian, aktivitas sebelum kejadian, atau kondisi segera setelah kejadian. Rekaman dapat berasal dari CCTV, dashcam, DMS, video HP, atau kamera lain.",
+    uploadAdvice: "Upload file video asli bila tersedia. Pilih rekaman yang mencakup beberapa saat sebelum dan sesudah kejadian. Jika ada beberapa sudut kamera, upload semuanya pada checklist yang sama.",
+    formatHint: "Video: MP4, MOV, AVI"
+  },
+  {
+    id: "req-fakta-2",
+    label: "Foto Kondisi Kejadian",
+    category: "01 FAKTA KEJADIAN",
+    level: "REQUIRED",
+    status: "NEEDS_VERIFICATION",
+    downstreamImpact: ["Fact & Chronology", "PEEPO"],
+    matchedFiles: [
+      { id: "file-2", name: "Screenshot_2025-12-04_085746.png", processingStatus: "DONE" },
+      { id: "file-2b", name: "Screenshot_2025-12-04_085759.png", processingStatus: "DONE" },
+      { id: "file-2c", name: "Foto_Tire_Marks.jpg", processingStatus: "DONE" },
+      { id: "file-2d", name: "Foto_Posisi_Tergelincir.jpg", processingStatus: "DONE" }
+    ],
+    requiredDesc: "Foto yang memperlihatkan kondisi lokasi, orang, unit, benda, atau kerusakan pada saat atau segera setelah kejadian.",
+    uploadAdvice: "Upload foto asli dengan sudut yang cukup jelas. Utamakan foto keseluruhan lalu foto detail. Hindari hanya mengirim foto yang sudah terlalu banyak dipotong jika file asli masih tersedia.",
+    formatHint: "Image: JPG/JPEG, PNG",
+    verificationFocus: {
+      issue: "Belum ditemukan foto asli lokasi kejadian tanpa anotasi.",
+      advice: "Jika tersedia, upload foto asli kondisi unit dan lokasi setelah kejadian."
+    }
+  },
+  
+  // B. WAWANCARA INVESTIGASI
+  {
+    id: "req-wi-1",
+    label: "Bukti Wawancara",
+    category: "02 WAWANCARA INVESTIGASI",
+    level: "REQUIRED",
+    status: "FULFILLED",
+    downstreamImpact: ["Fact & Chronology", "Actor", "PEEPO"],
+    matchedFiles: [
+      { id: "file-4", name: "BAP_Operator_TR3219.pdf", processingStatus: "DONE" },
+      { id: "file-5", name: "Audio_Wawancara_Danang.mp3", processingStatus: "DONE" }
+    ],
+    requiredDesc: "Dokumen keterangan atau rekaman audio/video dari pelaku, saksi, atau orang yang terlibat. Keterangan ini membantu menyusun urutan kejadian dan tindakan masing-masing orang.",
+    uploadAdvice: "Upload BAP, dokumen wawancara, atau rekaman suara selengkap mungkin. Beberapa bukti dapat diunggah pada checklist yang sama.",
+    formatHint: "Document / Audio / Video"
+  },
+  {
+    id: "req-wi-2",
+    label: "Wawancara Saksi / Pihak Terkait",
+    category: "02 WAWANCARA INVESTIGASI",
+    level: "RECOMMENDED",
+    status: "FULFILLED",
+    downstreamImpact: ["Fact & Chronology", "Actor", "PEEPO", "IPLS"],
+    matchedFiles: [
+       { id: "file-4b", name: "BAP_Saksi_Pengawas.pdf", processingStatus: "DONE" }
+    ],
+    requiredDesc: "Keterangan saksi, pengawas, mekanik, responder, medic, engineer, atau pihak lain yang mengetahui bagian tertentu dari kejadian.",
+    uploadAdvice: "Upload semua keterangan yang relevan, terutama jika berasal dari sudut pandang berbeda. Tidak perlu digabung menjadi satu file.",
+    formatHint: "Document"
+  },
+  // C. PEOPLE / PERSONEL
+  {
+    id: "req-ppl-1",
+    label: "Identitas & Peran Personel",
+    category: "03 PEOPLE / PERSONEL",
+    level: "REQUIRED",
+    status: "FULFILLED",
+    downstreamImpact: ["Actor", "PEEPO"],
+    matchedFiles: [
+      { id: "file-ccr-1", name: "Metadata Form CCR (Saksi, Operator, dll)", processingStatus: "DONE" }
+    ],
+    requiredDesc: "Bukti yang membantu mengidentifikasi korban, pelaku, operator, saksi, pengawas, responder, atau personel lain beserta fungsi mereka pada saat kejadian. Data ini secara default diambil dari form laporan CCR.",
+    uploadAdvice: "Upload kartu identitas kerja jika ada personel tambahan yang tidak terdaftar di laporan CCR awal.",
+    formatHint: "Data CCR / Document"
+  },
+  {
+    id: "req-ppl-2",
+    label: "Kehadiran / Briefing Sebelum Kerja",
+    category: "03 PEOPLE / PERSONEL",
+    level: "RECOMMENDED",
+    status: "MISSING",
+    downstreamImpact: ["Actor", "PEEPO", "IPLS"],
+    matchedFiles: [],
+    requiredDesc: "Bukti bahwa personel hadir atau mengikuti aktivitas sebelum pekerjaan, seperti P5M, toolbox meeting, briefing, atau daftar hadir.",
+    uploadAdvice: "Upload form atau daftar hadir yang menunjukkan tanggal, nama peserta, dan aktivitas/briefing jika tersedia. Pastikan tulisan atau tanda tangan masih dapat dibaca.",
+    formatHint: "Document",
+    impactDetails: [
+       { label: "Actor", desc: "Kehadiran personel sebelum shift tidak dapat dipastikan." },
+       { label: "PEEPO", desc: "Pemahaman personel terhadap instruksi harian tidak dapat dinilai." }
+    ]
+  },
+  {
+    id: "req-ppl-3",
+    label: "Kompetensi / Otorisasi",
+    category: "03 PEOPLE / PERSONEL",
+    level: "REQUIRED",
+    status: "NEEDS_VERIFICATION",
+    downstreamImpact: ["Actor", "PEEPO", "IPLS"],
+    matchedFiles: [],
+    requiredDesc: "Bukti mengenai kompetensi, pelatihan, lisensi, SIMPER, sertifikasi, atau otorisasi yang relevan dengan pekerjaan saat kejadian.",
+    uploadAdvice: "Upload dokumen kompetensi yang berkaitan langsung dengan pekerjaan atau alat yang terlibat. Bila ada beberapa kompetensi, cukup unggah yang relevan dengan case.",
+    formatHint: "Document",
+    relatedInfo: {
+      title: "Data Interview_TR-3219.pdf",
+      type: "Document",
+      typeDesc: "PDF",
+      desc: "Danang Sapto Wahono memiliki pengalaman mengoperasikan unit 777 dan Komatsu 465.",
+      statusBadge: "⚠ Informasi kompetensi ditemukan dalam wawancara"
+    },
+    verificationFocus: {
+      issue: "Belum ditemukan dokumen kompetensi atau otorisasi sebagai evidence terpisah.",
+      advice: "Jika tersedia, upload scan SIMPER atau sertifikat kompetensi asli."
+    },
+    actionAdvice: {
+       title: "Upload bukti kompetensi",
+       helper: "Upload scan dokumen fisik untuk keperluan verifikasi."
+    }
+  },
+
+  // D. PART / UNIT & KOMPONEN
+  {
+    id: "req-part-1",
+    label: "Foto Part / Komponen Terkait",
+    category: "04 PART / UNIT & KOMPONEN",
+    level: "REQUIRED",
+    status: "FULFILLED",
+    downstreamImpact: ["Fact & Chronology", "PEEPO"],
+    matchedFiles: [
+       { id: "file-p1", name: "komponen_retarder.pdf", processingStatus: "DONE" }
+    ],
+    requiredDesc: "Foto komponen, alat, material, APD, atau benda lain yang berhubungan langsung dengan mekanisme kejadian.",
+    uploadAdvice: "Upload foto keseluruhan dan detail komponen yang relevan. Jika ada titik kerusakan, kontak, aus, patah, terbakar, atau posisi abnormal, sertakan foto detailnya.",
+    formatHint: "Image"
+  },
+  {
+    id: "req-part-2",
+    label: "Kondisi Unit / Kerusakan",
+    category: "04 PART / UNIT & KOMPONEN",
+    level: "RECOMMENDED",
+    status: "FULFILLED",
+    downstreamImpact: ["Fact & Chronology", "PEEPO", "IPLS"],
+    matchedFiles: [
+      { id: "file-9", name: "kerusakan_TR3219.pdf", processingStatus: "DONE" }
+    ],
+    requiredDesc: "Bukti kondisi unit atau aset setelah kejadian, termasuk area kerusakan atau kondisi abnormal yang ditemukan.",
+    uploadAdvice: "Upload foto dari beberapa sisi bila memungkinkan. Jangan hanya memilih foto paling dekat; foto keseluruhan membantu memahami posisi kerusakan terhadap unit.",
+    formatHint: "Image"
+  },
+  {
+    id: "req-part-3",
+    label: "P2H / Pemeriksaan Harian",
+    category: "04 PART / UNIT & KOMPONEN",
+    level: "REQUIRED",
+    status: "MISSING",
+    downstreamImpact: ["PEEPO", "IPLS"],
+    matchedFiles: [],
+    requiredDesc: "Form atau catatan pemeriksaan unit sebelum digunakan, untuk melihat kondisi awal serta temuan yang sudah diketahui sebelum kejadian.",
+    uploadAdvice: "Upload form P2H pada tanggal atau shift yang terkait dengan kejadian. Pastikan identitas unit, operator, tanggal, hasil pemeriksaan, dan bagian approval terbaca bila tersedia.",
+    formatHint: "Document",
+    relatedInfo: {
+      title: "Data Interview_TR-3219.pdf",
+      type: "Document",
+      typeDesc: "PDF",
+      desc: "Dokumen wawancara menyebut operator melakukan P2H sebelum unit digunakan.",
+      statusBadge: "Informasi pendukung · bukan evidence P2H"
+    },
+    actionAdvice: {
+       title: "Upload P2H",
+       helper: "Upload form P2H yang digunakan pada shift kejadian."
+    },
+    impactDetails: [
+       { label: "PEEPO", desc: "Kondisi unit sebelum operasi belum dapat diverifikasi." },
+       { label: "IPLS", desc: "Pelaksanaan kontrol pemeriksaan pra-operasi belum dapat dibandingkan dengan kondisi aktual." }
+    ]
+  },
+  {
+    id: "req-part-4",
+    label: "Pemeriksaan / Pengecekan Teknis",
+    category: "04 PART / UNIT & KOMPONEN",
+    level: "RECOMMENDED",
+    status: "MISSING",
+    downstreamImpact: ["PEEPO", "IPLS"],
+    matchedFiles: [],
+    requiredDesc: "Hasil pemeriksaan teknis setelah kejadian, seperti inspection report, mechanical check, electrical check, fault finding, atau laporan engineer/vendor.",
+    uploadAdvice: "Upload laporan yang paling dekat dengan kejadian dan berkaitan dengan komponen yang diperiksa. Lampiran foto atau hasil pengukuran sebaiknya tetap disertakan.",
+    formatHint: "Document",
+    impactDetails: [
+       { label: "PEEPO", desc: "Kondisi mekanikal komponen penyebab insiden belum dapat divalidasi." }
+    ]
+  },
+
+  // E. POSITION / LOKASI KEJADIAN
+  {
+    id: "req-pos-1",
+    label: "Foto / Sketsa Lokasi Kejadian",
+    category: "05 POSITION / LOKASI KEJADIAN",
+    level: "REQUIRED",
+    status: "FULFILLED",
+    downstreamImpact: ["Fact & Chronology", "PEEPO"],
+    matchedFiles: [
+      { id: "file-11", name: "sketsa_lokasi_C2H.pdf", processingStatus: "DONE" }
+    ],
+    requiredDesc: "Dokumentasi area kejadian yang menunjukkan bentuk lokasi, akses, objek di sekitar, dan titik kejadian.",
+    uploadAdvice: "Upload foto wide shot terlebih dahulu, lalu detail area penting. Sketsa sederhana tetap dapat digunakan bila posisi objek dapat dipahami.",
+    formatHint: "Image / Document"
+  },
+  {
+    id: "req-pos-2",
+    label: "Posisi Orang / Unit / Objek",
+    category: "05 POSITION / LOKASI KEJADIAN",
+    level: "RECOMMENDED",
+    status: "FULFILLED",
+    downstreamImpact: ["Fact & Chronology", "PEEPO"],
+    matchedFiles: [
+       { id: "file-12", name: "posisi_unit_tergelincir.pdf", processingStatus: "DONE" }
+    ],
+    requiredDesc: "Bukti yang memperlihatkan posisi relatif orang, unit, material, atau objek sebelum, saat, atau setelah kejadian.",
+    uploadAdvice: "Upload foto, sketsa, atau diagram dengan penanda posisi jika tersedia. Jika menggunakan foto udara, beri penanda titik kejadian atau objek penting bila memang sudah tersedia dalam dokumen.",
+    formatHint: "Image / Document"
+  },
+  {
+    id: "req-pos-3",
+    label: "Peta / Layout Lokasi",
+    category: "05 POSITION / LOKASI KEJADIAN",
+    level: "RECOMMENDED",
+    status: "FULFILLED",
+    downstreamImpact: ["Fact & Chronology", "PEEPO", "IPLS"],
+    matchedFiles: [
+      { id: "file-7", name: "Site_Plan_Pit_C2H.pdf", processingStatus: "DONE" }
+    ],
+    requiredDesc: "Peta, site plan, layout, topografi, atau gambar area yang membantu memahami hubungan antarposisi dalam skala yang lebih luas.",
+    uploadAdvice: "Upload versi layout yang paling relevan dengan periode kejadian. Bila ada legenda, skala, koordinat, atau arah utara, pertahankan bagian tersebut.",
+    formatHint: "Document"
+  },
+  {
+    id: "req-pos-4",
+    label: "Dimensi / Pengukuran",
+    category: "05 POSITION / LOKASI KEJADIAN",
+    level: "RECOMMENDED",
+    status: "FULFILLED",
+    downstreamImpact: ["PEEPO", "IPLS"],
+    matchedFiles: [
+       { id: "file-13", name: "Rekonstruksi_Lokasi_TR3219.pdf", processingStatus: "DONE" }
+    ],
+    requiredDesc: "Data ukuran yang relevan terhadap mekanisme kejadian, seperti jarak, kemiringan, crossfall, clearance, elevasi, lebar, tinggi, atau ukuran objek.",
+    uploadAdvice: "Upload hasil pengukuran, gambar engineering, atau foto yang mencantumkan nilai ukur. Jangan menghapus satuan atau titik referensinya.",
+    formatHint: "Document",
+    extractedValues: [
+       { label: "Jarak jejak menuju tanggul", value: "82.8 m" },
+       { label: "Lebar jalan", value: "10.95 m" },
+       { label: "Tinggi tanggul", value: "1.82 m" }
+    ]
+  },
+
+  // F. PAPER / DOKUMEN KERJA
+  {
+    id: "req-paper-1",
+    label: "HIRA / Risk Assessment",
+    category: "06 PAPER / DOKUMEN KERJA",
+    level: "REQUIRED",
+    status: "FULFILLED",
+    downstreamImpact: ["PEEPO", "IPLS"],
+    matchedFiles: [
+       { id: "file-14", name: "HIRA_Hauling_Pit_C2H.pdf", processingStatus: "DONE" }
+    ],
+    requiredDesc: "Dokumen identifikasi bahaya dan pengendalian risiko untuk aktivitas yang berkaitan dengan kejadian.",
+    uploadAdvice: "Upload HIRA/JSA/risk assessment yang berlaku saat pekerjaan dilakukan. Jika ada beberapa revisi, prioritaskan versi yang berlaku pada tanggal kejadian.",
+    formatHint: "Document"
+  },
+  {
+    id: "req-paper-2",
+    label: "SOP / Instruksi Kerja",
+    category: "06 PAPER / DOKUMEN KERJA",
+    level: "REQUIRED",
+    status: "MISSING",
+    downstreamImpact: ["PEEPO", "IPLS"],
+    matchedFiles: [],
+    requiredDesc: "Prosedur, IK, work instruction, atau panduan yang mengatur langkah kerja yang dilakukan saat kejadian.",
+    uploadAdvice: "Upload prosedur yang benar-benar berlaku pada aktivitas tersebut. Bila dokumen memiliki nomor dan revisi, pastikan halaman identitas dokumen ikut terunggah.",
+    formatHint: "Document",
+    relatedInfo: {
+      title: "Data Interview_TR-3219.pdf",
+      type: "Document",
+      typeDesc: "PDF",
+      desc: "Dalam wawancara terdapat pembahasan mengenai penggunaan service brake, retarder dan tindakan saat jalan basah.",
+      statusBadge: "Disebut dalam wawancara"
+    },
+    actionAdvice: {
+       title: "Upload SOP / IK",
+       helper: "Upload prosedur operasional yang relevan."
+    },
+    impactDetails: [
+       { label: "PEEPO", desc: "Kesesuaian tindakan operator terhadap prosedur belum dapat dinilai." },
+       { label: "IPLS", desc: "Expected control belum memiliki referensi." }
+    ]
+  },
+  {
+    id: "req-paper-3",
+    label: "Standar / Control Reference",
+    category: "06 PAPER / DOKUMEN KERJA",
+    level: "RECOMMENDED",
+    status: "MISSING",
+    downstreamImpact: ["PEEPO", "IPLS", "Prevention"],
+    matchedFiles: [],
+    requiredDesc: "Standar teknis, safety standard, engineering standard, high-risk control, atau referensi lain yang menetapkan kondisi atau kontrol yang seharusnya dipenuhi.",
+    uploadAdvice: "Upload standar yang berkaitan langsung dengan pekerjaan, alat, area, atau bahaya pada case. Tidak perlu mengunggah seluruh library standar yang tidak berhubungan dengan kejadian.",
+    formatHint: "Document",
+    impactDetails: [
+       { label: "IPLS", desc: "Control effectiveness belum memiliki pembanding." },
+       { label: "Prevention", desc: "Rekomendasi belum memiliki control reference yang cukup kuat." }
+    ]
+  }
+];
+
 
       const { categories, finalStatus } = evaluateReadiness(dummyResults);
       const completedAt = new Date().toISOString();

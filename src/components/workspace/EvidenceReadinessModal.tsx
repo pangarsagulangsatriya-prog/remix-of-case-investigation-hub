@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useParams } from "react-router-dom";
-import { Loader2, ShieldCheck, X, ChevronRight, ChevronLeft, Check, RotateCcw, AlertTriangle, FileText, Info, Search, Upload, Eye, User, Users, Wrench, MapPin, Folder, ArrowRight, Image as ImageIcon, Video, Mic } from "lucide-react";
+import { Loader2, ShieldCheck, X, ChevronRight, ChevronLeft, Check, RotateCcw, AlertTriangle, FileText, Info, Search, Upload, Eye, User, Users, Wrench, MapPin, Folder, ArrowRight, Image as ImageIcon, Video, Mic, Clock, Map, Ruler, ShieldAlert, BadgeCheck, ClipboardCheck, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useReadiness, ReadinessRun, EvidenceRequirementResult, RequirementStatus } from "@/hooks/useReadiness";
 import { cn } from "@/lib/utils";
@@ -26,6 +26,17 @@ const InfoTooltip = ({ content, children, className }: { content: React.ReactNod
   );
 };
 
+const getCategoryDescription = (category: string) => {
+  const lower = category.toLowerCase();
+  if (lower.includes("fakta")) return "Bukti yang membantu memastikan apa yang terjadi, kapan terjadi, dan kondisi aktual di sekitar kejadian.";
+  if (lower.includes("wawancara")) return "Keterangan orang yang terlibat, melihat, menangani, atau mengetahui konteks kejadian.";
+  if (lower.includes("people")) return "Bukti mengenai siapa yang terlibat, perannya saat kejadian, serta kesiapan atau kewenangannya untuk melakukan pekerjaan tersebut.";
+  if (lower.includes("part")) return "Bukti mengenai unit, alat, material, komponen, atau benda fisik yang terlibat dalam kejadian.";
+  if (lower.includes("position")) return "Bukti yang membantu memahami posisi orang, unit, objek, jalur pergerakan, serta kondisi fisik lokasi kejadian.";
+  if (lower.includes("paper")) return "Dokumen yang menjelaskan bagaimana pekerjaan direncanakan, dikendalikan, dan seharusnya dilakukan.";
+  return "";
+};
+
 const getCategoryDisplayName = (name: string) => {
   const lower = name.toLowerCase();
   if (lower.includes("event truth")) return "Fakta Kejadian";
@@ -45,10 +56,22 @@ const getCategoryIcon = (name: string) => {
 
 const getRequirementIcon = (label: string) => {
   const lower = label.toLowerCase();
-  if (lower.includes("video") || lower.includes("cctv") || lower.includes("rekaman")) return <Video className="h-4 w-4 text-rose-500" />;
-  if (lower.includes("foto") || lower.includes("gambar") || lower.includes("image") || lower.includes("visual")) return <ImageIcon className="h-4 w-4 text-emerald-500" />;
-  if (lower.includes("audio") || lower.includes("suara") || lower.includes("wawancara") || lower.includes("testimony")) return <Mic className="h-4 w-4 text-indigo-500" />;
-  return <FileText className="h-4 w-4 text-slate-400" />;
+  if (lower.includes("video") || lower.includes("cctv")) return <Video className="h-4 w-4 text-slate-500" />;
+  if (lower.includes("foto")) return <ImageIcon className="h-4 w-4 text-slate-500" />;
+  if (lower.includes("waktu") || lower.includes("urutan")) return <Clock className="h-4 w-4 text-slate-500" />;
+  if (lower.includes("bap") || lower.includes("sop") || lower.includes("identitas")) return <FileText className="h-4 w-4 text-slate-500" />;
+  if (lower.includes("wawancara saksi")) return <Users className="h-4 w-4 text-slate-500" />;
+  if (lower.includes("rekaman")) return <Mic className="h-4 w-4 text-slate-500" />;
+  if (lower.includes("briefing") || lower.includes("p2h")) return <ClipboardCheck className="h-4 w-4 text-slate-500" />;
+  if (lower.includes("kompetensi")) return <BadgeCheck className="h-4 w-4 text-slate-500" />;
+  if (lower.includes("part") || lower.includes("komponen") || lower.includes("teknis")) return <Wrench className="h-4 w-4 text-slate-500" />;
+  if (lower.includes("kondisi unit")) return <Truck className="h-4 w-4 text-slate-500" />;
+  if (lower.includes("lokasi") || lower.includes("posisi")) return <MapPin className="h-4 w-4 text-slate-500" />;
+  if (lower.includes("peta")) return <Map className="h-4 w-4 text-slate-500" />;
+  if (lower.includes("dimensi") || lower.includes("pengukuran")) return <Ruler className="h-4 w-4 text-slate-500" />;
+  if (lower.includes("hira")) return <ShieldAlert className="h-4 w-4 text-slate-500" />;
+  if (lower.includes("standar")) return <ShieldCheck className="h-4 w-4 text-slate-500" />;
+  return <FileText className="h-4 w-4 text-slate-500" />;
 };
 
 
@@ -275,30 +298,7 @@ export function EvidenceReadinessModal({ open, onOpenChange, onProceedToAnalysis
   };
 
   const handleSimulateUpload = (reqId: string) => {
-    setUploadingIds(prev => ({ ...prev, [reqId]: { status: "uploading", progress: 0 } }));
-    
-    let prog = 0;
-    const interval = setInterval(() => {
-      prog += Math.floor(Math.random() * 25) + 15;
-      if (prog > 90) prog = 90;
-      setUploadingIds(prev => ({ ...prev, [reqId]: { status: "uploading", progress: prog } }));
-    }, 200);
-
-    setTimeout(() => {
-      clearInterval(interval);
-      setUploadingIds(prev => ({ ...prev, [reqId]: { status: "processing", progress: 100 } }));
-      
-      setTimeout(async () => {
-        if (recheckRequirement) {
-          await recheckRequirement(reqId);
-        }
-        setUploadingIds(prev => {
-          const newState = { ...prev };
-          delete newState[reqId];
-          return newState;
-        });
-      }, 800);
-    }, 1200);
+    onOpenChange(false);
   };
 
   const handleViewPriorityGap = () => {
@@ -331,7 +331,7 @@ export function EvidenceReadinessModal({ open, onOpenChange, onProceedToAnalysis
 
   const getStatusReason = (req: EvidenceRequirementResult) => {
     if (req.status === "FULFILLED") return "Evidence siap digunakan";
-    if (req.status === "NEEDS_VERIFICATION") return req.issue || "Evidence perlu diperiksa";
+    if (req.status === "NEEDS_VERIFICATION") return req.issue || "Evidence meragukan";
     if (req.status === "BROKEN") return req.issue || "Evidence belum dapat digunakan";
     if (req.status === "MISSING") return "Evidence belum dapat digunakan";
     return "";
@@ -379,15 +379,15 @@ export function EvidenceReadinessModal({ open, onOpenChange, onProceedToAnalysis
               statusColor = "bg-amber-500";
               textColor = "text-amber-600";
               statusIcon = <AlertTriangle className="h-3.5 w-3.5" />;
-              statusText = `${reviewItems} perlu cek`;
+              statusText = `${reviewItems} meragukan`;
             }
 
             return (
               <div key={category.name} className="flex flex-col overflow-hidden bg-white relative">
                 <div 
                   className={cn(
-                    "flex items-center justify-between px-4 py-3 cursor-pointer transition-colors h-[48px]",
-                    "bg-slate-50 hover:bg-slate-100/70"
+                    "flex items-center justify-between px-4 py-3 cursor-pointer transition-colors h-[48px] border-b border-slate-200",
+                    isExpanded ? "bg-slate-100/60" : "bg-slate-50 hover:bg-slate-100/70"
                   )}
                   onClick={toggleCategory}
                 >
@@ -412,7 +412,7 @@ export function EvidenceReadinessModal({ open, onOpenChange, onProceedToAnalysis
                         <TooltipContent side="top">
                           <p className="text-[12px] font-medium">
                             {blockingItems > 0 ? `${blockingItems} evidence masih menghambat analisis` : 
-                             reviewItems > 0 ? `${reviewItems} evidence perlu diperiksa` : "Semua evidence siap digunakan"}
+                             reviewItems > 0 ? `${reviewItems} evidence meragukan` : "Semua evidence siap digunakan"}
                           </p>
                         </TooltipContent>
                       </Tooltip>
@@ -456,7 +456,9 @@ export function EvidenceReadinessModal({ open, onOpenChange, onProceedToAnalysis
                           "text-[12.5px] truncate flex-1 pr-4 transition-colors duration-150 ml-1.5", 
                           isActive ? "text-slate-900 font-semibold" : "text-slate-600 font-medium"
                         )}>
-                          {req.label}
+                          <div className="flex flex-col">
+                            <span>{req.label}</span>
+                          </div>
                         </div>
                         
                         <TooltipProvider delayDuration={200}>
@@ -527,13 +529,26 @@ export function EvidenceReadinessModal({ open, onOpenChange, onProceedToAnalysis
         <div className="px-10 py-8 border-b border-slate-100 shrink-0">
           <div className="flex flex-col gap-1.5">
             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">{getCategoryDisplayName(req.category)}</span>
+            <p className="text-[13px] text-slate-500 mb-1 leading-relaxed max-w-[90%] font-medium">
+               {getCategoryDescription(req.category)}
+            </p>
             
             <div className="flex items-start justify-between gap-4">
               <h2 className="text-[22px] font-bold text-slate-900 leading-snug">
                 {req.label}
               </h2>
               
-              <div className="flex items-center gap-1.5 mt-1 bg-slate-50 rounded-md p-1 border border-slate-100">
+              {hasNextGap && req.status === "FULFILLED" && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={handleNextGap}
+                    className="h-8 px-3 text-[12.5px] font-semibold text-blue-600 hover:text-blue-700 hover:bg-blue-50 mr-2"
+                  >
+                    Next gap <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
+                  </Button>
+                )}
+                <div className="flex items-center gap-1.5 mt-1 bg-slate-50 rounded-md p-1 border border-slate-100">
                 <TooltipProvider delayDuration={200}>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -576,31 +591,111 @@ export function EvidenceReadinessModal({ open, onOpenChange, onProceedToAnalysis
                 req.status === "FULFILLED" ? "text-emerald-700" :
                 req.status === "NEEDS_VERIFICATION" ? "text-amber-700" : "text-rose-700"
               )}>
-                {req.status === "FULFILLED" ? "SIAP" : req.status === "NEEDS_VERIFICATION" ? "PERLU CEK" : "MENGHAMBAT"}
+                {req.status === "FULFILLED" ? "SIAP" : req.status === "NEEDS_VERIFICATION" ? "MERAGUKAN" : "MENGHAMBAT"}
               </span>
             </div>
             
-            {hasNextGap && req.status === "FULFILLED" && (
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={handleNextGap}
-                className="h-7 px-3 text-[12px] font-semibold text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-              >
-                Next gap <ArrowRight className="h-3 w-3 ml-1" />
-              </Button>
-            )}
+            
           </div>
         </div>
 
         <div className="flex-1 overflow-y-auto px-10 py-8 space-y-8 custom-scrollbar">
+
+          <div className="space-y-4">
+            <h5 className="text-[13px] font-bold text-slate-800">
+              {req.status === "FULFILLED" ? "Digunakan untuk" : "Dampak"}
+            </h5>
+            
+            <div className="flex flex-wrap items-center gap-2">
+              {req.downstreamImpact.map(imp => {
+                let Icon = FileText;
+                if (imp.includes('Actor')) Icon = User;
+                else if (imp.includes('PEEPO')) Icon = Search;
+                else if (imp.includes('Prevention')) Icon = ShieldCheck;
+                else if (imp.includes('IPLS')) Icon = Wrench;
+                
+                return (
+                  <div key={imp} className="bg-white text-slate-700 font-semibold text-[12.5px] px-3 py-1.5 rounded-md border border-slate-200 flex items-center gap-2 shadow-sm">
+                    <Icon className="h-3.5 w-3.5 text-blue-500" />
+                    {imp}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          <div className="w-full h-px bg-slate-100" />
           
           <div className="space-y-2">
             <h5 className="text-[13px] font-bold text-slate-800">Yang dibutuhkan</h5>
-            <div className="text-[14px] text-slate-600 leading-relaxed">
+            <div className="text-[14px] text-slate-600 leading-relaxed mb-4">
               {req.requiredDesc || "Standard requirement description."}
             </div>
+            {(req.uploadAdvice || req.formatHint) && (
+              <details className="group [&_summary::-webkit-details-marker]:hidden mt-2">
+                <summary className="flex items-center gap-1.5 text-[13px] font-semibold text-blue-600 cursor-pointer list-none hover:text-blue-700 w-fit select-none outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded">
+                  <Info className="h-4 w-4" /> Saran & format upload
+                </summary>
+                <div className="mt-3 text-[13px] text-slate-600 leading-relaxed bg-slate-50 p-3.5 rounded-lg border border-slate-200 shadow-sm">
+                  {req.uploadAdvice && (
+                    <div className="mb-3">
+                      <span className="font-bold text-slate-800 block mb-1 text-[12px] uppercase tracking-wide">Saran upload</span>
+                      {req.uploadAdvice}
+                    </div>
+                  )}
+                  {req.formatHint && (
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-slate-800 text-[12px] uppercase tracking-wide">Contoh tipe file</span>
+                      <div className="inline-flex items-center gap-1.5 text-[12px] font-medium text-slate-600 bg-white px-2 py-1 rounded-md border border-slate-200 shadow-sm">
+                        <FileText className="h-3.5 w-3.5 text-slate-400" />
+                        {req.formatHint}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </details>
+            )}
           </div>
+
+          
+          {req.verificationFocus && (
+            <>
+              <div className="w-full h-px bg-slate-100" />
+              <div className="space-y-3 bg-amber-50/50 p-4 rounded-xl border border-amber-100/50">
+                <h5 className="text-[13px] font-bold text-amber-900">Yang meragukan</h5>
+                <p className="text-[14px] text-amber-800 leading-relaxed font-medium">{req.verificationFocus.issue}</p>
+                <p className="text-[13px] text-amber-700/80 leading-relaxed">{req.verificationFocus.advice}</p>
+                {req.actionAdvice && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-9 w-fit mt-2 text-[13px] font-semibold border-amber-200 bg-white shadow-sm hover:bg-amber-50 text-amber-800"
+                    onClick={() => handleSimulateUpload(req.id)}
+                  >
+                    <Upload className="h-4 w-4 mr-2 text-amber-600" />
+                    {req.actionAdvice.title}
+                  </Button>
+                )}
+              </div>
+            </>
+          )}
+
+          {req.extractedValues && (
+             <>
+              <div className="w-full h-px bg-slate-100" />
+              <div className="space-y-4">
+                <h5 className="text-[13px] font-bold text-slate-800">Dimensi / Pengukuran Diekstrak</h5>
+                <div className="grid grid-cols-3 gap-4">
+                  {req.extractedValues.map((ev, i) => (
+                    <div key={i} className="flex flex-col gap-1 p-4 bg-slate-50 border border-slate-200 rounded-lg">
+                      <span className="text-[20px] font-bold text-slate-900 tracking-tight">{ev.value}</span>
+                      <span className="text-[12.5px] text-slate-500 font-medium">{ev.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+             </>
+          )}
 
           <div className="w-full h-px bg-slate-100" />
 
@@ -623,12 +718,15 @@ export function EvidenceReadinessModal({ open, onOpenChange, onProceedToAnalysis
               </div>
             ) : req.matchedFiles.length > 0 ? (
               <div className="flex flex-col gap-3">
-                {req.matchedFiles.map(mf => (
+                {req.matchedFiles.map(mf => {
+                  const isCCR = mf.id === "file-ccr-1";
+                  
+                  return (
                   <div key={mf.id} className="flex flex-col gap-4 bg-white border border-slate-200 p-4 rounded-lg shadow-sm group">
                     <div className="flex items-start justify-between">
                       <div className="flex items-start gap-3">
-                        <div className="p-2 bg-slate-50 rounded text-slate-500 mt-0.5">
-                          <FileText className="h-4 w-4" />
+                        <div className={cn("p-2 rounded mt-0.5", isCCR ? "bg-blue-50 text-blue-600" : "bg-slate-50 text-slate-500")}>
+                          {isCCR ? <ClipboardCheck className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
                         </div>
                         <div className="flex flex-col">
                           <span className="text-[13.5px] font-semibold text-slate-900 mb-1">{mf.name}</span>
@@ -639,13 +737,16 @@ export function EvidenceReadinessModal({ open, onOpenChange, onProceedToAnalysis
                                 <Check className="h-3.5 w-3.5" /> Siap digunakan
                               </div>
                               <span className="text-[12px] text-slate-400 font-medium">
-                                CSV · 248 KB · diperiksa 20:03
+                                {isCCR 
+                                  ? "Terhubung otomatis dari Laporan Awal (CCR)" 
+                                  : `${req.formatHint?.split('·')[0] || "File"} · ${mf.name.split('.').pop()?.toUpperCase()} · ${(Math.random() * 40 + 1).toFixed(1)} MB`
+                                }
                               </span>
                             </>
                           ) : mf.processingStatus === "ERROR" || req.status === "BROKEN" ? (
                             <span className="text-[12.5px] text-rose-600 font-medium">{req.issue || "Processing error"}</span>
                           ) : req.status === "NEEDS_VERIFICATION" ? (
-                            <span className="text-[12.5px] text-amber-600 font-medium">Perlu verifikasi investigator.</span>
+                            <span className="text-[12.5px] text-amber-600 font-medium">Evidence meragukan.</span>
                           ) : (
                             <span className="text-[12.5px] text-slate-500 font-medium">Ditemukan</span>
                           )}
@@ -654,77 +755,75 @@ export function EvidenceReadinessModal({ open, onOpenChange, onProceedToAnalysis
                       
                       {req.status === "FULFILLED" && (
                         <Button variant="ghost" size="sm" className="h-8 px-3 text-[12.5px] font-semibold text-slate-700 hover:text-blue-600 hover:bg-blue-50 transition-colors">
-                          <Eye className="h-4 w-4 mr-1.5 text-slate-400 group-hover:text-blue-500 transition-colors" /> Buka evidence &rarr;
+                          {isCCR 
+                            ? <><Eye className="h-4 w-4 mr-1.5 text-slate-400 group-hover:text-blue-500 transition-colors" /> Detail tabel &rarr;</>
+                            : <><Eye className="h-4 w-4 mr-1.5 text-slate-400 group-hover:text-blue-500 transition-colors" /> Buka evidence &rarr;</>
+                          }
                         </Button>
                       )}
                     </div>
-                    
-                    {req.status !== "FULFILLED" && (
-                      <div className="flex items-center pt-3 border-t border-slate-100">
-                        <Button 
-                          variant="secondary" 
-                          size="sm" 
-                          className="h-8 text-[12.5px] font-semibold bg-slate-100 hover:bg-slate-200 text-slate-800"
-                          onClick={() => handleInlineRecheck(req.id)}
-                          disabled={isRechecking}
-                        >
-                          {isRechecking ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <RotateCcw className="h-3.5 w-3.5 mr-1.5" />}
-                          {isRechecking ? "Memeriksa..." : "Periksa ulang"}
-                        </Button>
-                      </div>
-                    )}
                   </div>
-                ))}
+                )})}
               </div>
             ) : (
               <div className="flex flex-col gap-4">
-                <span className="text-[14px] text-slate-600">Belum ada file yang dipetakan.</span>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="h-9 w-fit text-[13px] font-semibold border-slate-300 bg-white shadow-sm hover:bg-slate-50 text-slate-700"
-                  onClick={() => handleSimulateUpload(req.id)}
-                >
-                  <Upload className="h-4 w-4 mr-2 text-slate-500" />
-                  Upload file
-                </Button>
+                <span className="text-[14px] text-slate-600">Belum ada file yang ditemukan.</span>
+                
+                {req.relatedInfo && (
+                  <div className="mt-2 flex flex-col gap-3 bg-white border border-slate-200 p-4 rounded-lg shadow-sm group">
+                     <h6 className="text-[12.5px] font-bold text-slate-500 uppercase tracking-widest">Informasi terkait ditemukan</h6>
+                     <div className="flex items-start justify-between mt-1">
+                        <div className="flex items-start gap-3">
+                          <div className="p-2 bg-slate-50 rounded text-slate-500 mt-0.5">
+                            <FileText className="h-4 w-4" />
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-[13.5px] font-semibold text-slate-900 mb-1">{req.relatedInfo.title}</span>
+                            <span className="text-[12.5px] text-slate-600 leading-relaxed max-w-[400px]">"{req.relatedInfo.desc}"</span>
+                            <div className="mt-3 flex items-center gap-1.5 text-[12.5px] font-medium text-amber-600 bg-amber-50 px-2 py-1 rounded-md w-fit">
+                               {req.relatedInfo.statusBadge}
+                            </div>
+                          </div>
+                        </div>
+                        <Button variant="ghost" size="sm" className="h-8 px-3 text-[12.5px] font-semibold text-slate-700 hover:text-blue-600 hover:bg-blue-50 transition-colors shrink-0">
+                          <Eye className="h-4 w-4 mr-1.5 text-slate-400 group-hover:text-blue-500 transition-colors" /> Buka &rarr;
+                        </Button>
+                     </div>
+                  </div>
+                )}
+
+                {req.actionAdvice ? (
+                  <div className="mt-4 flex flex-col gap-3">
+                     <h5 className="text-[13px] font-bold text-slate-800">Yang dapat dilakukan</h5>
+                     <div className="flex items-center gap-4">
+                       <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="h-9 w-fit text-[13px] font-semibold border-slate-300 bg-white shadow-sm hover:bg-slate-50 text-slate-700"
+                          onClick={() => handleSimulateUpload(req.id)}
+                        >
+                          <Upload className="h-4 w-4 mr-2 text-slate-500" />
+                          {req.actionAdvice.title}
+                        </Button>
+                        <span className="text-[12.5px] text-slate-500">{req.actionAdvice.helper}</span>
+                     </div>
+                  </div>
+                ) : (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-9 w-fit text-[13px] font-semibold border-slate-300 bg-white shadow-sm hover:bg-slate-50 text-slate-700"
+                    onClick={() => handleSimulateUpload(req.id)}
+                  >
+                    <Upload className="h-4 w-4 mr-2 text-slate-500" />
+                    Upload file
+                  </Button>
+                )}
               </div>
             )}
           </div>
 
-          <div className="w-full h-px bg-slate-100" />
 
-          <div className="space-y-4">
-            <h5 className="text-[13px] font-bold text-slate-800">
-              {req.status === "FULFILLED" ? "Digunakan untuk" : "Dampak"}
-            </h5>
-            
-            {req.status === "FULFILLED" ? (
-               <div className="flex flex-wrap items-center gap-2">
-                 {req.downstreamImpact.map(imp => (
-                   <div key={imp} className="bg-slate-100 text-slate-700 font-semibold text-[12.5px] px-3 py-1.5 rounded-md border border-slate-200/60">
-                     {imp}
-                   </div>
-                 ))}
-               </div>
-            ) : (
-              <div className="flex flex-col gap-3">
-                {req.downstreamImpact.map(imp => {
-                  let impDesc = `Analisis ${imp} belum dapat diproses sepenuhnya.`;
-                  if (imp === "Fact & Chronology" && req.status !== "FULFILLED") impDesc = "Rekonstruksi kejadian belum dapat memakai evidence ini.";
-  
-                  return (
-                    <div key={imp} className="flex flex-col gap-1 text-[14px] text-slate-600">
-                      <div className="flex items-center">
-                        <span className="bg-slate-100 text-slate-700 font-semibold text-[12px] px-2 py-1 rounded border border-slate-200/60">{imp}</span>
-                      </div>
-                      <span className="mt-1">{req.impact || impDesc}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
 
         </div>
       </div>
@@ -745,51 +844,7 @@ export function EvidenceReadinessModal({ open, onOpenChange, onProceedToAnalysis
         <div className="flex items-center gap-4">
           {hasIssues ? (
             <div className="flex items-center gap-3">
-              <div className="flex flex-col">
-                <div className="flex items-center gap-2">
-                  <X className="h-4 w-4 text-rose-600" />
-                  <span className="text-[14px] font-bold text-slate-900">
-                    {blockingIssues > 0 ? `${blockingIssues} gap menghambat analisis` : "Semua requirement terpenuhi"}
-                  </span>
-                </div>
-                {checkCount > 0 && <span className="text-[12.5px] text-slate-500 font-medium pl-6">{checkCount} perlu diperiksa</span>}
-              </div>
-              
-              <Popover>
-                <PopoverTrigger asChild>
-                  <button className="text-[13px] text-blue-600 hover:text-blue-800 font-semibold ml-4 px-3 py-1.5 rounded-md hover:bg-blue-50 transition-colors outline-none">
-                    Lihat {totalImpacts} dampak &rarr;
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent side="top" align="start" className="w-[320px] p-5 bg-white rounded-xl shadow-xl border-slate-200 z-[110]">
-                  <h4 className="text-[13px] font-bold text-slate-800 mb-4">Dampak ke analisis</h4>
-                  <div className="flex flex-col gap-3">
-                    {Object.entries(impactMap).map(([mod, data]) => {
-                      if (data.status === "Ready") {
-                        return (
-                          <div key={mod} className="flex items-center justify-between">
-                            <span className="text-[13.5px] text-slate-700 font-medium">{mod}</span>
-                            <span className="flex items-center gap-1.5 text-[12.5px] font-semibold text-emerald-600">
-                              <Check className="h-3.5 w-3.5"/> Siap
-                            </span>
-                          </div>
-                        );
-                      }
-                      return (
-                        <div key={mod} className="flex items-center justify-between">
-                          <span className="flex items-center gap-2 text-[13.5px] text-slate-800 font-medium">
-                            {data.status === "Blocked" ? <X className="h-3.5 w-3.5 text-rose-500"/> : <AlertTriangle className="h-3.5 w-3.5 text-amber-500"/>}
-                            {mod}
-                          </span>
-                          <span className="text-[12.5px] font-semibold text-slate-500">
-                            {data.count} evidence
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </PopoverContent>
-              </Popover>
+              {/* Removed as requested by user to reduce clutter */}
             </div>
           ) : (
             <div className="flex items-center gap-2">
@@ -811,7 +866,7 @@ export function EvidenceReadinessModal({ open, onOpenChange, onProceedToAnalysis
                 setShowConfirmModal(true);
               }}
             >
-              Lanjutkan dengan {blockingIssues} gap
+              {blockingIssues > 0 ? `Lanjutkan dengan ${blockingIssues} gap` : "Lanjutkan ke analisis"}
             </Button>
           ) : (
             <Button 
@@ -821,7 +876,7 @@ export function EvidenceReadinessModal({ open, onOpenChange, onProceedToAnalysis
                 onOpenChange(false);
               }}
             >
-              Lanjutkan ke Analisis
+              Mulai analisis
             </Button>
           )}
         </div>
@@ -961,15 +1016,20 @@ export function EvidenceReadinessModal({ open, onOpenChange, onProceedToAnalysis
               ) : !activeRun ? (
                 <div className="flex-1 flex flex-col items-center justify-center bg-white p-8 text-center">
                   <div className="h-16 w-16 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-center shadow-sm mb-5">
-                    <FileText className="h-8 w-8 text-slate-300" />
+                    <ShieldCheck className="h-8 w-8 text-slate-300" />
                   </div>
-                  <h3 className="text-[18px] font-bold text-slate-900 tracking-tight mb-2">Belum ada evidence untuk diperiksa</h3>
+                  <h3 className="text-[18px] font-bold text-slate-900 tracking-tight mb-2">Pemeriksaan Kesiapan Evidence</h3>
                   <p className="text-[14px] text-slate-500 max-w-sm leading-relaxed mb-8">
-                    Tambahkan evidence kasus terlebih dahulu agar sistem dapat memeriksa kesiapan analisis.
+                    Jalankan analisis awal untuk mencocokkan evidence yang tersedia dengan standar requirement investigasi.
                   </p>
                   <div className="flex items-center gap-3">
-                    <Button variant="ghost" onClick={handleClose} className="text-slate-500">Tutup</Button>
-                    <Button className="px-8 h-10 text-[13px] font-semibold bg-slate-900 text-white shadow-sm">Tambah Evidence</Button>
+                    <Button variant="ghost" onClick={handleClose} className="text-slate-500 font-semibold">Tutup</Button>
+                    <Button 
+                      onClick={triggerManualCheck}
+                      className="px-8 h-10 text-[13px] font-semibold bg-slate-900 hover:bg-slate-800 text-white shadow-sm transition-all"
+                    >
+                      Periksa Evidence
+                    </Button>
                   </div>
                 </div>
               ) : (

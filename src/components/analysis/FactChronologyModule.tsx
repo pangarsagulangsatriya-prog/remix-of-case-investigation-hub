@@ -1986,17 +1986,17 @@ export const EventCitationList: React.FC<{ item: any }> = ({ item }) => {
   const getDummyCitations = (label: string) => [
     {
       type: "document",
-      content: `Data tercatat pada berkas BAP untuk parameter ${label} sesuai dengan SOP-204.`,
-      speaker: "Audit Log",
-      time: "10:42 AM",
-      source: "BAP_INVESTIGASI_SOP-204.PDF"
+      content: `Berdasarkan bukti dari urutan kejadian sebelumnya mengenai elemen ${label}.`,
+      speaker: "Evidence",
+      time: "Analysis",
+      source: "Output Fact & Chronology"
     },
     {
-      type: "audio",
-      content: `Saksi mengkonfirmasi elemen ${label} pada saat interogasi awal berlangsung.`,
-      speaker: "Saksi Utama",
-      time: "10:45 AM",
-      source: "REKAMAN_INTEROGASI_SAKSI.MP3"
+      type: "document",
+      content: `Sesuai dengan standar dan panduan yang tercantum dalam prosedur investigasi untuk ${label}.`,
+      speaker: "Knowledge Base",
+      time: "Reference",
+      source: "SOP Investigasi Insiden"
     }
   ];
 

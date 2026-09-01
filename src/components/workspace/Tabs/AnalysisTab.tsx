@@ -2506,68 +2506,7 @@ export default function AnalysisTab({ agents, setAgents, reportStatus }: Analysi
                               <Brain className="h-3.5 w-3.5 text-emerald-500" /> Knowledge Base
                             </h3>
                             <div className="space-y-4">
-                              {(activeAgent.id === 'ipls' || activeAgent.id === 'prev') ? (
-                                <div className="space-y-4">
-                                  {mockLayers.map(layer => {
-                                    const layerFolders = mockFolders.filter(f => f.layerId === layer.id);
-                                    // only show layer if it has folders that have documents
-                                    const hasDocs = layerFolders.some(f => mockDocuments.some(d => d.folderId === f.id));
-                                    if (!hasDocs) return null;
-                                    
-                                    return (
-                                      <div key={layer.id} className="space-y-2">
-                                        <div className="pt-1 pb-1">
-                                           <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest bg-slate-100/80 px-2.5 py-1 rounded-sm border border-slate-200/50">{layer.name}</span>
-                                        </div>
-                                        <div className="space-y-1.5 ml-2">
-                                          {layerFolders.map(folder => {
-                                            const folderDocs = mockDocuments.filter(d => d.folderId === folder.id);
-                                            if (folderDocs.length === 0) return null;
-                                            return (
-                                              <div key={folder.id} className="border border-slate-200 rounded-sm overflow-hidden bg-white shadow-sm">
-                                                <div 
-                                                  className="flex items-center justify-between p-2 bg-slate-50 border-b border-slate-100 cursor-pointer hover:bg-slate-100/50 transition-colors"
-                                                  onClick={() => {
-                                                    setExpandedKnowledgeFolders(prev => 
-                                                      prev.includes(folder.id) ? prev.filter(id => id !== folder.id) : [...prev, folder.id]
-                                                    );
-                                                  }}
-                                                >
-                                                  <div className="flex items-center gap-2">
-                                                    <Folder className="h-3.5 w-3.5 text-blue-400 fill-blue-400/20" />
-                                                    <span className="text-[10px] font-bold text-slate-700">{folder.name}</span>
-                                                  </div>
-                                                  <div className="flex items-center gap-2">
-                                                    <span className="text-[9px] font-medium text-slate-400 px-1.5 py-0.5 bg-slate-100 rounded-full">{folderDocs.length} item</span>
-                                                    <ChevronDown className={cn("h-3.5 w-3.5 text-slate-400 transition-transform duration-200", expandedKnowledgeFolders.includes(folder.id) ? "rotate-180" : "")} />
-                                                  </div>
-                                                </div>
-                                                {expandedKnowledgeFolders.includes(folder.id) && (
-                                                  <div className="divide-y divide-slate-50">
-                                                    {folderDocs.map(doc => (
-                                                      <div key={doc.id} className="flex items-start gap-3 p-2.5 hover:bg-slate-50/50 transition-colors">
-                                                        <div className="pt-0.5">
-                                                           <div className="h-3.5 w-3.5 bg-blue-500 rounded-[3px] flex items-center justify-center shadow-xs">
-                                                             <Check className="h-2.5 w-2.5 text-white stroke-[3]" />
-                                                           </div>
-                                                        </div>
-                                                        <div className="min-w-0 flex-1">
-                                                          <p className="text-[10px] font-bold text-slate-800 truncate" title={doc.title}>{doc.title}</p>
-                                                        </div>
-                                                      </div>
-                                                    ))}
-                                                  </div>
-                                                )}
-                                              </div>
-                                            );
-                                          })}
-                                        </div>
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              ) : (
-                                <div className="space-y-2">
+                              <div className="space-y-2">
                                   {mockKnowledgeUsed.map(k => (
                                     <div key={k.id} className="flex items-center gap-3 p-2.5 rounded-sm border border-slate-200 bg-white shadow-sm">
                                       <div className="pt-0.5">
@@ -2582,7 +2521,6 @@ export default function AnalysisTab({ agents, setAgents, reportStatus }: Analysi
                                     </div>
                                   ))}
                                 </div>
-                              )}
                             </div>
                           </div>
                         </div>
