@@ -82,7 +82,7 @@ export interface AnalysisOverride {
   brokenRequired: string[];
 }
 
-const STORAGE_KEY_PREFIX = "investigation_readiness_state_v7";
+const STORAGE_KEY_PREFIX = "investigation_readiness_state_v9";
 const EVENT_KEY_PREFIX = "readiness_state_changed_v6";
 
 interface ReadinessState {
@@ -188,7 +188,8 @@ export const useReadiness = (caseId?: string) => {
       { name: "03 PEOPLE / PERSONEL", impact: ["Actor", "PEEPO", "IPLS"] },
       { name: "04 PART / UNIT & KOMPONEN", impact: ["Fact & Chronology", "PEEPO", "IPLS"] },
       { name: "05 POSITION / LOKASI KEJADIAN", impact: ["Fact & Chronology", "PEEPO", "IPLS"] },
-      { name: "06 PAPER / DOKUMEN KERJA", impact: ["PEEPO", "IPLS", "Prevention"] }
+      { name: "06 PAPER / DOKUMEN KERJA", impact: ["PEEPO", "IPLS", "Prevention"] },
+      { name: "99 TIDAK DIKETAHUI", impact: [] }
     ];
 
     const categories = CATEGORIES.map(cat => {
@@ -588,6 +589,21 @@ export const useReadiness = (caseId?: string) => {
        { label: "IPLS", desc: "Control effectiveness belum memiliki pembanding." },
        { label: "Prevention", desc: "Rekomendasi belum memiliki control reference yang cukup kuat." }
     ]
+  },
+  {
+    id: "req-unknown-1",
+    label: "File Tidak Diketahui",
+    category: "99 TIDAK DIKETAHUI",
+    level: "RECOMMENDED",
+    status: "FULFILLED",
+    downstreamImpact: [],
+    matchedFiles: [
+      { id: "file-unk-1", name: "Screenshot_WhatsApp_2026.jpg", processingStatus: "DONE" },
+      { id: "file-unk-2", name: "Laporan_Lama_Unknown.pdf", processingStatus: "DONE" }
+    ],
+    requiredDesc: "File yang belum dapat diklasifikasikan ke dalam kategori bukti yang ada. Asal usul atau peruntukan file ini tidak diketahui.",
+    uploadAdvice: "Pastikan file ini relevan dengan investigasi. Jika sesuai, coba beri label yang jelas agar dapat masuk ke kategori yang tepat.",
+    formatHint: "Any"
   }
 ];
 

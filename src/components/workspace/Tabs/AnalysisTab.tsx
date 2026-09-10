@@ -1114,7 +1114,7 @@ interface AnalysisTabProps {
 
 export default function AnalysisTab({ agents, setAgents, reportStatus }: AnalysisTabProps) {
   const { caseId } = useParams<{ caseId: string }>();
-  const isLocked = reportStatus === 'FINAL_LOCKED';
+  const isReportLocked = reportStatus === 'APPROVED';
   const { data: evidence } = useEvidence(caseId!);
   const evidenceFiles = evidence?.files || [];
   const batches = evidence?.batches || [];
@@ -1268,7 +1268,7 @@ export default function AnalysisTab({ agents, setAgents, reportStatus }: Analysi
   const handleRowClick = (id: string | number) => {
     const strId = String(id);
     if (selectedRowId === strId) {
-      if (!isLocked) {
+      if (!isReportLocked) {
         setEditingRowId(strId);
         const agent = agents.find(a => a.id === 'prev');
         const item = agent?.results?.actions?.find((act: any, idx: number) => String(act.id || idx) === strId);
@@ -1677,7 +1677,7 @@ export default function AnalysisTab({ agents, setAgents, reportStatus }: Analysi
                
                {/* Controls Toolbar */}
                <div className="flex items-center gap-1.5">
-                  {(globalStatus === 'idle' || globalStatus === 'completed' || globalStatus === 'stopped') && (
+                  {(globalStatus === 'idle' || globalStatus === 'completed' || globalStatus === 'stopped') && !isReportLocked && (
                      <Button 
                         onClick={startFullChain} 
                         size="sm"
@@ -1839,7 +1839,7 @@ export default function AnalysisTab({ agents, setAgents, reportStatus }: Analysi
                                        </button>
 
                                        {/* Play Button */}
-                                       {!isRunning && (
+                                       {!isRunning && !isReportLocked && (
                                           isLocked ? (
                                              <button 
                                                 disabled
@@ -1893,7 +1893,16 @@ export default function AnalysisTab({ agents, setAgents, reportStatus }: Analysi
             </div>
          </div>
 
-         <div className="flex-1 flex flex-col min-w-0 bg-white">
+         <div className="flex-1 flex flex-col min-w-0 bg-slate-50 relative">
+        {isReportLocked && (
+          <div className="bg-slate-100 border-b border-slate-200 px-4 py-2.5 flex items-center gap-3 shrink-0 z-50">
+            <Lock className="h-4 w-4 text-slate-500" />
+            <div>
+              <p className="text-[11px] font-bold text-slate-800">Laporan sudah disahkan</p>
+              <p className="text-[11px] text-slate-600">Hasil analisis telah dikunci. Detail masih dapat dilihat.</p>
+            </div>
+          </div>
+        )}
             <div className="flex-1 flex overflow-hidden">
                <div ref={containerRef} className="flex-1 relative overflow-auto custom-scrollbar flex items-start justify-center">
                   {selectedAgentId ? (
@@ -1916,6 +1925,7 @@ export default function AnalysisTab({ agents, setAgents, reportStatus }: Analysi
                                           ? `Tahap ini bergantung pada hasil dari tahap sebelumnya. Selesaikan tahap ${pendingDeps.map(d => agents.find(a => a.id === d)?.name).join(', ')} terlebih dahulu.` 
                                           : "Jalankan tahap ini untuk membuat hasil analisis."}
                                     </p>
+                                    {!isReportLocked && (
                                     <button
                                        disabled={isLocked}
                                        onClick={() => runSingleAgent(selectedAgentId, true)}
@@ -1927,6 +1937,7 @@ export default function AnalysisTab({ agents, setAgents, reportStatus }: Analysi
                                        {isLocked ? <Lock className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5 fill-current" />} 
                                        {isLocked ? "Terkunci" : "Jalankan Tahap"}
                                     </button>
+                                    )}
                                  </div>
                               );
                            })() : selectedAgent?.status === 'running' ? (
@@ -2071,7 +2082,7 @@ export default function AnalysisTab({ agents, setAgents, reportStatus }: Analysi
                                           </div>
                                        </div>
                                        <div className="w-32 h-1 bg-slate-200 rounded-full overflow-hidden">
-                                          <div className="h-full bg-blue-500 animate-[fill_3s_linear_forwards]" style={{ width: '0%' }} />
+                                          <div className="h-full bg-blue-50 animate-[fill_3s_linear_forwards]" style={{ width: '0%' }} />
                                        </div>
                                     </div>
                                  ) : globalStatus === 'running' && (
@@ -2091,7 +2102,7 @@ export default function AnalysisTab({ agents, setAgents, reportStatus }: Analysi
                                  <div className="flex-1 animate-in fade-in duration-500 overflow-hidden relative">
                                     {slides[activeSlide]?.type === 'chronology_module' ? (
                                     <FactChronologyModule
-                                       readonly={isLocked}
+                                       readonly={isReportLocked}
                                        onLogAudit={(desc) => handleLogAudit("fact", desc)}
                                        initialItems={selectedAgent.results?.chronology_items || []}
                                        metadata={selectedAgent.results?.ringkasan}
@@ -2101,6 +2112,7 @@ export default function AnalysisTab({ agents, setAgents, reportStatus }: Analysi
                                        selectedItemId={selectedRowId || undefined}
                                        onSelectItem={handleSelectRow}
                                        onSync={(newItems) => {
+                                          if (isReportLocked) return;
                                           setAgents(prev => prev.map(a => a.id === 'fact' ? {
                                              ...a,
                                              results: {
@@ -2115,11 +2127,12 @@ export default function AnalysisTab({ agents, setAgents, reportStatus }: Analysi
                                      <div className="flex flex-col h-full">
                                         {selectedAgentId === 'peepo' ? (
                                             <PeepoAnalysisModule
-                                               readonly={isLocked}
+                                               readonly={isReportLocked}
                                                data={selectedAgent?.results as any}
                                                onSelectRow={handleSelectRow}
                                                selectedRowId={selectedRowId}
                                                onSync={(updatedData) => {
+                                                  if (isReportLocked) return;
                                                   setAgents(prev => prev.map(a => 
                                                      a.id === 'peepo' ? { ...a, results: updatedData } : a
                                                   ));
@@ -2127,11 +2140,12 @@ export default function AnalysisTab({ agents, setAgents, reportStatus }: Analysi
                                             />
                                          ) : selectedAgentId === 'actor' ? (
                                             <ActorAnalysisModule 
-                                               readonly={isLocked}
+                                               readonly={isReportLocked}
                                                data={selectedAgent?.results as any}
                                                onSelectActor={handleSelectRow}
                                                selectedActorId={selectedRowId}
                                                onDeleteActor={(id) => {
+                                                  if (isReportLocked) return;
                                                   setAgents(prev => prev.map(a => {
                                                      if (a.id !== 'actor') return a;
                                                      const updatedResults = { ...a.results };
@@ -2143,6 +2157,7 @@ export default function AnalysisTab({ agents, setAgents, reportStatus }: Analysi
                                                   toast.success("Aktor dihapus.");
                                                }}
                                                onUpdateActors={(actors) => {
+                                                  if (isReportLocked) return;
                                                   setAgents(prev => prev.map(a => {
                                                      if (a.id !== "actor") return a;
                                                      return { ...a, results: { ...a.results, actor_registry: actors } };
@@ -2151,11 +2166,12 @@ export default function AnalysisTab({ agents, setAgents, reportStatus }: Analysi
                                             />
                                          ) : selectedAgentId === 'ipls' ? (
                                             <IplsAnalysisModule
-                                               readonly={isLocked}
+                                               readonly={isReportLocked}
                                                data={selectedAgent?.results as any}
                                                onSelectRow={handleSelectRow}
                                                selectedRowId={selectedRowId}
                                                onSync={(updatedData) => {
+                                                  if (isReportLocked) return;
                                                   setAgents(prev => prev.map(a => 
                                                      a.id === 'ipls' ? { ...a, results: updatedData } : a
                                                   ));
@@ -2163,11 +2179,12 @@ export default function AnalysisTab({ agents, setAgents, reportStatus }: Analysi
                                             />
                                          ) : selectedAgentId === 'prev' ? (
                                             <PreventionAnalysisModule
-                                               readonly={isLocked}
+                                               readonly={isReportLocked}
                                                data={selectedAgent?.results as any}
                                                onSelectRow={handleSelectRow}
                                                selectedRowId={selectedRowId}
                                                onSync={(updatedData) => {
+                                                  if (isReportLocked) return;
                                                   setAgents(prev => prev.map(a => 
                                                      a.id === 'prev' ? { ...a, results: updatedData } : a
                                                   ));

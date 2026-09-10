@@ -95,6 +95,10 @@ export const ActorAnalysisModule: React.FC<ActorAnalysisModuleProps> = ({ data, 
   };
 
   const handleSaveNewActor = () => {
+    if (readonly) {
+      toast.error("Laporan sudah disahkan. Hasil analisis tidak dapat diubah.");
+      return;
+    }
     const newActor: ActorItem = {
       actor_id: "new-actor-" + Date.now(),
       beid: "",

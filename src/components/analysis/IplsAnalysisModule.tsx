@@ -443,6 +443,10 @@ export function IplsAnalysisModule({
   const [addStatus, setAddStatus] = useState("non-conformity");
 
   const handleAddItemSubmit = () => {
+    if (readonly) {
+      toast.error("Laporan sudah disahkan. Hasil analisis tidak dapat diubah.");
+      return;
+    }
     if (!addLabel.trim()) {
       toast.error("Label harus diisi");
       return;
@@ -543,6 +547,10 @@ export function IplsAnalysisModule({
   };
 
   const handleSaveEdit = () => {
+    if (readonly) {
+      toast.error("Laporan sudah disahkan. Hasil analisis tidak dapat diubah.");
+      return;
+    }
     if (!editingId || !detailItem) return;
     const ts = new Date().toISOString();
     
@@ -618,6 +626,10 @@ export function IplsAnalysisModule({
   };
 
   const confirmDelete = () => {
+    if (readonly) {
+      toast.error("Laporan sudah disahkan. Hasil analisis tidak dapat diubah.");
+      return;
+    }
     if (!itemToDelete) return;
     if (!deleteReason.trim()) {
       toast.error("Alasan wajib diisi");

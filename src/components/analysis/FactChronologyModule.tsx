@@ -570,6 +570,10 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
   };
 
   const handleSaveNewFact = () => {
+    if (readonly) {
+      toast.error("Laporan sudah disahkan. Hasil analisis tidak dapat diubah.");
+      return;
+    }
     const errors: {phase?: string, time?: string, desc?: string} = {};
     if (!addModalPhase) errors.phase = "Pilih fase terlebih dahulu";
     if (!addModalTime.trim()) errors.time = "Isi waktu kejadian";
@@ -646,6 +650,10 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
   };
 
   const handleSaveEdit = () => {
+    if (readonly) {
+      toast.error("Laporan sudah disahkan. Hasil analisis tidak dapat diubah.");
+      return;
+    }
     if (!editingId) return;
     const ts = new Date().toISOString();
     setItems(prev => prev.map(item => {
@@ -730,6 +738,10 @@ export const FactChronologyModule: React.FC<FactChronologyModuleProps> = ({
   };
 
   const confirmDelete = () => {
+    if (readonly) {
+      toast.error("Laporan sudah disahkan. Hasil analisis tidak dapat diubah.");
+      return;
+    }
     if (!itemToDelete) return;
     if (!deleteReason.trim()) {
       toast.error("Alasan penghapusan wajib diisi!");

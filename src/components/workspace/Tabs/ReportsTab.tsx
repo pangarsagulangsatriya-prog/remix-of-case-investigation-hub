@@ -210,6 +210,7 @@ export default function ReportsTab({
       const updatedSnapshot = reportSnapshot ? { ...reportSnapshot } : ({} as any);
       updatedSnapshot.lockedAt = new Date().toISOString();
       updatedSnapshot.lockedBy = 'Gulang Satriya';
+      updatedSnapshot.agentsSnapshot = JSON.parse(JSON.stringify(agents));
       setReportSnapshot?.(updatedSnapshot);
       
       if (setReportAuditLogs) {
@@ -793,10 +794,13 @@ export default function ReportsTab({
               {reportStatus !== 'APPROVED' ? (
                 <div className="space-y-3">
                   <div className="flex gap-2 items-start bg-slate-50 p-3 rounded border border-slate-100 mb-3">
-                    <Lock className="h-3.5 w-3.5 text-slate-400 shrink-0 mt-0.5" />
-                    <p className="text-[11px] text-slate-600 leading-relaxed">
-                      Setelah laporan disahkan, isi laporan akan dikunci dan tercatat di Audit Trail.
-                    </p>
+                    <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-[11px] font-bold text-slate-800 mb-1">Periksa hasil analisis sebelum disahkan</p>
+                      <p className="text-[11px] text-slate-600 leading-relaxed">
+                        Preview mengikuti hasil terbaru dari Analysis. Periksa hasil sebelum laporan disahkan.
+                      </p>
+                    </div>
                   </div>
                   <Button 
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold h-10 text-[11px] uppercase tracking-widest transition-transform active:scale-[0.98]"
@@ -810,6 +814,15 @@ export default function ReportsTab({
                 </div>
               ) : (
                 <div className="space-y-4">
+                  <div className="flex gap-2 items-start bg-slate-50 p-3 rounded border border-slate-100 mb-3">
+                    <Lock className="h-3.5 w-3.5 text-slate-400 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-[11px] font-bold text-slate-800 mb-1">Laporan telah disahkan</p>
+                      <p className="text-[11px] text-slate-600 leading-relaxed">
+                        Versi ini telah dikunci sebagai laporan resmi investigasi.
+                      </p>
+                    </div>
+                  </div>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button 
@@ -872,7 +885,7 @@ export default function ReportsTab({
           <div className="bg-white rounded-lg shadow-2xl p-6 w-[340px] animate-in zoom-in-[0.98] duration-150">
             <h3 className="text-[16px] font-bold text-slate-900 mb-2">Sahkan laporan?</h3>
             <p className="text-[12px] text-slate-600 leading-relaxed mb-4">
-              Versi {reportSnapshot?.version || "1.0"} akan dikunci sebagai laporan resmi investigasi.
+              Setelah laporan disahkan, laporan dan seluruh hasil pada tab Analysis akan dikunci dan tidak dapat diedit lagi. Pastikan seluruh hasil sudah diperiksa dan sudah sesuai sebelum melanjutkan.
             </p>
             <div className="bg-slate-50 p-3 rounded border border-slate-100 mb-6 space-y-1">
               <div className="text-[11px] text-slate-600">{TOTAL_PAGES} halaman</div>

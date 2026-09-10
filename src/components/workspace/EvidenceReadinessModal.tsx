@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useParams } from "react-router-dom";
-import { Loader2, ShieldCheck, X, ChevronRight, ChevronLeft, Check, RotateCcw, AlertTriangle, FileText, Info, Search, Upload, Eye, User, Users, Wrench, MapPin, Folder, ArrowRight, Image as ImageIcon, Video, Mic, Clock, Map, Ruler, ShieldAlert, BadgeCheck, ClipboardCheck, Truck } from "lucide-react";
+import { Loader2, ShieldCheck, X, ChevronRight, ChevronLeft, Check, RotateCcw, AlertTriangle, FileText, Info, Search, Upload, Eye, User, Users, Wrench, MapPin, Folder, ArrowRight, Image as ImageIcon, Video, Mic, Clock, Map, Ruler, ShieldAlert, BadgeCheck, ClipboardCheck, Truck, FileQuestion } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useReadiness, ReadinessRun, EvidenceRequirementResult, RequirementStatus } from "@/hooks/useReadiness";
 import { cn } from "@/lib/utils";
@@ -34,6 +34,7 @@ const getCategoryDescription = (category: string) => {
   if (lower.includes("part")) return "Bukti mengenai unit, alat, material, komponen, atau benda fisik yang terlibat dalam kejadian.";
   if (lower.includes("position")) return "Bukti yang membantu memahami posisi orang, unit, objek, jalur pergerakan, serta kondisi fisik lokasi kejadian.";
   if (lower.includes("paper")) return "Dokumen yang menjelaskan bagaimana pekerjaan direncanakan, dikendalikan, dan seharusnya dilakukan.";
+  if (lower.includes("tidak diketahui")) return "File yang belum dapat diklasifikasikan ke dalam kategori bukti yang ada.";
   return "";
 };
 
@@ -51,6 +52,7 @@ const getCategoryIcon = (name: string) => {
   if (lower.includes("part")) return <Wrench className="h-4 w-4" />;
   if (lower.includes("position")) return <MapPin className="h-4 w-4" />;
   if (lower.includes("paper")) return <Folder className="h-4 w-4" />;
+  if (lower.includes("tidak diketahui")) return <FileQuestion className="h-4 w-4" />;
   return <Folder className="h-4 w-4" />;
 };
 

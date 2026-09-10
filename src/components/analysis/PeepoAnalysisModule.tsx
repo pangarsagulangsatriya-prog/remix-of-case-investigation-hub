@@ -469,6 +469,10 @@ export const PeepoAnalysisModule: React.FC<PeepoAnalysisModuleProps> = ({
   };
 
   const handleAdd = () => {
+    if (readonly) {
+      toast.error("Laporan sudah disahkan. Hasil analisis tidak dapat diubah.");
+      return;
+    }
     if (!addText.trim()) return;
     
     const newId = "peepo-" + Date.now();
@@ -508,6 +512,10 @@ export const PeepoAnalysisModule: React.FC<PeepoAnalysisModuleProps> = ({
   };
 
   const handleSaveEdit = () => {
+    if (readonly) {
+      toast.error("Laporan sudah disahkan. Hasil analisis tidak dapat diubah.");
+      return;
+    }
     if (!editingId || !editingCategory) return;
     const ts = new Date().toISOString();
     
@@ -565,6 +573,10 @@ export const PeepoAnalysisModule: React.FC<PeepoAnalysisModuleProps> = ({
   };
 
   const confirmDelete = () => {
+    if (readonly) {
+      toast.error("Laporan sudah disahkan. Hasil analisis tidak dapat diubah.");
+      return;
+    }
     if (!itemToDelete) return;
     if (!deleteReason.trim()) {
       toast.error("Alasan wajib diisi");

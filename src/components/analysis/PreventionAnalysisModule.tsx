@@ -441,6 +441,10 @@ export const PreventionAnalysisModule: React.FC<PreventionAnalysisModuleProps> =
   }, [data]);
 
   const handleAdd = () => {
+    if (readonly) {
+      toast.error("Laporan sudah disahkan. Hasil analisis tidak dapat diubah.");
+      return;
+    }
     if (!addDraft.action?.trim()) return;
     
     const newId = "prev-" + Date.now();
@@ -533,6 +537,10 @@ export const PreventionAnalysisModule: React.FC<PreventionAnalysisModuleProps> =
   };
 
   const handleSaveEdit = () => {
+    if (readonly) {
+      toast.error("Laporan sudah disahkan. Hasil analisis tidak dapat diubah.");
+      return;
+    }
     if (!editingId) return;
     const ts = new Date().toISOString();
     
@@ -610,6 +618,10 @@ export const PreventionAnalysisModule: React.FC<PreventionAnalysisModuleProps> =
   };
 
   const confirmDelete = () => {
+    if (readonly) {
+      toast.error("Laporan sudah disahkan. Hasil analisis tidak dapat diubah.");
+      return;
+    }
     if (!itemToDelete) return;
     if (!deleteReason.trim()) {
       toast.error("Alasan wajib diisi");
