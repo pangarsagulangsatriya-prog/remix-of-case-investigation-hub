@@ -14,7 +14,7 @@ export default function CampaignWorkspacePage() {
   const { data: caseData, isLoading } = useCase(campaignId || "");
   
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isGenerated, setIsGenerated] = useState(false);
+  const [isGenerated, setIsGenerated] = useState(true);
   const [showActivityLog, setShowActivityLog] = useState(true);
   const [showMetadata, setShowMetadata] = useState(true);
   const [showDataAnalisis, setShowDataAnalisis] = useState(true);
@@ -24,7 +24,7 @@ export default function CampaignWorkspacePage() {
   const [showRevisionHistory, setShowRevisionHistory] = useState(false);
 
   // Status & Submit State
-  const [status, setStatus] = useState("Draft");
+  const [status, setStatus] = useState("Sedang Direview");
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isConfirmed, setIsConfirmed] = useState(false);
@@ -51,6 +51,7 @@ export default function CampaignWorkspacePage() {
     setTimeout(() => {
       setIsGenerating(false);
       setIsGenerated(true);
+      setStatus("Draft");
     }, 3000);
   };
 
@@ -92,27 +93,25 @@ export default function CampaignWorkspacePage() {
               </Button>
             ) : (
               <>
-                {status === "Perlu Perbaikan" && (
-                  <Button 
-                    onClick={handleGenerate} 
-                    disabled={isGenerating}
-                    variant="outline"
-                    className="border-primary text-primary hover:bg-primary/5 font-bold rounded-sm shadow-none"
-                  >
-                    {isGenerating ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Regenerating...
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="mr-2 h-4 w-4" /> Regenerate Ulang
-                      </>
-                    )}
-                  </Button>
-                )}
+                <Button 
+                  onClick={handleGenerate} 
+                  disabled={isGenerating}
+                  variant="outline"
+                  className="border-primary text-primary hover:bg-primary/5 font-bold rounded-sm shadow-none"
+                >
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Regenerating...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="mr-2 h-4 w-4" /> Regenerate Ulang
+                    </>
+                  )}
+                </Button>
                 <Button 
                   onClick={() => setIsSubmitModalOpen(true)}
-                  disabled={status === "Sedang Direview"}
+                  disabled={status === "Sedang Direview" || isGenerating}
                   className="bg-primary hover:bg-primary/90 text-white font-bold rounded-sm shadow-none"
                 >
                   {status === "Sedang Direview" ? (
