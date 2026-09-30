@@ -11,6 +11,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   BookOpen,
+  Megaphone,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -29,6 +30,7 @@ import {
 
 const navItems = [
   { title: "Cases", url: "/cases", icon: FolderSearch },
+  { title: "Campaign", url: "/campaign", icon: Megaphone },
   { title: "Knowledge", url: "/knowledge", icon: BookOpen },
 
   { title: "Review & Approval", url: "/review", icon: CheckCircle2 },

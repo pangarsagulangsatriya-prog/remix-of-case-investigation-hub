@@ -5,6 +5,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import LoginPage from "./pages/LoginPage";
 import CaseListPage from "./pages/CaseListPage";
+import CampaignListPage from "./pages/CampaignListPage";
+import CampaignWorkspacePage from "./pages/CampaignWorkspacePage";
 import CreateCasePage from "./pages/CreateCasePage";
 import CaseWorkspacePage from "./pages/CaseWorkspacePage";
 import ReviewApprovalPage from "./pages/ReviewApprovalPage";
@@ -28,6 +30,8 @@ const App = () => (
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/cases" element={<CaseListPage />} />
+          <Route path="/campaign" element={<CampaignListPage />} />
+          <Route path="/campaign/:campaignId" element={<CampaignWorkspacePage />} />
           <Route path="/cases/new" element={<CreateCasePage />} />
           <Route path="/cases/:caseId" element={<CaseWorkspacePage />} />
 

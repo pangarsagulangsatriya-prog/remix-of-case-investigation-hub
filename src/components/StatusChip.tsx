@@ -18,6 +18,9 @@ const statusConfig: Record<string, { label: string; className: string; title?: s
   ekstraksi_bukti: { label: "Ekstraksi Bukti", className: "bg-amber-500/10 text-amber-600 border border-amber-500/20", title: "Proses AI: Ekstraksi Bukti", description: "AI sedang membaca, memecah, dan mengekstrak data relevan dari seluruh dokumen serta file media bukti yang telah dilampirkan." },
   analisis_bukti: { label: "Analisis Bukti", className: "bg-blue-500/10 text-blue-600 border border-blue-500/20", title: "Proses AI: Analisis Mendalam", description: "Sistem AI sedang melakukan penalaran mendalam untuk menyusun kronologi fakta dan menganalisis aktor yang terlibat." },
   tersubmit: { label: "Tersubmit", className: "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20", title: "Status AI: Selesai", description: "Keseluruhan analisis otomatis oleh AI telah berhasil diselesaikan dan draf laporan investigasi siap untuk ditinjau." },
+  belum_perlu_approve: { label: "Belum Perlu Approve", className: "bg-slate-100 text-slate-600 border border-slate-200" },
+  perlu_perbaikan: { label: "Perlu Perbaikan", className: "bg-amber-500/10 text-amber-600 border border-amber-500/20" },
+  sedang_direview: { label: "Sedang Direview", className: "bg-blue-500/10 text-blue-600 border border-blue-500/20" },
 };
 
 export function StatusChip({ status }: { status: string }) {
