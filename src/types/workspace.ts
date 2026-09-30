@@ -106,7 +106,7 @@ export interface ReportSnapshot {
 export interface ReportAuditEntry {
   id: string;
   timestamp: string;
-  action: 'REPORT_GENERATED' | 'DRAFT_SAVED' | 'REPORT_APPROVED' | 'PDF_EXPORTED' | 'EXPORT_FAILED';
+  action: 'REPORT_GENERATED' | 'DRAFT_SAVED' | 'REPORT_APPROVED' | 'PDF_EXPORTED' | 'PPT_EXPORTED' | 'WORD_EXPORTED' | 'EXPORT_FAILED';
   actor: string;
   details?: string;
   version?: string;

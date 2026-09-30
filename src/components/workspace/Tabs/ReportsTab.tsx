@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { AgentState, ReportStatusType, ReportSnapshot, ReportAuditEntry } from "@/types/workspace";
 import { 
   FileText, CheckCircle2, AlertTriangle, History, X, Maximize2, Minimize2, Layout, 
-  ChevronLeft, ChevronRight, Lock, FileDown, Loader2, Save, FileCheck
+  ChevronLeft, ChevronRight, Lock, FileDown, Loader2, Save, FileCheck, Presentation
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { 
@@ -222,9 +222,9 @@ export default function ReportsTab({
     }, 1500);
   };
 
-  const handleExport = (format: 'pdf' | 'word') => {
+  const handleExport = (format: 'pdf' | 'ppt') => {
     setIsExporting(true);
-    const docName = format === 'pdf' ? 'PDF' : 'Word';
+    const docName = format === 'pdf' ? 'PDF' : 'PPT';
     
     toast.promise(
       new Promise((resolve) => {
@@ -830,15 +830,29 @@ export default function ReportsTab({
                         disabled={isExporting}
                       >
                         {isExporting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <FileDown className="h-4 w-4 mr-2" />}
-                        Export Report
+                        DOWNLOAD REPORT
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-[280px]">
-                      <DropdownMenuItem onClick={() => handleExport('pdf')} className="cursor-pointer font-medium text-xs py-2.5">
-                        PDF Document (.pdf)
+                    <DropdownMenuContent align="end" className="w-[280px] p-2">
+                      <DropdownMenuItem 
+                        onClick={() => handleExport('pdf')} 
+                        className="cursor-pointer flex flex-col items-start gap-1 p-3 focus:bg-slate-50 rounded-md transition-colors group"
+                      >
+                        <div className="flex items-center gap-2 font-bold text-slate-800 text-xs">
+                          <FileText className="h-4 w-4 text-rose-500 group-hover:scale-110 group-hover:-translate-y-0.5 transition-transform duration-300" />
+                          Download sebagai PDF
+                        </div>
+                        <span className="text-[10px] text-slate-500 ml-6">Format file .pdf</span>
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleExport('word')} className="cursor-pointer font-medium text-xs py-2.5">
-                        Microsoft Word (.docx)
+                      <DropdownMenuItem 
+                        onClick={() => handleExport('ppt')} 
+                        className="cursor-pointer flex flex-col items-start gap-1 p-3 focus:bg-slate-50 rounded-md transition-colors group mt-1"
+                      >
+                        <div className="flex items-center gap-2 font-bold text-slate-800 text-xs">
+                          <Presentation className="h-4 w-4 text-orange-500 group-hover:scale-110 group-hover:-translate-y-0.5 transition-transform duration-300" />
+                          Download sebagai PPT
+                        </div>
+                        <span className="text-[10px] text-slate-500 ml-6">Format file .pptx</span>
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
