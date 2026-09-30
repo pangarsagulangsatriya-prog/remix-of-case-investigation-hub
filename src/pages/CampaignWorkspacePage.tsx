@@ -58,7 +58,7 @@ export default function CampaignWorkspacePage() {
     <AppLayout hideHeader>
       <div className="flex flex-col h-screen overflow-hidden bg-slate-50/50">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-slate-200 shadow-sm z-10 shrink-0">
+        <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-slate-200 shadow-none z-10 shrink-0">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" onClick={() => navigate("/campaign")} className="h-8 w-8 text-slate-500 hover:bg-slate-100 shrink-0">
               <ArrowLeft className="h-4 w-4" />
@@ -78,7 +78,7 @@ export default function CampaignWorkspacePage() {
               <Button 
                 onClick={handleGenerate} 
                 disabled={isGenerating || isLoading}
-                className="bg-primary hover:bg-primary/90 text-white font-bold"
+                className="bg-primary hover:bg-primary/90 text-white font-bold rounded-sm shadow-none"
               >
                 {isGenerating ? (
                   <>
@@ -91,21 +91,41 @@ export default function CampaignWorkspacePage() {
                 )}
               </Button>
             ) : (
-              <Button 
-                onClick={() => setIsSubmitModalOpen(true)}
-                disabled={status === "Menunggu Approval"}
-                className="bg-primary hover:bg-primary/90 text-white font-bold"
-              >
-                {status === "Menunggu Approval" ? (
-                  <>
-                    <Clock className="mr-2 h-4 w-4" /> Menunggu Approval
-                  </>
-                ) : (
-                  <>
-                    <Send className="mr-2 h-4 w-4" /> Submit to Approval
-                  </>
+              <>
+                {status === "Perlu Perbaikan" && (
+                  <Button 
+                    onClick={handleGenerate} 
+                    disabled={isGenerating}
+                    variant="outline"
+                    className="border-primary text-primary hover:bg-primary/5 font-bold rounded-sm shadow-none"
+                  >
+                    {isGenerating ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Regenerating...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="mr-2 h-4 w-4" /> Regenerate Ulang
+                      </>
+                    )}
+                  </Button>
                 )}
-              </Button>
+                <Button 
+                  onClick={() => setIsSubmitModalOpen(true)}
+                  disabled={status === "Sedang Direview"}
+                  className="bg-primary hover:bg-primary/90 text-white font-bold rounded-sm shadow-none"
+                >
+                  {status === "Sedang Direview" ? (
+                    <>
+                      <Clock className="mr-2 h-4 w-4" /> Sedang Direview
+                    </>
+                  ) : (
+                    <>
+                      <Send className="mr-2 h-4 w-4" /> Submit to Approval
+                    </>
+                  )}
+                </Button>
+              </>
             )}
           </div>
         </div>
@@ -205,7 +225,7 @@ export default function CampaignWorkspacePage() {
                       {index < activityLogs.length - 1 && (
                         <div className="absolute left-[9px] top-6 bottom-[-16px] w-[2px] bg-slate-100" />
                       )}
-                      <div className="relative z-10 bg-white border border-slate-200 rounded-full p-1 shrink-0 h-6 w-6 flex items-center justify-center shadow-sm">
+                      <div className="relative z-10 bg-white border border-slate-200 rounded-full p-1 shrink-0 h-6 w-6 flex items-center justify-center shadow-none">
                         {log.icon}
                       </div>
                       <div className="flex flex-col pt-0.5">
@@ -237,7 +257,7 @@ export default function CampaignWorkspacePage() {
                     <button 
                       key={item.id} 
                       onClick={() => setSelectedAnalysis(item.id)}
-                      className="text-left bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 rounded-md p-3 flex items-center justify-between group transition-all shadow-sm"
+                      className="text-left bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 rounded-md p-3 flex items-center justify-between group transition-all shadow-none"
                     >
                       <span className="text-xs font-bold text-slate-700">{item.name}</span>
                       <ExternalLink className="h-3.5 w-3.5 text-slate-300 group-hover:text-blue-500 transition-colors" />
@@ -254,7 +274,7 @@ export default function CampaignWorkspacePage() {
               {!isGenerated && !isGenerating && (
                 <div className="flex w-full max-w-[860px] mx-auto gap-12 items-center transition-all duration-300 mt-10">
                   <div className="flex-1 max-w-[360px] flex flex-col">
-                    <div className="h-12 w-12 border rounded-xl shadow-sm flex items-center justify-center mb-6 bg-slate-50 border-slate-200">
+                    <div className="h-12 w-12 border rounded-xl shadow-none flex items-center justify-center mb-6 bg-slate-50 border-slate-200">
                       <Megaphone className="h-6 w-6 text-slate-500 stroke-[1.5]" />
                     </div>
                     <h2 className="text-[20px] font-extrabold text-slate-900 tracking-tight mb-2">
@@ -270,14 +290,14 @@ export default function CampaignWorkspacePage() {
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-3">
-                      <Button onClick={handleGenerate} className="bg-slate-900 text-white hover:bg-slate-800 shadow-md flex items-center gap-2 border-0">
+                      <Button onClick={handleGenerate} className="bg-slate-900 text-white hover:bg-slate-800 shadow-none flex items-center gap-2 border-0">
                         <Play className="h-3.5 w-3.5 fill-current" /> Mulai Generate
                       </Button>
                     </div>
                   </div>
                   
                   {/* Visual flowchart */}
-                  <div className="flex-1 bg-white border border-slate-200 shadow-xl rounded-xl p-6 relative overflow-hidden h-64 flex flex-col justify-center">
+                  <div className="flex-1 bg-white border border-slate-200 shadow-none rounded-xl p-6 relative overflow-hidden h-64 flex flex-col justify-center">
                      {/* Background grid */}
                      <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:14px_24px]" />
                      <div className="relative z-10 flex flex-col items-center">
@@ -285,7 +305,7 @@ export default function CampaignWorkspacePage() {
                         
                         <div className="flex items-center justify-center gap-4 w-full">
                            <div className="flex flex-col items-center gap-2">
-                              <div className="bg-white border border-slate-200 shadow-sm p-3 rounded-lg flex flex-col items-center justify-center w-24">
+                              <div className="bg-white border border-slate-200 shadow-none p-3 rounded-lg flex flex-col items-center justify-center w-24">
                                 <Database className="h-5 w-5 text-slate-500 mb-1" />
                                 <span className="text-[8px] font-bold text-slate-600 uppercase text-center">Data Analisis</span>
                               </div>
@@ -294,7 +314,7 @@ export default function CampaignWorkspacePage() {
                            <ChevronRight className="h-4 w-4 text-slate-300" />
                            
                            <div className="flex flex-col items-center gap-2">
-                              <div className="bg-white border border-slate-200 shadow-sm p-3 rounded-lg flex flex-col items-center justify-center w-24 border-indigo-200 ring-2 ring-indigo-50">
+                              <div className="bg-white border border-slate-200 shadow-none p-3 rounded-lg flex flex-col items-center justify-center w-24 border-indigo-200 ring-2 ring-indigo-50">
                                 <Brain className="h-5 w-5 text-indigo-500 mb-1" />
                                 <span className="text-[8px] font-bold text-slate-600 uppercase text-center">Agent AI</span>
                               </div>
@@ -303,7 +323,7 @@ export default function CampaignWorkspacePage() {
                            <ChevronRight className="h-4 w-4 text-slate-300" />
                            
                            <div className="flex flex-col items-center gap-2">
-                              <div className="bg-white border border-slate-200 shadow-sm p-3 rounded-lg flex flex-col items-center justify-center w-24">
+                              <div className="bg-white border border-slate-200 shadow-none p-3 rounded-lg flex flex-col items-center justify-center w-24">
                                 <Megaphone className="h-5 w-5 text-emerald-500 mb-1" />
                                 <span className="text-[8px] font-bold text-slate-600 uppercase text-center">Poster Jadi</span>
                               </div>
@@ -316,9 +336,9 @@ export default function CampaignWorkspacePage() {
 
               {isGenerating && (
                 <div className="flex flex-col items-center justify-center w-full max-w-[500px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500 mt-10">
-                  <div className="h-14 w-14 mb-8 rounded-full border-[3px] border-indigo-100 border-t-indigo-500 animate-spin shadow-sm" />
+                  <div className="h-14 w-14 mb-8 rounded-full border-[3px] border-indigo-100 border-t-indigo-500 animate-spin shadow-none" />
                   
-                  <div className="w-full bg-white border border-slate-200 shadow-xl rounded-xl p-6 relative overflow-hidden">
+                  <div className="w-full bg-white border border-slate-200 shadow-none rounded-xl p-6 relative overflow-hidden">
                     {/* Background grid */}
                     <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px] pointer-events-none" />
                     
@@ -329,7 +349,7 @@ export default function CampaignWorkspacePage() {
                       
                       {/* Step 1 */}
                       <div className="flex gap-4 items-center relative z-10">
-                         <div className="h-6 w-6 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center shrink-0 shadow-sm">
+                         <div className="h-6 w-6 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center shrink-0 shadow-none">
                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
                          </div>
                          <div className="flex-1 flex justify-between items-center">
@@ -340,7 +360,7 @@ export default function CampaignWorkspacePage() {
 
                       {/* Step 2 */}
                       <div className="flex gap-4 items-center relative z-10">
-                         <div className="h-6 w-6 rounded-full bg-indigo-50 border border-indigo-500 flex items-center justify-center shrink-0 shadow-md ring-2 ring-indigo-50">
+                         <div className="h-6 w-6 rounded-full bg-indigo-50 border border-indigo-500 flex items-center justify-center shrink-0 shadow-none ring-2 ring-indigo-50">
                            <div className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse" />
                          </div>
                          <div className="flex-1 flex flex-col">
@@ -383,7 +403,7 @@ export default function CampaignWorkspacePage() {
           }
         }}
       >
-        <SheetContent className="w-[85vw] sm:max-w-[60vw] border-l shadow-2xl p-0 flex flex-col h-full bg-slate-50 rounded-l-none">
+        <SheetContent className="w-[85vw] sm:max-w-[60vw] border-l shadow-none p-0 flex flex-col h-full bg-slate-50 rounded-l-none">
           {!showRevisionHistory ? (
             <>
               <SheetHeader className="p-6 border-b border-slate-200 bg-white shrink-0">
@@ -426,7 +446,7 @@ export default function CampaignWorkspacePage() {
                     <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Pernyataan AI Generated</span>
                     <Sparkles className="h-3.5 w-3.5 text-blue-500" />
                   </div>
-                  <div className="bg-white border border-slate-200 rounded-sm p-6 shadow-sm">
+                  <div className="bg-white border border-slate-200 rounded-sm p-6 shadow-none">
                     <div className="prose prose-sm prose-slate max-w-none text-[13px] leading-relaxed font-medium text-slate-700 whitespace-pre-wrap">
                       {selectedAnalysis ? dataAnalisis.find(a => a.id === selectedAnalysis)?.content : ""}
                     </div>
@@ -440,7 +460,7 @@ export default function CampaignWorkspacePage() {
                   </div>
                   <div className="flex flex-col gap-3">
                     {/* Mock References */}
-                    <div className="bg-white border border-slate-200 rounded-sm p-4 flex gap-4 items-start hover:border-slate-300 transition-colors cursor-pointer group shadow-sm">
+                    <div className="bg-white border border-slate-200 rounded-sm p-4 flex gap-4 items-start hover:border-slate-300 transition-colors cursor-pointer group shadow-none">
                       <div className="flex items-center gap-2 mt-0.5 shrink-0">
                         <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider w-14">Event 1</span>
                         <div className="flex items-center gap-1 bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-sm text-[9px] font-bold">
@@ -453,7 +473,7 @@ export default function CampaignWorkspacePage() {
                       <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-slate-500 transition-colors shrink-0" />
                     </div>
                     
-                    <div className="bg-white border border-slate-200 rounded-sm p-4 flex gap-4 items-start hover:border-slate-300 transition-colors cursor-pointer group shadow-sm">
+                    <div className="bg-white border border-slate-200 rounded-sm p-4 flex gap-4 items-start hover:border-slate-300 transition-colors cursor-pointer group shadow-none">
                       <div className="flex items-center gap-2 mt-0.5 shrink-0">
                         <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider w-14">Event 2</span>
                         <div className="flex items-center gap-1 bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-sm text-[9px] font-bold">
@@ -504,17 +524,17 @@ export default function CampaignWorkspacePage() {
                     <input 
                       type="text" 
                       placeholder="Cari waktu, pengguna, atau isi perubahan..." 
-                      className="w-full h-10 pl-9 pr-4 text-[11px] font-medium border border-slate-200 rounded-sm bg-white focus:outline-none focus:border-slate-300 focus:ring-0 shadow-sm"
+                      className="w-full h-10 pl-9 pr-4 text-[11px] font-medium border border-slate-200 rounded-sm bg-white focus:outline-none focus:border-slate-300 focus:ring-0 shadow-none"
                     />
                   </div>
                   <div className="flex gap-3">
-                    <select className="h-10 px-3 text-[11px] font-bold border border-slate-200 rounded-sm bg-white focus:outline-none shadow-sm cursor-pointer min-w-[120px]">
+                    <select className="h-10 px-3 text-[11px] font-bold border border-slate-200 rounded-sm bg-white focus:outline-none shadow-none cursor-pointer min-w-[120px]">
                       <option>Semua Status</option>
                       <option>Dibuat</option>
                       <option>Diubah</option>
                       <option>Dihapus</option>
                     </select>
-                    <select className="h-10 px-3 text-[11px] font-bold border border-slate-200 rounded-sm bg-white focus:outline-none shadow-sm cursor-pointer min-w-[140px]">
+                    <select className="h-10 px-3 text-[11px] font-bold border border-slate-200 rounded-sm bg-white focus:outline-none shadow-none cursor-pointer min-w-[140px]">
                       <option>Semua Pengguna</option>
                       <option>AI Agent</option>
                       <option>Human (Investigator)</option>
@@ -530,7 +550,7 @@ export default function CampaignWorkspacePage() {
                   {/* Item 1 - Dihapus */}
                   <div className="relative pl-12">
                     <div className="absolute left-2.5 top-1 h-3.5 w-3.5 rounded-full bg-rose-500 ring-4 ring-slate-50" />
-                    <div className="bg-white border border-slate-200 rounded-sm shadow-sm overflow-hidden">
+                    <div className="bg-white border border-slate-200 rounded-sm shadow-none overflow-hidden">
                       <div className="px-5 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
                         <div className="flex items-center gap-2">
                           <Trash2 className="h-3.5 w-3.5 text-rose-500" />
@@ -563,7 +583,7 @@ export default function CampaignWorkspacePage() {
                   {/* Item 2 - Diubah */}
                   <div className="relative pl-12">
                     <div className="absolute left-2.5 top-1 h-3.5 w-3.5 rounded-full bg-blue-500 ring-4 ring-slate-50" />
-                    <div className="bg-white border border-slate-200 rounded-sm shadow-sm overflow-hidden">
+                    <div className="bg-white border border-slate-200 rounded-sm shadow-none overflow-hidden">
                       <div className="px-5 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
                         <div className="flex items-center gap-2">
                           <Edit3 className="h-3.5 w-3.5 text-blue-500" />
@@ -607,7 +627,7 @@ export default function CampaignWorkspacePage() {
                   {/* Item 3 - Dibuat */}
                   <div className="relative pl-12">
                     <div className="absolute left-2.5 top-1 h-3.5 w-3.5 rounded-full bg-emerald-500 ring-4 ring-slate-50" />
-                    <div className="bg-white border border-slate-200 rounded-sm shadow-sm overflow-hidden">
+                    <div className="bg-white border border-slate-200 rounded-sm shadow-none overflow-hidden">
                       <div className="px-5 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
                         <div className="flex items-center gap-2">
                           <Sparkles className="h-3.5 w-3.5 text-emerald-500" />
@@ -695,7 +715,7 @@ export default function CampaignWorkspacePage() {
             <div className="flex flex-col gap-2">
               <span className="text-xs font-bold text-slate-600 uppercase tracking-widest">Verifikasi Keamanan</span>
               <div className="flex gap-3">
-                <div className="bg-slate-100 border border-slate-300 rounded-md px-4 py-2 flex items-center justify-center select-none shadow-inner">
+                <div className="bg-slate-100 border border-slate-300 rounded-md px-4 py-2 flex items-center justify-center select-none shadow-none">
                   <span className="text-lg font-black tracking-[0.2em] text-slate-700 blur-[0.5px] line-through decoration-slate-400">{captchaTarget}</span>
                 </div>
                 <input 

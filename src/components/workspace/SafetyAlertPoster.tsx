@@ -64,7 +64,7 @@ export function SafetyAlertPoster() {
 
   return (
     <>
-      <div className="w-[1000px] bg-white text-black font-sans shadow-2xl rounded-sm overflow-hidden border border-slate-200">
+      <div className="w-[1000px] bg-white text-black font-sans shadow-none rounded-sm overflow-hidden border border-slate-200">
         {/* Header section */}
         <div className="flex bg-[#161616] text-white relative">
           <div className="flex-1 py-4 pl-6 pr-4">
@@ -107,7 +107,7 @@ export function SafetyAlertPoster() {
               <h3 className="text-xs font-bold mb-2 uppercase">1. IDENTITAS KEJADIAN</h3>
               <div className="grid grid-cols-2 gap-2">
                 <div className="bg-slate-50 border border-slate-200 rounded-md p-2 flex items-center gap-3">
-                  <div className="bg-white p-1.5 rounded shadow-sm">
+                  <div className="bg-white p-1.5 rounded shadow-none">
                     <MapPin className="h-4 w-4 text-slate-700" />
                   </div>
                   <div className="flex flex-col">
@@ -116,7 +116,7 @@ export function SafetyAlertPoster() {
                   </div>
                 </div>
                 <div className="bg-slate-50 border border-slate-200 rounded-md p-2 flex items-center gap-3">
-                  <div className="bg-white p-1.5 rounded shadow-sm">
+                  <div className="bg-white p-1.5 rounded shadow-none">
                     <Building2 className="h-4 w-4 text-slate-700" />
                   </div>
                   <div className="flex flex-col">
@@ -125,7 +125,7 @@ export function SafetyAlertPoster() {
                   </div>
                 </div>
                 <div className="bg-slate-50 border border-slate-200 rounded-md p-2 flex items-center gap-3">
-                  <div className="bg-white p-1.5 rounded shadow-sm">
+                  <div className="bg-white p-1.5 rounded shadow-none">
                     <Calendar className="h-4 w-4 text-slate-700" />
                   </div>
                   <div className="flex flex-col">
@@ -134,7 +134,7 @@ export function SafetyAlertPoster() {
                   </div>
                 </div>
                 <div className="bg-slate-50 border border-slate-200 rounded-md p-2 flex items-center gap-3">
-                  <div className="bg-white p-1.5 rounded shadow-sm">
+                  <div className="bg-white p-1.5 rounded shadow-none">
                     <Clock className="h-4 w-4 text-slate-700" />
                   </div>
                   <div className="flex flex-col">
@@ -220,7 +220,7 @@ export function SafetyAlertPoster() {
                         </div>
                         
                         {/* Action Icons */}
-                        <div className="absolute top-1.5 right-1.5 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white/80 p-0.5 rounded shadow-sm border border-slate-100">
+                        <div className="absolute top-1.5 right-1.5 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white/80 p-0.5 rounded shadow-none border border-slate-100">
                           <button onClick={() => handleOpenDetail(item.title)} className="p-1 text-slate-400 hover:text-indigo-500 rounded">
                             <Eye className="h-3.5 w-3.5" />
                           </button>
@@ -268,7 +268,7 @@ export function SafetyAlertPoster() {
               
               <div className="flex flex-col gap-2.5">
                 {tindakan.map((item, idx) => (
-                  <div key={item.id} className="group relative flex overflow-hidden rounded-md shadow-sm border border-slate-200">
+                  <div key={item.id} className="group relative flex overflow-hidden rounded-md shadow-none border border-slate-200">
                     <div className="bg-[#ed1c24] text-white font-black text-xl w-14 flex items-center justify-center shrink-0">
                       {String(idx + 1).padStart(2, '0')}
                     </div>
@@ -297,7 +297,7 @@ export function SafetyAlertPoster() {
                         <>
                           <span className="pr-12">{item.text}</span>
                           {/* Action Icons */}
-                          <div className="absolute top-1/2 -translate-y-1/2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-50/90 p-0.5 rounded border border-slate-200 shadow-sm">
+                          <div className="absolute top-1/2 -translate-y-1/2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-50/90 p-0.5 rounded border border-slate-200 shadow-none">
                             <button onClick={() => handleOpenDetail("Tindakan Perbaikan " + (idx + 1))} className="p-1 text-slate-400 hover:text-indigo-500 rounded">
                               <Eye className="h-3.5 w-3.5" />
                             </button>
@@ -322,7 +322,7 @@ export function SafetyAlertPoster() {
             {/* 5. IMBAUAN AKSI KONKRET (CRUD) */}
             <section>
               <h3 className="text-xs font-bold mb-2 uppercase">5. IMBAUAN AKSI KONKRET PEKERJA LAPANGAN</h3>
-              <div className="group relative bg-slate-100 border border-slate-300 rounded p-3 flex gap-4 items-start shadow-inner">
+              <div className="group relative bg-slate-100 border border-slate-300 rounded p-3 flex gap-4 items-start shadow-none">
                 <AlertTriangle className="h-10 w-10 text-[#ed1c24] fill-[#ed1c24]/10 shrink-0 mt-1" />
                 <div className="flex flex-col w-full">
                   {editingImbauan ? (
@@ -367,7 +367,7 @@ export function SafetyAlertPoster() {
                       
                       {/* Action Icons */}
                       <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
-                        <button onClick={() => handleOpenDetail("Imbauan Aksi Konkret")} className="p-1.5 text-slate-400 hover:text-indigo-500 hover:bg-white rounded shadow-sm border border-transparent hover:border-slate-200">
+                        <button onClick={() => handleOpenDetail("Imbauan Aksi Konkret")} className="p-1.5 text-slate-400 hover:text-indigo-500 hover:bg-white rounded shadow-none border border-transparent hover:border-slate-200">
                           <Eye className="h-3.5 w-3.5" />
                         </button>
                         <button 
@@ -375,7 +375,7 @@ export function SafetyAlertPoster() {
                             setEditingImbauan(true);
                             setEditImbauanData(imbauan);
                           }} 
-                          className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-white rounded shadow-sm border border-transparent hover:border-slate-200"
+                          className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-white rounded shadow-none border border-transparent hover:border-slate-200"
                         >
                           <Pencil className="h-3.5 w-3.5" />
                         </button>
@@ -389,7 +389,7 @@ export function SafetyAlertPoster() {
             {/* 6. LESSON LEARNED (CRUD) */}
             <section>
               <h3 className="text-xs font-bold mb-2 uppercase">6. LESSON LEARNED</h3>
-              <div className="group relative bg-[#161616] text-white rounded p-4 text-center shadow-lg border-b-4 border-[#ed1c24]">
+              <div className="group relative bg-[#161616] text-white rounded p-4 text-center shadow-none border-b-4 border-[#ed1c24]">
                 {editingLesson ? (
                   <div className="flex flex-col gap-2">
                     <input 
@@ -446,7 +446,7 @@ export function SafetyAlertPoster() {
 
       {/* Detail Analysis Panel (Sheet) */}
       <Sheet open={detailPanelOpen} onOpenChange={setDetailPanelOpen}>
-        <SheetContent className="w-[500px] sm:max-w-none border-l shadow-2xl p-0 flex flex-col h-full bg-slate-50">
+        <SheetContent className="w-[500px] sm:max-w-none border-l shadow-none p-0 flex flex-col h-full bg-slate-50">
           <SheetHeader className="p-6 border-b border-slate-200 bg-white">
             <SheetTitle className="text-lg font-black uppercase flex items-center gap-2 text-slate-800">
               <BarChart3 className="h-5 w-5 text-indigo-500" />
