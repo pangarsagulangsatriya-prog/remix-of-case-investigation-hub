@@ -2,7 +2,25 @@ import React, { useState } from "react";
 import { AlertTriangle, MapPin, Building2, Calendar, Clock, History, Layers, FileX, Pencil, Trash2, Plus, Check, X, Eye, BarChart3 } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 
-export function SafetyAlertPoster() {
+
+const SkeletonLine = ({ active, className }: { active: boolean, className?: string }) => (
+  <div className={`bg-slate-200 rounded ${className || 'h-4 w-full'} ${active ? 'animate-pulse' : 'opacity-50'}`} />
+);
+const SkeletonBlock = ({ active, lines = 1 }: { active: boolean, lines?: number }) => (
+  <div className="space-y-2 w-full">
+    {Array.from({ length: lines }).map((_, i) => (
+      <SkeletonLine key={i} active={active} className={`h-3 ${i === lines - 1 && lines > 1 ? 'w-2/3' : 'w-full'}`} />
+    ))}
+  </div>
+);
+
+export interface SafetyAlertPosterProps {
+  isGenerating?: boolean;
+  generationStep?: number;
+  onOpenDetail?: (title: string) => void;
+}
+
+export function SafetyAlertPoster({ onOpenDetail, isGenerating, generationStep = 0 }: SafetyAlertPosterProps = {}) {
   const [kronologis, setKronologis] = useState([
     { id: 1, title: "Kronologis (31 Agu 2026 | 13:50 WITA):", text: "Operator mengoperasikan BMCDZ 116 untuk brushing di WMP 21 sejak pukul 13:05 WITA. Pada dorongan ke-6 saat unit bergerak mundur, track sisi kiri amblas dan unit langsung dihentikan. Evakuasi unit dilakukan pukul 14:50 WITA, nihil cedera.", icon: "History" },
     { id: 2, title: "Penyebab Utama:", text: "Area kerja memiliki titik lembek bekas parit aliran air menuju WMP, namun belum ada patok boundary dari tim Survey sebagai acuan batas area kerja. Potensi amblas tidak teridentifikasi pada inspeksi awal shift.", icon: "Layers" },
@@ -46,8 +64,12 @@ export function SafetyAlertPoster() {
   const [detailPanelTitle, setDetailPanelTitle] = useState("");
 
   const handleOpenDetail = (title: string) => {
-    setDetailPanelTitle("Detail Analisis: " + title);
-    setDetailPanelOpen(true);
+    if (onOpenDetail) {
+      onOpenDetail(title);
+    } else {
+      setDetailPanelTitle("Detail Analisis: " + title);
+      setDetailPanelOpen(true);
+    }
   };
 
   const renderIcon = (iconName: string) => {
@@ -67,6 +89,17 @@ export function SafetyAlertPoster() {
       <div className="w-[1000px] bg-white text-black font-sans shadow-none rounded-sm overflow-hidden border border-slate-200">
         {/* Header section */}
         <div className="flex bg-[#161616] text-white relative">
+          {isGenerating && generationStep < 3 ? (
+          <div className="flex-1 py-4 pl-6 pr-4">
+            <div className="bg-slate-700 text-transparent text-[11px] font-bold px-2 py-0.5 inline-block mb-1.5 uppercase tracking-wider rounded">
+              SAFETY ALERT:
+            </div>
+            <div className="space-y-2 mt-1">
+              <SkeletonLine active={isGenerating && generationStep === 2} className="h-6 w-3/4 bg-slate-600" />
+              <SkeletonLine active={isGenerating && generationStep === 2} className="h-6 w-1/2 bg-slate-600" />
+            </div>
+          </div>
+        ) : (
           <div className="flex-1 py-4 pl-6 pr-4">
             <div className="bg-[#ed1c24] text-white text-[11px] font-bold px-2 py-0.5 inline-block mb-1.5 uppercase tracking-wider">
               SAFETY ALERT:
@@ -75,10 +108,11 @@ export function SafetyAlertPoster() {
               TRACK DOZER AMBLAS SAAT BRUSHING DI AREA TITIK LEMBEK
             </h1>
           </div>
+        )}
           <div className="bg-[#ed1c24] w-[260px] flex items-center justify-center transform -skew-x-12 translate-x-4 border-l-4 border-white/20">
             <div className="transform skew-x-12 flex items-center gap-2">
               <AlertTriangle className="h-7 w-7 text-white fill-white" />
-              <span className="text-2xl font-black uppercase tracking-wider">NEAR MISS</span>
+              {isGenerating && generationStep < 3 ? <div className="h-6 w-24 bg-slate-700 rounded animate-pulse" /> : <span className="text-2xl font-black uppercase tracking-wider">NEAR MISS</span>}
             </div>
           </div>
         </div>
@@ -87,7 +121,7 @@ export function SafetyAlertPoster() {
         <div className="bg-slate-100 flex items-center text-[10px] font-bold text-slate-600 px-6 py-1.5 border-b border-slate-300">
           <div className="flex w-1/3">
             <span className="w-24 text-slate-400">NO. ALERT</span>
-            <span className="text-black">[SA-004/IX/2026]</span>
+            {isGenerating && generationStep < 3 ? <SkeletonLine active={generationStep === 2} className="h-3 w-20" /> : <span className="text-black">[SA-004/IX/2026]</span>}
           </div>
           <div className="flex w-1/3">
             <span className="w-28 text-slate-400">TANGGAL RILIS</span>
@@ -267,7 +301,18 @@ export function SafetyAlertPoster() {
               </div>
               
               <div className="flex flex-col gap-2.5">
-                {tindakan.map((item, idx) => (
+                {isGenerating && generationStep < 5 ? (
+                  <div className="space-y-3">
+                    {[1,2,3,4,5].map(i => (
+                      <div key={i} className="flex gap-3 items-start p-3 bg-white border border-slate-200 rounded">
+                        <div className="h-6 w-6 rounded bg-slate-100 flex items-center justify-center shrink-0">
+                          <span className="text-[10px] font-bold text-slate-400">0{i}</span>
+                        </div>
+                        <SkeletonBlock active={generationStep === 4} lines={2} />
+                      </div>
+                    ))}
+                  </div>
+                ) : tindakan.map((item, idx) => (
                   <div key={item.id} className="group relative flex overflow-hidden rounded-md shadow-none border border-slate-200">
                     <div className="bg-[#ed1c24] text-white font-black text-xl w-14 flex items-center justify-center shrink-0">
                       {String(idx + 1).padStart(2, '0')}
@@ -383,6 +428,7 @@ export function SafetyAlertPoster() {
                     </>
                   )}
                 </div>
+                )}
               </div>
             </section>
 

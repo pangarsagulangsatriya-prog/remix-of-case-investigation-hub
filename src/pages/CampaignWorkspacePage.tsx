@@ -29,7 +29,9 @@ export default function CampaignWorkspacePage() {
   const [showRevisionHistory, setShowRevisionHistory] = useState(false);
 
   // Status & Activity Log
-  const [status, setStatus] = useState(isCreatingParam ? "Proses AI" : "Created");
+    const [isLeftPanelExpanded, setIsLeftPanelExpanded] = useState(true);
+  const [isRightPanelExpanded, setIsRightPanelExpanded] = useState(false);
+const [status, setStatus] = useState(isCreatingParam ? "Proses AI" : "Created");
 
   // 15-second dummy loader for creation
   useEffect(() => {
@@ -46,14 +48,20 @@ export default function CampaignWorkspacePage() {
       setGenerationProgress(progressPercent);
       setGenerationTimeLeft(remainingSeconds);
 
-      if (progressPercent < 25) {
+      if (progressPercent < 15) {
         setGenerationStep(1);
-      } else if (progressPercent < 55) {
+      } else if (progressPercent < 30) {
         setGenerationStep(2);
-      } else if (progressPercent < 85) {
+      } else if (progressPercent < 45) {
         setGenerationStep(3);
-      } else {
+      } else if (progressPercent < 60) {
         setGenerationStep(4);
+      } else if (progressPercent < 75) {
+        setGenerationStep(5);
+      } else if (progressPercent < 90) {
+        setGenerationStep(6);
+      } else {
+        setGenerationStep(7);
       }
 
       if (elapsed >= DURATION) {
@@ -133,11 +141,27 @@ export default function CampaignWorkspacePage() {
         {/* Two Column Layout */}
         <div className="flex flex-1 overflow-hidden">
           {/* Left Panel */}
-          <div className="w-80 border-r border-slate-200 bg-white flex flex-col shrink-0 overflow-y-auto">
+          <div className={cn("border-r border-slate-200 bg-white flex flex-col shrink-0 overflow-y-auto transition-all duration-300", isLeftPanelExpanded ? "w-80" : "w-12 overflow-hidden border-r")}>
+            {!isLeftPanelExpanded && (
+              <div className="h-full w-full flex flex-col items-center pt-4">
+                <button 
+                  onClick={() => setIsLeftPanelExpanded(true)}
+                  className="p-2 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-md transition-colors"
+                  title="Expand Left Panel"
+                >
+                  <PanelLeft className="h-5 w-5" />
+                </button>
+              </div>
+            )}
             {/* Status & Creator */}
-            <div className="p-5 border-b border-slate-100 flex flex-col gap-5">
-              <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">Status</span>
+            <div className={cn("p-5 border-b border-slate-100 flex-col gap-5", isLeftPanelExpanded ? "flex" : "hidden")}>
+              <div className="flex items-center justify-between w-full mb-1.5">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Status</span>
+                  <button onClick={() => setIsLeftPanelExpanded(false)} className="text-slate-400 hover:text-slate-700">
+                    <PanelLeftClose className="h-4 w-4" />
+                  </button>
+                </div>
+                <div>
                 <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border ${
                   isGenerating 
                     ? "bg-amber-50 text-amber-700 border-amber-200" 
@@ -265,6 +289,14 @@ export default function CampaignWorkspacePage() {
             </div>
           </div>
 
+            <button 
+              onClick={() => setIsRightPanelExpanded(true)}
+              className="absolute right-4 top-4 z-10 p-2 bg-white border border-slate-200 rounded-md shadow-sm text-slate-500 hover:text-slate-900 transition-colors"
+            >
+              <PanelRight className="h-4 w-4" />
+            </button>
+          )}
+
           {/* Main Content Area */}
           <div className="flex-1 overflow-auto p-6 bg-slate-50/50 relative">
             <div className="max-w-6xl mx-auto flex flex-col items-center justify-center min-h-[60vh]">
@@ -331,461 +363,514 @@ export default function CampaignWorkspacePage() {
                 </div>
               )}
 
-              {isGenerating && (
-                <div className="flex flex-col items-center justify-center w-full max-w-[560px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500 my-auto py-8">
-                  {/* Outer Badge */}
-                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-indigo-50 border border-indigo-200 rounded-full mb-6 text-indigo-700">
-                    <Sparkles className="h-3.5 w-3.5 animate-spin text-indigo-600" />
-                    <span className="text-[11px] font-bold tracking-wide uppercase">AI Campaign Generation Berjalan</span>
-                    <span className="text-[10px] font-mono font-bold bg-indigo-200/60 px-1.5 py-0.5 rounded text-indigo-800">
-                      {generationTimeLeft}s
-                    </span>
-                  </div>
-
-                  {/* Progress Card */}
-                  <div className="w-full bg-white border border-slate-200 shadow-sm rounded-xl p-6 relative overflow-hidden">
-                    {/* Background grid */}
-                    <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px] pointer-events-none" />
-                    
-                    {/* Header with percentage */}
-                    <div className="relative z-10 flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
-                      <div className="flex items-center gap-2">
-                        <Loader2 className="h-4 w-4 animate-spin text-indigo-600" />
-                        <h3 className="text-[12px] font-bold uppercase text-slate-800 tracking-wider">
-                          Penyusunan Poster Safety Alert
-                        </h3>
-                      </div>
-                      <div className="flex items-center gap-2 font-mono">
-                        <span className="text-xs font-bold text-indigo-600">{generationProgress}%</span>
-                        <span className="text-[10px] text-slate-400 font-medium">({15 - generationTimeLeft}/15s)</span>
-                      </div>
-                    </div>
-
-                    {/* Progress Bar */}
-                    <div className="relative z-10 mb-6">
-                      <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden border border-slate-200/60">
-                        <div 
-                          className="h-full bg-gradient-to-r from-indigo-500 via-blue-500 to-emerald-500 transition-all duration-150 ease-out rounded-full"
-                          style={{ width: `${generationProgress}%` }}
-                        />
-                      </div>
-                    </div>
-                    
-                    {/* Step list */}
-                    <div className="flex flex-col gap-5 relative z-10">
-                      <div className="absolute left-[13px] top-3 bottom-3 w-[2px] bg-slate-100" />
+              {(isGenerated || isGenerating) && (
+              <div className="w-full flex justify-center animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20 mt-6 flex-col items-center">
+                
+                {isGenerating && (
+                  <div className="w-full max-w-[860px] mb-6 animate-in slide-in-from-top-4 fade-in duration-300">
+                    <div className="bg-slate-900 border border-slate-800 rounded-lg p-3 shadow-md flex items-center justify-between text-slate-100 relative overflow-hidden">
+                      {/* Subdued background pulse */}
+                      <div className="absolute inset-0 bg-indigo-500/10 animate-pulse pointer-events-none" />
                       
-                      {/* Step 1 */}
-                      <div className={`flex gap-3.5 items-start relative z-10 transition-opacity ${generationStep < 1 ? "opacity-40" : "opacity-100"}`}>
-                        <div className={`h-7 w-7 rounded-full flex items-center justify-center shrink-0 border transition-all ${
-                          generationStep > 1 
-                            ? "bg-emerald-50 border-emerald-300 text-emerald-600" 
-                            : generationStep === 1 
-                            ? "bg-indigo-50 border-indigo-500 text-indigo-600 ring-2 ring-indigo-50" 
-                            : "bg-white border-slate-200 text-slate-400"
-                        }`}>
-                          {generationStep > 1 ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : <span className="text-[10px] font-bold">01</span>}
-                        </div>
-                        <div className="flex-1 flex flex-col pt-0.5">
-                          <div className="flex justify-between items-center">
-                            <span className={`text-[12px] font-bold ${generationStep === 1 ? "text-indigo-900" : "text-slate-700"}`}>
-                              Membaca & Memvalidasi Data Analisis
-                            </span>
-                            <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${
-                              generationStep > 1 
-                                ? "bg-emerald-50 text-emerald-600 border-emerald-100" 
-                                : "bg-indigo-50 text-indigo-600 border-indigo-100 animate-pulse"
-                            }`}>
-                              {generationStep > 1 ? "Selesai" : "Mengekstrak..."}
-                            </span>
-                          </div>
-                          <span className="text-[10px] text-slate-500 mt-0.5">
-                            Menghubungkan Kronologi, Aktor, PEEPO, dan IPLS dari data insiden.
-                          </span>
-                        </div>
+                      <div className="flex items-center gap-3 relative z-10">
+                        <Sparkles className="h-4 w-4 text-indigo-400 animate-spin" />
+                        <span className="text-[12px] font-medium tracking-wide">
+                          <span className="font-bold text-white">AI menyusun Campaign</span>
+                          <span className="text-slate-400 mx-2">·</span>
+                          {generationStep === 1 && "Menyiapkan hasil analisis"}
+                          {generationStep === 2 && "Menyusun konteks kejadian"}
+                          {generationStep === 3 && "Menyusun kronologi & akar masalah"}
+                          {generationStep === 4 && "Menyusun tindakan perbaikan"}
+                          {generationStep === 5 && "Menyusun imbauan pekerja"}
+                          {generationStep === 6 && "Menyusun lesson learned"}
+                          {generationStep >= 7 && "Memeriksa konsistensi Campaign"}
+                        </span>
                       </div>
-
-                      {/* Step 2 */}
-                      <div className={`flex gap-3.5 items-start relative z-10 transition-opacity ${generationStep < 2 ? "opacity-40" : "opacity-100"}`}>
-                        <div className={`h-7 w-7 rounded-full flex items-center justify-center shrink-0 border transition-all ${
-                          generationStep > 2 
-                            ? "bg-emerald-50 border-emerald-300 text-emerald-600" 
-                            : generationStep === 2 
-                            ? "bg-indigo-50 border-indigo-500 text-indigo-600 ring-2 ring-indigo-50" 
-                            : "bg-white border-slate-200 text-slate-400"
-                        }`}>
-                          {generationStep > 2 ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : <span className="text-[10px] font-bold">02</span>}
-                        </div>
-                        <div className="flex-1 flex flex-col pt-0.5">
-                          <div className="flex justify-between items-center">
-                            <span className={`text-[12px] font-bold ${generationStep === 2 ? "text-indigo-900" : "text-slate-700"}`}>
-                              Merangkum Faktor Kritis & Lesson Learned
-                            </span>
-                            <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${
-                              generationStep > 2 
-                                ? "bg-emerald-50 text-emerald-600 border-emerald-100" 
-                                : generationStep === 2
-                                ? "bg-indigo-50 text-indigo-600 border-indigo-100 animate-pulse"
-                                : "bg-slate-50 text-slate-400 border-slate-200"
-                            }`}>
-                              {generationStep > 2 ? "Selesai" : generationStep === 2 ? "Merangkum..." : "Menunggu"}
-                            </span>
-                          </div>
-                          <span className="text-[10px] text-slate-500 mt-0.5">
-                            Mengidentifikasi titik rawan amblas dan instruksi keselamatan kabin.
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Step 3 */}
-                      <div className={`flex gap-3.5 items-start relative z-10 transition-opacity ${generationStep < 3 ? "opacity-40" : "opacity-100"}`}>
-                        <div className={`h-7 w-7 rounded-full flex items-center justify-center shrink-0 border transition-all ${
-                          generationStep > 3 
-                            ? "bg-emerald-50 border-emerald-300 text-emerald-600" 
-                            : generationStep === 3 
-                            ? "bg-indigo-50 border-indigo-500 text-indigo-600 ring-2 ring-indigo-50" 
-                            : "bg-white border-slate-200 text-slate-400"
-                        }`}>
-                          {generationStep > 3 ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : <span className="text-[10px] font-bold">03</span>}
-                        </div>
-                        <div className="flex-1 flex flex-col pt-0.5">
-                          <div className="flex justify-between items-center">
-                            <span className={`text-[12px] font-bold ${generationStep === 3 ? "text-indigo-900" : "text-slate-700"}`}>
-                              Menyusun Tindakan Perbaikan Seluruh Site
-                            </span>
-                            <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${
-                              generationStep > 3 
-                                ? "bg-emerald-50 text-emerald-600 border-emerald-100" 
-                                : generationStep === 3
-                                ? "bg-indigo-50 text-indigo-600 border-indigo-100 animate-pulse"
-                                : "bg-slate-50 text-slate-400 border-slate-200"
-                            }`}>
-                              {generationStep > 3 ? "Selesai" : generationStep === 3 ? "Menyusun..." : "Menunggu"}
-                            </span>
-                          </div>
-                          <span className="text-[10px] text-slate-500 mt-0.5">
-                            Menetapkan 5 aksi pencegahan mitigasi operasional dozer.
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Step 4 */}
-                      <div className={`flex gap-3.5 items-start relative z-10 transition-opacity ${generationStep < 4 ? "opacity-40" : "opacity-100"}`}>
-                        <div className={`h-7 w-7 rounded-full flex items-center justify-center shrink-0 border transition-all ${
-                          generationStep > 4 
-                            ? "bg-emerald-50 border-emerald-300 text-emerald-600" 
-                            : generationStep === 4 
-                            ? "bg-indigo-50 border-indigo-500 text-indigo-600 ring-2 ring-indigo-50" 
-                            : "bg-white border-slate-200 text-slate-400"
-                        }`}>
-                          {generationStep > 4 ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : <span className="text-[10px] font-bold">04</span>}
-                        </div>
-                        <div className="flex-1 flex flex-col pt-0.5">
-                          <div className="flex justify-between items-center">
-                            <span className={`text-[12px] font-bold ${generationStep === 4 ? "text-indigo-900" : "text-slate-700"}`}>
-                              Rendering Tata Letak Poster Safety Alert
-                            </span>
-                            <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${
-                              generationStep > 4 
-                                ? "bg-emerald-50 text-emerald-600 border-emerald-100" 
-                                : generationStep === 4
-                                ? "bg-indigo-50 text-indigo-600 border-indigo-100 animate-pulse"
-                                : "bg-slate-50 text-slate-400 border-slate-200"
-                            }`}>
-                              {generationStep > 4 ? "Selesai" : generationStep === 4 ? "Finishing..." : "Menunggu"}
-                            </span>
-                          </div>
-                          <span className="text-[10px] text-slate-500 mt-0.5">
-                            Finalisasi komponen visual dan banner awareness keselamatan.
-                          </span>
-                        </div>
+                      
+                      <div className="flex items-center gap-3 relative z-10">
+                        <span className="text-[11px] font-mono text-slate-400 font-bold bg-slate-800/50 px-2 py-1 rounded">
+                          {Math.min(generationStep, 7)} / 7 tahap
+                        </span>
                       </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {isGenerated && (
-                <div className="w-full flex justify-center animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <SafetyAlertPoster />
-                </div>
-              )}
+                <SafetyAlertPoster 
+                  isGenerating={isGenerating} 
+                  generationStep={generationStep}
+                  onOpenDetail={(title) => { setSelectedAnalysis('poster:' + title); setIsRightPanelExpanded(true); setIsLeftPanelExpanded(false); }} 
+                />
+              </div>
+            )}
             </div>
           </div>
+
+
+          {/* Right Panel (Sidebar) */}
+          {selectedAnalysis === 'all' && (
+             <div className={cn("border-l border-slate-200 bg-white flex flex-col shrink-0 overflow-hidden relative transition-all duration-300", isRightPanelExpanded ? "w-[440px]" : "w-12 border-l")}>
+              {!isRightPanelExpanded && (
+                <div className="h-full w-full flex flex-col items-center pt-4 bg-white">
+                  <button 
+                    onClick={() => setIsRightPanelExpanded(true)}
+                    className="p-2 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-md transition-colors"
+                    title="Expand Right Panel"
+                  >
+                    <PanelRight className="h-5 w-5" />
+                  </button>
+                  <div className="mt-4 writing-vertical text-[10px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>
+                    Data Input
+                  </div>
+                </div>
+              )}
+               <div className={cn("p-4 border-b border-slate-100 items-center justify-between bg-slate-50 sticky top-0 z-20 shrink-0", isRightPanelExpanded ? "flex" : "hidden")}>
+                  <div className="flex items-center gap-3">
+                    <div className="h-8 w-8 rounded bg-slate-800 flex items-center justify-center">
+                       <Database className="h-4 w-4 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-[13px] font-bold text-slate-900 uppercase tracking-wider leading-none">Detail Analisis</h3>
+                      <p className="text-[10px] text-slate-500 uppercase tracking-widest mt-1">Data Input Campaign</p>
+                    </div>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => { setSelectedAnalysis(null); setIsRightPanelExpanded(false); setIsLeftPanelExpanded(true); }} className="h-7 w-7 p-0 hover:bg-slate-100 rounded-none">
+                    <X className="h-4 w-4 text-slate-500" />
+                  </Button>
+               </div>
+               
+               <div className={cn("flex-1 overflow-auto p-6 space-y-10 custom-scrollbar pb-20", isRightPanelExpanded ? "block" : "hidden")}>
+                  {dataAnalisis.map((item, index) => (
+                    <div key={item.id} className="border-b border-slate-100 pb-10 last:border-0 last:pb-0 relative">
+                       {index !== dataAnalisis.length - 1 && <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-slate-200 to-transparent"></div>}
+                       
+                       <h4 className="text-[14px] font-black text-slate-800 uppercase tracking-widest mb-6 flex items-center gap-2">
+                         <span className="bg-slate-100 text-slate-500 h-5 w-5 rounded flex items-center justify-center text-[10px]">{index + 1}</span>
+                         {item.name}
+                       </h4>
+                       
+                       <div className="space-y-6 pl-2 border-l-2 border-slate-50">
+                         {/* AI Generated Section */}
+                         <div>
+                            <div className="flex items-center gap-2 mb-4">
+                               <div className="inline-flex items-center gap-1.5 bg-indigo-50 text-indigo-700 px-2 py-1 rounded text-[9.5px] font-bold uppercase tracking-widest border border-indigo-200 shadow-sm">
+                                 <Brain className="h-3 w-3" />
+                                 AI Generated
+                               </div>
+                               {index === 1 && (
+                                 <>
+                                   <ChevronRight className="h-3 w-3 text-slate-300" />
+                                   <div className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 px-2 py-1 rounded text-[9.5px] font-bold uppercase tracking-widest border border-blue-200 shadow-sm">
+                                     <Pencil className="h-3 w-3" />
+                                     Annotated
+                                   </div>
+                                 </>
+                               )}
+                               {index === 3 && (
+                                 <>
+                                   <ChevronRight className="h-3 w-3 text-slate-300" />
+                                   <div className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-2 py-1 rounded text-[9.5px] font-bold uppercase tracking-widest border border-emerald-200 shadow-sm">
+                                     <CheckCircle2 className="h-3 w-3" />
+                                     Human Manual
+                                   </div>
+                                 </>
+                               )}
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-4 mb-5">
+                              <div>
+                                <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Generated By</div>
+                                <div className="text-[11px] font-bold text-slate-700">{item.name} Agent</div>
+                                <div className="text-[10px] text-slate-500 mt-0.5">05 Agustus 2026, 13:20 WIB</div>
+                              </div>
+                              <div>
+                                <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Status Versi</div>
+                                <div className="text-[10px] font-mono font-bold text-slate-600 bg-slate-100 px-2 py-1 rounded w-fit border border-slate-200">
+                                  Versi aktif {index === 1 ? '2' : index === 3 ? '3' : '1'}
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                              Pernyataan AI Generated
+                              <span className="inline-flex items-center justify-center h-[16px] px-1.5 rounded bg-indigo-50 text-indigo-500 border border-indigo-200">
+                                <Brain className="h-2.5 w-2.5 mr-1" />
+                                <span className="font-black text-[8px] uppercase tracking-wider">AI</span>
+                              </span>
+                            </div>
+                            <div className="text-[12.5px] text-slate-800 leading-[1.7] bg-white p-4 rounded-md border border-slate-200 shadow-sm">
+                               {item.content}
+                            </div>
+                         </div>
+                         
+                         {/* Annotation Note (If human annotated) */}
+                         {index === 1 && (
+                           <div className="pt-2">
+                              <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                Catatan Anotasi
+                                <span className="inline-flex items-center justify-center h-[16px] px-1.5 rounded bg-blue-50 text-blue-500 border border-blue-200">
+                                  <User className="h-2.5 w-2.5 mr-1" />
+                                  <span className="font-black text-[8px] uppercase tracking-wider">HUMAN</span>
+                                </span>
+                              </div>
+                              <div className="text-[11.5px] text-blue-900 leading-relaxed bg-blue-50/50 p-4 rounded-md border border-blue-100 italic">
+                                 "Pastikan memasukkan nama-nama aktor dengan lebih spesifik sesuai struktur jabatan."
+                              </div>
+                           </div>
+                         )}
+
+                         {/* Events / Citations */}
+                         <div className="pt-2">
+                            <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-3">Event & Evidence Link</div>
+                            
+                            <div className="border border-slate-200 rounded-md bg-white overflow-hidden shadow-sm">
+                               <div className="p-3 border-b border-slate-100 flex gap-3 bg-white">
+                                  <div className="text-[10px] font-bold text-slate-500 pt-0.5 whitespace-nowrap tracking-wider">EVENT 1</div>
+                                  <div className="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded flex items-center gap-1 text-[10px] h-fit border border-slate-200/60">
+                                    <FileText className="h-3 w-3" /> 2
+                                  </div>
+                                  <div className="text-[11.5px] font-medium text-slate-700 leading-relaxed pt-[2px]">
+                                    {item.name === 'Kronologi' ? 'Operator mulai brushing di WMP 21 menggunakan unit dozer.' : 'Sistem DMS memicu peringatan kritis kategori Lockdown pada unit yang sedang dioperasikan oleh Operator Saiful.'}
+                                  </div>
+                                  <ChevronDown className="h-4 w-4 text-slate-300 ml-auto shrink-0 mt-0.5" />
+                               </div>
+                               
+                               {/* Citation Box */}
+                               <div className="bg-slate-50/80 p-4">
+                                  <div className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest mb-3 border border-blue-100">
+                                    <div className="h-1.5 w-1.5 rounded-full bg-blue-500"></div> Dokumen
+                                  </div>
+                                  
+                                  <div className="space-y-3">
+                                    <div className="bg-white border border-slate-200 rounded-md p-3 relative shadow-sm hover:border-blue-200 transition-colors">
+                                      <div className="absolute left-0 top-3 bottom-3 w-[3px] bg-slate-200 rounded-r"></div>
+                                      <div className="pl-3">
+                                        <div className="flex items-center gap-2 mb-2">
+                                          <FileText className="h-3.5 w-3.5 text-slate-400" />
+                                          <span className="text-[11px] font-bold text-slate-800">Output Fact & Chronology</span>
+                                        </div>
+                                        <div className="flex justify-start mb-2">
+                                          <span className="text-[8.5px] font-mono font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded uppercase tracking-wider">Evidence &middot; Analysis</span>
+                                        </div>
+                                        <div className="text-[11px] text-slate-600 leading-relaxed italic bg-slate-50/50 p-2.5 rounded border border-slate-100">
+                                          "Berdasarkan bukti dari urutan kejadian sebelumnya mengenai elemen aktivitas operasional."
+                                        </div>
+                                      </div>
+                                    </div>
+                                    
+                                    <div className="bg-white border border-slate-200 rounded-md p-3 relative shadow-sm hover:border-blue-200 transition-colors">
+                                      <div className="absolute left-0 top-3 bottom-3 w-[3px] bg-slate-200 rounded-r"></div>
+                                      <div className="pl-3">
+                                        <div className="flex items-center gap-2 mb-2">
+                                          <FileText className="h-3.5 w-3.5 text-slate-400" />
+                                          <span className="text-[11px] font-bold text-slate-800">SOP Investigasi Insiden</span>
+                                        </div>
+                                        <div className="flex justify-start mb-2">
+                                          <span className="text-[8.5px] font-mono font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded uppercase tracking-wider">Knowledge Base &middot; Reference</span>
+                                        </div>
+                                        <div className="text-[11px] text-slate-600 leading-relaxed italic bg-slate-50/50 p-2.5 rounded border border-slate-100">
+                                          "Sesuai dengan standar dan panduan yang tercantum dalam prosedur investigasi untuk pelaporan near miss."
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                               </div>
+                            </div>
+                         </div>
+                       </div>
+                    </div>
+                  ))}
+               </div>
+             </div>
+          )}
+          
+          {/* Right Panel for Activity Log */}
+          {selectedAnalysis === 'activity' && (
+             <div className={cn("border-l border-slate-200 bg-white flex flex-col shrink-0 overflow-hidden relative transition-all duration-300", isRightPanelExpanded ? "w-[440px]" : "w-12 border-l")}>
+              {!isRightPanelExpanded && (
+                <div className="h-full w-full flex flex-col items-center pt-4 bg-white">
+                  <button 
+                    onClick={() => setIsRightPanelExpanded(true)}
+                    className="p-2 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-md transition-colors"
+                    title="Expand Right Panel"
+                  >
+                    <PanelRight className="h-5 w-5" />
+                  </button>
+                  <div className="mt-4 writing-vertical text-[10px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>
+                    Riwayat Perubahan
+                  </div>
+                </div>
+              )}
+                <div className="p-4 border-b border-slate-200 bg-white shrink-0 flex flex-row items-center justify-between sticky top-0 z-20">
+                  <div>
+                    <h3 className="text-[13px] font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2 leading-none">
+                      <History className="h-4 w-4 text-slate-800" />
+                      Riwayat Perubahan
+                    </h3>
+                    <p className="text-[10px] text-slate-500 uppercase tracking-widest mt-1">
+                      Semua Aktivitas Campaign &middot; 8 Aktivitas
+                    </p>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => { setSelectedAnalysis(null); setIsRightPanelExpanded(false); setIsLeftPanelExpanded(true); }} className="h-7 w-7 p-0 hover:bg-slate-100 rounded-none">
+                    <X className="h-4 w-4 text-slate-500" />
+                  </Button>
+                </div>
+                
+                <div className="p-4 border-b border-slate-200 bg-slate-50/50 shrink-0">
+                  <div className="flex flex-col gap-3">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                      <input 
+                        type="text" 
+                        placeholder="Cari waktu, pengguna, atau isi perubahan..." 
+                        className="w-full h-8 pl-9 pr-4 text-[11px] font-medium border border-slate-200 rounded bg-white focus:outline-none focus:border-slate-300 focus:ring-0 shadow-sm"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <select className="flex-1 h-8 px-2 text-[10px] font-bold uppercase tracking-wider text-slate-600 border border-slate-200 rounded bg-white focus:outline-none shadow-sm cursor-pointer">
+                        <option>Semua Status</option>
+                        <option>Dibuat</option>
+                        <option>Diubah</option>
+                        <option>Dihapus</option>
+                      </select>
+                      <select className="flex-1 h-8 px-2 text-[10px] font-bold uppercase tracking-wider text-slate-600 border border-slate-200 rounded bg-white focus:outline-none shadow-sm cursor-pointer">
+                        <option>Semua Pengguna</option>
+                        <option>AI Agent</option>
+                        <option>Human (Investigator)</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex-1 overflow-auto p-6 custom-scrollbar bg-slate-50">
+                   <div className="flex flex-col gap-6 relative">
+                     <div className="absolute left-[13px] top-4 bottom-4 w-0.5 bg-slate-200" />
+                     
+                     {/* Item 1 - Dihapus */}
+                     <div className="relative pl-10">
+                       <div className="absolute left-[9px] top-1.5 h-2.5 w-2.5 rounded-full bg-rose-500 ring-4 ring-slate-50" />
+                       <div className="bg-white border border-slate-200 rounded shadow-sm overflow-hidden">
+                         <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                           <div className="flex items-center gap-1.5">
+                             <Trash2 className="h-3 w-3 text-rose-500" />
+                             <span className="text-[9px] font-black text-rose-600 uppercase tracking-widest bg-rose-50 px-1.5 py-0.5 rounded border border-rose-100">Dihapus</span>
+                           </div>
+                           <span className="text-[9px] font-bold text-slate-400">05 Ags 2026, 16:04 WIB</span>
+                         </div>
+                         <div className="p-4">
+                           <h4 className="text-[11px] font-black text-slate-800 uppercase tracking-wider mb-2">Pasca Kontak - Pasca 01:35</h4>
+                           <div className="bg-rose-50/50 border border-rose-100 p-3 rounded mb-3">
+                             <p className="text-[11px] font-medium text-rose-800 leading-relaxed italic">Alasan Penghapusan:<br/>Item dihapus dari analisis aktif karena sudah tercatat di laporan terpisah.</p>
+                           </div>
+                           <div className="flex items-center justify-between border-t border-slate-100 pt-3">
+                             <div className="flex flex-col">
+                               <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Actor</span>
+                               <div className="flex items-center gap-1">
+                                 <span className="text-[10px] font-black text-slate-700">Aditya Pratama</span>
+                                 <span className="text-[9px] text-slate-400 font-medium">&middot; Safety Sup</span>
+                               </div>
+                             </div>
+                             <div className="flex flex-col items-end">
+                               <span className="text-[8px] font-bold text-blue-500 flex items-center gap-1 uppercase tracking-widest mb-1"><User className="h-2.5 w-2.5" /> HUMAN</span>
+                               <span className="text-[9px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">Versi 3</span>
+                             </div>
+                           </div>
+                         </div>
+                       </div>
+                     </div>
+                     
+                     {/* Item 2 - Diubah */}
+                     <div className="relative pl-10">
+                       <div className="absolute left-[9px] top-1.5 h-2.5 w-2.5 rounded-full bg-blue-500 ring-4 ring-slate-50" />
+                       <div className="bg-white border border-slate-200 rounded shadow-sm overflow-hidden">
+                         <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                           <div className="flex items-center gap-1.5">
+                             <Edit3 className="h-3 w-3 text-blue-500" />
+                             <span className="text-[9px] font-black text-blue-600 uppercase tracking-widest bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100">Diubah</span>
+                           </div>
+                           <span className="text-[9px] font-bold text-slate-400">05 Ags 2026, 15:16 WIB</span>
+                         </div>
+                         <div className="p-4">
+                           <h4 className="text-[11px] font-black text-slate-800 uppercase tracking-wider mb-2">Pra-Kontak - 22:15 WITA</h4>
+                           <div className="mb-3 space-y-3">
+                             <div>
+                               <span className="text-[8.5px] font-bold text-rose-500 uppercase tracking-widest block mb-1">Sebelum</span>
+                               <div className="bg-rose-50/50 text-rose-800 text-[10.5px] font-medium p-2.5 rounded border border-rose-100 line-through opacity-80">
+                                 Data belum lengkap.
+                               </div>
+                             </div>
+                             <div>
+                               <span className="text-[8.5px] font-bold text-emerald-600 uppercase tracking-widest block mb-1">Sesudah</span>
+                               <div className="bg-emerald-50/50 text-emerald-800 text-[10.5px] font-medium p-2.5 rounded border border-emerald-100">
+                                 Sistem DMS memicu peringatan kritis kategori Lockdown pada unit.
+                               </div>
+                             </div>
+                           </div>
+                           <div className="flex items-center justify-between border-t border-slate-100 pt-3">
+                             <div className="flex flex-col">
+                               <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Actor</span>
+                               <div className="flex items-center gap-1">
+                                 <span className="text-[10px] font-black text-slate-700">Gulang Satriya</span>
+                                 <span className="text-[9px] text-slate-400 font-medium">&middot; Lead Inv.</span>
+                               </div>
+                             </div>
+                             <div className="flex flex-col items-end">
+                               <span className="text-[8px] font-bold text-blue-500 flex items-center gap-1 uppercase tracking-widest mb-1"><User className="h-2.5 w-2.5" /> HUMAN</span>
+                               <span className="text-[9px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">Versi 2</span>
+                             </div>
+                           </div>
+                         </div>
+                       </div>
+                     </div>
+                     
+                     {/* Item 3 - Dibuat */}
+                     <div className="relative pl-10">
+                       <div className="absolute left-[9px] top-1.5 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-4 ring-slate-50" />
+                       <div className="bg-white border border-slate-200 rounded shadow-sm overflow-hidden">
+                         <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                           <div className="flex items-center gap-1.5">
+                             <Sparkles className="h-3 w-3 text-emerald-500" />
+                             <span className="text-[9px] font-black text-emerald-700 uppercase tracking-widest bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">Dibuat</span>
+                           </div>
+                           <span className="text-[9px] font-bold text-slate-400">05 Ags 2026, 13:20 WIB</span>
+                         </div>
+                         <div className="p-4">
+                           <div className="bg-slate-50 text-slate-700 text-[10.5px] font-medium p-3 rounded border border-slate-200 mb-3 italic">
+                             "Draf awal berhasil di-generate dari data bukti lapangan."
+                           </div>
+                           <div className="flex items-center justify-between border-t border-slate-100 pt-3">
+                             <div className="flex flex-col">
+                               <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Actor</span>
+                               <div className="flex items-center gap-1">
+                                 <span className="text-[10px] font-black text-slate-700">Fact & Chronology Agent</span>
+                                 <span className="text-[9px] text-slate-400 font-medium">&middot; AI</span>
+                               </div>
+                             </div>
+                             <div className="flex flex-col items-end">
+                               <span className="text-[8px] font-bold text-indigo-500 flex items-center gap-1 uppercase tracking-widest mb-1"><Bot className="h-2.5 w-2.5" /> AI GENERATED</span>
+                               <span className="text-[9px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">Versi 1</span>
+                             </div>
+                           </div>
+                         </div>
+                       </div>
+                     </div>
+                     
+                   </div>
+                </div>
+             </div>
+          )}
+
+
+          {/* Right Panel for Poster Detail */}
+          {selectedAnalysis?.startsWith('poster:') && (
+             <div className={cn("border-l border-slate-200 bg-white flex flex-col shrink-0 overflow-hidden relative transition-all duration-300", isRightPanelExpanded ? "w-[440px]" : "w-0 border-none")}>
+               <div className={cn("p-4 border-b border-slate-100 items-center justify-between bg-slate-50 sticky top-0 z-20 shrink-0", isRightPanelExpanded ? "flex" : "hidden")}>
+                  <div className="flex items-center gap-3">
+                    <div className="h-8 w-8 rounded bg-slate-900 flex items-center justify-center">
+                       <BarChart3 className="h-4 w-4 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-[13px] font-bold text-slate-900 uppercase tracking-wider leading-none">Detail Analisis</h3>
+                      <p className="text-[10px] text-slate-500 uppercase tracking-widest mt-1">Data Input Campaign</p>
+                    </div>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => { setSelectedAnalysis(null); setIsRightPanelExpanded(false); setIsLeftPanelExpanded(true); }} className="h-7 w-7 p-0 hover:bg-slate-100 rounded-none">
+                    <X className="h-4 w-4 text-slate-500" />
+                  </Button>
+               </div>
+               
+               <div className={cn("flex-1 overflow-auto p-6 custom-scrollbar pb-20", isRightPanelExpanded ? "block" : "hidden")}>
+                  <h4 className="text-[14px] font-black text-slate-800 uppercase tracking-widest mb-6 flex items-center gap-2">
+                    {selectedAnalysis.replace('poster:', '')}
+                  </h4>
+                  
+                  <div className="space-y-6 pl-2 border-l-2 border-slate-50">
+                    {/* AI Generated Section */}
+                    <div>
+                      <div className="flex items-center gap-2 mb-4">
+                          <div className="inline-flex items-center gap-1.5 bg-indigo-50 text-indigo-700 px-2 py-1 rounded text-[9.5px] font-bold uppercase tracking-widest border border-indigo-200 shadow-sm">
+                            <Brain className="h-3 w-3" />
+                            AI Generated
+                          </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-4 mb-5">
+                        <div>
+                          <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Generated By</div>
+                          <div className="text-[11px] font-bold text-slate-700">Fact & Chronology Agent</div>
+                          <div className="text-[10px] text-slate-500 mt-0.5">05 Agustus 2026, 13:20 WIB</div>
+                        </div>
+                        <div>
+                          <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Status Versi</div>
+                          <div className="text-[10px] font-mono font-bold text-slate-600 bg-slate-100 px-2 py-1 rounded w-fit border border-slate-200">
+                            Versi aktif 1
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                        Pernyataan AI Generated
+                        <span className="inline-flex items-center justify-center h-[16px] px-1.5 rounded bg-indigo-50 text-indigo-500 border border-indigo-200">
+                          <Brain className="h-2.5 w-2.5 mr-1" />
+                          <span className="font-black text-[8px] uppercase tracking-wider">AI</span>
+                        </span>
+                      </div>
+                      <div className="text-[12.5px] text-slate-800 leading-[1.7] bg-white p-4 rounded-md border border-slate-200 shadow-sm">
+                          Pernyataan atau rekomendasi spesifik yang dihasilkan AI untuk blok ini ditampilkan di sini sebagai penjelasan detail atas data yang dipublikasikan pada campaign poster.
+                      </div>
+                    </div>
+
+                    {/* Events / Citations */}
+                    <div className="pt-2">
+                      <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-3">Event & Evidence Link</div>
+                      
+                      <div className="border border-slate-200 rounded-md bg-white overflow-hidden shadow-sm">
+                          <div className="p-3 border-b border-slate-100 flex gap-3 bg-white">
+                            <div className="text-[10px] font-bold text-slate-500 pt-0.5 whitespace-nowrap tracking-wider">EVENT 1</div>
+                            <div className="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded flex items-center gap-1 text-[10px] h-fit border border-slate-200/60">
+                              <FileText className="h-3 w-3" /> 2
+                            </div>
+                            <div className="text-[11.5px] font-medium text-slate-700 leading-relaxed pt-[2px]">
+                              Informasi ini disarikan dari beberapa temuan investigasi lapangan dan catatan wawancara terkait elemen ini.
+                            </div>
+                            <ChevronDown className="h-4 w-4 text-slate-300 ml-auto shrink-0 mt-0.5" />
+                          </div>
+                          
+                          <div className="bg-slate-50/80 p-4">
+                            <div className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest mb-3 border border-blue-100">
+                              <div className="h-1.5 w-1.5 rounded-full bg-blue-500"></div> Dokumen
+                            </div>
+                            
+                            <div className="space-y-3">
+                              <div className="bg-white border border-slate-200 rounded-md p-3 relative shadow-sm hover:border-blue-200 transition-colors">
+                                <div className="absolute left-0 top-3 bottom-3 w-[3px] bg-slate-200 rounded-r"></div>
+                                <div className="pl-3">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <FileText className="h-3.5 w-3.5 text-slate-400" />
+                                    <span className="text-[11px] font-bold text-slate-800">Output Fact & Chronology</span>
+                                  </div>
+                                  <div className="flex justify-start mb-2">
+                                    <span className="text-[8.5px] font-mono font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded uppercase tracking-wider">Evidence &middot; Analysis</span>
+                                  </div>
+                                  <div className="text-[11px] text-slate-600 leading-relaxed italic bg-slate-50/50 p-2.5 rounded border border-slate-100">
+                                    "Berdasarkan bukti dari urutan kejadian sebelumnya mengenai elemen aktivitas operasional."
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                      </div>
+                    </div>
+                  </div>
+               </div>
+             </div>
+          )}
+
+        </div>
+
         </div>
       </div>
 
-      {/* Drawer / Sheet for Data Analisis */}
-      <Sheet 
-        open={!!selectedAnalysis} 
-        onOpenChange={(open) => {
-          if (!open) {
-            setSelectedAnalysis(null);
-            setShowRevisionHistory(false);
-          }
-        }}
-      >
-        <SheetContent className="w-[85vw] sm:max-w-[60vw] border-l shadow-none p-0 flex flex-col h-full bg-slate-50 rounded-l-none">
-          {!showRevisionHistory ? (
-            <>
-              <SheetHeader className="p-6 border-b border-slate-200 bg-white shrink-0">
-                <SheetTitle className="text-lg font-black uppercase flex items-center gap-2 text-slate-800">
-                  <BarChart3 className="h-5 w-5 text-slate-800" />
-                  Detail Analisis
-                </SheetTitle>
-                <SheetDescription className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1">
-                  Analisis {selectedAnalysis ? dataAnalisis.find(a => a.id === selectedAnalysis)?.name : ""}
-                </SheetDescription>
-              </SheetHeader>
-
-              <div className="flex-1 overflow-auto p-8 custom-scrollbar">
-                
-                {/* AI Generated Tag */}
-                <div className="flex items-center gap-1.5 mb-6 bg-blue-50/50 border border-blue-200 text-blue-700 w-fit px-3 py-1.5 rounded-sm">
-                  <Bot className="h-4 w-4" />
-                  <span className="text-[10px] font-black uppercase tracking-widest">AI GENERATED</span>
-                </div>
-
-                {/* Metadata */}
-                <div className="flex flex-col gap-2 mb-8">
-                  <div className="grid grid-cols-[140px_1fr] items-center gap-2">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Generated by</span>
-                    <span className="text-[11px] font-bold text-slate-800">Fact & Chronology Agent</span>
-                  </div>
-                  <div className="grid grid-cols-[140px_1fr] items-center gap-2">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Waktu Eksekusi</span>
-                    <span className="text-[11px] font-bold text-slate-800">05 Agustus 2026, 13:20 WIB</span>
-                  </div>
-                  <div className="grid grid-cols-[140px_1fr] items-center gap-2">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Status Versi</span>
-                    <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-sm w-fit border border-emerald-100">Versi aktif 1</span>
-                  </div>
-                </div>
-
-                {/* Main Content Card */}
-                <div className="mb-8">
-                  <div className="flex items-center gap-2 mb-4">
-                    <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Pernyataan AI Generated</span>
-                    <Sparkles className="h-3.5 w-3.5 text-blue-500" />
-                  </div>
-                  <div className="bg-white border border-slate-200 rounded-sm p-6 shadow-none">
-                    <div className="prose prose-sm prose-slate max-w-none text-[13px] leading-relaxed font-medium text-slate-700 whitespace-pre-wrap">
-                      {selectedAnalysis ? dataAnalisis.find(a => a.id === selectedAnalysis)?.content : ""}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Links / References */}
-                <div className="mb-10">
-                  <div className="flex items-center gap-2 mb-4">
-                    <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Event & Evidence Link</span>
-                  </div>
-                  <div className="flex flex-col gap-3">
-                    {/* Mock References */}
-                    <div className="bg-white border border-slate-200 rounded-sm p-4 flex gap-4 items-start hover:border-slate-300 transition-colors cursor-pointer group shadow-none">
-                      <div className="flex items-center gap-2 mt-0.5 shrink-0">
-                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider w-14">Event 1</span>
-                        <div className="flex items-center gap-1 bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-sm text-[9px] font-bold">
-                          <FileText className="h-3 w-3" /> 1
-                        </div>
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-[11px] font-bold text-slate-700 leading-tight">Bukti pendukung nomor 1 (Teks rekaman percakapan).</p>
-                      </div>
-                      <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-slate-500 transition-colors shrink-0" />
-                    </div>
-                    
-                    <div className="bg-white border border-slate-200 rounded-sm p-4 flex gap-4 items-start hover:border-slate-300 transition-colors cursor-pointer group shadow-none">
-                      <div className="flex items-center gap-2 mt-0.5 shrink-0">
-                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider w-14">Event 2</span>
-                        <div className="flex items-center gap-1 bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-sm text-[9px] font-bold">
-                          <FileText className="h-3 w-3" /> 2
-                        </div>
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-[11px] font-bold text-slate-700 leading-tight">Bukti video CCTV LMO, timestamp 14:00.</p>
-                      </div>
-                      <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-slate-500 transition-colors shrink-0" />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex justify-center border-t border-slate-200 pt-8 pb-4">
-                  <Button 
-                    variant="outline" 
-                    className="w-full sm:w-auto px-8 h-12 text-xs font-black uppercase tracking-widest text-slate-600 hover:text-slate-900 border-slate-300 rounded-sm"
-                    onClick={() => setShowRevisionHistory(true)}
-                  >
-                    <History className="mr-2 h-4 w-4" /> Lihat Riwayat Perubahan
-                  </Button>
-                </div>
-              </div>
-            </>
-          ) : (
-            <>
-              {/* Riwayat Perubahan View */}
-              <SheetHeader className="p-6 border-b border-slate-200 bg-white shrink-0 flex flex-row items-center justify-between">
-                <div>
-                  <SheetTitle className="text-lg font-black uppercase flex items-center gap-2 text-slate-800">
-                    <History className="h-5 w-5 text-slate-800" />
-                    Riwayat Perubahan
-                  </SheetTitle>
-                  <SheetDescription className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1">
-                    {selectedAnalysis ? dataAnalisis.find(a => a.id === selectedAnalysis)?.name : ""} • 3 Aktivitas
-                  </SheetDescription>
-                </div>
-                <Button variant="ghost" size="sm" onClick={() => setShowRevisionHistory(false)} className="text-xs font-bold text-slate-500 hover:text-slate-800">
-                  <ArrowLeft className="mr-2 h-3.5 w-3.5" /> Kembali
-                </Button>
-              </SheetHeader>
-
-              <div className="p-6 border-b border-slate-200 bg-slate-50/50 shrink-0">
-                <div className="flex gap-4 items-center">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                    <input 
-                      type="text" 
-                      placeholder="Cari waktu, pengguna, atau isi perubahan..." 
-                      className="w-full h-10 pl-9 pr-4 text-[11px] font-medium border border-slate-200 rounded-sm bg-white focus:outline-none focus:border-slate-300 focus:ring-0 shadow-none"
-                    />
-                  </div>
-                  <div className="flex gap-3">
-                    <select className="h-10 px-3 text-[11px] font-bold border border-slate-200 rounded-sm bg-white focus:outline-none shadow-none cursor-pointer min-w-[120px]">
-                      <option>Semua Status</option>
-                      <option>Dibuat</option>
-                      <option>Diubah</option>
-                      <option>Dihapus</option>
-                    </select>
-                    <select className="h-10 px-3 text-[11px] font-bold border border-slate-200 rounded-sm bg-white focus:outline-none shadow-none cursor-pointer min-w-[140px]">
-                      <option>Semua Pengguna</option>
-                      <option>AI Agent</option>
-                      <option>Human (Investigator)</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex-1 overflow-auto p-8 custom-scrollbar bg-slate-50">
-                <div className="flex flex-col gap-8 relative">
-                  <div className="absolute left-4 top-4 bottom-4 w-0.5 bg-slate-200" />
-                  
-                  {/* Item 1 - Dihapus */}
-                  <div className="relative pl-12">
-                    <div className="absolute left-2.5 top-1 h-3.5 w-3.5 rounded-full bg-rose-500 ring-4 ring-slate-50" />
-                    <div className="bg-white border border-slate-200 rounded-sm shadow-none overflow-hidden">
-                      <div className="px-5 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-                        <div className="flex items-center gap-2">
-                          <Trash2 className="h-3.5 w-3.5 text-rose-500" />
-                          <span className="text-[10px] font-black text-rose-600 uppercase tracking-widest bg-rose-50 px-2 py-0.5 rounded-sm border border-rose-100">Dihapus</span>
-                        </div>
-                        <span className="text-[10px] font-bold text-slate-400">06 Agustus 2026 pukul 16:04 WIB</span>
-                      </div>
-                      <div className="p-5">
-                        <h4 className="text-[11px] font-black text-slate-800 uppercase tracking-wider mb-2">Pasca Kontak - Pasca 01:35</h4>
-                        <div className="bg-rose-50/50 border border-rose-100 p-3 rounded-sm mb-4">
-                          <p className="text-[11px] font-medium text-rose-800 leading-relaxed italic">Alasan Penghapusan:<br/>Item dihapus dari analisis aktif karena sudah tercatat di laporan terpisah.</p>
-                        </div>
-                        <div className="flex items-center justify-between border-t border-slate-100 pt-4 mt-2">
-                          <div className="flex flex-col">
-                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Actor</span>
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-[11px] font-black text-slate-700">Aditya Pratama</span>
-                              <span className="text-[10px] text-slate-400 font-medium">· Safety Superintendent</span>
-                            </div>
-                          </div>
-                          <div className="flex flex-col items-end">
-                            <span className="text-[9px] font-bold text-blue-500 flex items-center gap-1 uppercase tracking-widest mb-1"><User className="h-3 w-3" /> HUMAN</span>
-                            <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-sm">Versi 3</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Item 2 - Diubah */}
-                  <div className="relative pl-12">
-                    <div className="absolute left-2.5 top-1 h-3.5 w-3.5 rounded-full bg-blue-500 ring-4 ring-slate-50" />
-                    <div className="bg-white border border-slate-200 rounded-sm shadow-none overflow-hidden">
-                      <div className="px-5 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-                        <div className="flex items-center gap-2">
-                          <Edit3 className="h-3.5 w-3.5 text-blue-500" />
-                          <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest bg-blue-50 px-2 py-0.5 rounded-sm border border-blue-100">Diubah</span>
-                        </div>
-                        <span className="text-[10px] font-bold text-slate-400">05 Agustus 2026 pukul 15:16 WIB</span>
-                      </div>
-                      <div className="p-5">
-                        <h4 className="text-[11px] font-black text-slate-800 uppercase tracking-wider mb-2">Pra-Kontak - 22:15 WITA</h4>
-                        <div className="mb-4 space-y-4">
-                          <div>
-                            <span className="text-[9px] font-bold text-rose-500 uppercase tracking-widest block mb-1">Sebelum</span>
-                            <div className="bg-rose-50/50 text-rose-800 text-[11px] font-medium p-3 rounded-sm border border-rose-100 line-through opacity-80">
-                              Data belum lengkap.
-                            </div>
-                          </div>
-                          <div>
-                            <span className="text-[9px] font-bold text-emerald-600 uppercase tracking-widest block mb-1">Sesudah</span>
-                            <div className="bg-emerald-50/50 text-emerald-800 text-[11px] font-medium p-3 rounded-sm border border-emerald-100">
-                              Sistem DMS memicu peringatan kritis kategori Lockdown pada unit yang sedang dioperasikan oleh Operator Saiful.
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-center justify-between border-t border-slate-100 pt-4 mt-2">
-                          <div className="flex flex-col">
-                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Actor</span>
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-[11px] font-black text-slate-700">Gulang Satriya</span>
-                              <span className="text-[10px] text-slate-400 font-medium">· Lead Investigator</span>
-                            </div>
-                          </div>
-                          <div className="flex flex-col items-end">
-                            <span className="text-[9px] font-bold text-blue-500 flex items-center gap-1 uppercase tracking-widest mb-1"><User className="h-3 w-3" /> HUMAN</span>
-                            <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-sm">Versi 2</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Item 3 - Dibuat */}
-                  <div className="relative pl-12">
-                    <div className="absolute left-2.5 top-1 h-3.5 w-3.5 rounded-full bg-emerald-500 ring-4 ring-slate-50" />
-                    <div className="bg-white border border-slate-200 rounded-sm shadow-none overflow-hidden">
-                      <div className="px-5 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-                        <div className="flex items-center gap-2">
-                          <Sparkles className="h-3.5 w-3.5 text-emerald-500" />
-                          <span className="text-[10px] font-black text-emerald-700 uppercase tracking-widest bg-emerald-50 px-2 py-0.5 rounded-sm border border-emerald-200">Dibuat</span>
-                        </div>
-                        <span className="text-[10px] font-bold text-slate-400">05 Agustus 2026 pukul 13:20 WIB</span>
-                      </div>
-                      <div className="p-5">
-                        <div className="bg-slate-50 text-slate-700 text-[11px] font-medium p-3 rounded-sm border border-slate-200 mb-4 italic">
-                          "Draf awal berhasil di-generate dari data bukti lapangan."
-                        </div>
-                        <div className="flex items-center justify-between border-t border-slate-100 pt-4 mt-2">
-                          <div className="flex flex-col">
-                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Actor</span>
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-[11px] font-black text-slate-700">Fact & Chronology Agent</span>
-                              <span className="text-[10px] text-slate-400 font-medium">· AI Model</span>
-                            </div>
-                          </div>
-                          <div className="flex flex-col items-end">
-                            <span className="text-[9px] font-bold text-indigo-500 flex items-center gap-1 uppercase tracking-widest mb-1"><Bot className="h-3 w-3" /> AI GENERATED</span>
-                            <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-sm">Versi 1</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                </div>
-              </div>
-            </>
-          )}
-        </SheetContent>
-      </Sheet>
-
-
-    </AppLayout>
+      </AppLayout>
   );
 }
