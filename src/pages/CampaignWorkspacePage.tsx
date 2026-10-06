@@ -289,14 +289,6 @@ const [status, setStatus] = useState(isCreatingParam ? "Proses AI" : "Created");
             </div>
           </div>
 
-            <button 
-              onClick={() => setIsRightPanelExpanded(true)}
-              className="absolute right-4 top-4 z-10 p-2 bg-white border border-slate-200 rounded-md shadow-sm text-slate-500 hover:text-slate-900 transition-colors"
-            >
-              <PanelRight className="h-4 w-4" />
-            </button>
-          )}
-
           {/* Main Content Area */}
           <div className="flex-1 overflow-auto p-6 bg-slate-50/50 relative">
             <div className="max-w-6xl mx-auto flex flex-col items-center justify-center min-h-[60vh]">
@@ -867,10 +859,8 @@ const [status, setStatus] = useState(isCreatingParam ? "Proses AI" : "Created");
           )}
 
         </div>
-
-        </div>
       </div>
 
-      </AppLayout>
+    </AppLayout>
   );
 }

@@ -428,7 +428,6 @@ export function SafetyAlertPoster({ onOpenDetail, isGenerating, generationStep =
                     </>
                   )}
                 </div>
-                )}
               </div>
             </section>
 
