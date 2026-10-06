@@ -1,20 +1,25 @@
-import React, { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { AppLayout } from "@/components/AppLayout";
 import { useCase } from "@/hooks/useCases";
 import { Button } from "@/components/ui/button";
 import { Loader2, ArrowLeft, Megaphone, Sparkles, Clock, CheckCircle2, XCircle, ChevronDown, ChevronRight, History, BarChart3, Info, ExternalLink, Play, Database, Brain, Send, Bot, FileText, Search, Trash2, Edit3, User, Link2, Sparkle } from "lucide-react";
 import { SafetyAlertPoster } from "@/components/workspace/SafetyAlertPoster";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { toast } from "sonner";
 
 export default function CampaignWorkspacePage() {
   const { campaignId } = useParams();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const isCreatingParam = searchParams.get("isCreating") === "true";
   const { data: caseData, isLoading } = useCase(campaignId || "");
   
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [isGenerated, setIsGenerated] = useState(true);
+  const [isGenerating, setIsGenerating] = useState(isCreatingParam);
+  const [isGenerated, setIsGenerated] = useState(!isCreatingParam);
+  const [generationProgress, setGenerationProgress] = useState(0);
+  const [generationTimeLeft, setGenerationTimeLeft] = useState(15);
+  const [generationStep, setGenerationStep] = useState(1);
   const [showActivityLog, setShowActivityLog] = useState(true);
   const [showMetadata, setShowMetadata] = useState(true);
   const [showDataAnalisis, setShowDataAnalisis] = useState(true);
@@ -23,19 +28,49 @@ export default function CampaignWorkspacePage() {
   const [selectedAnalysis, setSelectedAnalysis] = useState<string | null>(null);
   const [showRevisionHistory, setShowRevisionHistory] = useState(false);
 
-  // Status & Submit State
-  const [status, setStatus] = useState("Sedang Direview");
-  const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isConfirmed, setIsConfirmed] = useState(false);
-  const [captchaInput, setCaptchaInput] = useState("");
-  const captchaTarget = "8421";
+  // Status & Activity Log
+  const [status, setStatus] = useState(isCreatingParam ? "Proses AI" : "Created");
+
+  // 15-second dummy loader for creation
+  useEffect(() => {
+    if (!isGenerating) return;
+
+    const DURATION = 15000; // 15 detik dummy
+    const startTime = Date.now();
+
+    const interval = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      const progressPercent = Math.min(100, Math.floor((elapsed / DURATION) * 100));
+      const remainingSeconds = Math.max(0, Math.ceil((DURATION - elapsed) / 1000));
+
+      setGenerationProgress(progressPercent);
+      setGenerationTimeLeft(remainingSeconds);
+
+      if (progressPercent < 25) {
+        setGenerationStep(1);
+      } else if (progressPercent < 55) {
+        setGenerationStep(2);
+      } else if (progressPercent < 85) {
+        setGenerationStep(3);
+      } else {
+        setGenerationStep(4);
+      }
+
+      if (elapsed >= DURATION) {
+        clearInterval(interval);
+        setIsGenerating(false);
+        setIsGenerated(true);
+        setStatus("Created");
+        toast.success("Poster Safety Alert Campaign berhasil di-generate!");
+        setSearchParams({}, { replace: true });
+      }
+    }, 100);
+
+    return () => clearInterval(interval);
+  }, [isGenerating, setSearchParams]);
   
   const activityLogs = [
     { id: 1, action: "Campaign Created", user: "Gulang Satriya", time: "Hari ini, 09:00 WITA", icon: <Megaphone className="h-4 w-4 text-blue-500" /> },
-    { id: 2, action: "Submitted for Review", user: "Gulang Satriya", time: "Hari ini, 09:30 WITA", icon: <Clock className="h-4 w-4 text-amber-500" /> },
-    { id: 3, action: "Approved (Tahap 1)", user: "Rina Mahardika", time: "Hari ini, 10:15 WITA", icon: <CheckCircle2 className="h-4 w-4 text-emerald-500" /> },
-    { id: 4, action: "Revision Requested", user: "Budi Santoso", time: "Hari ini, 10:45 WITA", icon: <XCircle className="h-4 w-4 text-rose-500" /> },
   ];
 
   const dataAnalisis = [
@@ -48,11 +83,11 @@ export default function CampaignWorkspacePage() {
 
   const handleGenerate = () => {
     setIsGenerating(true);
-    setTimeout(() => {
-      setIsGenerating(false);
-      setIsGenerated(true);
-      setStatus("Draft");
-    }, 3000);
+    setIsGenerated(false);
+    setGenerationProgress(0);
+    setGenerationTimeLeft(15);
+    setGenerationStep(1);
+    setStatus("Proses AI");
   };
 
   return (
@@ -75,7 +110,7 @@ export default function CampaignWorkspacePage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {!isGenerated ? (
+            {!isGenerated && (
               <Button 
                 onClick={handleGenerate} 
                 disabled={isGenerating || isLoading}
@@ -91,40 +126,6 @@ export default function CampaignWorkspacePage() {
                   </>
                 )}
               </Button>
-            ) : (
-              <>
-                <Button 
-                  onClick={handleGenerate} 
-                  disabled={isGenerating}
-                  variant="outline"
-                  className="border-primary text-primary hover:bg-primary/5 font-bold rounded-sm shadow-none"
-                >
-                  {isGenerating ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Regenerating...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="mr-2 h-4 w-4" /> Regenerate Ulang
-                    </>
-                  )}
-                </Button>
-                <Button 
-                  onClick={() => setIsSubmitModalOpen(true)}
-                  disabled={status === "Sedang Direview" || isGenerating}
-                  className="bg-primary hover:bg-primary/90 text-white font-bold rounded-sm shadow-none"
-                >
-                  {status === "Sedang Direview" ? (
-                    <>
-                      <Clock className="mr-2 h-4 w-4" /> Sedang Direview
-                    </>
-                  ) : (
-                    <>
-                      <Send className="mr-2 h-4 w-4" /> Submit to Approval
-                    </>
-                  )}
-                </Button>
-              </>
             )}
           </div>
         </div>
@@ -133,39 +134,36 @@ export default function CampaignWorkspacePage() {
         <div className="flex flex-1 overflow-hidden">
           {/* Left Panel */}
           <div className="w-80 border-r border-slate-200 bg-white flex flex-col shrink-0 overflow-y-auto">
-            {/* Status & Approver */}
+            {/* Status & Creator */}
             <div className="p-5 border-b border-slate-100 flex flex-col gap-5">
               <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">Status Approval</span>
-                <div className="inline-flex items-center gap-1.5 bg-blue-50/50 text-blue-700 px-2.5 py-1 rounded-md border border-blue-200/50">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">Status</span>
+                <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border ${
+                  isGenerating 
+                    ? "bg-amber-50 text-amber-700 border-amber-200" 
+                    : "bg-blue-50/50 text-blue-700 border-blue-200/50"
+                }`}>
                   <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                    <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
+                      isGenerating ? "bg-amber-400" : "bg-blue-400"
+                    }`}></span>
+                    <span className={`relative inline-flex rounded-full h-2 w-2 ${
+                      isGenerating ? "bg-amber-500" : "bg-blue-500"
+                    }`}></span>
                   </span>
-                  <span className="text-xs font-bold">{status}</span>
+                  <span className="text-xs font-bold">
+                    {isGenerating ? `Proses AI (${generationTimeLeft}s)` : status}
+                  </span>
                 </div>
               </div>
               
-              <div className="flex gap-4">
-                <div className="flex-1">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">Created By</span>
-                  <div className="flex items-center gap-2 mb-1">
-                    <img src="https://i.pravatar.cc/150?u=a042581f4e29026704d" alt="Creator" className="h-5 w-5 rounded-full border border-slate-200" />
-                    <span className="text-[11px] font-bold text-slate-700">Gulang Satriya</span>
-                  </div>
-                  <span className="text-[9px] font-medium text-slate-500 block">31 Agu 2026, 09:00 WITA</span>
+              <div>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">Created By</span>
+                <div className="flex items-center gap-2 mb-1">
+                  <img src="https://i.pravatar.cc/150?u=a042581f4e29026704d" alt="Creator" className="h-5 w-5 rounded-full border border-slate-200" />
+                  <span className="text-[11px] font-bold text-slate-700">Gulang Satriya</span>
                 </div>
-                
-                <div className="w-px bg-slate-200" />
-                
-                <div className="flex-1">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">Current Approver</span>
-                  <div className="flex items-center gap-2 mb-1">
-                    <img src="https://i.pravatar.cc/150?u=a042581f4e29026704e" alt="Approver" className="h-5 w-5 rounded-full border border-slate-200" />
-                    <span className="text-[11px] font-bold text-slate-700">Budi Santoso</span>
-                  </div>
-                  <span className="text-[9px] font-medium text-slate-500 block">Safety Manager</span>
-                </div>
+                <span className="text-[9px] font-medium text-slate-500 block">31 Agu 2026, 09:00 WITA</span>
               </div>
             </div>
 
@@ -334,48 +332,173 @@ export default function CampaignWorkspacePage() {
               )}
 
               {isGenerating && (
-                <div className="flex flex-col items-center justify-center w-full max-w-[500px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500 mt-10">
-                  <div className="h-14 w-14 mb-8 rounded-full border-[3px] border-indigo-100 border-t-indigo-500 animate-spin shadow-none" />
-                  
-                  <div className="w-full bg-white border border-slate-200 shadow-none rounded-xl p-6 relative overflow-hidden">
+                <div className="flex flex-col items-center justify-center w-full max-w-[560px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500 my-auto py-8">
+                  {/* Outer Badge */}
+                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-indigo-50 border border-indigo-200 rounded-full mb-6 text-indigo-700">
+                    <Sparkles className="h-3.5 w-3.5 animate-spin text-indigo-600" />
+                    <span className="text-[11px] font-bold tracking-wide uppercase">AI Campaign Generation Berjalan</span>
+                    <span className="text-[10px] font-mono font-bold bg-indigo-200/60 px-1.5 py-0.5 rounded text-indigo-800">
+                      {generationTimeLeft}s
+                    </span>
+                  </div>
+
+                  {/* Progress Card */}
+                  <div className="w-full bg-white border border-slate-200 shadow-sm rounded-xl p-6 relative overflow-hidden">
                     {/* Background grid */}
                     <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px] pointer-events-none" />
                     
-                    <h3 className="relative z-10 text-[11px] font-black uppercase text-slate-800 tracking-widest mb-6 border-b border-slate-100 pb-3">Tahap Penyusunan Poster</h3>
+                    {/* Header with percentage */}
+                    <div className="relative z-10 flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin text-indigo-600" />
+                        <h3 className="text-[12px] font-bold uppercase text-slate-800 tracking-wider">
+                          Penyusunan Poster Safety Alert
+                        </h3>
+                      </div>
+                      <div className="flex items-center gap-2 font-mono">
+                        <span className="text-xs font-bold text-indigo-600">{generationProgress}%</span>
+                        <span className="text-[10px] text-slate-400 font-medium">({15 - generationTimeLeft}/15s)</span>
+                      </div>
+                    </div>
+
+                    {/* Progress Bar */}
+                    <div className="relative z-10 mb-6">
+                      <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden border border-slate-200/60">
+                        <div 
+                          className="h-full bg-gradient-to-r from-indigo-500 via-blue-500 to-emerald-500 transition-all duration-150 ease-out rounded-full"
+                          style={{ width: `${generationProgress}%` }}
+                        />
+                      </div>
+                    </div>
                     
-                    <div className="flex flex-col gap-6 relative z-10">
-                      <div className="absolute left-[11px] top-2 bottom-2 w-[2px] bg-slate-100" />
+                    {/* Step list */}
+                    <div className="flex flex-col gap-5 relative z-10">
+                      <div className="absolute left-[13px] top-3 bottom-3 w-[2px] bg-slate-100" />
                       
                       {/* Step 1 */}
-                      <div className="flex gap-4 items-center relative z-10">
-                         <div className="h-6 w-6 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center shrink-0 shadow-none">
-                           <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
-                         </div>
-                         <div className="flex-1 flex justify-between items-center">
-                           <span className="text-[12px] font-bold text-slate-600">Membaca Data Analisis</span>
-                           <span className="text-[9px] text-emerald-600 font-bold tracking-wider uppercase bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">Selesai</span>
-                         </div>
+                      <div className={`flex gap-3.5 items-start relative z-10 transition-opacity ${generationStep < 1 ? "opacity-40" : "opacity-100"}`}>
+                        <div className={`h-7 w-7 rounded-full flex items-center justify-center shrink-0 border transition-all ${
+                          generationStep > 1 
+                            ? "bg-emerald-50 border-emerald-300 text-emerald-600" 
+                            : generationStep === 1 
+                            ? "bg-indigo-50 border-indigo-500 text-indigo-600 ring-2 ring-indigo-50" 
+                            : "bg-white border-slate-200 text-slate-400"
+                        }`}>
+                          {generationStep > 1 ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : <span className="text-[10px] font-bold">01</span>}
+                        </div>
+                        <div className="flex-1 flex flex-col pt-0.5">
+                          <div className="flex justify-between items-center">
+                            <span className={`text-[12px] font-bold ${generationStep === 1 ? "text-indigo-900" : "text-slate-700"}`}>
+                              Membaca & Memvalidasi Data Analisis
+                            </span>
+                            <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${
+                              generationStep > 1 
+                                ? "bg-emerald-50 text-emerald-600 border-emerald-100" 
+                                : "bg-indigo-50 text-indigo-600 border-indigo-100 animate-pulse"
+                            }`}>
+                              {generationStep > 1 ? "Selesai" : "Mengekstrak..."}
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-slate-500 mt-0.5">
+                            Menghubungkan Kronologi, Aktor, PEEPO, dan IPLS dari data insiden.
+                          </span>
+                        </div>
                       </div>
 
                       {/* Step 2 */}
-                      <div className="flex gap-4 items-center relative z-10">
-                         <div className="h-6 w-6 rounded-full bg-indigo-50 border border-indigo-500 flex items-center justify-center shrink-0 shadow-none ring-2 ring-indigo-50">
-                           <div className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse" />
-                         </div>
-                         <div className="flex-1 flex flex-col">
-                           <span className="text-[12px] font-bold text-indigo-900">Merangkum PEEPO & IPLS</span>
-                           <span className="text-[10px] text-indigo-500/80 mt-0.5 leading-relaxed">Mengidentifikasi poin krusial untuk lesson learned...</span>
-                         </div>
+                      <div className={`flex gap-3.5 items-start relative z-10 transition-opacity ${generationStep < 2 ? "opacity-40" : "opacity-100"}`}>
+                        <div className={`h-7 w-7 rounded-full flex items-center justify-center shrink-0 border transition-all ${
+                          generationStep > 2 
+                            ? "bg-emerald-50 border-emerald-300 text-emerald-600" 
+                            : generationStep === 2 
+                            ? "bg-indigo-50 border-indigo-500 text-indigo-600 ring-2 ring-indigo-50" 
+                            : "bg-white border-slate-200 text-slate-400"
+                        }`}>
+                          {generationStep > 2 ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : <span className="text-[10px] font-bold">02</span>}
+                        </div>
+                        <div className="flex-1 flex flex-col pt-0.5">
+                          <div className="flex justify-between items-center">
+                            <span className={`text-[12px] font-bold ${generationStep === 2 ? "text-indigo-900" : "text-slate-700"}`}>
+                              Merangkum Faktor Kritis & Lesson Learned
+                            </span>
+                            <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${
+                              generationStep > 2 
+                                ? "bg-emerald-50 text-emerald-600 border-emerald-100" 
+                                : generationStep === 2
+                                ? "bg-indigo-50 text-indigo-600 border-indigo-100 animate-pulse"
+                                : "bg-slate-50 text-slate-400 border-slate-200"
+                            }`}>
+                              {generationStep > 2 ? "Selesai" : generationStep === 2 ? "Merangkum..." : "Menunggu"}
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-slate-500 mt-0.5">
+                            Mengidentifikasi titik rawan amblas dan instruksi keselamatan kabin.
+                          </span>
+                        </div>
                       </div>
 
                       {/* Step 3 */}
-                      <div className="flex gap-4 items-center relative z-10 opacity-40">
-                         <div className="h-6 w-6 rounded-full bg-white border border-slate-200 flex items-center justify-center shrink-0">
-                           <span className="text-[9px] font-bold text-slate-400">03</span>
-                         </div>
-                         <div className="flex-1">
-                           <span className="text-[12px] font-semibold text-slate-500">Menyusun tata letak poster otomatis</span>
-                         </div>
+                      <div className={`flex gap-3.5 items-start relative z-10 transition-opacity ${generationStep < 3 ? "opacity-40" : "opacity-100"}`}>
+                        <div className={`h-7 w-7 rounded-full flex items-center justify-center shrink-0 border transition-all ${
+                          generationStep > 3 
+                            ? "bg-emerald-50 border-emerald-300 text-emerald-600" 
+                            : generationStep === 3 
+                            ? "bg-indigo-50 border-indigo-500 text-indigo-600 ring-2 ring-indigo-50" 
+                            : "bg-white border-slate-200 text-slate-400"
+                        }`}>
+                          {generationStep > 3 ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : <span className="text-[10px] font-bold">03</span>}
+                        </div>
+                        <div className="flex-1 flex flex-col pt-0.5">
+                          <div className="flex justify-between items-center">
+                            <span className={`text-[12px] font-bold ${generationStep === 3 ? "text-indigo-900" : "text-slate-700"}`}>
+                              Menyusun Tindakan Perbaikan Seluruh Site
+                            </span>
+                            <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${
+                              generationStep > 3 
+                                ? "bg-emerald-50 text-emerald-600 border-emerald-100" 
+                                : generationStep === 3
+                                ? "bg-indigo-50 text-indigo-600 border-indigo-100 animate-pulse"
+                                : "bg-slate-50 text-slate-400 border-slate-200"
+                            }`}>
+                              {generationStep > 3 ? "Selesai" : generationStep === 3 ? "Menyusun..." : "Menunggu"}
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-slate-500 mt-0.5">
+                            Menetapkan 5 aksi pencegahan mitigasi operasional dozer.
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Step 4 */}
+                      <div className={`flex gap-3.5 items-start relative z-10 transition-opacity ${generationStep < 4 ? "opacity-40" : "opacity-100"}`}>
+                        <div className={`h-7 w-7 rounded-full flex items-center justify-center shrink-0 border transition-all ${
+                          generationStep > 4 
+                            ? "bg-emerald-50 border-emerald-300 text-emerald-600" 
+                            : generationStep === 4 
+                            ? "bg-indigo-50 border-indigo-500 text-indigo-600 ring-2 ring-indigo-50" 
+                            : "bg-white border-slate-200 text-slate-400"
+                        }`}>
+                          {generationStep > 4 ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : <span className="text-[10px] font-bold">04</span>}
+                        </div>
+                        <div className="flex-1 flex flex-col pt-0.5">
+                          <div className="flex justify-between items-center">
+                            <span className={`text-[12px] font-bold ${generationStep === 4 ? "text-indigo-900" : "text-slate-700"}`}>
+                              Rendering Tata Letak Poster Safety Alert
+                            </span>
+                            <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${
+                              generationStep > 4 
+                                ? "bg-emerald-50 text-emerald-600 border-emerald-100" 
+                                : generationStep === 4
+                                ? "bg-indigo-50 text-indigo-600 border-indigo-100 animate-pulse"
+                                : "bg-slate-50 text-slate-400 border-slate-200"
+                            }`}>
+                              {generationStep > 4 ? "Selesai" : generationStep === 4 ? "Finishing..." : "Menunggu"}
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-slate-500 mt-0.5">
+                            Finalisasi komponen visual dan banner awareness keselamatan.
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -662,97 +785,7 @@ export default function CampaignWorkspacePage() {
         </SheetContent>
       </Sheet>
 
-      {/* Submit Approval Modal */}
-      <Dialog open={isSubmitModalOpen} onOpenChange={(open) => {
-        if (!open) {
-          setIsSubmitModalOpen(false);
-          setCaptchaInput("");
-          setIsConfirmed(false);
-        }
-      }}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-lg font-black text-slate-800 flex items-center gap-2">
-              <Send className="h-5 w-5 text-indigo-500" />
-              Konfirmasi Submit Campaign
-            </DialogTitle>
-            <DialogDescription className="text-sm font-medium text-slate-500 pt-2">
-              Anda yakin untuk men-submit konten campaign berikut untuk approval?
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="bg-slate-50 rounded-lg p-4 border border-slate-200 flex flex-col gap-2 my-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-500">Judul Alert:</span>
-              <span className="text-xs font-black text-slate-800 text-right">TRACK DOZER AMBLAS SAAT BRUSHING...</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-500">Kategori:</span>
-              <span className="text-xs font-bold text-slate-800 text-right">Near Miss</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-500">Diajukan Oleh:</span>
-              <span className="text-xs font-bold text-slate-800 text-right">Gulang Satriya</span>
-            </div>
-          </div>
 
-          <div className="flex flex-col gap-4 pt-2">
-            <label className="flex items-start gap-3 cursor-pointer group">
-              <div className="flex items-center h-5 mt-0.5">
-                <input 
-                  type="checkbox" 
-                  checked={isConfirmed}
-                  onChange={(e) => setIsConfirmed(e.target.checked)}
-                  className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500"
-                />
-              </div>
-              <span className="text-xs text-slate-600 font-medium group-hover:text-slate-800">
-                Saya telah meninjau hasil poster, kronologi, tindakan perbaikan, dan imbauan aksi konkret serta memastikan informasi tersebut sudah sesuai.
-              </span>
-            </label>
-
-            <div className="flex flex-col gap-2">
-              <span className="text-xs font-bold text-slate-600 uppercase tracking-widest">Verifikasi Keamanan</span>
-              <div className="flex gap-3">
-                <div className="bg-slate-100 border border-slate-300 rounded-md px-4 py-2 flex items-center justify-center select-none shadow-none">
-                  <span className="text-lg font-black tracking-[0.2em] text-slate-700 blur-[0.5px] line-through decoration-slate-400">{captchaTarget}</span>
-                </div>
-                <input 
-                  type="text" 
-                  placeholder="Ketik angka di samping..."
-                  value={captchaInput}
-                  onChange={(e) => setCaptchaInput(e.target.value)}
-                  className="flex-1 text-sm bg-white border border-slate-300 rounded-md px-3 py-2 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-                />
-              </div>
-            </div>
-          </div>
-
-          <DialogFooter className="mt-4">
-            <Button variant="outline" onClick={() => setIsSubmitModalOpen(false)}>
-              Batal
-            </Button>
-            <Button 
-              disabled={!isConfirmed || captchaInput !== captchaTarget || isSubmitting}
-              onClick={() => {
-                setIsSubmitting(true);
-                setTimeout(() => {
-                  setIsSubmitting(false);
-                  setIsSubmitModalOpen(false);
-                  setStatus("Menunggu Approval");
-                }, 1000);
-              }}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white"
-            >
-              {isSubmitting ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Submitting...</>
-              ) : (
-                <><Send className="mr-2 h-4 w-4" /> Submit Campaign</>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </AppLayout>
   );
 }

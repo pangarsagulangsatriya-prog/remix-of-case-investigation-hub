@@ -239,17 +239,17 @@ export default function CaseListPage() {
   useEffect(() => {
     const handleReset = () => {
       const newStatuses: Record<string, string> = {};
-      cases.forEach(c => newStatuses[c.id] = "belum_perlu_approve");
+      cases.forEach(c => newStatuses[c.id] = "belum_dimulai");
       setDemoStatuses(newStatuses);
-      toast.success("DEMO: Semua status di-reset ke Belum Perlu Approve");
+      toast.success("DEMO: Semua status di-reset ke Belum Dimulai");
     };
 
     const handleRoll = () => {
-      const statuses = ["belum_perlu_approve", "perlu_perbaikan", "sedang_direview"];
+      const statuses = ["belum_dimulai", "draft", "selesai"];
       const newStatuses: Record<string, string> = {};
       cases.forEach(c => newStatuses[c.id] = statuses[Math.floor(Math.random() * statuses.length)]);
       setDemoStatuses(newStatuses);
-      toast.success("DEMO: Approval Campaign diacak");
+      toast.success("DEMO: Status AI diacak");
     };
 
     window.addEventListener('demo:reset', handleReset);
@@ -262,8 +262,8 @@ export default function CaseListPage() {
 
   const getCaseStatus = (c: Case) => {
     if (demoStatuses[c.id]) return demoStatuses[c.id];
-    if (createdCaseIds.has(c.id)) return "perlu_perbaikan";
-    return ["belum_perlu_approve", "perlu_perbaikan", "sedang_direview"][cases.indexOf(c) % 3];
+    if (createdCaseIds.has(c.id)) return "draft";
+    return ["belum_dimulai", "draft", "selesai"][cases.indexOf(c) % 3];
   };
 
   const filteredCases = cases.filter((c, i) => {
@@ -322,12 +322,6 @@ export default function CaseListPage() {
             <span className="text-2xs font-medium text-muted-foreground px-1.5 py-0.5 bg-muted rounded-full">{filteredCases.length}</span>
           </div>
           <div className="flex-1" />
-          <div className="flex items-center gap-2">
-
-            <Button size="sm" className="h-7 text-xs gap-1.5 font-semibold bg-primary hover:bg-primary/90" onClick={() => navigate("/campaign/new")}>
-              <Plus className="h-3 w-3" /> Create Campaign
-            </Button>
-          </div>
         </div>
 
         {/* Filter Selection Panel */}
@@ -380,7 +374,7 @@ export default function CaseListPage() {
                     { key: "lokasi", label: "Lokasi" },
                     { key: "detailLokasi", label: "Detail Lokasi" },
                     { key: "statusInvestigasi", label: "Status Investigasi" },
-                    { key: "statusAi", label: "Approval Campaign" },
+                    { key: "statusAi", label: "Status AI" },
                   ].map((col) => {
                     const isChecked = visibleColumns[col.key];
                     return (
@@ -824,9 +818,9 @@ export default function CaseListPage() {
                   </Popover>
                 </div>
 
-                {/* Approval Campaign */}
+                {/* Status AI */}
                 <div className="flex flex-col gap-1.5 w-full">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Approval Campaign</label>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Status AI</label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
@@ -835,25 +829,25 @@ export default function CaseListPage() {
                         className={`h-8 pl-3 pr-2 text-xs font-normal w-full justify-between shadow-none cursor-pointer border transition-colors ${selectedStatuses.length > 0 ? "border-primary bg-primary/5 text-primary hover:bg-primary/10" : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"}`}
                       >
                         <span className="truncate">
-                          {selectedStatuses.length > 0 ? `Approval Campaign (${selectedStatuses.length})` : "Approval Campaign"}
+                          {selectedStatuses.length > 0 ? `Status AI (${selectedStatuses.length})` : "Status AI"}
                         </span>
                         <ChevronDown className="h-3.5 w-3.5 opacity-50 ml-1.5" />
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-48 p-3 bg-white shadow-lg border rounded-md" align="start">
                       <div className="flex items-center justify-between border-b pb-2 mb-2">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Approval Campaign</span>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Status AI</span>
                         {selectedStatuses.length > 0 && (
                           <button onClick={() => setSelectedStatuses([])} className="text-[10px] font-bold text-rose-500 hover:text-rose-600">Clear</button>
                         )}
                       </div>
                       <div className="flex flex-col gap-1.5 max-h-40 overflow-y-auto">
-                        {["belum_perlu_approve", "perlu_perbaikan", "sedang_direview"].map((st) => {
+                        {["belum_dimulai", "draft", "selesai"].map((st) => {
                           const isChecked = selectedStatuses.includes(st);
                           const labels: Record<string, string> = {
-                            belum_perlu_approve: "Belum Perlu Approve",
-                            perlu_perbaikan: "Perlu Perbaikan",
-                            sedang_direview: "Sedang Direview"
+                            belum_dimulai: "Belum Dimulai",
+                            draft: "Draft",
+                            selesai: "Selesai"
                           };
                           const displayLabel = labels[st] || st;
                           return (
@@ -936,9 +930,9 @@ export default function CaseListPage() {
                     {/* Statuses */}
                     {selectedStatuses.map(st => {
                       const labels: Record<string, string> = {
-                        belum_perlu_approve: "Belum Perlu Approve",
-                        perlu_perbaikan: "Perlu Perbaikan",
-                        sedang_direview: "Sedang Direview"
+                        belum_dimulai: "Belum Dimulai",
+                        draft: "Draft",
+                        selesai: "Selesai"
                       };
                       return (
                         <span key={st} className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary border border-primary/20 transition-all hover:bg-primary/20">
@@ -1010,7 +1004,7 @@ export default function CaseListPage() {
                       {visibleColumns.lokasi && <HeaderTooltip label="Lokasi" sourceLabel="Data Sync CCR" description="Area geografis spesifik di dalam site tempat insiden terjadi." />}
                       {visibleColumns.detailLokasi && <HeaderTooltip label="Detail Lokasi" sourceLabel="Data Sync CCR" description="Titik spesifik atau area mendetail dari lokasi kejadian perkara." />}
                       {visibleColumns.statusInvestigasi && <HeaderTooltip label="Status Investigasi" sourceLabel="Data Sync CCR" description="Status terkini dari tahapan investigasi secara keseluruhan." />}
-                      {visibleColumns.statusAi && <HeaderTooltip label="Approval Campaign" description="Tahapan analisis dan pengolahan data otomatis yang sedang dikerjakan oleh kecerdasan buatan." />}
+                      {visibleColumns.statusAi && <HeaderTooltip label="Status AI" description="Tahapan analisis dan pengolahan data otomatis yang sedang dikerjakan oleh kecerdasan buatan." />}
                     </tr>
                   </thead>
                   <tbody>
@@ -1031,7 +1025,11 @@ export default function CaseListPage() {
                           {visibleColumns.site && <td className="text-xs text-slate-700 font-medium">GMO</td>}
                           {visibleColumns.lokasi && <td className="text-xs text-slate-700 font-medium">Pit J</td>}
                           {visibleColumns.detailLokasi && <td className="text-xs text-slate-700 font-medium">Area Loading</td>}
-                          {visibleColumns.statusInvestigasi && <td className="text-xs font-semibold text-slate-700">INVESTIGASI</td>}
+                          {visibleColumns.statusInvestigasi && (
+                            <td className="text-xs font-semibold text-slate-700">
+                              {idx % 2 === 0 ? "SUBMITTED" : "CLOSED"}
+                            </td>
+                          )}
                           {visibleColumns.statusAi && <td className="py-2.5"><StatusChip status={getCaseStatus(c)} /></td>}
                         </tr>
                       );
@@ -1158,11 +1156,11 @@ export default function CaseListPage() {
 
           {/* Right Side Preview Panel */}
           {selectedCase && (() => {
+            const mockStatus = getCaseStatus(selectedCase);
             const steps = [
-              { step: "Create Campaign", done: true },
-              { step: "Submit Campaign", done: selectedCase.status !== "draft" },
-              { step: "Waiting for Approval", done: selectedCase.status !== "draft" && selectedCase.status !== "in_progress" },
-              { step: "Approval Selesai", done: selectedCase.status === "approved" || selectedCase.status === "closed" },
+              { step: "Belum Dimulai", done: true },
+              { step: "Draft", done: mockStatus === "draft" || mockStatus === "selesai" },
+              { step: "Selesai", done: mockStatus === "selesai" },
             ];
             const completedCount = steps.filter(s => s.done).length;
             const progressPercent = Math.round((completedCount / steps.length) * 100);
@@ -1174,7 +1172,7 @@ export default function CaseListPage() {
                     {(() => {
                       const idx = cases.indexOf(selectedCase);
                       const mockStatus = getCaseStatus(selectedCase);
-                      const isCaseCreated = mockStatus !== "belum_perlu_approve";
+                      const isCaseCreated = mockStatus !== "belum_dimulai";
                       
                       return !isCaseCreated ? (
                         <Button 
@@ -1197,21 +1195,10 @@ export default function CaseListPage() {
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <Button 
-                      size="sm"
-                      variant="outline"
-                      className="h-8 w-8 p-0 border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700 transition-all flex items-center justify-center bg-white"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setCaseToDelete(selectedCase);
-                      }}
-                      title="Delete Case"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
                     <button 
                       onClick={() => setSelectedCase(null)} 
                       className="p-1.5 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-200/50 transition-all border bg-white"
+                      title="Close"
                     >
                       <X className="h-4 w-4" />
                     </button>
@@ -1227,7 +1214,7 @@ export default function CaseListPage() {
                         <h2 className="text-xl font-extrabold text-slate-800 tracking-tight">
                           Insiden - {323 + cases.indexOf(selectedCase)}
                         </h2>
-                        {getCaseStatus(selectedCase) !== "belum_perlu_approve" && (
+                        {getCaseStatus(selectedCase) !== "belum_dimulai" && (
                           <div className="flex items-center gap-1.5 text-slate-500">
                             <Clock className="h-3.5 w-3.5" />
                             <span className="text-[11px] font-semibold">
@@ -1252,14 +1239,14 @@ export default function CaseListPage() {
                       </div>
                     </div>
 
-                    {/* Approval Campaign Badge */}
+                    {/* Status AI Badge */}
                     <div className="flex flex-col gap-3 bg-slate-50/80 border border-slate-200 rounded-lg px-4 py-3 shadow-sm">
                       <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-bold text-slate-600 uppercase tracking-widest">Approval Campaign</span>
+                        <span className="text-[11px] font-bold text-slate-600 uppercase tracking-widest">Status AI</span>
                         <StatusChip status={getCaseStatus(selectedCase)} />
                       </div>
                       
-                      {getCaseStatus(selectedCase) !== "belum_perlu_approve" && (
+                      {getCaseStatus(selectedCase) !== "belum_dimulai" && (
                         <div className="pt-3 border-t border-slate-200/60 flex flex-col gap-2.5">
                           <div className="flex items-start justify-between gap-4">
                             <div className="flex flex-col">
@@ -1373,10 +1360,9 @@ export default function CaseListPage() {
               newSet.add(caseToCreate.id);
               return newSet;
             });
-            toast.success("Campaign created successfully");
             const caseId = caseToCreate.id;
             setCaseToCreate(null);
-            navigate(`/campaign/${caseId}`);
+            navigate(`/campaign/${caseId}?isCreating=true`);
           }
         }}
       />
@@ -1493,7 +1479,7 @@ const getIncidentMockMetadata = (caseObj: Case | null, casesList: Case[]) => {
     site_company_name: "Berau Coal",
     site_id: `GMO-0${safeIdx + 1}`,
     site_name: safeIdx % 2 === 0 ? "GMO" : "Site Alpha",
-    investigation_status: "INVESTIGASI"
+    investigation_status: safeIdx % 2 === 0 ? "SUBMITTED" : "CLOSED"
   };
 };
 
@@ -1531,11 +1517,7 @@ function CreateCaseConfirmDialog({
   const incMeta = getIncidentMockMetadata(caseData, cases);
 
   const handleCreateCase = () => {
-    setIsCreating(true);
-    setTimeout(() => {
-      setIsCreating(false);
-      onConfirm();
-    }, 1500);
+    onConfirm();
   };
 
   const isSubmitDisabled = !isConfirmed || captchaInput !== captchaTarget || isCreating;
@@ -1799,17 +1781,6 @@ function CaseGridCard({
             <DropdownMenuItem onClick={onOpen}>
               <ExternalLink className="mr-2 h-3.5 w-3.5" />
               Open case
-            </DropdownMenuItem>
-
-            <DropdownMenuItem 
-              className="text-rose-600 focus:text-rose-600 focus:bg-rose-50"
-              onClick={(e) => {
-                e.stopPropagation();
-                setCaseToDelete(caseData);
-              }}
-            >
-              <Trash2 className="mr-2 h-3.5 w-3.5" />
-              Delete Case
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
