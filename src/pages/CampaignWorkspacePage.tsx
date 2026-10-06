@@ -3,7 +3,13 @@ import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { AppLayout } from "@/components/AppLayout";
 import { useCase } from "@/hooks/useCases";
 import { Button } from "@/components/ui/button";
-import { Loader2, ArrowLeft, Megaphone, Sparkles, Clock, CheckCircle2, XCircle, ChevronDown, ChevronRight, History, BarChart3, Info, ExternalLink, Play, Database, Brain, Send, Bot, FileText, Search, Trash2, Edit3, User, Link2, Sparkle } from "lucide-react";
+import { 
+  Loader2, ArrowLeft, Megaphone, Sparkles, Clock, CheckCircle2, XCircle, 
+  ChevronDown, ChevronRight, History, BarChart3, Info, ExternalLink, Play, 
+  Database, Brain, Send, Bot, FileText, Search, Trash2, Edit3, User, Link2, 
+  Sparkle, PanelLeft, PanelLeftClose, PanelRight, X, Pencil 
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 import { SafetyAlertPoster } from "@/components/workspace/SafetyAlertPoster";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { toast } from "sonner";
