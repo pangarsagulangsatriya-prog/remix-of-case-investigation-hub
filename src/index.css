@@ -328,3 +328,47 @@
   0% { width: 0%; }
   100% { width: 100%; }
 }
+
+/* Dark studio canvas scrollbar */
+.custom-dark-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.custom-dark-scrollbar::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.6);
+}
+.custom-dark-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.25);
+  border-radius: 4px;
+}
+.custom-dark-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.45);
+}
+
+/* Print Styles for Safety Alert Poster */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  body * {
+    visibility: hidden;
+  }
+  #printable-safety-alert-poster, #printable-safety-alert-poster * {
+    visibility: visible;
+  }
+  #printable-safety-alert-poster {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    zoom: 1 !important;
+    transform: none !important;
+  }
+}
+
