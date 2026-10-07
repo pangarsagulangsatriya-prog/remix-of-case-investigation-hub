@@ -1,18 +1,39 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { QuestionBankApiIntegration } from '@/components/workspace/QuestionBankApiIntegration';
 import { AppSidebar } from '@/components/AppSidebar';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
-import { UploadCloud, FileText, CheckCircle2, AlertCircle, RefreshCw, Download, Undo, Redo, FileSearch } from 'lucide-react';
+import { 
+  UploadCloud, 
+  FileText, 
+  CheckCircle2, 
+  AlertCircle, 
+  RefreshCw, 
+  Download, 
+  Undo, 
+  Redo, 
+  FileSearch,
+  Search,
+  ChevronDown
+} from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 import { cn } from '@/lib/utils';
+import { QuestionBankApiMode } from '@/components/question-bank/QuestionBankApiMode';
 
-type PageState = 'EMPTY' | 'FILE_READY' | 'GENERATING' | 'ERROR' | 'QUESTION_READY';
+type PageState = 'EMPTY' | 'GENERATING' | 'ERROR' | 'QUESTION_READY';
+type DemoMode = 'upload' | 'search' | 'api';
+type SearchState = 'idle' | 'loading' | 'success' | 'not_found' | 'no_pdf';
 
 const MOCK_GENERATED_MARKDOWN = `# Question Bank
 
-Source: LPI_Pit_J_Agustus_2026.pdf
+Source: {SOURCE_NAME}
 
 ## Fakta dan Kronologi
 
@@ -36,11 +57,11 @@ Source: LPI_Pit_J_Agustus_2026.pdf
 
 ### Equipment
 
-10. Apakah terdapat kondisi alat yang berkontribusi terhadap kejadian?
+10. Kondisi peralatan apa yang tercatat dalam dokumen?
 
 ### Environment
 
-11. Kondisi lingkungan apa yang tercatat saat kejadian?
+11. Kondisi lingkungan apa yang relevan terhadap kejadian?
 
 ### Process
 
@@ -53,19 +74,31 @@ Source: LPI_Pit_J_Agustus_2026.pdf
 ## IPLS
 
 14. Faktor penyebab apa yang tercatat dalam analisis IPLS?
-15. Apa hubungan antara penyebab langsung dan penyebab dasar?
+15. Bagaimana hubungan penyebab langsung dan penyebab dasar?
 
 ## Prevention
 
 16. Tindakan apa yang direkomendasikan untuk mencegah kejadian serupa?`;
 
 export default function QuestionBankPage() {
-  const [activeMode, setActiveMode] = useState<'DEMO1' | 'DEMO2' | 'DEMO3'>('DEMO1');
-  const [pageState, setPageState] = useState<PageState>('EMPTY');
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  // Demo Mode
+  const [demoMode, setDemoMode] = useState<DemoMode>('upload');
+  const [pendingDemoMode, setPendingDemoMode] = useState<DemoMode | null>(null);
   
+  // Right Panel State
+  const [pageState, setPageState] = useState<PageState>('EMPTY');
+  
+  // Left Panel - Upload State
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Left Panel - Search State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchState, setSearchState] = useState<SearchState>('idle');
+  const [searchResult, setSearchResult] = useState<any>(null);
+
   // Generating states
-  const [generationStep, setGenerationStep] = useState(0); // 0: Reading, 1: Extracting, 2: Generating
+  const [generationStep, setGenerationStep] = useState(0); 
   
   // Editor state
   const [markdownText, setMarkdownText] = useState("");
@@ -73,20 +106,20 @@ export default function QuestionBankPage() {
   
   // Modals
   const [showRegenerateConfirm, setShowRegenerateConfirm] = useState(false);
+  const [showModeChangeConfirm, setShowModeChangeConfirm] = useState(false);
 
-  // Hidden file input
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  // Derived source info
+  const hasValidSource = (demoMode === 'upload' && selectedFile) || (demoMode === 'search' && searchState === 'success');
+  const activeSourceName = demoMode === 'upload' ? selectedFile?.name : searchResult?.filename;
 
+  // --- Upload Handlers ---
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setSelectedFile(e.target.files[0]);
-      setPageState('FILE_READY');
     }
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-  };
+  const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -94,30 +127,85 @@ export default function QuestionBankPage() {
       const file = e.dataTransfer.files[0];
       if (file.type === "application/pdf") {
         setSelectedFile(file);
-        setPageState('FILE_READY');
       } else {
         alert("Mohon upload file PDF");
       }
     }
   };
 
+  // --- Search Handlers ---
+  const handleSearch = () => {
+    if (!searchQuery.trim()) return;
+    setSearchState('loading');
+    
+    setTimeout(() => {
+      const q = searchQuery.trim().toUpperCase();
+      if (q === '323' || q === 'INC-323' || q === 'LPI-323') {
+        setSearchResult({
+          filename: 'LPI_323_Investigation.pdf',
+          pages: 24,
+          incidentId: '323',
+          category: 'Near Miss',
+          company: 'PT Bumi Tambang Nusantara',
+          site: 'GMO',
+          location: 'Pit J',
+          detailLocation: 'Area Loading'
+        });
+        setSearchState('success');
+      } else if (q === '324' || q === 'INC-324') {
+        setSearchState('no_pdf');
+      } else {
+        setSearchState('not_found');
+      }
+    }, 800);
+  };
+
+  // --- Mode Change Handlers ---
+  const handleModeSelect = (mode: DemoMode) => {
+    if (mode === demoMode) return;
+    
+    // If there's already generated content, confirm first
+    if (pageState === 'QUESTION_READY' || pageState === 'ERROR') {
+      setPendingDemoMode(mode);
+      setShowModeChangeConfirm(true);
+    } else {
+      applyModeChange(mode);
+    }
+  };
+
+  const applyModeChange = (mode: DemoMode) => {
+    setDemoMode(mode);
+    // Reset left panel states
+    setSelectedFile(null);
+    setSearchQuery('');
+    setSearchState('idle');
+    setSearchResult(null);
+    
+    // Do NOT reset right panel immediately (spec says: Your generated Question Bank will remain until you generate a new one)
+    setShowModeChangeConfirm(false);
+    setPendingDemoMode(null);
+  };
+
+  // --- Generation Handlers ---
   const startGeneration = () => {
     setPageState('GENERATING');
     setGenerationStep(0);
     
-    // Simulate steps
     setTimeout(() => setGenerationStep(1), 1500);
     setTimeout(() => setGenerationStep(2), 3000);
     setTimeout(() => {
-      // Simulate success
-      setMarkdownText(MOCK_GENERATED_MARKDOWN);
+      const name = activeSourceName || 'LPI_Pit_J_Agustus_2026.pdf';
+      setMarkdownText(MOCK_GENERATED_MARKDOWN.replace('{SOURCE_NAME}', name));
       setPageState('QUESTION_READY');
-    }, 5500);
-    
-    // For V1 we just assume success, but if we wanted to mock error:
-    // setTimeout(() => setPageState('ERROR'), 4000);
+    }, 4500);
   };
 
+  const confirmRegenerate = () => {
+    setShowRegenerateConfirm(false);
+    startGeneration();
+  };
+
+  // --- Editor Handlers ---
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setMarkdownText(e.target.value);
     setSaveStatus('Saving...');
@@ -132,13 +220,9 @@ export default function QuestionBankPage() {
     }
   }, [saveStatus]);
 
-  const confirmRegenerate = () => {
-    setShowRegenerateConfirm(false);
-    startGeneration();
-  };
-
   const downloadFile = (format: 'md' | 'txt') => {
-    const filename = `Question_Bank_${selectedFile?.name.replace('.pdf', '') || 'LPI'}.${format}`;
+    const defaultName = activeSourceName?.replace('.pdf', '') || 'LPI';
+    const filename = `Question_Bank_${defaultName}.${format}`;
     const blob = new Blob([markdownText], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -155,269 +239,449 @@ export default function QuestionBankPage() {
   return (
     <SidebarProvider>
       <AppSidebar />
-      <SidebarInset className="flex flex-col h-screen bg-slate-50/50">
-        <header className="h-14 shrink-0 flex items-center justify-between px-4 sm:px-6 lg:px-8 border-b border-slate-200 bg-white shadow-sm z-10">
-          <div className="flex items-center gap-3">
-            <SidebarTrigger className="-ml-2 text-slate-500 hover:text-slate-700" />
-            <div className="h-4 w-px bg-slate-200" />
-            <div className="flex items-center gap-2">
-              <FileSearch className="w-5 h-5 text-indigo-600" />
-              <h1 className="font-bold text-[15px] text-slate-800 tracking-tight">Question Bank</h1>
-            </div>
-          </div>
-          
-          <div className="hidden md:flex items-center bg-slate-100 p-1 rounded-lg border border-slate-200 ml-4 absolute left-1/2 -translate-x-1/2">
-            <button onClick={() => setActiveMode('DEMO1')} className={cn("px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider rounded-md transition-all", activeMode === 'DEMO1' ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-700")}>Demo 1: PDF</button>
-            <button onClick={() => setActiveMode('DEMO2')} className={cn("px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider rounded-md transition-all", activeMode === 'DEMO2' ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-700")}>Demo 2: LPI ID</button>
-            <button onClick={() => setActiveMode('DEMO3')} className={cn("px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider rounded-md transition-all", activeMode === 'DEMO3' ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-700")}>Demo 3: API</button>
-          </div>
-          
-          {activeMode === 'DEMO1' && pageState === 'QUESTION_READY' && (
-            <div className="flex items-center gap-3">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => downloadFile('txt')}
-                className="h-8 text-xs font-semibold"
-              >
-                Download .TXT
-              </Button>
-              <Button 
-                size="sm" 
-                onClick={() => downloadFile('md')}
-                className="h-8 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white gap-2 shadow-sm"
-              >
-                <Download className="w-3.5 h-3.5" /> Download .MD
-              </Button>
-            </div>
-          )}
-        </header>
-
-        <main className={cn("flex-1 overflow-y-auto custom-scrollbar p-6 lg:p-8 flex flex-col mx-auto w-full", activeMode === 'DEMO3' ? "max-w-[1400px]" : "max-w-5xl")}>
-          
-          {activeMode === 'DEMO3' && <QuestionBankApiIntegration />}
-          {activeMode === 'DEMO2' && (
-            <div className="flex flex-col items-center justify-center h-full text-slate-500 pb-20">
-              <FileSearch className="w-12 h-12 mb-4 text-slate-300" />
-              <h2 className="text-xl font-bold mb-2 text-slate-800">Demo 2: Generate dari ID</h2>
-              <p className="text-sm">Fitur pencarian ID sedang dalam tahap pengembangan.</p>
-            </div>
-          )}
-          {activeMode === 'DEMO1' && (pageState === 'EMPTY' || pageState === 'FILE_READY' || pageState === 'GENERATING' || pageState === 'ERROR') && (
-            <div className="flex flex-col items-center justify-center max-w-2xl mx-auto w-full h-full pb-20">
-              <div className="text-center mb-10">
-                <h2 className="text-2xl font-black text-slate-900 mb-3 tracking-tight">Generate Question Bank</h2>
-                <p className="text-slate-500 text-sm">Generate daftar pertanyaan dari dokumen LPI.</p>
+      <SidebarInset className="flex flex-col h-screen bg-slate-50 overflow-hidden">
+        
+        {/* TOP HEADER */}
+        <header className="h-16 shrink-0 flex flex-col justify-center px-6 lg:px-8 border-b border-slate-200 bg-white shadow-sm z-10 relative">
+          <div className="flex items-center justify-between w-full">
+            <div className="flex items-center gap-4">
+              <SidebarTrigger className="-ml-2 text-slate-500 hover:text-slate-800" />
+              <div className="h-5 w-px bg-slate-200" />
+              <div>
+                <h1 className="font-bold text-[16px] text-slate-900 flex items-center gap-2">
+                  <FileSearch className="w-4 h-4 text-indigo-600" />
+                  Question Bank
+                </h1>
+                <p className="text-[11px] text-slate-500 mt-0.5">Generate editable investigation questions from an LPI document.</p>
               </div>
-
-              {pageState === 'EMPTY' && (
-                <div 
-                  className="w-full border-2 border-dashed border-slate-300 hover:border-indigo-400 bg-white rounded-2xl p-12 flex flex-col items-center justify-center cursor-pointer transition-all hover:bg-indigo-50/30 group shadow-sm"
-                  onDragOver={handleDragOver}
-                  onDrop={handleDrop}
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <div className="w-16 h-16 bg-slate-100 group-hover:bg-indigo-100 rounded-full flex items-center justify-center mb-6 transition-colors">
-                    <UploadCloud className="w-8 h-8 text-slate-400 group-hover:text-indigo-600 transition-colors" />
-                  </div>
-                  <h3 className="text-base font-bold text-slate-800 mb-2">Upload LPI</h3>
-                  <p className="text-sm text-slate-500 mb-6">Drop PDF di sini atau Browse</p>
-                  <div className="flex items-center gap-2 text-xs font-medium text-slate-400 bg-slate-100 px-3 py-1.5 rounded-full">
-                    <span>PDF</span>
-                    <span>&bull;</span>
-                    <span>Max 25 MB</span>
-                  </div>
-                  <input 
-                    type="file" 
-                    accept=".pdf" 
-                    className="hidden" 
-                    ref={fileInputRef}
-                    onChange={handleFileSelect}
-                  />
-                </div>
-              )}
-
-              {pageState === 'FILE_READY' && (
-                <div className="w-full">
-                  <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex items-center gap-4 mb-8">
-                    <div className="w-12 h-12 bg-red-50 rounded-lg flex items-center justify-center shrink-0 border border-red-100">
-                      <FileText className="w-6 h-6 text-red-500" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-sm font-bold text-slate-900 truncate">{selectedFile?.name || 'Document.pdf'}</h3>
-                      <p className="text-xs text-slate-500 mt-1">{(selectedFile?.size ? (selectedFile.size / 1024 / 1024).toFixed(1) : '4.8')} MB &bull; PDF Document</p>
-                    </div>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => {
-                        setSelectedFile(null);
-                        setPageState('EMPTY');
-                      }}
-                      className="text-slate-400 hover:text-rose-600"
-                    >
-                      Remove
-                    </Button>
-                  </div>
-                  
-                  <div className="flex justify-center">
-                    <Button 
-                      onClick={startGeneration} 
-                      className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-6 rounded-xl shadow-lg shadow-indigo-600/20 text-sm font-bold transition-all"
-                    >
-                      Generate Questions
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              {pageState === 'GENERATING' && (
-                <div className="w-full bg-white border border-slate-200 rounded-2xl p-10 shadow-sm flex flex-col items-center">
-                  <h3 className="text-lg font-bold text-slate-900 mb-8 tracking-tight">Generating Question Bank</h3>
-                  
-                  <div className="w-full max-w-sm space-y-5">
-                    <div className={cn("flex items-center gap-4", generationStep >= 0 ? "text-slate-800" : "text-slate-300")}>
-                      {generationStep > 0 ? (
-                        <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-                      ) : (
-                        <RefreshCw className="w-5 h-5 text-indigo-500 animate-spin" />
-                      )}
-                      <span className="text-sm font-medium">Reading PDF</span>
-                    </div>
-                    
-                    <div className={cn("flex items-center gap-4", generationStep >= 1 ? "text-slate-800" : "text-slate-300 opacity-50")}>
-                      {generationStep > 1 ? (
-                        <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-                      ) : generationStep === 1 ? (
-                        <RefreshCw className="w-5 h-5 text-indigo-500 animate-spin" />
-                      ) : (
-                        <div className="w-5 h-5 rounded-full border-2 border-slate-200" />
-                      )}
-                      <span className="text-sm font-medium">Extracting LPI content</span>
-                    </div>
-                    
-                    <div className={cn("flex items-center gap-4", generationStep >= 2 ? "text-slate-800" : "text-slate-300 opacity-50")}>
-                      {generationStep > 2 ? (
-                        <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-                      ) : generationStep === 2 ? (
-                        <RefreshCw className="w-5 h-5 text-indigo-500 animate-spin" />
-                      ) : (
-                        <div className="w-5 h-5 rounded-full border-2 border-slate-200" />
-                      )}
-                      <span className="text-sm font-medium">Generating questions</span>
-                    </div>
-                  </div>
-                  
-                  <div className="mt-10 text-sm font-semibold text-slate-500 bg-slate-50 px-4 py-2 rounded-full border border-slate-100">
-                    Processing document...
-                  </div>
-                </div>
-              )}
-
-              {pageState === 'ERROR' && (
-                <div className="w-full bg-white border border-rose-200 rounded-2xl p-10 shadow-sm flex flex-col items-center text-center">
-                  <div className="w-16 h-16 bg-rose-50 rounded-full flex items-center justify-center mb-6 border border-rose-100">
-                    <AlertCircle className="w-8 h-8 text-rose-500" />
-                  </div>
-                  <h3 className="text-lg font-bold text-slate-900 mb-2">Question generation failed</h3>
-                  <p className="text-sm text-slate-600 max-w-sm mb-8 leading-relaxed">
-                    Dokumen berhasil di-upload, tetapi pertanyaan belum dapat dibuat. Silakan coba lagi.
-                  </p>
-                  <Button 
-                    onClick={startGeneration} 
-                    className="bg-slate-900 hover:bg-slate-800 text-white px-8 py-5 rounded-xl shadow-md text-sm font-bold"
-                  >
-                    Try Again
-                  </Button>
-                </div>
-              )}
             </div>
-          )}
-
-          {activeMode === 'DEMO1' && pageState === 'QUESTION_READY' && (
-            <div className="flex flex-col h-full bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-              {/* Header Info */}
-              <div className="p-4 sm:px-6 border-b border-slate-200 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 bg-red-50 rounded shadow-sm border border-red-100 flex items-center justify-center shrink-0 mt-1 sm:mt-0">
-                    <FileText className="w-5 h-5 text-red-500" />
-                  </div>
-                  <div>
-                    <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-400 mb-1">Source Document</h3>
-                    <div className="text-sm font-bold text-slate-800">{selectedFile?.name || 'LPI_Pit_J_Agustus_2026.pdf'}</div>
-                    <div className="text-[11px] text-slate-500 mt-0.5">24 pages</div>
-                  </div>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="h-8 text-xs font-semibold border-slate-300 text-slate-700 bg-slate-50 hover:bg-slate-100">
+                  {demoMode === 'upload' ? 'Demo 1 — Upload PDF' : demoMode === 'search' ? 'Demo 2 — Search by ID' : 'Demo 3 — API Integration'}
+                  <ChevronDown className="w-3.5 h-3.5 ml-2 text-slate-400" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem onClick={() => handleModeSelect('upload')} className="text-xs font-medium cursor-pointer">
+                  Demo 1 — Upload PDF
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleModeSelect('search')} className="text-xs font-medium cursor-pointer">
+                  Demo 2 — Search by ID
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleModeSelect('api')} className="text-xs font-medium cursor-pointer">
+                  Demo 3 — API Integration
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+               {/* MAIN WORKSPACE */}
+        <main className={cn("flex-1 flex overflow-hidden w-full mx-auto p-4 md:p-6", demoMode === 'api' ? "max-w-7xl flex-col" : "max-w-[1600px] flex-col md:flex-row gap-6")}>
+          
+          {demoMode === 'api' ? (
+            <QuestionBankApiMode />
+          ) : (
+            <>
+              {/* LEFT PANEL - SOURCE */}
+              <div className="w-full md:w-[32%] lg:w-[30%] flex flex-col bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden shrink-0 h-full">
+                <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between shrink-0">
+                  <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest">Source Document</h2>
                 </div>
                 
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => setShowRegenerateConfirm(true)}
-                  className="shrink-0 bg-white text-xs font-bold text-slate-700 shadow-sm h-9 px-4 hover:text-indigo-600 hover:border-indigo-200"
-                >
-                  <RefreshCw className="w-3.5 h-3.5 mr-2" />
-                  Regenerate
-                </Button>
-              </div>
+                <div className="p-5 flex-1 overflow-y-auto custom-scrollbar flex flex-col">
+                  
+                  {/* DEMO 1: UPLOAD PDF */}
+                  {demoMode === 'upload' && (
+                    <div className="flex flex-col h-full">
+                      {!selectedFile ? (
+                        <div className="flex-1 flex flex-col">
+                          <p className="text-[13px] text-slate-600 mb-4 leading-relaxed">
+                            Upload an LPI PDF to generate investigation questions.
+                          </p>
+                          <div 
+                            className="w-full border-2 border-dashed border-slate-300 hover:border-indigo-400 bg-slate-50/50 rounded-xl p-8 flex flex-col items-center justify-center cursor-pointer transition-all hover:bg-indigo-50/30 group"
+                            onDragOver={handleDragOver}
+                            onDrop={handleDrop}
+                            onClick={() => fileInputRef.current?.click()}
+                          >
+                            <UploadCloud className="w-8 h-8 text-slate-400 group-hover:text-indigo-600 transition-colors mb-4" />
+                            <h3 className="text-sm font-bold text-slate-800 mb-1">Upload LPI PDF</h3>
+                            <p className="text-[11px] text-slate-500 mb-4 text-center">Drop PDF here or Browse File</p>
+                            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 bg-white border border-slate-200 px-2.5 py-1 rounded-full">
+                              PDF &bull; Max 25 MB
+                            </div>
+                            <input 
+                              type="file" 
+                              accept=".pdf" 
+                              className="hidden" 
+                              ref={fileInputRef}
+                              onChange={handleFileSelect}
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex-1 flex flex-col">
+                          <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 flex flex-col gap-4 mb-6">
+                            <div className="flex items-start gap-3">
+                              <div className="w-10 h-10 bg-red-50 rounded-md flex items-center justify-center shrink-0 border border-red-100 mt-0.5">
+                                <FileText className="w-5 h-5 text-red-500" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <h3 className="text-[13px] font-bold text-slate-800 break-words leading-snug">{selectedFile.name}</h3>
+                                <div className="text-[11px] text-slate-500 mt-1">24 pages</div>
+                                <div className="text-[11px] text-slate-500">{(selectedFile.size / 1024 / 1024).toFixed(1)} MB</div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 pt-3 border-t border-slate-200/60">
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="flex-1 h-7 text-[11px] font-semibold"
+                                onClick={() => fileInputRef.current?.click()}
+                              >
+                                Replace
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="flex-1 h-7 text-[11px] font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 border-rose-200"
+                                onClick={() => setSelectedFile(null)}
+                              >
+                                Remove
+                              </Button>
+                            </div>
+                            <input 
+                              type="file" 
+                              accept=".pdf" 
+                              className="hidden" 
+                              ref={fileInputRef}
+                              onChange={handleFileSelect}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
-              {/* Editor Toolbar */}
-              <div className="flex items-center justify-between px-4 py-2 border-b border-slate-100 bg-white shrink-0">
-                <div className="flex items-center gap-1">
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-slate-800">
-                    <Undo className="w-4 h-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-slate-800">
-                    <Redo className="w-4 h-4" />
-                  </Button>
-                </div>
-                <div className="flex items-center gap-4 text-xs font-semibold text-slate-500">
-                  <div className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded border border-slate-100">
-                    <div className={cn("w-1.5 h-1.5 rounded-full", saveStatus === 'Saved' ? 'bg-emerald-500' : 'bg-amber-500')} />
-                    {saveStatus}
+                  {/* DEMO 2: SEARCH BY ID */}
+                  {demoMode === 'search' && (
+                    <div className="flex flex-col h-full">
+                      {!searchResult ? (
+                        <div className="flex-1 flex flex-col space-y-4">
+                          <div className="space-y-1.5">
+                            <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">Investigation / LPI ID</label>
+                            <div className="flex gap-2">
+                              <Input 
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                                placeholder="Enter ID..."
+                                className="h-9 text-sm"
+                              />
+                              <Button 
+                                onClick={handleSearch}
+                                disabled={searchState === 'loading'}
+                                className="h-9 bg-slate-900 hover:bg-slate-800 text-white px-4 shrink-0"
+                              >
+                                {searchState === 'loading' ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                              </Button>
+                            </div>
+                          </div>
+
+                          {searchState === 'idle' && (
+                            <p className="text-[12px] text-slate-500 mt-2">
+                              Enter an Investigation or LPI ID to find its LPI document.
+                            </p>
+                          )}
+
+                          {searchState === 'loading' && (
+                            <div className="flex items-center gap-2 text-[12px] text-slate-600 mt-2">
+                              <RefreshCw className="w-3.5 h-3.5 animate-spin text-indigo-500" />
+                              Searching Investigation...
+                            </div>
+                          )}
+
+                          {searchState === 'not_found' && (
+                            <div className="bg-rose-50 border border-rose-100 rounded-lg p-4 mt-2">
+                              <h4 className="text-[13px] font-bold text-rose-800 mb-1">ID not found.</h4>
+                              <p className="text-[12px] text-rose-600 mb-3">Please check the Investigation / LPI ID.</p>
+                              <Button variant="outline" size="sm" onClick={() => setSearchState('idle')} className="h-8 text-xs border-rose-200 text-rose-700 bg-white">
+                                Try Again
+                              </Button>
+                            </div>
+                          )}
+
+                          {searchState === 'no_pdf' && (
+                            <div className="bg-amber-50 border border-amber-100 rounded-lg p-4 mt-2">
+                              <h4 className="text-[13px] font-bold text-amber-800 mb-1">Incident {searchQuery} found.</h4>
+                              <p className="text-[12px] text-amber-700">LPI PDF is not available for this incident.</p>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="flex-1 flex flex-col">
+                          <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 flex flex-col gap-4 mb-6 relative overflow-hidden">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="absolute top-2 right-2 h-6 w-6 text-slate-400 hover:text-slate-700"
+                              onClick={() => {
+                                setSearchResult(null);
+                                setSearchState('idle');
+                              }}
+                            >
+                              <Undo className="w-3.5 h-3.5" />
+                            </Button>
+
+                            <div className="flex items-start gap-3 pr-6">
+                              <div className="w-10 h-10 bg-red-50 rounded-md flex items-center justify-center shrink-0 border border-red-100 mt-0.5">
+                                <FileText className="w-5 h-5 text-red-500" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <h3 className="text-[13px] font-bold text-slate-800 break-words leading-snug">{searchResult.filename}</h3>
+                                <div className="text-[11px] text-slate-500 mt-1">{searchResult.pages} pages</div>
+                              </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-y-3 gap-x-2 pt-3 border-t border-slate-200/60 mt-1">
+                              <div>
+                                <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Incident ID</div>
+                                <div className="text-[11px] font-medium text-slate-800">{searchResult.incidentId}</div>
+                              </div>
+                              <div>
+                                <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Category</div>
+                                <div className="text-[11px] font-medium text-slate-800">{searchResult.category}</div>
+                              </div>
+                              <div className="col-span-2">
+                                <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Company</div>
+                                <div className="text-[11px] font-medium text-slate-800">{searchResult.company}</div>
+                              </div>
+                              <div>
+                                <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Site</div>
+                                <div className="text-[11px] font-medium text-slate-800">{searchResult.site}</div>
+                              </div>
+                              <div>
+                                <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Location</div>
+                                <div className="text-[11px] font-medium text-slate-800">{searchResult.location}</div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* GENERATE BUTTON (Pinned to bottom of left panel) */}
+                  <div className="mt-auto pt-4">
+                    <Button 
+                      onClick={startGeneration}
+                      disabled={!hasValidSource || pageState === 'GENERATING'}
+                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm font-bold disabled:opacity-50 disabled:bg-slate-100 disabled:text-slate-400"
+                    >
+                      {pageState === 'GENERATING' ? 'Processing...' : 'Generate Questions'}
+                    </Button>
                   </div>
-                  <div>
-                    <span className="text-slate-800">{questionCount}</span> Questions
-                  </div>
                 </div>
               </div>
 
-              {/* Editor Area */}
-              <div className="flex-1 relative overflow-hidden bg-white">
-                <Textarea 
-                  value={markdownText}
-                  onChange={handleTextChange}
-                  className="w-full h-full resize-none border-0 p-6 sm:p-8 focus-visible:ring-0 text-[14px] sm:text-[15px] leading-relaxed text-slate-800 font-mono custom-scrollbar rounded-none"
-                  placeholder="Ketik markdown di sini..."
-                  spellCheck={false}
-                />
-              </div>
-            </div>
-          )}
+              {/* RIGHT PANEL - QUESTION BANK */}
+              <div className="flex-1 flex flex-col bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden h-full">
+                
+                {/* Header Right */}
+                <div className="px-5 h-[53px] border-b border-slate-100 bg-slate-50/50 flex items-center justify-between shrink-0">
+                  <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest">Question Bank</h2>
+                  
+                  {pageState === 'QUESTION_READY' && (
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-1.5 mr-2">
+                        <div className={cn("w-1.5 h-1.5 rounded-full", saveStatus === 'Saved' ? 'bg-emerald-500' : 'bg-amber-500')} />
+                        <span className="text-[11px] font-bold text-slate-500">{saveStatus}</span>
+                      </div>
+                      <div className="text-[11px] font-bold text-slate-800 mr-2">
+                        {questionCount} Questions
+                      </div>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => setShowRegenerateConfirm(true)}
+                        className="h-7 text-[11px] px-3 border-slate-200 text-slate-600 bg-white"
+                      >
+                        Regenerate
+                      </Button>
+                      
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button size="sm" className="h-7 text-[11px] px-3 bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm gap-1">
+                            <Download className="w-3 h-3" /> Download ▾
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-40">
+                          <DropdownMenuItem onClick={() => downloadFile('md')} className="text-xs font-medium cursor-pointer">
+                            Markdown (.md)
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => downloadFile('txt')} className="text-xs font-medium cursor-pointer">
+                            Plain Text (.txt)
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  )}
+                </div>
 
-        </main>
+                {/* Content Right */}
+                <div className="flex-1 relative overflow-hidden bg-white">
+                  
+                  {/* STATE: EMPTY */}
+                  {pageState === 'EMPTY' && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center bg-slate-50/30">
+                      <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mb-4">
+                        <FileSearch className="w-6 h-6 text-slate-300" />
+                      </div>
+                      <p className="text-[13px] text-slate-500 font-medium">Select a source document and generate questions.</p>
+                    </div>
+                  )}
+
+                  {/* STATE: GENERATING */}
+                  {pageState === 'GENERATING' && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center p-8 bg-slate-50/30">
+                      <div className="w-full max-w-sm bg-white border border-slate-200 rounded-xl p-8 shadow-sm">
+                        <h3 className="text-base font-bold text-slate-900 mb-6 text-center">Generating Question Bank</h3>
+                        
+                        <div className="space-y-4 mb-8">
+                          <div className={cn("flex items-center gap-3 transition-opacity", generationStep >= 0 ? "opacity-100" : "opacity-40")}>
+                            {generationStep > 0 ? (
+                              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                            ) : (
+                              <RefreshCw className="w-4 h-4 text-indigo-500 animate-spin shrink-0" />
+                            )}
+                            <span className="text-sm font-medium text-slate-700">Reading PDF</span>
+                          </div>
+                          
+                          <div className={cn("flex items-center gap-3 transition-opacity", generationStep >= 1 ? "opacity-100" : "opacity-40")}>
+                            {generationStep > 1 ? (
+                              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                            ) : generationStep === 1 ? (
+                              <RefreshCw className="w-4 h-4 text-indigo-500 animate-spin shrink-0" />
+                            ) : (
+                              <div className="w-4 h-4 rounded-full border-2 border-slate-200 shrink-0" />
+                            )}
+                            <span className="text-sm font-medium text-slate-700">Extracting LPI content</span>
+                          </div>
+                          
+                          <div className={cn("flex items-center gap-3 transition-opacity", generationStep >= 2 ? "opacity-100" : "opacity-40")}>
+                            {generationStep > 2 ? (
+                              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                            ) : generationStep === 2 ? (
+                              <RefreshCw className="w-4 h-4 text-indigo-500 animate-spin shrink-0" />
+                            ) : (
+                              <div className="w-4 h-4 rounded-full border-2 border-slate-200 shrink-0" />
+                            )}
+                            <span className="text-sm font-medium text-slate-700">Generating questions</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* STATE: ERROR */}
+                  {pageState === 'ERROR' && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center p-8 bg-slate-50/30 text-center">
+                      <div className="w-12 h-12 bg-rose-50 rounded-full flex items-center justify-center mb-4 border border-rose-100">
+                        <AlertCircle className="w-6 h-6 text-rose-500" />
+                      </div>
+                      <h3 className="text-[15px] font-bold text-slate-900 mb-2">Question generation failed.</h3>
+                      <p className="text-[13px] text-slate-600 max-w-sm mb-6 leading-relaxed">
+                        The source document is still available.<br/>
+                        Try generating the questions again.
+                      </p>
+                      <Button 
+                        onClick={startGeneration} 
+                        className="bg-slate-900 hover:bg-slate-800 text-white h-9 px-6 text-xs font-bold"
+                      >
+                        Try Again
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* STATE: QUESTION READY */}
+                  {pageState === 'QUESTION_READY' && (
+                    <div className="absolute inset-0 flex flex-col">
+                      <div className="flex items-center gap-1 p-2 border-b border-slate-100 bg-white shrink-0">
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-slate-800 hover:bg-slate-100">
+                          <Undo className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-slate-800 hover:bg-slate-100">
+                          <Redo className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                      <Textarea 
+                        value={markdownText}
+                        onChange={handleTextChange}
+                        className="flex-1 w-full resize-none border-0 p-6 md:p-8 focus-visible:ring-0 text-[13px] md:text-[14px] leading-relaxed text-slate-800 font-mono custom-scrollbar rounded-none bg-white"
+                        placeholder="Ketik markdown di sini..."
+                        spellCheck={false}
+                      />
+                    </div>
+                  )}
+
+                </div>
+              </div>
+            </>
+          )}       </main>
       </SidebarInset>
 
+      {/* REGENERATE CONFIRMATION */}
       <Dialog open={showRegenerateConfirm} onOpenChange={setShowRegenerateConfirm}>
-        <DialogContent className="sm:max-w-[425px] p-0 overflow-hidden border-0 rounded-2xl shadow-2xl">
-          <DialogHeader className="p-6 bg-slate-50/80 border-b border-slate-100">
-            <DialogTitle className="text-lg font-black text-slate-900 tracking-tight">Regenerate Question Bank?</DialogTitle>
+        <DialogContent className="sm:max-w-[400px] p-0 overflow-hidden border-0 rounded-xl shadow-xl">
+          <DialogHeader className="p-6 pb-4 bg-slate-50/50 border-b border-slate-100">
+            <DialogTitle className="text-[15px] font-bold text-slate-900">Regenerate Question Bank?</DialogTitle>
           </DialogHeader>
           <div className="p-6 space-y-4">
-            <p className="text-sm text-slate-600 leading-relaxed font-medium">
-              Hasil baru akan menggantikan teks Question Bank yang sedang digunakan.<br/><br/>
-              Perubahan manual pada versi ini akan hilang.
+            <p className="text-[13px] text-slate-600 leading-relaxed">
+              A new Question Bank will be generated from:<br/>
+              <span className="font-bold text-slate-800">{activeSourceName}</span>
+            </p>
+            <p className="text-[13px] text-slate-600 leading-relaxed">
+              The current generated text and manual edits will be replaced.
             </p>
           </div>
-          <DialogFooter className="p-4 sm:px-6 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2">
-            <Button variant="outline" onClick={() => setShowRegenerateConfirm(false)} className="h-10 px-5 text-sm font-semibold border-slate-200">
+          <DialogFooter className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2">
+            <Button variant="outline" onClick={() => setShowRegenerateConfirm(false)} className="h-9 px-4 text-xs font-semibold border-slate-200">
               Cancel
             </Button>
-            <Button onClick={confirmRegenerate} className="h-10 px-5 text-sm font-bold bg-indigo-600 hover:bg-indigo-700 shadow-sm text-white">
+            <Button onClick={confirmRegenerate} className="h-9 px-4 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white">
               Regenerate
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* MODE CHANGE CONFIRMATION */}
+      <Dialog open={showModeChangeConfirm} onOpenChange={setShowModeChangeConfirm}>
+        <DialogContent className="sm:max-w-[400px] p-0 overflow-hidden border-0 rounded-xl shadow-xl">
+          <DialogHeader className="p-6 pb-4 bg-slate-50/50 border-b border-slate-100">
+            <DialogTitle className="text-[15px] font-bold text-slate-900">Change source method?</DialogTitle>
+          </DialogHeader>
+          <div className="p-6 space-y-4">
+            <p className="text-[13px] text-slate-600 leading-relaxed">
+              Changing the source method will clear the current source selection.
+            </p>
+            <p className="text-[13px] text-slate-600 leading-relaxed">
+              Your generated Question Bank will remain until you generate a new one.
+            </p>
+          </div>
+          <DialogFooter className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2">
+            <Button variant="outline" onClick={() => setShowModeChangeConfirm(false)} className="h-9 px-4 text-xs font-semibold border-slate-200">
+              Cancel
+            </Button>
+            <Button onClick={() => pendingDemoMode && applyModeChange(pendingDemoMode)} className="h-9 px-4 text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white">
+              Change Mode
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </SidebarProvider>
   );
 }
