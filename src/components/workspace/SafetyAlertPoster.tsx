@@ -1,15 +1,25 @@
 import React, { useState } from "react";
 import { AlertTriangle, MapPin, Building2, Calendar, Clock, History, Layers, FileX, Pencil, Trash2, Plus, Check, X, Eye, BarChart3, Bot, User } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 const SourceBadge = ({ type, className, showText = false }: { type?: string, className?: string, showText?: boolean }) => {
   if (!type) return null;
   if (type === 'AI') {
     return (
-      <span className={cn(`inline-flex items-center justify-center rounded bg-indigo-50 text-indigo-600 border border-indigo-200 ${showText ? 'px-2 py-1 text-[10px] font-bold uppercase tracking-wider' : 'p-0.5'}`, className)} title="AI Generated">
-        <Bot className={showText ? "w-3 h-3 mr-1.5" : "w-3 h-3"} />
-        {showText && "AI GENERATED"}
+      <span className={cn(`inline-flex items-center justify-center rounded bg-indigo-50 text-indigo-600 border border-indigo-200 ${showText ? 'px-2 py-1 text-[10px] font-bold uppercase tracking-wider' : 'px-1.5 py-[2px] text-[9px] font-bold tracking-widest'}`, className)} title="AI Generated">
+        {showText ? (
+          <>
+            <Bot className="w-3 h-3 mr-1.5" />
+            AI GENERATED
+          </>
+        ) : (
+          "AI"
+        )}
       </span>
     );
   }
@@ -82,6 +92,20 @@ export function SafetyAlertPoster({ onOpenDetail, isGenerating, generationStep =
 
   const [editingTindakanId, setEditingTindakanId] = useState<number | null>(null);
   const [editTindakanText, setEditTindakanText] = useState("");
+  const [itemToDelete, setItemToDelete] = useState<{ id: number, text: string } | null>(null);
+  const [deleteReason, setDeleteReason] = useState("");
+
+  const confirmDeleteTindakan = () => {
+    if (!itemToDelete) return;
+    if (!deleteReason.trim()) {
+      toast.error("Alasan penghapusan wajib diisi!");
+      return;
+    }
+    setTindakan(tindakan.filter(t => t.id !== itemToDelete.id));
+    setItemToDelete(null);
+    setDeleteReason("");
+    toast.success("Tindakan perbaikan berhasil dihapus. Riwayat tersimpan di Audit Log.");
+  };
 
   const [editingImbauan, setEditingImbauan] = useState(false);
   const [editImbauanData, setEditImbauanData] = useState(imbauan);
@@ -358,7 +382,8 @@ export function SafetyAlertPoster({ onOpenDetail, isGenerating, generationStep =
                               </button>
                               <button onClick={(e) => {
                                 e.stopPropagation();
-                                setTindakan(tindakan.filter(t => t.id !== item.id));
+                                setItemToDelete({ id: item.id, text: item.text });
+                                setDeleteReason("");
                               }} className="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors" title="Hapus">
                                 <Trash2 className="h-3.5 w-3.5" />
                               </button>
@@ -562,6 +587,54 @@ export function SafetyAlertPoster({ onOpenDetail, isGenerating, generationStep =
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* Delete Confirmation Modal */}
+      <Dialog open={!!itemToDelete} onOpenChange={(open) => !open && setItemToDelete(null)}>
+        <DialogContent className="sm:max-w-[500px] bg-white border-0 p-0 shadow-2xl overflow-hidden rounded-xl">
+          <DialogHeader className="px-6 pt-6 pb-4 border-b border-slate-100 bg-slate-50/50 relative">
+            <button onClick={() => setItemToDelete(null)} className="absolute right-4 top-4 p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors">
+              <X className="h-4 w-4" />
+            </button>
+            <DialogTitle className="text-base font-black text-rose-600 uppercase tracking-widest text-left mt-2 flex items-center gap-2">
+              <Trash2 className="h-4 w-4" />
+              Hapus Tindakan Perbaikan?
+            </DialogTitle>
+          </DialogHeader>
+          <div className="p-6 pb-2 space-y-5">
+            <p className="text-sm text-slate-600 leading-relaxed font-medium">
+              Item ini akan dihapus dari analisis aktif.<br/>
+              Riwayat dan versi sebelumnya tetap tersimpan dalam Audit Log.
+            </p>
+            
+            <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 shadow-sm">
+              <span className="text-[11px] font-bold text-slate-800 uppercase mb-2 block tracking-wider">
+                Tindakan Perbaikan
+              </span>
+              <p className="text-xs text-slate-700 leading-relaxed">
+                {itemToDelete?.text}
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Alasan Penghapusan</label>
+              <Textarea 
+                placeholder="Wajib diisi..." 
+                className="text-sm min-h-[100px] border-emerald-500 focus-visible:ring-emerald-500/20 rounded-lg resize-none shadow-sm"
+                value={deleteReason}
+                onChange={(e) => setDeleteReason(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter className="px-6 py-4 bg-slate-50/80 border-t border-slate-100 flex items-center gap-3 justify-end sm:justify-end">
+            <Button variant="outline" onClick={() => setItemToDelete(null)} className="h-9 px-5 text-xs font-semibold text-slate-600 hover:text-slate-900 border-slate-200">
+              Batal
+            </Button>
+            <Button variant="destructive" onClick={confirmDeleteTindakan} className="h-9 px-6 text-xs font-bold bg-rose-600 hover:bg-rose-700 shadow-sm transition-colors">
+              Hapus Tindakan
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

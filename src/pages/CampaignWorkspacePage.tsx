@@ -924,49 +924,100 @@ export default function CampaignWorkspacePage() {
                   </div>
                 )}
 
-                {isGenerating && (
-                  <div className="w-full max-w-[860px] mb-6 animate-in slide-in-from-top-4 fade-in duration-300">
-                    <div className="bg-slate-900 border border-slate-800 rounded-lg p-3 shadow-md flex items-center justify-between text-slate-100 relative overflow-hidden">
-                      {/* Subdued background pulse */}
-                      <div className="absolute inset-0 bg-indigo-500/10 animate-pulse pointer-events-none" />
-                      
-                      <div className="flex items-center gap-3 relative z-10">
-                        <Sparkles className="h-4 w-4 text-indigo-400 animate-spin" />
-                        <span className="text-[12px] font-medium tracking-wide">
-                          <span className="font-bold text-white">AI menyusun Campaign</span>
-                          <span className="text-slate-400 mx-2">·</span>
-                          {generationStep === 1 && "Menyiapkan hasil analisis"}
-                          {generationStep === 2 && "Menyusun konteks kejadian"}
-                          {generationStep === 3 && "Menyusun kronologi & akar masalah"}
-                          {generationStep === 4 && "Menyusun tindakan perbaikan"}
-                          {generationStep === 5 && "Menyusun imbauan pekerja"}
-                          {generationStep === 6 && "Menyusun lesson learned"}
-                          {generationStep >= 7 && "Memeriksa konsistensi Campaign"}
-                        </span>
-                      </div>
-                      
-                      <div className="flex items-center gap-3 relative z-10">
-                        <span className="text-[11px] font-mono text-slate-400 font-bold bg-slate-800/50 px-2 py-1 rounded">
-                          {Math.min(generationStep, 7)} / 7 tahap
-                        </span>
+                <div className="w-full max-w-[1200px] flex justify-center gap-6 animate-in fade-in duration-300 origin-top">
+                  <div 
+                    style={currentZoom === 100 ? undefined : ({ zoom: currentZoom / 100 } as any)} 
+                    className={cn(
+                      "flex justify-center",
+                      canvasMode === 'preview' && "drop-shadow-[0_25px_60px_rgba(0,0,0,0.85)]",
+                      isGenerating ? "w-[860px]" : "w-full"
+                    )}
+                  >
+                    <SafetyAlertPoster 
+                      isGenerating={isGenerating} 
+                      generationStep={generationStep}
+                      readOnly={canvasMode === 'preview'}
+                      onOpenDetail={(title) => { setSelectedAnalysis('poster:' + title); setIsRightPanelExpanded(true); setIsLeftPanelExpanded(false); }} 
+                    />
+                  </div>
+
+                  {isGenerating && (
+                    <div className="w-[380px] shrink-0 p-8 bg-white border border-slate-200 rounded-lg shadow-sm self-start sticky top-6">
+                      <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-6">Tahap Penyusunan</h3>
+                      <div className="relative space-y-0">
+                        {[
+                          { id: '1', label: 'Menyiapkan hasil analisis' },
+                          { id: '2', label: 'Menyusun konteks kejadian' },
+                          { id: '3', label: 'Menyusun kronologi & akar masalah' },
+                          { id: '4', label: 'Menyusun tindakan perbaikan' },
+                          { id: '5', label: 'Menyusun imbauan pekerja' },
+                          { id: '6', label: 'Menyusun lesson learned' },
+                          { id: '7', label: 'Memeriksa konsistensi Campaign' },
+                        ].map((step, idx) => {
+                          const currentStepIndex = Math.min(generationStep - 1, 6);
+                          const isActive = idx === currentStepIndex;
+                          const isCompleted = idx < currentStepIndex;
+                          const isWaiting = idx > currentStepIndex;
+                          const isLast = idx === 6;
+                          
+                          // Descriptions for each step to match the vertical stepper style
+                          const stepDescriptions = [
+                            "Membaca seluruh hasil analisis agen terkait.",
+                            "Menyusun ringkasan fakta dan konteks utama.",
+                            "Menata kronologi dan menentukan akar masalah.",
+                            "Menyesuaikan rekomendasi perbaikan.",
+                            "Merancang pesan imbauan yang persuasif.",
+                            "Mengumpulkan dan merumuskan lesson learned.",
+                            "Memastikan semua bagian konsisten dan lengkap."
+                          ];
+                          const description = stepDescriptions[idx] || "Memproses...";
+                          
+                          return (
+                            <div key={step.id} className="relative flex items-start group">
+                              {!isLast && (
+                                <div className={`absolute top-6 left-[11px] w-[2px] h-[calc(100%-8px)] transition-colors duration-200 overflow-hidden ${isCompleted ? 'bg-emerald-500' : 'bg-slate-200'}`}>
+                                  {isActive && (
+                                    <div className="absolute top-0 left-0 w-full h-[24px] bg-blue-500 motion-safe:animate-stepper-connector" />
+                                  )}
+                                </div>
+                              )}
+                              <div className="relative z-10 mr-4 mt-0.5 flex flex-col items-center">
+                                {isCompleted ? (
+                                  <div className="h-6 w-6 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 border border-emerald-200 shrink-0 shadow-sm transition-all duration-300 animate-in zoom-in">
+                                    <CheckCircle2 className="h-3.5 w-3.5" />
+                                  </div>
+                                ) : isActive ? (
+                                  <div className="h-6 w-6 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 border border-blue-200 shrink-0 shadow-sm relative transition-all duration-300">
+                                    <div className="absolute inset-[1px] rounded-full border-[1.5px] border-slate-200 border-t-blue-500 animate-spin" />
+                                    <div className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+                                  </div>
+                                ) : (
+                                  <div className="h-6 w-6 rounded-full bg-white flex items-center justify-center text-slate-300 border border-slate-200 shrink-0 transition-all duration-300">
+                                    <div className="h-1.5 w-1.5 rounded-full bg-slate-200" />
+                                  </div>
+                                )}
+                              </div>
+                              <div className={`flex flex-col pb-8 transition-opacity duration-300 ${isWaiting ? 'opacity-50' : 'opacity-100'}`}>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[12px] font-mono text-slate-400">0{idx + 1}</span>
+                                  <span className={`text-[13px] ${isActive ? 'text-blue-600 font-semibold' : isCompleted ? 'text-slate-800 font-medium' : 'text-slate-500'}`}>
+                                    {step.label}
+                                  </span>
+                                </div>
+                                {isActive && (
+                                  <div className="mt-1 motion-safe:animate-fade-in-up-short">
+                                    <p className="text-[11px] text-slate-500 mb-2 transition-all duration-200">
+                                      {description}
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
-                  </div>
-                )}
-
-                <div 
-                  style={currentZoom === 100 ? undefined : ({ zoom: currentZoom / 100 } as any)} 
-                  className={cn(
-                    "w-full flex justify-center animate-in fade-in duration-300 origin-top",
-                    canvasMode === 'preview' && "drop-shadow-[0_25px_60px_rgba(0,0,0,0.85)]"
                   )}
-                >
-                  <SafetyAlertPoster 
-                    isGenerating={isGenerating} 
-                    generationStep={generationStep}
-                    readOnly={canvasMode === 'preview'}
-                    onOpenDetail={(title) => { setSelectedAnalysis('poster:' + title); setIsRightPanelExpanded(true); setIsLeftPanelExpanded(false); }} 
-                  />
                 </div>
               </div>
             )}
