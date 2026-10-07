@@ -15,6 +15,7 @@ import AdminPage from "./pages/AdminPage";
 import ExecutiveViewPage from "./pages/ExecutiveViewPage";
 import KnowledgePage from "./pages/KnowledgePage";
 import KnowledgeSyncPage from "./pages/KnowledgeSyncPage";
+import QuestionBankPage from "./pages/QuestionBankPage";
 
 import NotFound from "./pages/NotFound";
 
@@ -35,6 +36,7 @@ const App = () => (
           <Route path="/cases/new" element={<CreateCasePage />} />
           <Route path="/cases/:caseId" element={<CaseWorkspacePage />} />
 
+          <Route path="/question-bank" element={<QuestionBankPage />} />
           <Route path="/review" element={<ReviewApprovalPage />} />
           <Route path="/audit-trail" element={<AuditTrailPage />} />
           <Route path="/admin" element={<AdminPage />} />

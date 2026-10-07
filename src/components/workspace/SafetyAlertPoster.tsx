@@ -81,6 +81,13 @@ export function SafetyAlertPoster({ onOpenDetail, isGenerating, generationStep =
     subtext: "Dokumentasikan setiap temuan kedalam Aplikasi BeATS (Hazard, Inspeksi & Observasi)"
   });
 
+  const getSectionState = (step: number) => {
+    if (!isGenerating) return 'GENERATED';
+    if (generationStep < step) return 'WAITING';
+    if (generationStep === step) return 'GENERATING';
+    return 'GENERATED';
+  };
+
   const [lesson, setLesson] = useState({
     title: "TANAH LEMBEK TIDAK MEMBERI PERINGATAN SEBELUM AMBLAS.",
     text: "Sekali track turun, unit dan operator sudah berada dalam risiko. Batas area kerja yang jelas dan inspeksi yang tercatat adalah pengaman utamanya."
@@ -117,7 +124,6 @@ export function SafetyAlertPoster({ onOpenDetail, isGenerating, generationStep =
   const [detailPanelOpen, setDetailPanelOpen] = useState(false);
   const [detailPanelTitle, setDetailPanelTitle] = useState("");
   const [detailPanelData, setDetailPanelData] = useState<any>(null);
-  const [showHistory, setShowHistory] = useState(false);
 
   const handleOpenDetail = (title: string, itemData?: any) => {
     if (onOpenDetail) {
@@ -125,7 +131,6 @@ export function SafetyAlertPoster({ onOpenDetail, isGenerating, generationStep =
     } else {
       setDetailPanelTitle(title);
       setDetailPanelData(itemData || null);
-      setShowHistory(false);
       setDetailPanelOpen(true);
     }
   };
@@ -147,18 +152,19 @@ export function SafetyAlertPoster({ onOpenDetail, isGenerating, generationStep =
       <div className="w-[1000px] bg-white text-black font-sans shadow-none rounded-sm overflow-hidden border border-slate-200">
         {/* Header section */}
         <div className="flex bg-[#161616] text-white relative">
-          {isGenerating && generationStep < 3 ? (
-          <div className="flex-1 py-4 pl-6 pr-4">
-            <div className="bg-slate-700 text-transparent text-[11px] font-bold px-2 py-0.5 inline-block mb-1.5 uppercase tracking-wider rounded">
+          {getSectionState(2) !== 'GENERATED' ? (
+          <div className={cn("flex-1 py-4 pl-6 pr-4 transition-opacity duration-500", getSectionState(2) === 'WAITING' ? "opacity-30" : "opacity-100")}>
+            <div className="bg-slate-700 text-transparent text-[11px] font-bold px-2 py-0.5 inline-block mb-1.5 uppercase tracking-wider rounded relative">
+              {getSectionState(2) === 'GENERATING' && <span className="absolute -top-3 -right-2 text-[8px] text-blue-400 font-bold whitespace-nowrap animate-pulse">✦ Menyusun Header</span>}
               SAFETY ALERT:
             </div>
             <div className="space-y-2 mt-1">
-              <SkeletonLine active={isGenerating && generationStep === 2} className="h-6 w-3/4 bg-slate-600" />
-              <SkeletonLine active={isGenerating && generationStep === 2} className="h-6 w-1/2 bg-slate-600" />
+              <SkeletonLine active={getSectionState(2) === 'GENERATING'} className="h-6 w-3/4 bg-slate-600" />
+              <SkeletonLine active={getSectionState(2) === 'GENERATING'} className="h-6 w-1/2 bg-slate-600" />
             </div>
           </div>
         ) : (
-          <div className="flex-1 py-4 pl-6 pr-4">
+          <div className="flex-1 py-4 pl-6 pr-4 animate-in fade-in duration-500">
             <div className="bg-[#ed1c24] text-white text-[11px] font-bold px-2 py-0.5 inline-block mb-1.5 uppercase tracking-wider">
               SAFETY ALERT:
             </div>
@@ -170,7 +176,7 @@ export function SafetyAlertPoster({ onOpenDetail, isGenerating, generationStep =
           <div className="bg-[#ed1c24] w-[260px] flex items-center justify-center transform -skew-x-12 translate-x-4 border-l-4 border-white/20">
             <div className="transform skew-x-12 flex items-center gap-2">
               <AlertTriangle className="h-7 w-7 text-white fill-white" />
-              {isGenerating && generationStep < 3 ? <div className="h-6 w-24 bg-slate-700 rounded animate-pulse" /> : <span className="text-2xl font-black uppercase tracking-wider">NEAR MISS</span>}
+              {getSectionState(2) !== 'GENERATED' ? <div className={cn("h-6 w-24 bg-slate-700 rounded", getSectionState(2) === 'GENERATING' && "animate-pulse")} /> : <span className="text-2xl font-black uppercase tracking-wider animate-in fade-in">NEAR MISS</span>}
             </div>
           </div>
         </div>
@@ -179,7 +185,7 @@ export function SafetyAlertPoster({ onOpenDetail, isGenerating, generationStep =
         <div className="bg-slate-100 flex items-center text-[10px] font-bold text-slate-600 px-6 py-1.5 border-b border-slate-300">
           <div className="flex w-1/3">
             <span className="w-24 text-slate-400">NO. ALERT</span>
-            {isGenerating && generationStep < 3 ? <SkeletonLine active={generationStep === 2} className="h-3 w-20" /> : <span className="text-black">[SA-004/IX/2026]</span>}
+            {getSectionState(2) !== 'GENERATED' ? <SkeletonLine active={getSectionState(2) === 'GENERATING'} className="h-3 w-20" /> : <span className="text-black animate-in fade-in">[SA-004/IX/2026]</span>}
           </div>
           <div className="flex w-1/3">
             <span className="w-28 text-slate-400">TANGGAL RILIS</span>
@@ -192,75 +198,110 @@ export function SafetyAlertPoster({ onOpenDetail, isGenerating, generationStep =
           <div className="w-[45%] flex flex-col gap-5">
             
             {/* 1. IDENTITAS KEJADIAN */}
-            <section>
-              <h2 className="text-[14px] font-black uppercase tracking-wide border-b-2 border-slate-800 pb-1 mb-3">
-                1. KONTEKS & FAKTA KEJADIAN
-              </h2>
-              <h3 className="text-xs font-bold mb-2 uppercase">1. IDENTITAS KEJADIAN</h3>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="bg-slate-50 border border-slate-200 rounded-md p-2 flex items-center gap-3">
-                  <div className="bg-white p-1.5 rounded shadow-none">
-                    <MapPin className="h-4 w-4 text-slate-700" />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-[9px] text-slate-500 font-semibold">Site / Lokasi:</span>
-                    <span className="text-[10px] font-bold text-slate-900 leading-tight">WMP 21, Blok 7 - BMO 2</span>
-                  </div>
-                </div>
-                <div className="bg-slate-50 border border-slate-200 rounded-md p-2 flex items-center gap-3">
-                  <div className="bg-white p-1.5 rounded shadow-none">
-                    <Building2 className="h-4 w-4 text-slate-700" />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-[9px] text-slate-500 font-semibold">Perusahaan:</span>
-                    <span className="text-[10px] font-bold text-slate-900 leading-tight">PT Bandang Mining Coal</span>
-                  </div>
-                </div>
-                <div className="bg-slate-50 border border-slate-200 rounded-md p-2 flex items-center gap-3">
-                  <div className="bg-white p-1.5 rounded shadow-none">
-                    <Calendar className="h-4 w-4 text-slate-700" />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-[9px] text-slate-500 font-semibold">Tanggal:</span>
-                    <span className="text-[10px] font-bold text-slate-900 leading-tight">Senin, 31 Agustus 2026</span>
-                  </div>
-                </div>
-                <div className="bg-slate-50 border border-slate-200 rounded-md p-2 flex items-center gap-3">
-                  <div className="bg-white p-1.5 rounded shadow-none">
-                    <Clock className="h-4 w-4 text-slate-700" />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-[9px] text-slate-500 font-semibold">Jam:</span>
-                    <span className="text-[10px] font-bold text-slate-900 leading-tight">13:50 WITA</span>
-                  </div>
-                </div>
+            <section className={cn("transition-all duration-500", getSectionState(2) === 'WAITING' ? "opacity-30" : getSectionState(2) === 'GENERATING' ? "opacity-100" : "")}>
+              <div className="flex items-center justify-between mb-3 border-b-2 border-slate-800 pb-1">
+                <h2 className="text-[14px] font-black uppercase tracking-wide">
+                  1. KONTEKS & FAKTA KEJADIAN
+                </h2>
+                {getSectionState(2) === 'GENERATING' && <span className="text-[9px] font-bold text-blue-600 animate-pulse bg-blue-50 px-2 py-0.5 rounded border border-blue-200">✦ Menyusun Konteks...</span>}
               </div>
+              {getSectionState(2) !== 'GENERATED' ? (
+                <div className="space-y-4">
+                  <SkeletonBlock active={getSectionState(2) === 'GENERATING'} lines={2} />
+                  <div className="grid grid-cols-2 gap-2 mt-2">
+                    <div className={cn("h-12 bg-slate-100 rounded border border-slate-200", getSectionState(2) === 'GENERATING' && "animate-pulse")} />
+                    <div className={cn("h-12 bg-slate-100 rounded border border-slate-200", getSectionState(2) === 'GENERATING' && "animate-pulse")} />
+                  </div>
+                </div>
+              ) : (
+                <div className="animate-in fade-in duration-500">
+                  <h3 className="text-xs font-bold mb-2 uppercase">1. IDENTITAS KEJADIAN</h3>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="bg-slate-50 border border-slate-200 rounded-md p-2 flex items-center gap-3">
+                      <div className="bg-white p-1.5 rounded shadow-none">
+                        <MapPin className="h-4 w-4 text-slate-700" />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[9px] text-slate-500 font-semibold">Site / Lokasi:</span>
+                        <span className="text-[10px] font-bold text-slate-900 leading-tight">WMP 21, Blok 7 - BMO 2</span>
+                      </div>
+                    </div>
+                    <div className="bg-slate-50 border border-slate-200 rounded-md p-2 flex items-center gap-3">
+                      <div className="bg-white p-1.5 rounded shadow-none">
+                        <Building2 className="h-4 w-4 text-slate-700" />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[9px] text-slate-500 font-semibold">Perusahaan:</span>
+                        <span className="text-[10px] font-bold text-slate-900 leading-tight">PT Bandang Mining Coal</span>
+                      </div>
+                    </div>
+                    <div className="bg-slate-50 border border-slate-200 rounded-md p-2 flex items-center gap-3">
+                      <div className="bg-white p-1.5 rounded shadow-none">
+                        <Calendar className="h-4 w-4 text-slate-700" />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[9px] text-slate-500 font-semibold">Tanggal:</span>
+                        <span className="text-[10px] font-bold text-slate-900 leading-tight">Senin, 31 Agustus 2026</span>
+                      </div>
+                    </div>
+                    <div className="bg-slate-50 border border-slate-200 rounded-md p-2 flex items-center gap-3">
+                      <div className="bg-white p-1.5 rounded shadow-none">
+                        <Clock className="h-4 w-4 text-slate-700" />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[9px] text-slate-500 font-semibold">Jam:</span>
+                        <span className="text-[10px] font-bold text-slate-900 leading-tight">13:50 WITA</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </section>
 
             {/* 2. VISUAL KEJADIAN */}
-            <section>
-              <h3 className="text-xs font-bold mb-2 uppercase">2. VISUAL KEJADIAN</h3>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="bg-slate-200 rounded-sm aspect-[4/3] flex items-center justify-center border border-slate-300 overflow-hidden relative">
-                  <img src="/images/dozer_stuck.jpg" alt="Dozer Amblas" className="object-cover w-full h-full grayscale opacity-80 mix-blend-multiply" />
-                  <div className="absolute inset-0 border-2 border-[#ed1c24]/50 pointer-events-none" />
-                  <span className="absolute bottom-1 right-1 text-[8px] font-bold bg-white/80 px-1 text-slate-800">Unit Dozer</span>
+            <section className={cn("transition-all duration-500", getSectionState(2) === 'WAITING' ? "opacity-30" : getSectionState(2) === 'GENERATING' ? "opacity-100" : "")}>
+              {getSectionState(2) !== 'GENERATED' ? (
+                <div className="grid grid-cols-2 gap-2">
+                  <div className={cn("aspect-[4/3] bg-slate-100 rounded border border-slate-200", getSectionState(2) === 'GENERATING' && "animate-pulse")} />
+                  <div className={cn("aspect-[4/3] bg-slate-100 rounded border border-slate-200", getSectionState(2) === 'GENERATING' && "animate-pulse")} />
                 </div>
-                <div className="bg-slate-200 rounded-sm aspect-[4/3] flex items-center justify-center border border-slate-300 overflow-hidden relative">
-                  <img src="/images/aerial_site.jpg" alt="Area Udara" className="object-cover w-full h-full grayscale opacity-80 mix-blend-multiply" />
-                  <div className="absolute inset-0 border-2 border-yellow-500/50 pointer-events-none" />
-                  <span className="absolute bottom-1 right-1 text-[8px] font-bold bg-white/80 px-1 text-slate-800">Area Titik Lembek</span>
+              ) : (
+                <div className="animate-in fade-in duration-500">
+                  <h3 className="text-xs font-bold mb-2 uppercase">2. VISUAL KEJADIAN</h3>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="bg-slate-200 rounded-sm aspect-[4/3] flex items-center justify-center border border-slate-300 overflow-hidden relative">
+                      <img src="/images/dozer_stuck.jpg" alt="Dozer Amblas" className="object-cover w-full h-full grayscale opacity-80 mix-blend-multiply" />
+                      <div className="absolute inset-0 border-2 border-[#ed1c24]/50 pointer-events-none" />
+                      <span className="absolute bottom-1 right-1 text-[8px] font-bold bg-white/80 px-1 text-slate-800">Unit Dozer</span>
+                    </div>
+                    <div className="bg-slate-200 rounded-sm aspect-[4/3] flex items-center justify-center border border-slate-300 overflow-hidden relative">
+                      <img src="/images/aerial_site.jpg" alt="Area Udara" className="object-cover w-full h-full grayscale opacity-80 mix-blend-multiply" />
+                      <div className="absolute inset-0 border-2 border-yellow-500/50 pointer-events-none" />
+                      <span className="absolute bottom-1 right-1 text-[8px] font-bold bg-white/80 px-1 text-slate-800">Area Titik Lembek</span>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
             </section>
 
             {/* 3. KRONOLOGIS & AKAR MASALAH (CRUD) */}
-            <section>
+            <section className={cn("transition-all duration-500", getSectionState(3) === 'WAITING' ? "opacity-30" : getSectionState(3) === 'GENERATING' ? "opacity-100" : "")}>
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-xs font-bold uppercase">3. KRONOLOGIS & AKAR MASALAH</h3>
+                {getSectionState(3) === 'GENERATING' && <span className="text-[9px] font-bold text-blue-600 animate-pulse bg-blue-50 px-2 py-0.5 rounded border border-blue-200">✦ Menyusun Kronologis...</span>}
               </div>
               
-              <div className="flex flex-col gap-3">
+              {getSectionState(3) !== 'GENERATED' ? (
+                <div className="flex flex-col gap-3">
+                  {[1,2,3].map(i => (
+                    <div key={i} className="flex gap-3 items-start p-1.5 border border-slate-100 rounded bg-slate-50/50">
+                      <div className={cn("bg-slate-200 p-2 rounded shrink-0 h-8 w-8", getSectionState(3) === 'GENERATING' && "animate-pulse")} />
+                      <SkeletonBlock active={getSectionState(3) === 'GENERATING'} lines={2} />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+              <div className="flex flex-col gap-3 animate-in fade-in duration-500">
                 {kronologis.map(item => (
                   <div 
                     key={item.id}
@@ -336,6 +377,7 @@ export function SafetyAlertPoster({ onOpenDetail, isGenerating, generationStep =
                   </div>
                 ))}
               </div>
+              )}
             </section>
           </div>
 
@@ -345,12 +387,15 @@ export function SafetyAlertPoster({ onOpenDetail, isGenerating, generationStep =
           {/* Right Column */}
           <div className="w-[55%] flex flex-col gap-5">
             {/* 4. TINDAKAN PERBAIKAN (CRUD) */}
-            <section>
+            <section className={cn("transition-all duration-500", getSectionState(4) === 'WAITING' ? "opacity-30" : getSectionState(4) === 'GENERATING' ? "opacity-100" : "")}>
               <div className="flex items-center justify-between border-b-2 border-slate-800 pb-1 mb-3">
-                <h2 className="text-[14px] font-black uppercase tracking-wide">
-                  TINDAKAN PERBAIKAN SEMUA SITE
-                </h2>
-                {!readOnly && (
+                <div className="flex items-center gap-2">
+                  <h2 className="text-[14px] font-black uppercase tracking-wide">
+                    TINDAKAN PERBAIKAN SEMUA SITE
+                  </h2>
+                  {getSectionState(4) === 'GENERATING' && <span className="text-[9px] font-bold text-blue-600 animate-pulse bg-blue-50 px-2 py-0.5 rounded border border-blue-200">✦ Menyusun Tindakan...</span>}
+                </div>
+                {!readOnly && getSectionState(4) === 'GENERATED' && (
                   <button 
                     onClick={() => {
                       const newId = tindakan.length > 0 ? Math.max(...tindakan.map(t => t.id)) + 1 : 1;
@@ -365,19 +410,20 @@ export function SafetyAlertPoster({ onOpenDetail, isGenerating, generationStep =
                 )}
               </div>
               
-              <div className="flex flex-col gap-2.5">
-                {isGenerating && generationStep < 5 ? (
-                  <div className="space-y-3">
-                    {[1,2,3,4,5].map(i => (
-                      <div key={i} className="flex gap-3 items-start p-3 bg-white border border-slate-200 rounded">
-                        <div className="h-6 w-6 rounded bg-slate-100 flex items-center justify-center shrink-0">
-                          <span className="text-[10px] font-bold text-slate-400">0{i}</span>
-                        </div>
-                        <SkeletonBlock active={generationStep === 4} lines={2} />
+              {getSectionState(4) !== 'GENERATED' ? (
+                <div className="space-y-3">
+                  {[1,2,3,4,5].map(i => (
+                    <div key={i} className="flex gap-3 items-start p-3 bg-white border border-slate-200 rounded">
+                      <div className="h-6 w-6 rounded bg-slate-100 flex items-center justify-center shrink-0">
+                        <span className="text-[10px] font-bold text-slate-400">0{i}</span>
                       </div>
-                    ))}
-                  </div>
-                ) : tindakan.map((item, idx) => (
+                      <SkeletonBlock active={getSectionState(4) === 'GENERATING'} lines={2} />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+              <div className="flex flex-col gap-2.5 animate-in fade-in duration-500">
+                {tindakan.map((item, idx) => (
                   <div 
                     key={item.id} 
                     onDoubleClick={() => {
@@ -449,11 +495,22 @@ export function SafetyAlertPoster({ onOpenDetail, isGenerating, generationStep =
                   </div>
                 ))}
               </div>
+              )}
             </section>
 
             {/* 5. IMBAUAN AKSI KONKRET (CRUD) */}
-            <section>
-              <h3 className="text-xs font-bold mb-2 uppercase">5. IMBAUAN AKSI KONKRET PEKERJA LAPANGAN</h3>
+            <section className={cn("transition-all duration-500", getSectionState(5) === 'WAITING' ? "opacity-30" : getSectionState(5) === 'GENERATING' ? "opacity-100" : "")}>
+              <div className="flex items-center gap-2 mb-2">
+                <h3 className="text-xs font-bold uppercase">5. IMBAUAN AKSI KONKRET PEKERJA LAPANGAN</h3>
+                {getSectionState(5) === 'GENERATING' && <span className="text-[9px] font-bold text-blue-600 animate-pulse bg-blue-50 px-2 py-0.5 rounded border border-blue-200">✦ Menyusun Imbauan...</span>}
+              </div>
+              
+              {getSectionState(5) !== 'GENERATED' ? (
+                <div className="bg-slate-100 border border-slate-200 rounded p-3 flex gap-4 items-start shadow-none">
+                  <div className={cn("h-10 w-10 rounded-full bg-slate-200 shrink-0 mt-1", getSectionState(5) === 'GENERATING' && "animate-pulse")} />
+                  <SkeletonBlock active={getSectionState(5) === 'GENERATING'} lines={3} />
+                </div>
+              ) : (
               <div 
                 onDoubleClick={() => {
                   if (!readOnly && !editingImbauan) {
@@ -537,11 +594,22 @@ export function SafetyAlertPoster({ onOpenDetail, isGenerating, generationStep =
                   )}
                 </div>
               </div>
+              )}
             </section>
 
             {/* 6. LESSON LEARNED (CRUD) */}
-            <section>
-              <h3 className="text-xs font-bold mb-2 uppercase">6. LESSON LEARNED</h3>
+            <section className={cn("transition-all duration-500", getSectionState(6) === 'WAITING' ? "opacity-30" : getSectionState(6) === 'GENERATING' ? "opacity-100" : "")}>
+              <div className="flex items-center gap-2 mb-2">
+                <h3 className="text-xs font-bold uppercase">6. LESSON LEARNED</h3>
+                {getSectionState(6) === 'GENERATING' && <span className="text-[9px] font-bold text-blue-600 animate-pulse bg-blue-50 px-2 py-0.5 rounded border border-blue-200">✦ Merumuskan Lesson Learned...</span>}
+              </div>
+              
+              {getSectionState(6) !== 'GENERATED' ? (
+                <div className="bg-[#161616] border-b-4 border-slate-700 rounded p-4 shadow-none flex flex-col items-center gap-3">
+                   <div className={cn("h-4 w-1/3 bg-slate-700 rounded", getSectionState(6) === 'GENERATING' && "animate-pulse")} />
+                   <div className={cn("h-8 w-3/4 bg-slate-700 rounded", getSectionState(6) === 'GENERATING' && "animate-pulse")} />
+                </div>
+              ) : (
               <div 
                 onDoubleClick={() => {
                   if (!readOnly && !editingLesson) {
@@ -613,6 +681,7 @@ export function SafetyAlertPoster({ onOpenDetail, isGenerating, generationStep =
                   </div>
                 )}
               </div>
+              )}
             </section>
           </div>
         </div>
@@ -621,67 +690,6 @@ export function SafetyAlertPoster({ onOpenDetail, isGenerating, generationStep =
       {/* Detail Analysis Panel (Sheet) */}
       <Sheet open={detailPanelOpen} onOpenChange={setDetailPanelOpen}>
         <SheetContent className="w-[600px] sm:max-w-none border-l shadow-none p-0 flex flex-col h-full bg-slate-50 overflow-y-auto custom-dark-scrollbar">
-          {showHistory ? (
-            <div className="flex flex-col h-full bg-slate-50 relative overflow-hidden animate-in slide-in-from-right duration-300">
-              <div className="p-4 border-b border-slate-200 bg-white shrink-0 flex items-center gap-3">
-                <Button variant="ghost" size="sm" onClick={() => setShowHistory(false)} className="h-7 px-2 text-slate-500 hover:text-slate-800">
-                  &larr; Kembali
-                </Button>
-                <div className="flex-1">
-                  <h3 className="text-[13px] font-bold text-slate-900 uppercase tracking-wider leading-none">RIWAYAT PERUBAHAN</h3>
-                  <p className="text-[10px] text-slate-500 mt-1">{detailPanelData?.source === 'HUMAN' ? '1 versi' : '2 versi'}</p>
-                </div>
-              </div>
-              <div className="flex-1 overflow-auto p-6 bg-slate-50">
-                <div className="relative pl-5 border-l-2 border-slate-200">
-                  <div className="absolute w-3 h-3 rounded-full bg-blue-500 -left-[7px] top-1" />
-                  <div className="text-[11px] font-black uppercase tracking-widest text-slate-500 mb-2">VERSI {detailPanelData?.source === 'HUMAN' ? '1' : '2'} &middot; {detailPanelData?.source === 'HUMAN' ? 'DITAMBAHKAN MANUAL' : 'DIUBAH'}</div>
-                  <div className="bg-white border border-slate-200 rounded p-4 shadow-sm mb-6">
-                    <div className="text-[10px] text-slate-400 mb-1">
-                      {detailPanelData?.source === 'HUMAN' ? 'Ditambahkan oleh' : 'Diubah oleh'}
-                    </div>
-                    <div className="text-[11px] font-bold text-slate-800 mb-3">Gulang Satriya &middot; Lead Investigator</div>
-                    <div className="text-[11px] text-slate-800 leading-relaxed italic border-l-2 border-slate-300 pl-3 py-1 mb-3">
-                      "{detailPanelData?.text}"
-                    </div>
-                    <div className="text-[10px] text-slate-400 mb-3">05 Agustus 2026 pukul 16.30 WIB</div>
-                    
-                    <details className="group">
-                      <summary className="text-[10px] font-bold text-blue-600 cursor-pointer hover:text-blue-700 list-none flex items-center gap-1">
-                        <span className="group-open:hidden">[Lihat Detail Perubahan]</span>
-                        <span className="hidden group-open:inline">[Tutup Detail Perubahan]</span>
-                      </summary>
-                      <div className="mt-3 space-y-3 pt-3 border-t border-slate-100">
-                        <div>
-                          <div className="text-[9px] font-bold text-slate-400 mb-1">{detailPanelData?.source === 'HUMAN' ? 'Catatan' : 'Catatan anotasi'}</div>
-                          <div className="text-[11px] text-slate-700 bg-slate-50 p-2 rounded border border-slate-100">Menambahkan alasan atau koreksi manual.</div>
-                        </div>
-                        <div>
-                          <div className="text-[9px] font-bold text-slate-400 mb-1">SEBELUM</div>
-                          <div className="bg-red-50 text-red-900 p-2 rounded text-[11px] border border-red-100">Data sebelum diubah.</div>
-                        </div>
-                        <div>
-                          <div className="text-[9px] font-bold text-slate-400 mb-1">SESUDAH</div>
-                          <div className="bg-emerald-50 text-emerald-900 p-2 rounded text-[11px] border border-emerald-100">{detailPanelData?.text}</div>
-                        </div>
-                      </div>
-                    </details>
-                  </div>
-                </div>
-                {detailPanelData?.source !== 'HUMAN' && (
-                  <div className="relative pl-5 border-l-2 border-transparent mt-6">
-                    <div className="absolute w-3 h-3 rounded-full bg-slate-300 -left-[7px] top-1" />
-                    <div className="text-[11px] font-black uppercase tracking-widest text-slate-500 mb-2">VERSI 1 &middot; AI GENERATED</div>
-                    <div className="bg-slate-100 border border-slate-200 rounded p-4 shadow-sm">
-                      <div className="text-[11px] font-bold text-slate-800 mb-2">Fact & Chronology Agent</div>
-                      <div className="text-[10px] text-slate-400">05 Agustus 2026 pukul 13.20 WIB</div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className="flex flex-col h-full bg-slate-50 relative overflow-hidden">
               <div className="p-4 border-b border-slate-200 bg-white shrink-0 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="h-8 w-8 bg-slate-900 flex items-center justify-center text-white rounded-none">
@@ -692,7 +700,6 @@ export function SafetyAlertPoster({ onOpenDetail, isGenerating, generationStep =
                     <p className="text-[10px] text-slate-500 uppercase tracking-widest mt-1">{detailPanelTitle}</p>
                   </div>
                 </div>
-                {/* DO NOT ADD Close X button here to keep native Dialog Close trigger functioning, or handle via setDetailPanelOpen(false) if we need custom */}
               </div>
 
               <div className="flex-1 overflow-auto p-6 space-y-6">
@@ -714,21 +721,25 @@ export function SafetyAlertPoster({ onOpenDetail, isGenerating, generationStep =
                          <Brain className="h-3 w-3" />
                          AI Generated
                       </div>
-                      <ChevronRight className="h-3 w-3 text-slate-400" />
-                      <div className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-widest border border-blue-200">
-                         <Pencil className="h-3 w-3" />
-                         Annotated
-                      </div>
+                      {detailPanelData?.source === 'MANUAL' && (
+                        <>
+                          <ChevronRight className="h-3 w-3 text-slate-400" />
+                          <div className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-widest border border-blue-200">
+                             <Pencil className="h-3 w-3" />
+                             Annotated
+                          </div>
+                        </>
+                      )}
                     </div>
-                    <div className="text-[10px] text-slate-500 mb-3">1 kali anotasi</div>
-                    <div className="text-[10px] font-mono text-slate-400 mt-2">Versi aktif 2</div>
+                    {detailPanelData?.source === 'MANUAL' && <div className="text-[10px] text-slate-500 mb-3">1 kali anotasi</div>}
+                    <div className="text-[10px] font-mono text-slate-400 mt-2">Versi aktif {detailPanelData?.source === 'MANUAL' ? '2' : '1'}</div>
                   </div>
                 )}
 
                 <hr className="border-slate-100" />
 
                 {/* HASIL ANOTASI TERAKHIR */}
-                {detailPanelData?.source !== 'HUMAN' && (
+                {detailPanelData?.source === 'MANUAL' && (
                    <div className="mb-6">
                       <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">HASIL ANOTASI TERAKHIR</div>
                       <div className="bg-blue-50/30 p-4 rounded border border-blue-100 shadow-sm">
@@ -768,7 +779,7 @@ export function SafetyAlertPoster({ onOpenDetail, isGenerating, generationStep =
                      )}
                    </div>
                    <div className="text-[12.5px] text-slate-800 leading-relaxed bg-slate-50/80 p-4 rounded border border-slate-200">
-                     {detailPanelData?.source === 'HUMAN' ? detailPanelData?.text : 'Data pernyataan AI sebelumnya.'}
+                     {detailPanelData?.source === 'HUMAN' ? detailPanelData?.text : 'Sistem DMS memicu peringatan kritis.'}
                    </div>
                 </div>
 
@@ -789,18 +800,63 @@ export function SafetyAlertPoster({ onOpenDetail, isGenerating, generationStep =
                   </div>
                 )}
 
-                <div className="pt-4">
-                  <Button 
-                    variant="outline" 
-                    className="w-full bg-white text-[11px] font-bold text-slate-700 border-slate-300 hover:bg-slate-50 h-9"
-                    onClick={() => setShowHistory(true)}
-                  >
-                    Lihat Riwayat Perubahan
-                  </Button>
+                {/* TIMELINE (RIWAYAT PERUBAHAN) DIRECTLY IN PANEL */}
+                <div className="mt-8 pt-8 border-t border-slate-200">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-[13px] font-bold text-slate-900 uppercase tracking-wider leading-none">RIWAYAT PERUBAHAN</h3>
+                    <p className="text-[10px] text-slate-500">{detailPanelData?.source === 'MANUAL' ? '2 versi' : '1 versi'}</p>
+                  </div>
+                  
+                  <div className="relative pl-5 border-l-2 border-slate-200">
+                    <div className="absolute w-3 h-3 rounded-full bg-blue-500 -left-[7px] top-1" />
+                    <div className="text-[11px] font-black uppercase tracking-widest text-slate-500 mb-2">VERSI {detailPanelData?.source === 'MANUAL' ? '2' : '1'} &middot; {detailPanelData?.source === 'HUMAN' ? 'DITAMBAHKAN MANUAL' : (detailPanelData?.source === 'MANUAL' ? 'DIUBAH' : 'AI GENERATED')}</div>
+                    <div className="bg-white border border-slate-200 rounded p-4 shadow-sm mb-6">
+                      <div className="text-[10px] text-slate-400 mb-1">
+                        {detailPanelData?.source === 'AI' ? 'Dibuat oleh' : (detailPanelData?.source === 'HUMAN' ? 'Ditambahkan oleh' : 'Diubah oleh')}
+                      </div>
+                      <div className="text-[11px] font-bold text-slate-800 mb-3">{detailPanelData?.source === 'AI' ? 'Fact & Chronology Agent' : 'Gulang Satriya · Lead Investigator'}</div>
+                      <div className="text-[11px] text-slate-800 leading-relaxed italic border-l-2 border-slate-300 pl-3 py-1 mb-3">
+                        "{detailPanelData?.text}"
+                      </div>
+                      <div className="text-[10px] text-slate-400 mb-3">05 Agustus 2026 pukul 16.30 WIB</div>
+                      
+                      {detailPanelData?.source === 'MANUAL' && (
+                        <details className="group">
+                          <summary className="text-[10px] font-bold text-blue-600 cursor-pointer hover:text-blue-700 list-none flex items-center gap-1">
+                            <span className="group-open:hidden">[Lihat Detail Perubahan]</span>
+                            <span className="hidden group-open:inline">[Tutup Detail Perubahan]</span>
+                          </summary>
+                          <div className="mt-3 space-y-3 pt-3 border-t border-slate-100">
+                            <div>
+                              <div className="text-[9px] font-bold text-slate-400 mb-1">Catatan anotasi</div>
+                              <div className="text-[11px] text-slate-700 bg-slate-50 p-2 rounded border border-slate-100">Menambahkan alasan atau koreksi manual.</div>
+                            </div>
+                            <div>
+                              <div className="text-[9px] font-bold text-slate-400 mb-1">SEBELUM</div>
+                              <div className="bg-red-50 text-red-900 p-2 rounded text-[11px] border border-red-100">Sistem DMS memicu peringatan kritis.</div>
+                            </div>
+                            <div>
+                              <div className="text-[9px] font-bold text-slate-400 mb-1">SESUDAH</div>
+                              <div className="bg-emerald-50 text-emerald-900 p-2 rounded text-[11px] border border-emerald-100">{detailPanelData?.text}</div>
+                            </div>
+                          </div>
+                        </details>
+                      )}
+                    </div>
+                  </div>
+                  {detailPanelData?.source === 'MANUAL' && (
+                    <div className="relative pl-5 border-l-2 border-transparent mt-6">
+                      <div className="absolute w-3 h-3 rounded-full bg-slate-300 -left-[7px] top-1" />
+                      <div className="text-[11px] font-black uppercase tracking-widest text-slate-500 mb-2">VERSI 1 &middot; AI GENERATED</div>
+                      <div className="bg-slate-100 border border-slate-200 rounded p-4 shadow-sm">
+                        <div className="text-[11px] font-bold text-slate-800 mb-2">Fact & Chronology Agent</div>
+                        <div className="text-[10px] text-slate-400">05 Agustus 2026 pukul 13.20 WIB</div>
+                      </div>
+                    </div>
+                  )}
                 </div>
+
               </div>
-            </div>
-          )}
         </SheetContent>
       </Sheet>
 

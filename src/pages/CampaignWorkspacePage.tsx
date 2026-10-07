@@ -930,7 +930,7 @@ export default function CampaignWorkspacePage() {
                     className={cn(
                       "flex justify-center",
                       canvasMode === 'preview' && "drop-shadow-[0_25px_60px_rgba(0,0,0,0.85)]",
-                      isGenerating ? "w-[860px]" : "w-full"
+                      "w-full"
                     )}
                   >
                     <SafetyAlertPoster 
