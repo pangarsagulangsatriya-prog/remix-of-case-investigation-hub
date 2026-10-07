@@ -276,7 +276,9 @@ export default function QuestionBankPage() {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-               {/* MAIN WORKSPACE */}
+        </header>
+
+        {/* MAIN WORKSPACE */}
         <main className={cn("flex-1 flex overflow-hidden w-full mx-auto p-4 md:p-6", demoMode === 'api' ? "max-w-7xl flex-col" : "max-w-[1600px] flex-col md:flex-row gap-6")}>
           
           {demoMode === 'api' ? (
