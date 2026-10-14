@@ -75,7 +75,7 @@ export default function CampaignWorkspacePage() {
         // 1000 is poster width, 64 is padding
         const fitScale = Math.min((width - 64) / 1000, 1) * 100;
         const fillScale = (width / 1000) * 100;
-        setFitZoom(Math.max(10, Math.floor(fitScale)));
+        setFitZoom(Math.max(60, Math.floor(fitScale)));
         setFillZoom(Math.floor(fillScale));
       }
     });
@@ -96,7 +96,7 @@ export default function CampaignWorkspacePage() {
   
   const handleZoomOut = () => {
     setZoomMode('CUSTOM');
-    setCustomZoom(Math.max(currentZoom - 10, 10));
+    setCustomZoom(Math.max(currentZoom - 10, 60));
   };
 
   // 15-second dummy loader for creation
@@ -165,7 +165,7 @@ export default function CampaignWorkspacePage() {
     const scaleW = availW / 1000;
     const scaleH = availH / 1420;
     const fitScale = Math.min(scaleW, scaleH) * 100;
-    setModalZoom(Math.max(25, Math.min(100, Math.round(fitScale))));
+    setModalZoom(Math.max(55, Math.min(100, Math.round(fitScale))));
   }, []);
 
   const handleModalFill = useCallback(() => {
@@ -173,7 +173,7 @@ export default function CampaignWorkspacePage() {
     const vpWidth = modalViewportRef.current.clientWidth;
     const availW = Math.max(100, vpWidth - 64);
     const fillScale = (availW / 1000) * 100;
-    setModalZoom(Math.max(25, Math.min(150, Math.round(fillScale))));
+    setModalZoom(Math.max(55, Math.min(150, Math.round(fillScale))));
   }, []);
 
   const handleModalZoomIn = () => {
@@ -181,7 +181,7 @@ export default function CampaignWorkspacePage() {
   };
 
   const handleModalZoomOut = () => {
-    setModalZoom(prev => Math.max(prev - 10, 25));
+    setModalZoom(prev => Math.max(prev - 10, 55));
   };
 
   // Keyboard shortcut listener for preview modal
@@ -199,7 +199,7 @@ export default function CampaignWorkspacePage() {
       } else if (e.key === "+" || e.key === "=") {
         setModalZoom(prev => Math.min(prev + 10, 200));
       } else if (e.key === "-" || e.key === "_") {
-        setModalZoom(prev => Math.max(prev - 10, 25));
+        setModalZoom(prev => Math.max(prev - 10, 55));
       } else if (e.key === "0") {
         setModalZoom(100);
       } else if (e.key.toLowerCase() === "f") {

@@ -187,12 +187,12 @@ export function WhatsAppBroadcastDrawer({
       <Sheet open={open} onOpenChange={onOpenChange}>
         <SheetContent 
           side="right" 
-          className="w-full sm:max-w-[800px] md:max-w-[900px] lg:max-w-[980px] max-w-[65vw] p-0 flex flex-col gap-0 border-l border-slate-200 bg-white shadow-2xl"
+          className="w-full sm:max-w-[840px] md:max-w-[940px] lg:max-w-[1040px] max-w-[70vw] p-0 flex flex-col gap-0 border-l border-slate-200 bg-white shadow-none"
         >
           {/* Header Bar - Clean Solid White */}
           <div className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-md bg-[#25D366] text-white flex items-center justify-center shadow-sm shrink-0">
+              <div className="w-9 h-9 rounded-md bg-[#25D366] text-white flex items-center justify-center shrink-0">
                 <MessageSquare className="w-5 h-5 fill-current" />
               </div>
               <div>
@@ -219,7 +219,7 @@ export function WhatsAppBroadcastDrawer({
                 onClick={() => setActiveTab("preview")}
                 className={cn(
                   "flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded transition-all",
-                  activeTab === "preview" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-800"
+                  activeTab === "preview" ? "bg-white text-slate-900 shadow-none" : "text-slate-500 hover:text-slate-800"
                 )}
               >
                 <Eye className="w-3.5 h-3.5 text-emerald-600" />
@@ -229,7 +229,7 @@ export function WhatsAppBroadcastDrawer({
                 onClick={() => setActiveTab("edit")}
                 className={cn(
                   "flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded transition-all",
-                  activeTab === "edit" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-800"
+                  activeTab === "edit" ? "bg-white text-slate-900 shadow-none" : "text-slate-500 hover:text-slate-800"
                 )}
               >
                 <Pencil className="w-3.5 h-3.5 text-blue-600" />
@@ -257,8 +257,8 @@ export function WhatsAppBroadcastDrawer({
             {activeTab === "preview" && (
               <div className="flex flex-col lg:flex-row items-center lg:items-start justify-center gap-8">
                 
-                {/* 1. SMARTPHONE DEVICE FRAME (Phone Mockup) */}
-                <div className="w-[375px] h-[680px] max-h-[720px] rounded-[44px] border-[10px] border-slate-900 bg-slate-900 shadow-2xl overflow-hidden flex flex-col relative shrink-0 ring-1 ring-slate-900/10">
+                {/* 1. SMARTPHONE DEVICE FRAME (Phone Mockup - Sleek, Flat, No Shadow) */}
+                <div className="w-[420px] max-w-[94vw] min-w-[380px] h-[720px] max-h-[82vh] rounded-[42px] border-[8px] border-slate-900 bg-slate-900 shadow-none overflow-hidden flex flex-col relative shrink-0">
                   
                   {/* Dynamic Island Notch Pill */}
                   <div className="w-24 h-4 bg-slate-900 rounded-full mx-auto absolute top-2.5 left-1/2 -translate-x-1/2 z-30 flex items-center justify-end px-2 pointer-events-none">
@@ -275,7 +275,7 @@ export function WhatsAppBroadcastDrawer({
                   </div>
 
                   {/* WhatsApp App Header */}
-                  <div className="bg-[#075e54] text-white px-3 py-2 flex items-center justify-between shrink-0 shadow-sm z-20">
+                  <div className="bg-[#075e54] text-white px-3 py-2 flex items-center justify-between shrink-0 shadow-none z-20">
                     <div className="flex items-center gap-2">
                       <ChevronLeft className="w-5 h-5 text-white/90 cursor-pointer -ml-1" />
                       <div className="w-8 h-8 rounded-full bg-emerald-200 text-[#075e54] flex items-center justify-center font-black text-xs shrink-0 border border-white/20">
@@ -309,12 +309,12 @@ export function WhatsAppBroadcastDrawer({
                     />
 
                     {/* Date Chip */}
-                    <div className="self-center bg-white/90 shadow-sm border border-slate-200/60 rounded px-2.5 py-0.5 text-[9px] font-bold text-slate-500 uppercase tracking-widest my-0.5 z-10">
+                    <div className="self-center bg-white/90 shadow-none border border-slate-200/80 rounded px-2.5 py-0.5 text-[9px] font-bold text-slate-500 uppercase tracking-widest my-0.5 z-10">
                       HARI INI
                     </div>
 
                     {/* WhatsApp Message Bubble */}
-                    <div className="self-start w-full bg-white rounded-lg rounded-tl-none shadow-[0_1px_1.5px_rgba(0,0,0,0.13)] border border-slate-200/60 p-2.5 flex flex-col gap-2 relative z-10">
+                    <div className="self-start w-full bg-white rounded-lg rounded-tl-none shadow-none border border-slate-200/90 p-3 flex flex-col gap-2 relative z-10">
                       
                       {/* Bubble Tail */}
                       <div className="absolute -left-2 top-0 w-0 h-0 border-t-[7px] border-t-white border-l-[7px] border-l-transparent" />
@@ -323,7 +323,7 @@ export function WhatsAppBroadcastDrawer({
                       <div 
                         ref={phonePosterContainerRef}
                         onClick={() => setShowFullPosterModal(true)}
-                        className="relative w-full overflow-hidden rounded-md border border-slate-300 bg-white shadow-sm hover:ring-2 hover:ring-emerald-500/50 transition-all cursor-pointer group"
+                        className="relative w-full overflow-hidden rounded-md border border-slate-300 bg-white shadow-none hover:ring-2 hover:ring-emerald-500/50 transition-all cursor-pointer group"
                         style={{ height: `${posterHeight}px` }}
                         title="Klik untuk melihat poster penuh"
                       >
@@ -342,7 +342,7 @@ export function WhatsAppBroadcastDrawer({
 
                         {/* Hover Overlay Icon */}
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center pointer-events-none">
-                          <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-slate-900/85 text-white text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1 shadow-lg backdrop-blur-sm">
+                          <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-slate-900/85 text-white text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1 shadow-none backdrop-blur-sm">
                             <Maximize2 className="w-3 h-3 text-emerald-400" />
                             Perbesar Poster
                           </div>
@@ -350,7 +350,7 @@ export function WhatsAppBroadcastDrawer({
 
                         {/* Bottom Caption Bar */}
                         <div className="absolute bottom-0 inset-x-0 bg-slate-900/90 text-white px-2 py-1 flex items-center justify-between text-[9px] backdrop-blur-sm border-t border-white/10 z-10">
-                          <span className="font-semibold truncate max-w-[190px]">
+                          <span className="font-semibold truncate max-w-[210px]">
                             Poster [{alertData.code}]
                           </span>
                           <span className="font-mono text-slate-300 text-[8px]">A4 • 1.2 MB</span>
@@ -358,7 +358,7 @@ export function WhatsAppBroadcastDrawer({
                       </div>
 
                       {/* Message Text */}
-                      <div className="text-[11.5px] leading-relaxed text-slate-800 whitespace-pre-wrap font-sans pt-0.5">
+                      <div className="text-xs leading-relaxed text-slate-800 whitespace-pre-wrap font-sans pt-0.5">
                         {renderFormattedPreview(messageText)}
                       </div>
 
@@ -376,13 +376,13 @@ export function WhatsAppBroadcastDrawer({
 
                   {/* WhatsApp Bottom Chat Input Bar */}
                   <div className="bg-[#f0f2f5] p-2 flex items-center gap-1.5 shrink-0 border-t border-slate-200/70 z-20">
-                    <div className="flex-1 bg-white rounded-full px-2.5 py-1 flex items-center gap-2 border border-slate-200 shadow-sm text-slate-400">
+                    <div className="flex-1 bg-white rounded-full px-2.5 py-1 flex items-center gap-2 border border-slate-200 shadow-none text-slate-400">
                       <Smile className="w-4 h-4 text-slate-500" />
                       <span className="text-[11px] text-slate-400 flex-1">Ketik pesan</span>
                       <Paperclip className="w-3.5 h-3.5 text-slate-500" />
                       <Camera className="w-3.5 h-3.5 text-slate-500" />
                     </div>
-                    <div className="w-7 h-7 rounded-full bg-[#128c7e] text-white flex items-center justify-center shrink-0 shadow-sm">
+                    <div className="w-7 h-7 rounded-full bg-[#128c7e] text-white flex items-center justify-center shrink-0 shadow-none">
                       <Mic className="w-3.5 h-3.5" />
                     </div>
                   </div>
@@ -398,7 +398,7 @@ export function WhatsAppBroadcastDrawer({
                 <div className="flex-1 max-w-[420px] flex flex-col gap-4">
                   
                   {/* Primary Action Card */}
-                  <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-3">
+                  <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-none space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <FileText className="w-4 h-4 text-emerald-600" />
@@ -435,7 +435,7 @@ export function WhatsAppBroadcastDrawer({
                   </div>
 
                   {/* SOP P5M Steps */}
-                  <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm space-y-3">
+                  <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-none space-y-3">
                     <div className="flex items-center gap-2 text-slate-800">
                       <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                       <span className="text-xs font-bold uppercase tracking-wider">Langkah Sosialisasi</span>
@@ -458,7 +458,7 @@ export function WhatsAppBroadcastDrawer({
                   </div>
 
                   {/* Case Metadata */}
-                  <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm space-y-2.5">
+                  <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-none space-y-2.5">
                     <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest block">
                       Data Kasus Alert
                     </span>
@@ -489,7 +489,7 @@ export function WhatsAppBroadcastDrawer({
 
             {/* Edit Teks Tab */}
             {activeTab === "edit" && (
-              <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col gap-4 max-w-3xl mx-auto w-full">
+              <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-none flex flex-col gap-4 max-w-3xl mx-auto w-full">
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-sm font-bold text-slate-900">Sesuaikan Teks Pesan WhatsApp</h3>
