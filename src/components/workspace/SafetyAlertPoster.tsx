@@ -1,11 +1,22 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { AlertTriangle, MapPin, Building2, Calendar, Clock, History, Layers, FileX, Pencil, Trash2, Plus, Check, X, Eye, BarChart3, Bot, User, ChevronRight, Brain, ChevronDown } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+
+export const INCIDENT_CATEGORIES = [
+  { id: "NEAR_MISS", label: "NEAR MISS", colorClass: "bg-red-500" },
+  { id: "HPI", label: "HIGH POTENTIAL INCIDENT (HPI)", colorClass: "bg-orange-500" },
+  { id: "PROPERTY_DAMAGE", label: "PROPERTY DAMAGE", colorClass: "bg-amber-500" },
+  { id: "LTI", label: "LOST TIME INJURY (LTI)", colorClass: "bg-rose-600" },
+  { id: "MTI", label: "MEDICAL TREATMENT INJURY", colorClass: "bg-purple-500" },
+  { id: "FAI", label: "FIRST AID INJURY (FAI)", colorClass: "bg-blue-500" },
+  { id: "FATALITY", label: "FATALITY", colorClass: "bg-red-700" },
+];
 
 const SourceBadge = ({ type, className, showText = false }: { type?: string, className?: string, showText?: boolean }) => {
   if (!type) return null;
@@ -58,9 +69,52 @@ export interface SafetyAlertPosterProps {
   generationStep?: number;
   onOpenDetail?: (title: string) => void;
   readOnly?: boolean;
+  initialTitle?: string;
+  initialAlertNumber?: string;
+  initialReleaseDate?: string;
+  initialCategory?: string;
+  onHeaderChange?: (data: { title: string; alertNumber: string; releaseDate: string; category: string }) => void;
 }
 
-export function SafetyAlertPoster({ onOpenDetail, isGenerating, generationStep = 0, readOnly = false }: SafetyAlertPosterProps = {}) {
+export function SafetyAlertPoster({ 
+  onOpenDetail, 
+  isGenerating, 
+  generationStep = 0, 
+  readOnly = false,
+  initialTitle,
+  initialAlertNumber,
+  initialReleaseDate,
+  initialCategory,
+  onHeaderChange
+}: SafetyAlertPosterProps = {}) {
+  // Editable Header State
+  const [title, setTitle] = useState(initialTitle || "TRACK DOZER AMBLAS SAAT BRUSHING DI AREA TITIK LEMBEK");
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [tempTitle, setTempTitle] = useState(title);
+
+  const [alertNumber, setAlertNumber] = useState(initialAlertNumber || "SA-004/IX/2026");
+  const [editingAlertNumber, setEditingAlertNumber] = useState(false);
+  const [tempAlertNumber, setTempAlertNumber] = useState(alertNumber);
+
+  const [releaseDate, setReleaseDate] = useState(initialReleaseDate || "08 SEPTEMBER 2026");
+  const [editingReleaseDate, setEditingReleaseDate] = useState(false);
+  const [tempReleaseDate, setTempReleaseDate] = useState(releaseDate);
+
+  const [incidentCategory, setIncidentCategory] = useState(initialCategory || "NEAR MISS");
+
+  useEffect(() => {
+    if (initialTitle) setTitle(initialTitle);
+  }, [initialTitle]);
+  useEffect(() => {
+    if (initialAlertNumber) setAlertNumber(initialAlertNumber);
+  }, [initialAlertNumber]);
+  useEffect(() => {
+    if (initialReleaseDate) setReleaseDate(initialReleaseDate);
+  }, [initialReleaseDate]);
+  useEffect(() => {
+    if (initialCategory) setIncidentCategory(initialCategory);
+  }, [initialCategory]);
+
   const [kronologis, setKronologis] = useState([
     { id: 1, title: "Kronologis (31 Agu 2026 | 13:50 WITA):", text: "Operator mengoperasikan BMCDZ 116 untuk brushing di WMP 21 sejak pukul 13:05 WITA. Pada dorongan ke-6 saat unit bergerak mundur, track sisi kiri amblas dan unit langsung dihentikan. Evakuasi unit dilakukan pukul 14:50 WITA, nihil cedera.", icon: "History", source: "HUMAN" },
     { id: 2, title: "Penyebab Utama:", text: "Area kerja memiliki titik lembek bekas parit aliran air menuju WMP, namun belum ada patok boundary dari tim Survey sebagai acuan batas area kerja. Potensi amblas tidak teridentifikasi pada inspeksi awal shift.", icon: "Layers", source: "AI" },
@@ -153,44 +207,333 @@ export function SafetyAlertPoster({ onOpenDetail, isGenerating, generationStep =
         {/* Header section */}
         <div className="flex bg-[#161616] text-white relative">
           {getSectionState(2) !== 'GENERATED' ? (
-          <div className={cn("flex-1 py-4 pl-6 pr-4 transition-opacity duration-500", getSectionState(2) === 'WAITING' ? "opacity-30" : "opacity-100")}>
-            <div className="bg-slate-700 text-transparent text-[11px] font-bold px-2 py-0.5 inline-block mb-1.5 uppercase tracking-wider rounded relative">
-              {getSectionState(2) === 'GENERATING' && <span className="absolute -top-3 -right-2 text-[8px] text-blue-400 font-bold whitespace-nowrap animate-pulse">✦ Menyusun Header</span>}
-              SAFETY ALERT:
+            <div className={cn("flex-1 py-4 pl-6 pr-4 transition-opacity duration-500", getSectionState(2) === 'WAITING' ? "opacity-30" : "opacity-100")}>
+              <div className="bg-slate-700 text-transparent text-[11px] font-bold px-2 py-0.5 inline-block mb-1.5 uppercase tracking-wider rounded relative">
+                {getSectionState(2) === 'GENERATING' && <span className="absolute -top-3 -right-2 text-[8px] text-blue-400 font-bold whitespace-nowrap animate-pulse">✦ Menyusun Header</span>}
+                SAFETY ALERT:
+              </div>
+              <div className="space-y-2 mt-1">
+                <SkeletonLine active={getSectionState(2) === 'GENERATING'} className="h-6 w-3/4 bg-slate-600" />
+                <SkeletonLine active={getSectionState(2) === 'GENERATING'} className="h-6 w-1/2 bg-slate-600" />
+              </div>
             </div>
-            <div className="space-y-2 mt-1">
-              <SkeletonLine active={getSectionState(2) === 'GENERATING'} className="h-6 w-3/4 bg-slate-600" />
-              <SkeletonLine active={getSectionState(2) === 'GENERATING'} className="h-6 w-1/2 bg-slate-600" />
+          ) : (
+            <div 
+              onDoubleClick={() => {
+                if (!readOnly && !editingTitle) {
+                  setEditingTitle(true);
+                  setTempTitle(title);
+                }
+              }}
+              className={cn(
+                "group/title relative flex-1 py-4 pl-6 pr-4 animate-in fade-in duration-500 transition-colors",
+                !readOnly && "hover:bg-white/[0.04] cursor-pointer"
+              )}
+            >
+              <div className="flex items-center gap-2 mb-1.5">
+                <div className="bg-[#ed1c24] text-white text-[11px] font-bold px-2 py-0.5 inline-block uppercase tracking-wider">
+                  SAFETY ALERT:
+                </div>
+                {!readOnly && !editingTitle && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEditingTitle(true);
+                      setTempTitle(title);
+                    }}
+                    className="opacity-0 group-hover/title:opacity-100 transition-opacity px-2 py-0.5 text-slate-400 hover:text-white hover:bg-white/10 rounded flex items-center gap-1 text-[10px] font-bold"
+                    title="Ubah judul poster"
+                  >
+                    <Pencil className="h-3 w-3" />
+                    <span>Ubah Judul</span>
+                  </button>
+                )}
+              </div>
+
+              {editingTitle ? (
+                <div className="flex flex-col gap-2 relative z-30" onClick={(e) => e.stopPropagation()}>
+                  <textarea
+                    value={tempTitle}
+                    onChange={(e) => setTempTitle(e.target.value)}
+                    rows={2}
+                    className="w-full text-xl font-black uppercase tracking-wide bg-slate-900 text-white border border-blue-500 rounded p-2.5 outline-none shadow-none resize-y leading-tight"
+                    placeholder="Ketik judul Safety Alert..."
+                    autoFocus
+                  />
+                  <div className="flex items-center justify-end gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newTitle = tempTitle.trim() || title;
+                        setTitle(newTitle);
+                        setEditingTitle(false);
+                        onHeaderChange?.({ title: newTitle, alertNumber, releaseDate, category: incidentCategory });
+                        toast.success("Judul Safety Alert berhasil disimpan.");
+                      }}
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1 rounded text-xs font-bold flex items-center gap-1 shadow-none transition-colors"
+                    >
+                      <Check className="h-3.5 w-3.5" /> Simpan
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTempTitle(title);
+                        setEditingTitle(false);
+                      }}
+                      className="bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-1 rounded text-xs font-bold flex items-center gap-1 shadow-none transition-colors"
+                    >
+                      <X className="h-3.5 w-3.5" /> Batal
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <h1 className="text-2xl font-black uppercase tracking-wide leading-tight text-white">
+                  {title}
+                </h1>
+              )}
             </div>
-          </div>
-        ) : (
-          <div className="flex-1 py-4 pl-6 pr-4 animate-in fade-in duration-500">
-            <div className="bg-[#ed1c24] text-white text-[11px] font-bold px-2 py-0.5 inline-block mb-1.5 uppercase tracking-wider">
-              SAFETY ALERT:
-            </div>
-            <h1 className="text-2xl font-black uppercase tracking-wide leading-tight">
-              TRACK DOZER AMBLAS SAAT BRUSHING DI AREA TITIK LEMBEK
-            </h1>
-          </div>
-        )}
-          <div className="bg-[#ed1c24] w-[260px] flex items-center justify-center transform -skew-x-12 translate-x-4 border-l-4 border-white/20">
-            <div className="transform skew-x-12 flex items-center gap-2">
-              <AlertTriangle className="h-7 w-7 text-white fill-white" />
-              {getSectionState(2) !== 'GENERATED' ? <div className={cn("h-6 w-24 bg-slate-700 rounded", getSectionState(2) === 'GENERATING' && "animate-pulse")} /> : <span className="text-2xl font-black uppercase tracking-wider animate-in fade-in">NEAR MISS</span>}
-            </div>
+          )}
+
+          {/* Incident Category Dropdown Badge */}
+          <div className="bg-[#ed1c24] min-w-[260px] max-w-[380px] flex items-center justify-center transform -skew-x-12 translate-x-4 border-l-4 border-white/20 px-3">
+            {getSectionState(2) !== 'GENERATED' ? (
+              <div className="transform skew-x-12 flex items-center gap-2">
+                <AlertTriangle className="h-7 w-7 text-white fill-white" />
+                <div className={cn("h-6 w-24 bg-slate-700 rounded", getSectionState(2) === 'GENERATING' && "animate-pulse")} />
+              </div>
+            ) : (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild disabled={readOnly}>
+                  <button
+                    type="button"
+                    className={cn(
+                      "transform skew-x-12 flex items-center gap-2 text-white outline-none select-none py-2 px-3 rounded transition-all",
+                      !readOnly ? "hover:bg-black/15 cursor-pointer group" : "cursor-default"
+                    )}
+                    title={!readOnly ? "Klik untuk memilih kategori insiden" : undefined}
+                  >
+                    <AlertTriangle className="h-6 w-6 text-white fill-white shrink-0" />
+                    <span className={cn(
+                      "font-black uppercase tracking-wider animate-in fade-in truncate max-w-[230px]",
+                      incidentCategory.length > 15 ? "text-base" : incidentCategory.length > 10 ? "text-lg" : "text-xl"
+                    )}>
+                      {incidentCategory}
+                    </span>
+                    {!readOnly && (
+                      <ChevronDown className="h-4 w-4 text-white/80 group-hover:text-white transition-transform group-hover:translate-y-0.5 shrink-0" />
+                    )}
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-64 bg-slate-900 border border-slate-700 text-white p-1.5 shadow-2xl z-50">
+                  <div className="px-2 py-1 text-[10px] font-black uppercase tracking-widest text-slate-400 border-b border-slate-800 mb-1">
+                    Pilih Kategori Insiden
+                  </div>
+                  {INCIDENT_CATEGORIES.map((cat) => (
+                    <DropdownMenuItem
+                      key={cat.id}
+                      onClick={() => {
+                        setIncidentCategory(cat.label);
+                        onHeaderChange?.({ title, alertNumber, releaseDate, category: cat.label });
+                        toast.success(`Kategori insiden diubah: ${cat.label}`);
+                      }}
+                      className={cn(
+                        "flex items-center justify-between px-2.5 py-1.5 text-xs font-bold rounded cursor-pointer transition-colors outline-none",
+                        incidentCategory === cat.label
+                          ? "bg-red-600/30 text-red-200 border border-red-500/40"
+                          : "hover:bg-slate-800 text-slate-200"
+                      )}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className={cn("w-2.5 h-2.5 rounded-full shrink-0", cat.colorClass)} />
+                        <span className="truncate">{cat.label}</span>
+                      </div>
+                      {incidentCategory === cat.label && <Check className="w-3.5 h-3.5 text-red-400 shrink-0" />}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         </div>
         
         {/* Sub header */}
-        <div className="bg-slate-100 flex items-center text-[10px] font-bold text-slate-600 px-6 py-1.5 border-b border-slate-300">
-          <div className="flex w-1/3">
-            <span className="w-24 text-slate-400">NO. ALERT</span>
-            {getSectionState(2) !== 'GENERATED' ? <SkeletonLine active={getSectionState(2) === 'GENERATING'} className="h-3 w-20" /> : <span className="text-black animate-in fade-in">[SA-004/IX/2026]</span>}
+        <div className="bg-slate-100 flex items-center text-[10px] font-bold text-slate-600 px-6 py-2 border-b border-slate-300">
+          
+          {/* NO. ALERT */}
+          <div className="flex w-1/2 items-center group/alert">
+            <span className="w-24 text-slate-400 shrink-0">NO. ALERT</span>
+            {getSectionState(2) !== 'GENERATED' ? (
+              <SkeletonLine active={getSectionState(2) === 'GENERATING'} className="h-3 w-20" />
+            ) : editingAlertNumber ? (
+              <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                <span className="text-black font-bold">[</span>
+                <input
+                  type="text"
+                  value={tempAlertNumber}
+                  onChange={(e) => setTempAlertNumber(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      const newAlert = tempAlertNumber.trim() || alertNumber;
+                      setAlertNumber(newAlert);
+                      setEditingAlertNumber(false);
+                      onHeaderChange?.({ title, alertNumber: newAlert, releaseDate, category: incidentCategory });
+                      toast.success("Nomor Alert berhasil disimpan.");
+                    } else if (e.key === "Escape") {
+                      setTempAlertNumber(alertNumber);
+                      setEditingAlertNumber(false);
+                    }
+                  }}
+                  className="w-40 text-[10px] font-bold text-slate-900 bg-white border border-blue-500 rounded px-1.5 py-0.5 outline-none shadow-none font-mono"
+                  placeholder="SA-004/IX/2026"
+                  autoFocus
+                />
+                <span className="text-black font-bold">]</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const newAlert = tempAlertNumber.trim() || alertNumber;
+                    setAlertNumber(newAlert);
+                    setEditingAlertNumber(false);
+                    onHeaderChange?.({ title, alertNumber: newAlert, releaseDate, category: incidentCategory });
+                    toast.success("Nomor Alert berhasil disimpan.");
+                  }}
+                  className="p-1 text-emerald-600 hover:bg-emerald-100 rounded"
+                  title="Simpan"
+                >
+                  <Check className="h-3 w-3" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTempAlertNumber(alertNumber);
+                    setEditingAlertNumber(false);
+                  }}
+                  className="p-1 text-slate-400 hover:bg-slate-200 rounded"
+                  title="Batal"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ) : (
+              <div 
+                onDoubleClick={() => {
+                  if (!readOnly) {
+                    setEditingAlertNumber(true);
+                    setTempAlertNumber(alertNumber);
+                  }
+                }}
+                className={cn(
+                  "flex items-center gap-1.5 rounded px-1 py-0.5 transition-colors",
+                  !readOnly && "hover:bg-slate-200/70 cursor-pointer"
+                )}
+                title={!readOnly ? "Klik dua kali atau klik ikon pensil untuk mengubah" : undefined}
+              >
+                <span className="text-black animate-in fade-in font-bold font-mono">[{alertNumber}]</span>
+                {!readOnly && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEditingAlertNumber(true);
+                      setTempAlertNumber(alertNumber);
+                    }}
+                    className="opacity-0 group-hover/alert:opacity-100 transition-opacity p-0.5 text-slate-400 hover:text-blue-600 rounded"
+                    title="Ubah Nomor Alert"
+                  >
+                    <Pencil className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
+            )}
           </div>
-          <div className="flex w-1/3">
-            <span className="w-28 text-slate-400">TANGGAL RILIS</span>
-            <span className="text-black">[08 SEPTEMBER 2026]</span>
+
+          {/* TANGGAL RILIS */}
+          <div className="flex w-1/2 items-center group/date">
+            <span className="w-28 text-slate-400 shrink-0">TANGGAL RILIS</span>
+            {editingReleaseDate ? (
+              <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                <span className="text-black font-bold">[</span>
+                <input
+                  type="text"
+                  value={tempReleaseDate}
+                  onChange={(e) => setTempReleaseDate(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      const newDate = tempReleaseDate.trim() || releaseDate;
+                      setReleaseDate(newDate);
+                      setEditingReleaseDate(false);
+                      onHeaderChange?.({ title, alertNumber, releaseDate: newDate, category: incidentCategory });
+                      toast.success("Tanggal rilis berhasil disimpan.");
+                    } else if (e.key === "Escape") {
+                      setTempReleaseDate(releaseDate);
+                      setEditingReleaseDate(false);
+                    }
+                  }}
+                  className="w-44 text-[10px] font-bold text-slate-900 bg-white border border-blue-500 rounded px-1.5 py-0.5 outline-none shadow-none uppercase"
+                  placeholder="08 SEPTEMBER 2026"
+                  autoFocus
+                />
+                <span className="text-black font-bold">]</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const newDate = tempReleaseDate.trim() || releaseDate;
+                    setReleaseDate(newDate);
+                    setEditingReleaseDate(false);
+                    onHeaderChange?.({ title, alertNumber, releaseDate: newDate, category: incidentCategory });
+                    toast.success("Tanggal rilis berhasil disimpan.");
+                  }}
+                  className="p-1 text-emerald-600 hover:bg-emerald-100 rounded"
+                  title="Simpan"
+                >
+                  <Check className="h-3 w-3" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTempReleaseDate(releaseDate);
+                    setEditingReleaseDate(false);
+                  }}
+                  className="p-1 text-slate-400 hover:bg-slate-200 rounded"
+                  title="Batal"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ) : (
+              <div 
+                onDoubleClick={() => {
+                  if (!readOnly) {
+                    setEditingReleaseDate(true);
+                    setTempReleaseDate(releaseDate);
+                  }
+                }}
+                className={cn(
+                  "flex items-center gap-1.5 rounded px-1 py-0.5 transition-colors",
+                  !readOnly && "hover:bg-slate-200/70 cursor-pointer"
+                )}
+                title={!readOnly ? "Klik dua kali atau klik ikon pensil untuk mengubah" : undefined}
+              >
+                <span className="text-black font-bold uppercase animate-in fade-in">[{releaseDate}]</span>
+                {!readOnly && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEditingReleaseDate(true);
+                      setTempReleaseDate(releaseDate);
+                    }}
+                    className="opacity-0 group-hover/date:opacity-100 transition-opacity p-0.5 text-slate-400 hover:text-blue-600 rounded"
+                    title="Ubah Tanggal Rilis"
+                  >
+                    <Pencil className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
+            )}
           </div>
+
         </div>
 
         <div className="flex p-6 gap-6">
