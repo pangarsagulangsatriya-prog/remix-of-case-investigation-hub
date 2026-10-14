@@ -1,5 +1,37 @@
 import React, { useState, useEffect } from "react";
-import { AlertTriangle, MapPin, Building2, Calendar, Clock, History, Layers, FileX, Pencil, Trash2, Plus, Check, X, Eye, BarChart3, Bot, User, ChevronRight, Brain, ChevronDown } from "lucide-react";
+import { 
+  AlertTriangle, 
+  MapPin, 
+  Building2, 
+  Calendar, 
+  Clock, 
+  History, 
+  Layers, 
+  FileX, 
+  Pencil, 
+  Trash2, 
+  Plus, 
+  Check, 
+  X, 
+  Eye, 
+  BarChart3, 
+  Bot, 
+  User, 
+  ChevronRight, 
+  Brain, 
+  ChevronDown,
+  Zap,
+  Flame,
+  Wrench,
+  Truck,
+  HeartPulse,
+  Activity,
+  PlusCircle,
+  Bandage,
+  Skull,
+  AlertOctagon,
+  ShieldAlert
+} from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -9,14 +41,80 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 export const INCIDENT_CATEGORIES = [
-  { id: "NEAR_MISS", label: "NEAR MISS", colorClass: "bg-red-500" },
-  { id: "HPI", label: "HIGH POTENTIAL INCIDENT (HPI)", colorClass: "bg-orange-500" },
-  { id: "PROPERTY_DAMAGE", label: "PROPERTY DAMAGE", colorClass: "bg-amber-500" },
-  { id: "LTI", label: "LOST TIME INJURY (LTI)", colorClass: "bg-rose-600" },
-  { id: "MTI", label: "MEDICAL TREATMENT INJURY", colorClass: "bg-purple-500" },
-  { id: "FAI", label: "FIRST AID INJURY (FAI)", colorClass: "bg-blue-500" },
-  { id: "FATALITY", label: "FATALITY", colorClass: "bg-red-700" },
+  { 
+    id: "NEAR_MISS", 
+    label: "NEAR MISS", 
+    colorClass: "bg-red-500",
+    badgeBg: "bg-[#ed1c24]",
+    icon: AlertTriangle,
+    iconColor: "text-white fill-white" 
+  },
+  { 
+    id: "HPI", 
+    label: "HIGH POTENTIAL INCIDENT (HPI)", 
+    colorClass: "bg-amber-500",
+    badgeBg: "bg-[#d9232a]",
+    icon: Zap,
+    iconColor: "text-yellow-300 fill-yellow-300" 
+  },
+  { 
+    id: "PROPERTY_DAMAGE", 
+    label: "PROPERTY DAMAGE (PD)", 
+    colorClass: "bg-orange-500",
+    badgeBg: "bg-[#c2410c]",
+    icon: Truck,
+    iconColor: "text-white" 
+  },
+  { 
+    id: "LTI", 
+    label: "LOST TIME INJURY (LTI)", 
+    colorClass: "bg-rose-600",
+    badgeBg: "bg-[#be123c]",
+    icon: HeartPulse,
+    iconColor: "text-white" 
+  },
+  { 
+    id: "MTI", 
+    label: "MEDICAL TREATMENT INJURY (MTI)", 
+    colorClass: "bg-purple-600",
+    badgeBg: "bg-[#7e22ce]",
+    icon: PlusCircle,
+    iconColor: "text-white" 
+  },
+  { 
+    id: "FAI", 
+    label: "FIRST AID INJURY (FAI)", 
+    colorClass: "bg-blue-600",
+    badgeBg: "bg-[#1d4ed8]",
+    icon: Bandage,
+    iconColor: "text-white" 
+  },
+  { 
+    id: "FATALITY", 
+    label: "FATALITY", 
+    colorClass: "bg-slate-900",
+    badgeBg: "bg-[#0f172a]",
+    icon: Skull,
+    iconColor: "text-white" 
+  },
 ];
+
+export const getCategoryConfig = (label: string) => {
+  const normalized = (label || "").trim().toUpperCase();
+  const found = INCIDENT_CATEGORIES.find(c => 
+    normalized.includes(c.id) || 
+    normalized === c.label.toUpperCase() ||
+    c.label.toUpperCase().includes(normalized)
+  );
+  return found || {
+    id: "CUSTOM",
+    label: label,
+    colorClass: "bg-red-500",
+    badgeBg: "bg-[#ed1c24]",
+    icon: AlertTriangle,
+    iconColor: "text-white fill-white"
+  };
+};
 
 const SourceBadge = ({ type, className, showText = false }: { type?: string, className?: string, showText?: boolean }) => {
   if (!type) return null;
@@ -101,6 +199,8 @@ export function SafetyAlertPoster({
   const [tempReleaseDate, setTempReleaseDate] = useState(releaseDate);
 
   const [incidentCategory, setIncidentCategory] = useState(initialCategory || "NEAR MISS");
+  const currentCategoryConfig = getCategoryConfig(incidentCategory);
+  const CategoryIcon = currentCategoryConfig.icon;
 
   useEffect(() => {
     if (initialTitle) setTitle(initialTitle);
@@ -296,10 +396,13 @@ export function SafetyAlertPoster({
           )}
 
           {/* Incident Category Dropdown Badge */}
-          <div className="bg-[#ed1c24] min-w-[260px] max-w-[380px] flex items-center justify-center transform -skew-x-12 translate-x-4 border-l-4 border-white/20 px-3">
+          <div className={cn(
+            "min-w-[280px] max-w-[440px] flex items-center justify-center transform -skew-x-12 translate-x-4 border-l-4 border-white/20 px-4 py-2 transition-colors duration-300",
+            currentCategoryConfig.badgeBg
+          )}>
             {getSectionState(2) !== 'GENERATED' ? (
               <div className="transform skew-x-12 flex items-center gap-2">
-                <AlertTriangle className="h-7 w-7 text-white fill-white" />
+                <CategoryIcon className={cn("h-7 w-7 shrink-0", currentCategoryConfig.iconColor)} />
                 <div className={cn("h-6 w-24 bg-slate-700 rounded", getSectionState(2) === 'GENERATING' && "animate-pulse")} />
               </div>
             ) : (
@@ -308,15 +411,17 @@ export function SafetyAlertPoster({
                   <button
                     type="button"
                     className={cn(
-                      "transform skew-x-12 flex items-center gap-2 text-white outline-none select-none py-2 px-3 rounded transition-all",
-                      !readOnly ? "hover:bg-black/15 cursor-pointer group" : "cursor-default"
+                      "transform skew-x-12 flex items-center gap-2.5 text-white outline-none select-none py-1.5 px-2.5 rounded transition-all w-full justify-center",
+                      !readOnly ? "hover:bg-black/20 cursor-pointer group" : "cursor-default"
                     )}
                     title={!readOnly ? "Klik untuk memilih kategori insiden" : undefined}
                   >
-                    <AlertTriangle className="h-6 w-6 text-white fill-white shrink-0" />
+                    <CategoryIcon className={cn("h-6 w-6 shrink-0 transition-transform group-hover:scale-110", currentCategoryConfig.iconColor)} />
                     <span className={cn(
-                      "font-black uppercase tracking-wider animate-in fade-in truncate max-w-[230px]",
-                      incidentCategory.length > 15 ? "text-base" : incidentCategory.length > 10 ? "text-lg" : "text-xl"
+                      "font-black uppercase tracking-wider animate-in fade-in leading-tight select-none text-center whitespace-normal break-words",
+                      incidentCategory.length > 25 ? "text-xs max-w-[250px]" : 
+                      incidentCategory.length > 18 ? "text-sm max-w-[240px]" : 
+                      incidentCategory.length > 12 ? "text-base max-w-[230px]" : "text-xl"
                     )}>
                       {incidentCategory}
                     </span>
@@ -325,32 +430,38 @@ export function SafetyAlertPoster({
                     )}
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-64 bg-slate-900 border border-slate-700 text-white p-1.5 shadow-2xl z-50">
-                  <div className="px-2 py-1 text-[10px] font-black uppercase tracking-widest text-slate-400 border-b border-slate-800 mb-1">
+                <DropdownMenuContent align="end" className="w-72 bg-slate-900 border border-slate-700 text-white p-1.5 shadow-2xl z-50">
+                  <div className="px-2.5 py-1.5 text-[10px] font-black uppercase tracking-widest text-slate-400 border-b border-slate-800 mb-1">
                     Pilih Kategori Insiden
                   </div>
-                  {INCIDENT_CATEGORIES.map((cat) => (
-                    <DropdownMenuItem
-                      key={cat.id}
-                      onClick={() => {
-                        setIncidentCategory(cat.label);
-                        onHeaderChange?.({ title, alertNumber, releaseDate, category: cat.label });
-                        toast.success(`Kategori insiden diubah: ${cat.label}`);
-                      }}
-                      className={cn(
-                        "flex items-center justify-between px-2.5 py-1.5 text-xs font-bold rounded cursor-pointer transition-colors outline-none",
-                        incidentCategory === cat.label
-                          ? "bg-red-600/30 text-red-200 border border-red-500/40"
-                          : "hover:bg-slate-800 text-slate-200"
-                      )}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className={cn("w-2.5 h-2.5 rounded-full shrink-0", cat.colorClass)} />
-                        <span className="truncate">{cat.label}</span>
-                      </div>
-                      {incidentCategory === cat.label && <Check className="w-3.5 h-3.5 text-red-400 shrink-0" />}
-                    </DropdownMenuItem>
-                  ))}
+                  {INCIDENT_CATEGORIES.map((cat) => {
+                    const ItemIcon = cat.icon;
+                    const isSelected = incidentCategory === cat.label;
+                    return (
+                      <DropdownMenuItem
+                        key={cat.id}
+                        onClick={() => {
+                          setIncidentCategory(cat.label);
+                          onHeaderChange?.({ title, alertNumber, releaseDate, category: cat.label });
+                          toast.success(`Kategori insiden diubah: ${cat.label}`);
+                        }}
+                        className={cn(
+                          "flex items-center justify-between px-2.5 py-2 text-xs font-bold rounded cursor-pointer transition-colors outline-none",
+                          isSelected
+                            ? "bg-red-600/30 text-white border border-red-500/40"
+                            : "hover:bg-slate-800 text-slate-200"
+                        )}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <div className={cn("w-6 h-6 rounded flex items-center justify-center shrink-0", cat.badgeBg)}>
+                            <ItemIcon className={cn("w-3.5 h-3.5", cat.iconColor)} />
+                          </div>
+                          <span className="leading-snug">{cat.label}</span>
+                        </div>
+                        {isSelected && <Check className="w-4 h-4 text-emerald-400 shrink-0 ml-2" />}
+                      </DropdownMenuItem>
+                    );
+                  })}
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
