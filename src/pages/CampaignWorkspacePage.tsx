@@ -8,10 +8,11 @@ import {
   ChevronDown, ChevronRight, History, BarChart3, Info, ExternalLink, Play, 
   Database, Brain, Send, Bot, FileText, Search, Trash2, Edit3, User, Link2, 
   Sparkle, PanelLeft, PanelLeftClose, PanelRight, X, Pencil, List, BookOpen, PlayCircle, ChevronLeft, Download, Check, Lock, Monitor, Image, Minus, Plus,
-  Printer, AlertTriangle
+  Printer, AlertTriangle, Copy, MessageSquare
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SafetyAlertPoster } from "@/components/workspace/SafetyAlertPoster";
+import { WhatsAppBroadcastDrawer, PRESET_ALERTS, buildWhatsAppMessage } from "@/components/workspace/WhatsAppBroadcastDrawer";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
@@ -46,6 +47,7 @@ export default function CampaignWorkspacePage() {
   const [showAIProgress, setShowAIProgress] = useState(false);
   const [isApproved, setIsApproved] = useState(false);
   const [showValidateModal, setShowValidateModal] = useState(false);
+  const [showWhatsAppDrawer, setShowWhatsAppDrawer] = useState(false);
 
   // Modal State
   const [selectedAnalysis, setSelectedAnalysis] = useState<string | null>(null);
@@ -603,6 +605,54 @@ export default function CampaignWorkspacePage() {
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
+
+                      {/* WhatsApp Broadcast Summary Card */}
+                      <div className="bg-emerald-50/80 border border-emerald-200/90 rounded-md p-3.5 flex flex-col gap-2.5 shadow-sm">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 rounded bg-[#25D366] text-white flex items-center justify-center shrink-0 shadow-sm">
+                              <MessageSquare className="h-3.5 w-3.5 fill-current" />
+                            </div>
+                            <div>
+                              <span className="text-[10px] font-black text-emerald-950 uppercase tracking-wider block leading-tight">
+                                Broadcast P5M
+                              </span>
+                              <span className="text-[9px] text-emerald-700 font-semibold">
+                                WhatsApp Summary Siap
+                              </span>
+                            </div>
+                          </div>
+                          <span className="text-[8px] font-bold bg-emerald-200/80 text-emerald-900 px-1.5 py-0.5 rounded tracking-wide uppercase">
+                            Siap Kirim
+                          </span>
+                        </div>
+
+                        <p className="text-[11px] text-slate-600 leading-relaxed line-clamp-2">
+                          Ringkasan otomatis untuk sosialisasi P5M, safety briefing, dan grup koordinasi lapangan.
+                        </p>
+
+                        <div className="grid grid-cols-2 gap-2 pt-0.5">
+                          <Button
+                            variant="outline"
+                            onClick={() => setShowWhatsAppDrawer(true)}
+                            className="w-full h-8 text-[11px] font-bold border-emerald-300 text-emerald-900 hover:bg-emerald-100/70 rounded-md gap-1"
+                          >
+                            <Eye className="h-3 w-3 text-emerald-700" />
+                            Preview
+                          </Button>
+                          <Button
+                            onClick={() => {
+                              const text = buildWhatsAppMessage(PRESET_ALERTS[0], true);
+                              navigator.clipboard.writeText(text);
+                              toast.success("Pesan WhatsApp berhasil disalin ke clipboard!");
+                            }}
+                            className="w-full h-8 text-[11px] font-bold bg-[#25D366] hover:bg-[#1ebd59] text-white shadow-none rounded-md gap-1"
+                          >
+                            <Copy className="h-3 w-3" />
+                            Salin Pesan
+                          </Button>
+                        </div>
+                      </div>
                     </>
                   ) : isGenerated ? (
                     <>
@@ -920,6 +970,21 @@ export default function CampaignWorkspacePage() {
                         <Maximize2 className="h-3.5 w-3.5" />
                         <span className="text-[11px] font-bold">Layar Penuh</span>
                       </Button>
+
+                      {isApproved && (
+                        <>
+                          <div className={cn("h-3.5 w-px mx-0.5", canvasMode === 'preview' ? "bg-white/15" : "bg-slate-200")} />
+                          <Button
+                            size="sm"
+                            onClick={() => setShowWhatsAppDrawer(true)}
+                            className="h-7 px-2.5 text-xs font-bold gap-1.5 rounded bg-[#25D366] hover:bg-[#1ebd59] text-white shadow-none transition-all"
+                            title="Buka Preview Pesan WhatsApp untuk P5M"
+                          >
+                            <MessageSquare className="h-3.5 w-3.5 fill-current" />
+                            <span className="text-[11px]">Pesan WhatsApp</span>
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </div>
                 )}
@@ -1740,7 +1805,8 @@ export default function CampaignWorkspacePage() {
                 onClick={() => {
                   setIsApproved(true);
                   setShowValidateModal(false);
-                  toast.success("Konten berhasil disahkan.");
+                  toast.success("Konten berhasil disahkan. Pesan WhatsApp telah siap!");
+                  setTimeout(() => setShowWhatsAppDrawer(true), 350);
                 }} 
                 className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-none px-6"
               >
@@ -1750,6 +1816,13 @@ export default function CampaignWorkspacePage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* WhatsApp Broadcast Drawer */}
+      <WhatsAppBroadcastDrawer
+        open={showWhatsAppDrawer}
+        onOpenChange={setShowWhatsAppDrawer}
+        activeCaseCode="SA-004/IX/2026"
+      />
     </AppLayout>
 
   );

@@ -3,9 +3,11 @@ import { Button } from "@/components/ui/button";
 import { AgentState, ReportStatusType, ReportSnapshot, ReportAuditEntry } from "@/types/workspace";
 import { 
   FileText, CheckCircle2, AlertTriangle, History, X, Maximize2, Minimize2, Layout, 
-  ChevronLeft, ChevronRight, Lock, FileDown, Loader2, Save, FileCheck, Presentation
+  ChevronLeft, ChevronRight, Lock, FileDown, Loader2, Save, FileCheck, Presentation,
+  MessageSquare, Copy, Eye
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { WhatsAppBroadcastDrawer, PRESET_ALERTS, buildWhatsAppMessage } from "@/components/workspace/WhatsAppBroadcastDrawer";
 import { 
   ReportCoverPage, ReportFactPage, ReportActorPage, 
   ReportPeepoPage, ReportIplsPage, ReportPreventionPage 
@@ -47,6 +49,7 @@ export default function ReportsTab({
   const [generationStep, setGenerationStep] = useState(0);
   const [isApproving, setIsApproving] = useState(false);
   const [showApprovalModal, setShowApprovalModal] = useState(false);
+  const [showWhatsAppDrawer, setShowWhatsAppDrawer] = useState(false);
   
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgressText, setExportProgressText] = useState("");
@@ -219,6 +222,8 @@ export default function ReportsTab({
           action: 'REPORT_APPROVED', actor: 'Gulang Satriya', version: reportSnapshot?.version || '1.0'
         }, ...reportAuditLogs]);
       }
+      toast.success("Laporan berhasil disahkan! Ringkasan pesan WhatsApp telah siap.");
+      setTimeout(() => setShowWhatsAppDrawer(true), 400);
     }, 1500);
   };
 
@@ -856,6 +861,54 @@ export default function ReportsTab({
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
+
+                  {/* WhatsApp Broadcast Summary Card */}
+                  <div className="bg-emerald-50/80 border border-emerald-200/90 rounded-md p-3.5 flex flex-col gap-2.5 shadow-sm">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded bg-[#25D366] text-white flex items-center justify-center shrink-0 shadow-sm">
+                          <MessageSquare className="h-3.5 w-3.5 fill-current" />
+                        </div>
+                        <div>
+                          <span className="text-[10px] font-black text-emerald-950 uppercase tracking-wider block leading-tight">
+                            Broadcast P5M
+                          </span>
+                          <span className="text-[9px] text-emerald-700 font-semibold">
+                            WhatsApp Summary Siap
+                          </span>
+                        </div>
+                      </div>
+                      <span className="text-[8px] font-bold bg-emerald-200/80 text-emerald-900 px-1.5 py-0.5 rounded tracking-wide uppercase">
+                        Siap Kirim
+                      </span>
+                    </div>
+
+                    <p className="text-[11px] text-slate-600 leading-relaxed line-clamp-2">
+                      Ringkasan otomatis untuk sosialisasi P5M, safety briefing, dan grup koordinasi lapangan.
+                    </p>
+
+                    <div className="grid grid-cols-2 gap-2 pt-0.5">
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowWhatsAppDrawer(true)}
+                        className="w-full h-8 text-[11px] font-bold border-emerald-300 text-emerald-900 hover:bg-emerald-100/70 rounded-md gap-1"
+                      >
+                        <Eye className="h-3 w-3 text-emerald-700" />
+                        Preview
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          const text = buildWhatsAppMessage(PRESET_ALERTS[0], true);
+                          navigator.clipboard.writeText(text);
+                          toast.success("Pesan WhatsApp berhasil disalin ke clipboard!");
+                        }}
+                        className="w-full h-8 text-[11px] font-bold bg-[#25D366] hover:bg-[#1ebd59] text-white shadow-none rounded-md gap-1"
+                      >
+                        <Copy className="h-3 w-3" />
+                        Salin Pesan
+                      </Button>
+                    </div>
+                  </div>
                   
                   {reportSnapshot?.lastExportedAt && !isExporting && (
                     <div>
@@ -917,6 +970,13 @@ export default function ReportsTab({
           </div>
         </div>
       )}
+
+      {/* WhatsApp Broadcast Drawer */}
+      <WhatsAppBroadcastDrawer
+        open={showWhatsAppDrawer}
+        onOpenChange={setShowWhatsAppDrawer}
+        activeCaseCode="SA-004/IX/2026"
+      />
     </div>
   );
 }
