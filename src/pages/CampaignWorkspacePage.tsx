@@ -50,22 +50,17 @@ export default function CampaignWorkspacePage() {
   const [showWhatsAppDrawer, setShowWhatsAppDrawer] = useState(false);
 
   // BeCampaign Publish State
-  type BeCampaignStatus = "BARU" | "DIPROSES" | "TAYANG";
   const [beCampaign, setBeCampaign] = useState<{
-    contentId: number;
     publishedAt: Date;
-    lastSyncedAt: Date;
-    status: BeCampaignStatus;
+    publishedBy: {
+      name: string;
+      role: string;
+      initials: string;
+    };
+    status: "BARU";
   } | null>(null);
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
-  const [isSyncingBeCampaign, setIsSyncingBeCampaign] = useState(false);
-
-  const BECAMPAIGN_STATUS_META: Record<BeCampaignStatus, { label: string; className: string; hint: string }> = {
-    BARU: { label: "Baru", className: "bg-emerald-50 text-emerald-700 border-emerald-200", hint: "Konten diterima BeCampaign, menunggu ditayangkan." },
-    DIPROSES: { label: "Diproses", className: "bg-amber-50 text-amber-700 border-amber-200", hint: "Konten sedang ditinjau & dijadwalkan di BeCampaign." },
-    TAYANG: { label: "Tayang", className: "bg-blue-50 text-blue-700 border-blue-200", hint: "Konten sudah tayang di kanal BeCampaign." },
-  };
 
   const formatWita = (date: Date) =>
     `${date.toLocaleString("id-ID", {
@@ -82,28 +77,17 @@ export default function CampaignWorkspacePage() {
     setTimeout(() => {
       const now = new Date();
       setBeCampaign({
-        contentId: Math.floor(200 + Math.random() * 800),
         publishedAt: now,
-        lastSyncedAt: now,
+        publishedBy: {
+          name: "Suparli",
+          role: "Safety Officer",
+          initials: "SP",
+        },
         status: "BARU",
       });
       setIsPublishing(false);
       setShowPublishModal(false);
-      toast.success("Konten berhasil dipublikasi & tersinkron ke BeCampaign.");
-    }, 1600);
-  };
-
-  const handleSyncBeCampaign = () => {
-    if (!beCampaign || isSyncingBeCampaign) return;
-    setIsSyncingBeCampaign(true);
-    setTimeout(() => {
-      setBeCampaign(prev => {
-        if (!prev) return prev;
-        const next: BeCampaignStatus = prev.status === "BARU" ? "DIPROSES" : "TAYANG";
-        return { ...prev, status: next, lastSyncedAt: new Date() };
-      });
-      setIsSyncingBeCampaign(false);
-      toast.success("Status BeCampaign berhasil disinkronkan.");
+      toast.success("Konten berhasil dipublikasikan ke BeCampaign.");
     }, 1200);
   };
 
@@ -714,60 +698,46 @@ export default function CampaignWorkspacePage() {
 
                       {/* BeCampaign Publish / Sync Status Card */}
                       {beCampaign ? (
-                        <div className="bg-white border border-slate-200/90 rounded-xl p-4 flex flex-col gap-3.5 shadow-sm hover:shadow-md transition-all duration-200">
+                        <div className="bg-white border border-slate-200/90 rounded-xl p-4 flex flex-col gap-3 shadow-sm hover:shadow-md transition-all duration-200 animate-in fade-in slide-in-from-bottom-1 duration-300">
                           {/* Card Header */}
                           <div className="flex items-center justify-between">
                             <span className="text-[12px] font-black text-slate-700 tracking-[0.14em] uppercase">
                               BECAMPAIGN
                             </span>
-                            <span className={cn(
-                              "text-[11px] font-extrabold px-3 py-0.5 rounded-full uppercase tracking-wider transition-all duration-300",
-                              beCampaign.status === "BARU" 
-                                ? "bg-emerald-50 text-emerald-700 border border-emerald-200/70"
-                                : beCampaign.status === "DIPROSES"
-                                ? "bg-amber-50 text-amber-700 border border-amber-200/70"
-                                : "bg-blue-50 text-blue-700 border border-blue-200/70"
-                            )}>
-                              {BECAMPAIGN_STATUS_META[beCampaign.status].label}
+                            <span className="text-[11px] font-extrabold px-3 py-0.5 rounded-full uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200/70">
+                              BARU
                             </span>
                           </div>
 
-                          {/* Data Rows */}
-                          <div className="flex flex-col gap-2.5 pt-0.5 text-xs">
-                            <div className="flex items-center justify-between gap-4">
-                              <span className="text-slate-500 font-medium">Content ID</span>
-                              <span className="font-bold text-slate-900 tracking-tight">{beCampaign.contentId}</span>
-                            </div>
-
-                            <div className="flex items-start justify-between gap-4">
-                              <span className="text-slate-500 font-medium shrink-0 pt-0.5">Dipublikasi</span>
-                              <span className="font-bold text-slate-900 text-right leading-relaxed max-w-[170px]">
-                                {formatWita(beCampaign.publishedAt)}
-                              </span>
-                            </div>
-
-                            <div className="flex items-start justify-between gap-4">
-                              <span className="text-slate-500 font-medium shrink-0 pt-0.5">Sinkron terakhir</span>
-                              <span className="font-bold text-slate-900 text-right leading-relaxed max-w-[170px]">
-                                {formatWita(beCampaign.lastSyncedAt)}
-                              </span>
-                            </div>
+                          {/* Success Status Banner */}
+                          <div className="flex items-center gap-2 bg-emerald-50/70 border border-emerald-100 rounded-lg px-2.5 py-1.5 text-emerald-800">
+                            <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                            <span className="text-xs font-bold leading-none">Berhasil dipublish</span>
                           </div>
 
-                          {/* Sync Button */}
-                          <div className="pt-1">
-                            <button
-                              type="button"
-                              onClick={handleSyncBeCampaign}
-                              disabled={isSyncingBeCampaign}
-                              className="w-full h-10 border border-slate-200/90 hover:border-slate-300 bg-white hover:bg-slate-50/80 active:scale-[0.99] rounded-lg flex items-center justify-center gap-2 text-slate-800 text-xs font-bold transition-all disabled:opacity-60 disabled:cursor-not-allowed group shadow-none"
-                            >
-                              <RefreshCw className={cn(
-                                "h-4 w-4 text-emerald-600 transition-transform duration-500 group-hover:rotate-45",
-                                isSyncingBeCampaign && "animate-spin text-emerald-600"
-                              )} />
-                              <span>{isSyncingBeCampaign ? "Menyinkronkan..." : "Sync Status"}</span>
-                            </button>
+                          {/* Publisher & Date Info */}
+                          <div className="flex flex-col gap-2.5 pt-0.5 text-xs">
+                            {/* Published By */}
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-slate-500 font-medium">Dipublish oleh</span>
+                              <div className="flex items-center gap-1.5">
+                                <div className="h-5 w-5 rounded-full bg-slate-900 text-white flex items-center justify-center text-[9px] font-extrabold shrink-0 shadow-sm">
+                                  {beCampaign.publishedBy.initials}
+                                </div>
+                                <span className="font-bold text-slate-900">{beCampaign.publishedBy.name}</span>
+                              </div>
+                            </div>
+
+                            {/* Published Date */}
+                            <div className="flex items-start justify-between gap-2">
+                              <span className="text-slate-500 font-medium shrink-0 pt-0.5">Tanggal rilis</span>
+                              <div className="flex items-center gap-1.5 text-right">
+                                <Clock className="h-3 w-3 text-slate-400 shrink-0 mt-0.5" />
+                                <span className="font-bold text-slate-900 leading-snug">
+                                  {formatWita(beCampaign.publishedAt)}
+                                </span>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       ) : (
@@ -1981,7 +1951,7 @@ export default function CampaignWorkspacePage() {
                 Publish ke BeCampaign?
               </DialogTitle>
               <DialogDescription className="text-xs text-slate-600 mt-1 leading-relaxed text-left">
-                Konten safety alert yang telah disahkan akan dikirim ke sistem BeCampaign pusat. Status penayangan dan audiens dapat dipantau langsung dari dashboard ini.
+                Konten safety alert yang telah disahkan akan langsung dipublikasikan ke portal BeCampaign.
               </DialogDescription>
             </DialogHeader>
 
@@ -2009,11 +1979,6 @@ export default function CampaignWorkspacePage() {
                   <Lock className="h-2.5 w-2.5" /> Disahkan
                 </span>
               </div>
-            </div>
-
-            <div className="flex items-start gap-2.5 text-[11px] text-slate-500 bg-blue-50/60 border border-blue-100 rounded-lg p-2.5 leading-relaxed mb-6">
-              <Info className="h-4 w-4 mt-0.5 shrink-0 text-blue-500" />
-              <span>Setelah dipublikasikan, sistem akan membuat <strong>Content ID</strong> resmi serta mencatat timestamp sinkronisasi pertama kali.</span>
             </div>
 
             <DialogFooter className="gap-2 sm:gap-2">
