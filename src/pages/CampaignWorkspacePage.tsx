@@ -51,8 +51,6 @@ export default function CampaignWorkspacePage() {
 
   // BeCampaign Publish State
   const [beCampaign, setBeCampaign] = useState<{
-    title: string;
-    notes?: string;
     publishedAt: Date;
     publishedBy: {
       name: string;
@@ -63,10 +61,25 @@ export default function CampaignWorkspacePage() {
   } | null>(null);
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
-  const [publishTitle, setPublishTitle] = useState(PRESET_ALERTS[0].title);
-  const [publishNotes, setPublishNotes] = useState("");
+  
+  // Captcha & Checklist Verification State
+  const [captchaCode, setCaptchaCode] = useState("8K4M");
+  const [userCaptchaInput, setUserCaptchaInput] = useState("");
   const [confirmCheckVisual, setConfirmCheckVisual] = useState(false);
   const [confirmCheckTarget, setConfirmCheckTarget] = useState(false);
+
+  const generateNewCaptcha = () => {
+    const chars = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
+    let code = "";
+    for (let i = 0; i < 4; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setCaptchaCode(code);
+    setUserCaptchaInput("");
+  };
+
+  const isCaptchaValid = userCaptchaInput.trim().toUpperCase() === captchaCode.toUpperCase();
+  const isPublishAllowed = isCaptchaValid && confirmCheckVisual && confirmCheckTarget;
 
   const formatWita = (date: Date) =>
     `${date.toLocaleString("id-ID", {
@@ -79,13 +92,11 @@ export default function CampaignWorkspacePage() {
     })} WITA`;
 
   const handlePublishBeCampaign = () => {
-    if (!publishTitle.trim() || !confirmCheckVisual || !confirmCheckTarget) return;
+    if (!isPublishAllowed) return;
     setIsPublishing(true);
     setTimeout(() => {
       const now = new Date();
       setBeCampaign({
-        title: publishTitle.trim(),
-        notes: publishNotes.trim() || undefined,
         publishedAt: now,
         publishedBy: {
           name: "Suparli",
@@ -96,7 +107,7 @@ export default function CampaignWorkspacePage() {
       });
       setIsPublishing(false);
       setShowPublishModal(false);
-      toast.success("Konten berhasil dipublikasikan ke BeCampaign.");
+      toast.success("Konten berhasil diverifikasi & dipublikasikan ke BeCampaign.");
     }, 1200);
   };
 
@@ -726,14 +737,6 @@ export default function CampaignWorkspacePage() {
 
                           {/* Publisher & Date Info */}
                           <div className="flex flex-col gap-2.5 pt-0.5 text-xs">
-                            {/* Published Title */}
-                            <div className="flex flex-col gap-1 border-b border-slate-100 pb-2">
-                              <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Judul Konten</span>
-                              <span className="font-bold text-slate-900 leading-snug line-clamp-2">
-                                {beCampaign.title}
-                              </span>
-                            </div>
-
                             {/* Published By */}
                             <div className="flex items-center justify-between gap-2">
                               <span className="text-slate-500 font-medium">Dipublish oleh</span>
@@ -755,12 +758,6 @@ export default function CampaignWorkspacePage() {
                                 </span>
                               </div>
                             </div>
-
-                            {beCampaign.notes && (
-                              <div className="mt-1 p-2 bg-slate-50 border border-slate-200/70 rounded-md text-[11px] text-slate-600 italic leading-relaxed">
-                                "{beCampaign.notes}"
-                              </div>
-                            )}
                           </div>
                         </div>
                       ) : (
@@ -1990,48 +1987,35 @@ export default function CampaignWorkspacePage() {
               </DialogDescription>
             </DialogHeader>
 
-            {/* Form Fields: Judul & Catatan */}
+            {/* Content Preview Summary */}
+            <div className="bg-slate-50/80 border border-slate-200/90 rounded-xl my-4 divide-y divide-slate-200/80 text-xs overflow-hidden">
+              <div className="px-4 py-2.5 bg-slate-50">
+                <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Judul Konten</div>
+                <div className="text-xs font-bold text-slate-800 leading-snug line-clamp-2">{PRESET_ALERTS[0].title}</div>
+              </div>
+              <div className="grid grid-cols-2 divide-x divide-slate-200/80 bg-white">
+                <div className="px-4 py-2.5">
+                  <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">No. Alert</div>
+                  <div className="text-xs font-bold text-slate-800 font-mono">{PRESET_ALERTS[0].code}</div>
+                </div>
+                <div className="px-4 py-2.5">
+                  <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Kategori</div>
+                  <div className="text-xs font-bold text-red-600 font-semibold">{PRESET_ALERTS[0].category}</div>
+                </div>
+              </div>
+              <div className="px-4 py-2.5 flex items-center justify-between bg-slate-50/50">
+                <div>
+                  <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Lampiran Poster</div>
+                  <div className="text-[11px] font-semibold text-slate-700">Safety Alert 1 Halaman · Format Visual HD</div>
+                </div>
+                <span className="text-[9px] font-black text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
+                  <Lock className="h-2.5 w-2.5" /> Disahkan
+                </span>
+              </div>
+            </div>
+
+            {/* Verification Section: Checklist & Captcha */}
             <div className="space-y-3.5 my-4">
-              {/* Field 1: Judul Konten */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider flex items-center justify-between">
-                  <span>Judul Konten / Kampanye <span className="text-red-500">*</span></span>
-                  <span className="text-[10px] text-slate-400 font-normal">Wajib diisi</span>
-                </label>
-                <Input
-                  value={publishTitle}
-                  onChange={(e) => setPublishTitle(e.target.value)}
-                  placeholder="Ketik judul publikasi kampanye..."
-                  className="h-9 text-xs font-semibold text-slate-900 border-slate-300 focus:border-slate-900 focus:ring-0 rounded-lg shadow-none"
-                />
-              </div>
-
-              {/* Field 2: Catatan Tambahan / Pesan Pengantar */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider flex items-center justify-between">
-                  <span>Catatan Rilis / Instruksi <span className="text-slate-400 font-normal">(Opsional)</span></span>
-                </label>
-                <textarea
-                  value={publishNotes}
-                  onChange={(e) => setPublishNotes(e.target.value)}
-                  placeholder="Tulis catatan rilis atau instruksi sosialisasi untuk BeCampaign..."
-                  rows={2}
-                  className="w-full text-xs font-medium text-slate-800 border border-slate-300 focus:border-slate-900 rounded-lg p-2.5 outline-none resize-none shadow-none leading-relaxed"
-                />
-              </div>
-
-              {/* Info Ringkas: No. Alert & Kategori */}
-              <div className="grid grid-cols-2 gap-2 bg-slate-50 border border-slate-200/80 rounded-lg p-2.5 text-xs">
-                <div>
-                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">No. Alert</span>
-                  <span className="font-bold text-slate-800 font-mono">{PRESET_ALERTS[0].code}</span>
-                </div>
-                <div>
-                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Kategori & Lampiran</span>
-                  <span className="font-bold text-red-600 block">{PRESET_ALERTS[0].category} · Poster HD</span>
-                </div>
-              </div>
-
               {/* Checklist Persetujuan / Verifikasi */}
               <div className="bg-slate-50 border border-slate-200/90 rounded-xl p-3.5 flex flex-col gap-2.5">
                 <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest block">
@@ -2062,6 +2046,57 @@ export default function CampaignWorkspacePage() {
                   </span>
                 </label>
               </div>
+
+              {/* Captcha Verification Box */}
+              <div className="bg-white border border-slate-200/90 rounded-xl p-3.5 flex flex-col gap-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">
+                    Kode Verifikasi (Captcha) <span className="text-red-500">*</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={generateNewCaptcha}
+                    className="text-[10px] font-bold text-slate-500 hover:text-slate-900 flex items-center gap-1 transition-colors"
+                    title="Ganti kode captcha"
+                  >
+                    <RefreshCw className="h-3 w-3" />
+                    <span>Ganti kode</span>
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-2.5">
+                  {/* Captcha Visual Badge */}
+                  <div className="h-9 px-3.5 rounded-lg bg-slate-900 text-emerald-400 font-mono text-sm font-black tracking-[0.25em] flex items-center justify-center select-none shadow-inner border border-slate-800">
+                    {captchaCode}
+                  </div>
+
+                  {/* Input Captcha */}
+                  <div className="flex-1">
+                    <Input
+                      value={userCaptchaInput}
+                      onChange={(e) => setUserCaptchaInput(e.target.value.toUpperCase())}
+                      placeholder={`Ketik "${captchaCode}" di sini...`}
+                      maxLength={6}
+                      className={cn(
+                        "h-9 text-xs font-bold uppercase tracking-wider rounded-lg shadow-none outline-none transition-all",
+                        isCaptchaValid
+                          ? "border-emerald-500 text-emerald-900 bg-emerald-50/40 focus:border-emerald-600"
+                          : "border-slate-300 text-slate-900 focus:border-slate-900"
+                      )}
+                    />
+                  </div>
+                </div>
+
+                <p className="text-[10px] text-slate-400 leading-tight">
+                  {isCaptchaValid ? (
+                    <span className="text-emerald-600 font-semibold flex items-center gap-1">
+                      <CheckCircle2 className="h-3 w-3" /> Kode verifikasi sesuai.
+                    </span>
+                  ) : (
+                    "Masukkan kode di atas untuk mengonfirmasi rilis ke BeCampaign."
+                  )}
+                </p>
+              </div>
             </div>
 
             <DialogFooter className="gap-2 sm:gap-2 pt-1">
@@ -2075,7 +2110,7 @@ export default function CampaignWorkspacePage() {
               </Button>
               <Button
                 onClick={handlePublishBeCampaign}
-                disabled={isPublishing || !publishTitle.trim() || !confirmCheckVisual || !confirmCheckTarget}
+                disabled={isPublishing || !isPublishAllowed}
                 className="h-10 text-xs font-bold bg-slate-900 hover:bg-slate-800 active:scale-[0.98] text-white shadow-none rounded-lg px-5 gap-2 min-w-[170px] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {isPublishing ? (
