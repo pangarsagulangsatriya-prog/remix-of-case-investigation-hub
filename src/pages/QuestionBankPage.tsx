@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { AppSidebar } from '@/components/AppSidebar';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
@@ -13,7 +14,8 @@ import {
   Redo, 
   FileSearch,
   Search,
-  ChevronDown
+  ChevronDown,
+  Brain
 } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -25,6 +27,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 import { QuestionBankApiMode } from '@/components/question-bank/QuestionBankApiMode';
 
 type PageState = 'NO_SOURCE' | 'SOURCE_NO_QB' | 'GENERATING' | 'ERROR' | 'QUESTION_READY';
@@ -41,7 +44,57 @@ interface LibraryItem {
   uploadedAt: string;
   updatedAt?: string;
   content?: string;
+  isCampaignSource?: boolean;
+  campaignCode?: string;
 }
+
+const CAMPAIGN_MOCK_QUESTIONS = `# Question Bank - Safety Alert Campaign
+
+Source: LPI_SA-004_Track_Dozer_Amblas.pdf
+Incident Code: SA-004/IX/2026
+Incident Title: TRACK DOZER AMBLAS SAAT BRUSHING DI AREA TITIK LEMBEK
+Location: WMP 21, Blok 7 - BMO 2
+
+## 1. Identifikasi Bahaya & Area Titik Lembek
+
+Apa penyebab utama unit Track Dozer BMCDZ 116 amblas saat melakukan aktivitas brushing di WMP 21?
+A) Kerusakan tiba-tiba pada sistem hidrolik blade
+B) Area kerja memiliki titik lembek bekas parit aliran air yang belum teridentifikasi dan belum dipasang patok boundary
+C) Operator mengoperasikan unit dozer melebihi batas kecepatan maksimal
+D) Terjadi longsoran material dari lereng atas disposal
+ANSWER: B
+
+Tindakan wajib apa yang harus dilakukan sebelum memulai aktivitas brushing atau dozing di area yang berpotensi memiliki titik lembek?
+A) Menunggu permukaan tanah mengering secara alami tanpa inspeksi
+B) Memasang boundary/patok batas area kerja dan melakukan asesmen titik rawan amblas bersama pengawas
+C) Langsung bekerja asalkan cuaca cerah dan tidak turun hujan
+D) Menurunkan blade sedalam mungkin tanpa memeriksa jalur
+ANSWER: B
+
+## 2. Prosedur Operasional & Tanggap Darurat
+
+Dokumen standar operasional apa yang wajib dibuat dan dipastikan sebelum melakukan pekerjaan pembuatan saluran WMP?
+A) Dokumen Pengadaan Barang (PO) alat berat
+B) Dokumen Operasional Prosedur (DOP) dan MPRP aktivitas pembuatan saluran WMP
+C) Formulir izin cuti kerja pengawas lapangan
+D) Surat jalan pemindahan unit antar site
+ANSWER: B
+
+Apabila operator merasakan permukaan tanah mulai amblas atau track unit terasa terjebak di titik lembek, tindakan apa yang harus segera diambil?
+A) Menambah putaran gas mesin (throttle) agar unit lolos dengan paksa
+B) Segera HENTIKAN UNIT, jangan dipaksakan bermanuver, matikan alat dengan aman, dan LAPORKAN KE PENGAWAS
+C) Meninggalkan unit dalam keadaan mesin tetap hidup
+D) Meminta bantuan dozer lain untuk mendorong dari belakang tanpa izin pengawas
+ANSWER: B
+
+## 3. Tanggung Jawab Pengawasan & Kesiapan Kerja (FTW)
+
+Apa peran krusial pengawas lapangan sebelum shift pekerjaan dimulai di area disposal atau WMP?
+A) Memastikan pengisian checklist Fit To Work (FTW), safety briefing identifikasi bahaya, dan memastikan area kerja aman
+B) Menyerahkan seluruh keputusan rute kerja sepenuhnya kepada operator
+C) Memastikan target ritase tercapai tanpa melakukan inspeksi awal
+D) Hanya memantau pekerjaan melalui radio komunikasi dari kantor
+ANSWER: A`;
 
 const MOCK_GENERATED_MARKDOWN = `# Question Bank\n\nSource: {SOURCE_NAME}\n\nApa sikap yang harus dimiliki dalam menerapkan kaidah teknik pertambangan dengan tenaga teknis yang kompeten dan peralatan yang layak?\nA) Menunggu alat rusak baru melapor\nB) Bekerja secepat mungkin tanpa memeriksa alat\nC) Memastikan kesiapan alat dan kompetensi diri sebelum mulai bekerja\nD) Memakai alat seadanya asal bisa jalan\nANSWER: C\n\nBerikut adalah nilai perusahaan PT Berau Coal, kecuali?\nA) Inovatif\nB) Progresif\nC) Kepercayaan\nD) Amanah\nANSWER: D\n\nBerikut merupakan Nilai Perusahaan pada Kebijakan Teknik Pertambangan yang Baik, kecuali?\nA) Integritas\nB) Progresif\nC) Kepercayaan\nD) Inovatif\nANSWER: A\n\nDalam briefing pagi, seorang pengawas melihat anak buahnya tidak fokus dan tampak bingung terhadap metode kerja hari itu. Ia tergoda untuk langsung mulai kegiatan agar tidak membuang waktu. Bagaimana sikap pengawas yang mencerminkan nilai “kepercayaan” dan mendukung budaya keselamatan?\nA) Langsung menjalankan pekerjaan karena teknis sudah dijelaskan kemarin\nB) Menugaskan pekerja senior sebagai pendamping tanpa evaluasi tambahan\nC) Mengulang penjelasan metode kerja, membuka ruang tanya jawab, dan memastikan semua memahami\nD) Mendorong semua langsung bekerja lalu memberi evaluasi di akhir hari\nANSWER: C\n\nDalam menjalankan misi perusahaan, bagaimana sebaiknya sikap seorang karyawan terhadap keselamatan dan lingkungan?\nA) Fokus pada target produksi terlebih dahulu\nB) Menunggu instruksi atasan baru peduli\nC) Aktif menjaga keselamatan dan kelestarian lingkungan dalam setiap pekerjaan\nD) Hanya peduli jika ada inspeksi\nANSWER: C\n\nDalam proses reklamasi, PT Berau Coal berkomitmen mengembalikan lahan bekas tambang menjadi aman dan produktif. Sikap apa yang tepat sebagai karyawan terhadap proses ini?\nA) Serahkan saja ke bagian lingkungan\nB) Ikut terlibat dan peduli terhadap hasil reklamasi\nC) Tidak perlu ikut campur karena bukan tugas saya\nD) Hanya peduli kalau ada pelatihan\nANSWER: B\n\nGambar di bawah ini menunjukkan salah satu komitmen PT BC dalam melestarikan lingkungan yang disebut Revegetasi.\nA) Salah\nB) Benar\nANSWER: B\n\nJika Anda adalah bagian dari tim inovasi, nilai perusahaan apa yang harus Anda tanamkan dalam bekerja?\nA) Menjalankan tugas seadanya\nB) Menghindari perubahan yang tidak familiar\nC) Terbuka terhadap ide baru dan berani mencoba pendekatan baru\nD) Menunggu perintah atasan\nANSWER: C\n\nKonservasi batubara tidak termasuk dalam bagian kaidah teknik pertambangan yang baik.\nA) BENAR\nB) SALAH\nANSWER: B\n\nMengapa konservasi batubara penting dalam operasional pertambangan?\nA) Agar bisa dipakai untuk proyek jangka pendek\nB) Supaya tambang terlihat bersih\nC) Untuk memastikan sumber daya alam tidak terbuang sia-sia\nD) Untuk meningkatkan jam kerja karyawan\nANSWER: C\n\nMengapa pengelolaan lingkungan hidup termasuk dalam kaidah teknik pertambangan yang baik?\nA) Karena bisa menghindari denda\nB) Karena hanya bagian dari syarat dokumen\nC) Karena menjaga lingkungan adalah bagian dari tanggung jawab sosial kita\nD) Supaya cepat mendapat sertifikasi\nANSWER: C\n\nMengapa penting bagi PT Berau Coal untuk memiliki visi “menunjang masa depan cemerlang melalui pengalih ragam energi”?\nA) Agar perusahaan terlihat modern\nB) Karena tuntutan pemerintah\nC) Karena tanggung jawab jangka panjang terhadap generasi mendatang\nD) Supaya bisa bersaing dengan perusahaan asing\nANSWER: C\n\n1. Teknis Pertambangan Batubara, 2. Keselamatan Pertambangan Batubara, 3. Pengelolaan Lingungan Hidup Pertambangan Batubara, 4. Konservasi Pertambangan Batubara, dan 5. Standarisasi dan Usaha Jasa Pertambangan Batubara. merupakan poin dari?\nA) Tujuan Spesifik PT. BC\nB) Tekad PT. BC\nC) Prioritas Pelaksanaan Kaidah Teknik Pertambangan yang Baik\nD) Komitmen PT. BC\nANSWER: C\n\nMisi PT BC adalah Mengelola sumber daya alam menjadi sumber energi dengan standar operasional yang mengutamakan keselamatan, kelestarian lingkungan dan kesejahteraan masyarakat.\nA) BENAR\nB) SALAH\nANSWER: A\n\nPT Berau Coal berkomitmen untuk menggunakan mitra kerja yang mematuhi seluruh standar dan regulasi pertambangan.\nA) BENAR\nB) SALAH\nANSWER: A\n\nSaat melakukan inspeksi area tambang, pengawas menemukan limbah padat yang belum ditangani sesuai prosedur 3R (Reduce, Reuse, Recycle). Namun, pengawas merasa ini bukan area yang menjadi tanggung jawab langsungnya. Apa tindakan terbaik yang mencerminkan sikap progresif dan bertanggung jawab sebagai pengawas?\nA) Membuat catatan internal pribadi untuk disampaikan nanti jika ditanya\nB) Menunggu evaluasi bulanan untuk memasukkannya sebagai temuan\nC) Melaporkan kondisi tersebut segera dan mendorong perbaikan langsung sesuai prosedur\nD) Membiarkan karena bukan tanggung jawab divisi yang diawasi langsung\nANSWER: C\n\nSalah satu tujuan dari kaidah teknik pertambangan yang baik adalah menciptakan budaya keselamatan tambang yang produktif dan efisien.\nA) BENAR\nB) SALAH\nANSWER: A\n\nSeorang pengawas mengetahui bahwa salah satu mitra kerja di lapangan menggunakan peralatan yang tidak sesuai standar keselamatan. Namun, karena pekerjaan sedang dikejar target, beberapa staf lain menyarankan untuk membiarkan sementara waktu. Apa sikap yang seharusnya diambil oleh pengawas sesuai nilai perusahaan dan komitmen kaidah teknik pertambangan yang baik?\nA) Menyampaikan ke atasan tapi membiarkan pekerjaan tetap berjalan\nB) Menghentikan sementara pekerjaan dan memastikan peralatan diganti sesuai standar\nC) Memberikan toleransi karena mitra kerja sudah berpengalaman\nD) Menegur secara lisan saja agar tidak menimbulkan konflik\nANSWER: B\n\nSetelah melakukan pengecekan area pascatambang, pengawas menemukan bahwa reklamasi yang dilakukan belum sesuai standar, tetapi sudah dilaporkan sebagai “selesai” dalam sistem. Apa sikap pengawas yang menunjukkan integritas serta penerapan siklus Plan-Do-Check-Action (PDCA)?\nA) Menyampaikan laporan tambahan secara informal agar tidak mempermalukan tim\nB) Meminta admin memperbaiki data tanpa melakukan koreksi lapangan\nC) Menindaklanjuti temuan, mengkaji akar masalah, dan menyusun rencana perbaikan reklamasi\nD) Mengabaikan karena laporan sudah dikunci dan divalidasi sebelumnya\nANSWER: C\n\nSiklus PDCA (Plan-Do-Check-Action) diterapkan dalam sistem Be GeMS. Sikap apa yang perlu dimiliki agar siklus ini berjalan efektif?\nA) Cuek selama hasil kerja selesai\nB) Fokus pada tugas individu saja\nC) Terbuka terhadap evaluasi dan siap memperbaiki kesalahan\nD) Takut jika ada kesalahan ditemukan\nANSWER: C\n\nVisi dari PT Berau Coal adalah?\nA) Menunjang perwujudan masa depan cemerlang melalui peran aktifnya sebagai pengalih ragam energi yang eksponensial\nB) Mengelola sumber daya alam menjadi sumber energi dengan standar operasional yang mengutamakan keselamatan, kelestarian lingkungan dan kesejahteraan masyarakat.\nC) Mendorong Batasan-Batasan yang Ada Saat Ini dan Kemudian Menciptakan Terobosan baru Melalui Sumber Daya Manusia dan Teknologi\nD) Menjadi perusahaan tambah terbaik di Kalimantan Timur\nANSWER: A`;
 
@@ -105,6 +158,75 @@ export default function QuestionBankPage() {
   const [duplicateFile, setDuplicateFile] = useState<LibraryItem | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // URL Params handling for Campaign integration
+  const [searchParams] = useSearchParams();
+  const fromCampaign = searchParams.get('fromCampaign');
+  const autoGenerate = searchParams.get('autoGenerate') === 'true';
+  const campaignHandledRef = useRef(false);
+
+  useEffect(() => {
+    if (fromCampaign && !campaignHandledRef.current) {
+      campaignHandledRef.current = true;
+      const campaignDocId = 'doc-campaign-sa004';
+      const campaignFilename = 'LPI_SA-004_Track_Dozer_Amblas.pdf';
+      const dateStr = new Date().toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).replace(',', ' ·') + ' WIB';
+
+      const campaignItem: LibraryItem = {
+        id: campaignDocId,
+        filename: campaignFilename,
+        pages: 14,
+        sizeMB: 3.4,
+        status: 'Not Generated',
+        uploadedAt: dateStr,
+        isCampaignSource: true,
+        campaignCode: fromCampaign
+      };
+
+      setLibraryItems(prev => [campaignItem, ...prev.filter(p => p.id !== campaignDocId)]);
+      setActiveLibraryId(campaignDocId);
+      setDemo1Tab('library');
+      setDemoMode('upload');
+
+      if (autoGenerate) {
+        setPageState('GENERATING');
+        setGenerationStep(0);
+
+        const t1 = setTimeout(() => setGenerationStep(1), 1200);
+        const t2 = setTimeout(() => setGenerationStep(2), 2400);
+        const t3 = setTimeout(() => {
+          const dateDoneStr = new Date().toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).replace(',', ' ·') + ' WIB';
+          const qCount = (CAMPAIGN_MOCK_QUESTIONS.match(/ANSWER:/g) || []).length;
+
+          setLibraryItems(prev => prev.map(item => {
+            if (item.id === campaignDocId) {
+              return {
+                ...item,
+                status: 'Question Bank Ready',
+                content: CAMPAIGN_MOCK_QUESTIONS,
+                questionCount: qCount,
+                updatedAt: dateDoneStr
+              };
+            }
+            return item;
+          }));
+
+          setMarkdownText(CAMPAIGN_MOCK_QUESTIONS);
+          setPageState('QUESTION_READY');
+          setSaveStatus('Saved');
+          toast.success("Question Bank otomatis berhasil di-generate dari Campaign!");
+        }, 3600);
+
+        return () => {
+          clearTimeout(t1);
+          clearTimeout(t2);
+          clearTimeout(t3);
+        };
+      } else {
+        setPageState('SOURCE_NO_QB');
+      }
+    }
+  }, [fromCampaign, autoGenerate]);
 
   // Left Panel - Demo 2 (Search) State
   const [searchQuery, setSearchQuery] = useState('');
@@ -262,7 +384,10 @@ export default function QuestionBankPage() {
     setTimeout(() => setGenerationStep(2), 3000);
     setTimeout(() => {
       const name = activeSourceName || 'Document.pdf';
-      const newContent = MOCK_GENERATED_MARKDOWN.replace('{SOURCE_NAME}', name);
+      const isCampaignDoc = activeItem?.id === 'doc-campaign-sa004' || activeSourceName?.includes('SA-004');
+      const newContent = isCampaignDoc
+        ? CAMPAIGN_MOCK_QUESTIONS
+        : MOCK_GENERATED_MARKDOWN.replace('{SOURCE_NAME}', name);
       
       if (demoMode === 'upload' && activeLibraryId) {
         const dateStr = new Date().toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).replace(',', ' ·') + ' WIB';
@@ -535,6 +660,12 @@ export default function QuestionBankPage() {
                                       <FileText className={cn("w-5 h-5 mt-0.5 shrink-0", isActive ? "text-indigo-600" : "text-slate-400")} />
                                       <div className="flex-1 min-w-0">
                                         <div className="text-[12px] font-bold text-slate-800 truncate" title={item.filename}>{item.filename}</div>
+                                        {item.isCampaignSource && (
+                                          <div className="mt-1 inline-flex items-center gap-1 text-[9px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200/80 px-1.5 py-0.5 rounded uppercase tracking-wider">
+                                            <Brain className="w-2.5 h-2.5 text-indigo-600" />
+                                            <span>Dari Campaign {item.campaignCode || 'SA-004'}</span>
+                                          </div>
+                                        )}
                                         <div className="text-[11px] text-slate-500 mt-0.5">{item.pages} pages</div>
                                         
                                         <div className="mt-3 flex items-center gap-2">

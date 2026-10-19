@@ -8,7 +8,7 @@ import {
   ChevronDown, ChevronRight, History, BarChart3, Info, ExternalLink, Play, 
   Database, Brain, Send, Bot, FileText, Search, Trash2, Edit3, User, Link2, 
   Sparkle, PanelLeft, PanelLeftClose, PanelRight, X, Pencil, List, BookOpen, PlayCircle, ChevronLeft, Download, Check, Lock, Monitor, Image, Minus, Plus,
-  Printer, AlertTriangle, Copy, MessageSquare, RefreshCw, UploadCloud, Globe
+  Printer, AlertTriangle, Copy, MessageSquare, RefreshCw, UploadCloud, Globe, FileSearch
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SafetyAlertPoster } from "@/components/workspace/SafetyAlertPoster";
@@ -61,6 +61,7 @@ export default function CampaignWorkspacePage() {
   } | null>(null);
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [showQBModal, setShowQBModal] = useState(false);
   
   // Captcha & Checklist Verification State
   const [captchaCode, setCaptchaCode] = useState("8K4M");
@@ -790,6 +791,41 @@ export default function CampaignWorkspacePage() {
                           </button>
                         </div>
                       )}
+
+                      {/* Question Bank Trigger Card */}
+                      <div className="bg-indigo-50/70 border border-indigo-200/90 rounded-xl p-3.5 flex flex-col gap-2.5 shadow-sm">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 rounded bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+                              <FileSearch className="h-3.5 w-3.5" />
+                            </div>
+                            <div>
+                              <span className="text-[10px] font-black text-indigo-950 uppercase tracking-wider block leading-tight">
+                                QUESTION BANK
+                              </span>
+                              <span className="text-[9px] text-indigo-700 font-semibold">
+                                Bank Soal Investigasi
+                              </span>
+                            </div>
+                          </div>
+                          <span className="text-[8px] font-bold bg-indigo-200/80 text-indigo-900 px-1.5 py-0.5 rounded tracking-wide uppercase">
+                            Siap Buat
+                          </span>
+                        </div>
+
+                        <p className="text-[11px] text-slate-600 leading-relaxed">
+                          Jadikan materi dan rekomendasi perbaikan campaign ini sebagai bank soal pemahaman pekerja.
+                        </p>
+
+                        <button
+                          type="button"
+                          onClick={() => setShowQBModal(true)}
+                          className="w-full h-8 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white text-xs font-bold rounded-lg flex items-center justify-center gap-2 transition-all shadow-none"
+                        >
+                          <Brain className="h-3.5 w-3.5" />
+                          <span>Jadikan Question Bank</span>
+                        </button>
+                      </div>
                     </>
                   ) : isGenerated ? (
                     <>
@@ -2124,6 +2160,83 @@ export default function CampaignWorkspacePage() {
                     <span>Publish Sekarang</span>
                   </>
                 )}
+              </Button>
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Question Bank Confirmation Dialog */}
+      <Dialog open={showQBModal} onOpenChange={setShowQBModal}>
+        <DialogContent className="max-w-[460px] p-0 overflow-hidden border border-slate-200 shadow-2xl rounded-2xl bg-white">
+          <div className="p-6">
+            <DialogHeader className="mb-3 text-left">
+              <div className="flex items-center justify-between mb-2">
+                <div className="h-10 w-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+                  <FileSearch className="h-5 w-5 text-white" />
+                </div>
+                <span className="text-[10px] font-extrabold uppercase tracking-widest text-indigo-600 bg-indigo-50 border border-indigo-200 px-2.5 py-1 rounded-full">
+                  Question Bank
+                </span>
+              </div>
+              <DialogTitle className="text-lg font-black text-slate-900 tracking-tight">
+                Jadikan Question Bank?
+              </DialogTitle>
+              <DialogDescription className="text-xs text-slate-600 mt-1 leading-relaxed text-left">
+                Materi analisis, fakta kronologis, dan rekomendasi perbaikan dari Campaign ini akan ditransfer ke modul Question Bank untuk dibuatkan bank soal evaluasi secara otomatis.
+              </DialogDescription>
+            </DialogHeader>
+
+            {/* Content Preview Summary */}
+            <div className="bg-slate-50/80 border border-slate-200/90 rounded-xl my-4 divide-y divide-slate-200/80 text-xs overflow-hidden">
+              <div className="px-4 py-2.5 bg-slate-50">
+                <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Judul Konten Sumber</div>
+                <div className="text-xs font-bold text-slate-800 leading-snug line-clamp-2">{PRESET_ALERTS[0].title}</div>
+              </div>
+              <div className="grid grid-cols-2 divide-x divide-slate-200/80 bg-white">
+                <div className="px-4 py-2.5">
+                  <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">No. Alert</div>
+                  <div className="text-xs font-bold text-slate-800 font-mono">{PRESET_ALERTS[0].code}</div>
+                </div>
+                <div className="px-4 py-2.5">
+                  <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Kategori</div>
+                  <div className="text-xs font-bold text-red-600 font-semibold">{PRESET_ALERTS[0].category}</div>
+                </div>
+              </div>
+              <div className="px-4 py-2.5 flex items-center justify-between bg-slate-50/50">
+                <div>
+                  <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Dokumen Ditransfer</div>
+                  <div className="text-[11px] font-semibold text-indigo-900">LPI_SA-004_Track_Dozer_Amblas.pdf</div>
+                </div>
+                <span className="text-[9px] font-black text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                  Auto Generate
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-2.5 text-[11px] text-slate-500 bg-indigo-50/60 border border-indigo-100 rounded-lg p-2.5 leading-relaxed mb-6">
+              <Info className="h-4 w-4 mt-0.5 shrink-0 text-indigo-500" />
+              <span>Setelah dikonfirmasi, sistem akan langsung membuka modul Question Bank dan men-generate bank soal tanpa perlu upload PDF atau menekan tombol generate lagi.</span>
+            </div>
+
+            <DialogFooter className="gap-2 sm:gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowQBModal(false)}
+                className="h-10 text-xs font-bold text-slate-600 border-slate-200 hover:bg-slate-100 rounded-lg px-4"
+              >
+                Batal
+              </Button>
+              <Button
+                onClick={() => {
+                  setShowQBModal(false);
+                  toast.success("Mengarahkan ke Question Bank & memulai generate soal...");
+                  navigate('/question-bank?fromCampaign=SA-004%2FIX%202026&title=' + encodeURIComponent(PRESET_ALERTS[0].title) + '&autoGenerate=true');
+                }}
+                className="h-10 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white shadow-none rounded-lg px-5 gap-2 min-w-[170px] transition-all"
+              >
+                <Brain className="h-4 w-4 text-indigo-200" />
+                <span>Buat Question Bank</span>
               </Button>
             </DialogFooter>
           </div>
