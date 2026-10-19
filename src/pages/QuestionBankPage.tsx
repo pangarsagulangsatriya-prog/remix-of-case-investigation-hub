@@ -901,40 +901,30 @@ export default function QuestionBankPage() {
                   {/* STATE: GENERATING */}
                   {pageState === 'GENERATING' && (
                     <div className="absolute inset-0 flex flex-col items-center justify-center p-8 bg-slate-50/30">
-                      <div className="w-full max-w-sm bg-white border border-slate-200 rounded-xl p-8 shadow-sm">
-                        <h3 className="text-base font-bold text-slate-900 mb-6 text-center">Generating Question Bank</h3>
-                        
-                        <div className="space-y-4 mb-8">
-                          <div className={cn("flex items-center gap-3 transition-opacity", generationStep >= 0 ? "opacity-100" : "opacity-40")}>
-                            {generationStep > 0 ? (
-                              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-                            ) : (
-                              <RefreshCw className="w-4 h-4 text-indigo-500 animate-spin shrink-0" />
-                            )}
-                            <span className="text-sm font-medium text-slate-700">Reading PDF</span>
-                          </div>
-                          
-                          <div className={cn("flex items-center gap-3 transition-opacity", generationStep >= 1 ? "opacity-100" : "opacity-40")}>
-                            {generationStep > 1 ? (
-                              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-                            ) : generationStep === 1 ? (
-                              <RefreshCw className="w-4 h-4 text-indigo-500 animate-spin shrink-0" />
-                            ) : (
-                              <div className="w-4 h-4 rounded-full border-2 border-slate-200 shrink-0" />
-                            )}
-                            <span className="text-sm font-medium text-slate-700">Extracting LPI content</span>
-                          </div>
-                          
-                          <div className={cn("flex items-center gap-3 transition-opacity", generationStep >= 2 ? "opacity-100" : "opacity-40")}>
-                            {generationStep > 2 ? (
-                              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-                            ) : generationStep === 2 ? (
-                              <RefreshCw className="w-4 h-4 text-indigo-500 animate-spin shrink-0" />
-                            ) : (
-                              <div className="w-4 h-4 rounded-full border-2 border-slate-200 shrink-0" />
-                            )}
-                            <span className="text-sm font-medium text-slate-700">Generating questions</span>
-                          </div>
+                      <div className="w-full max-w-sm bg-white border border-slate-200 rounded-xl p-6 shadow-sm animate-in fade-in zoom-in-95 duration-300">
+                        <h3 className="text-sm font-bold text-slate-900 text-center">Membuat Question Bank</h3>
+                        <p className="text-[11px] text-slate-500 text-center mt-1 mb-5 truncate font-mono">{activeSourceName || 'Document.pdf'}</p>
+
+                        <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden mb-5">
+                          <div
+                            className="h-full bg-indigo-600 rounded-full transition-all duration-700 ease-out"
+                            style={{ width: `${Math.min(100, ((generationStep + 1) / 3) * 100 - 8)}%` }}
+                          />
+                        </div>
+
+                        <div className="space-y-3">
+                          {['Membaca dokumen', 'Mengekstrak isi LPI', 'Menyusun soal'].map((label, i) => (
+                            <div key={label} className={cn("flex items-center gap-3 transition-opacity duration-300", generationStep >= i ? "opacity-100" : "opacity-40")}>
+                              {generationStep > i ? (
+                                <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 animate-in zoom-in duration-200" />
+                              ) : generationStep === i ? (
+                                <RefreshCw className="w-4 h-4 text-indigo-500 animate-spin shrink-0" />
+                              ) : (
+                                <div className="w-4 h-4 rounded-full border-2 border-slate-200 shrink-0" />
+                              )}
+                              <span className={cn("text-xs font-medium", generationStep === i ? "text-slate-900" : "text-slate-600")}>{label}</span>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     </div>
