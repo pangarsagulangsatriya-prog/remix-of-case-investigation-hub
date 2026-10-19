@@ -8,7 +8,7 @@ import {
   ChevronDown, ChevronRight, History, BarChart3, Info, ExternalLink, Play, 
   Database, Brain, Send, Bot, FileText, Search, Trash2, Edit3, User, Link2, 
   Sparkle, PanelLeft, PanelLeftClose, PanelRight, X, Pencil, List, BookOpen, PlayCircle, ChevronLeft, Download, Check, Lock, Monitor, Image, Minus, Plus,
-  Printer, AlertTriangle, Copy, MessageSquare
+  Printer, AlertTriangle, Copy, MessageSquare, RefreshCw, UploadCloud, Globe
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SafetyAlertPoster } from "@/components/workspace/SafetyAlertPoster";
@@ -48,6 +48,64 @@ export default function CampaignWorkspacePage() {
   const [isApproved, setIsApproved] = useState(false);
   const [showValidateModal, setShowValidateModal] = useState(false);
   const [showWhatsAppDrawer, setShowWhatsAppDrawer] = useState(false);
+
+  // BeCampaign Publish State
+  type BeCampaignStatus = "BARU" | "DIPROSES" | "TAYANG";
+  const [beCampaign, setBeCampaign] = useState<{
+    contentId: number;
+    publishedAt: Date;
+    lastSyncedAt: Date;
+    status: BeCampaignStatus;
+  } | null>(null);
+  const [showPublishModal, setShowPublishModal] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [isSyncingBeCampaign, setIsSyncingBeCampaign] = useState(false);
+
+  const BECAMPAIGN_STATUS_META: Record<BeCampaignStatus, { label: string; className: string; hint: string }> = {
+    BARU: { label: "Baru", className: "bg-emerald-50 text-emerald-700 border-emerald-200", hint: "Konten diterima BeCampaign, menunggu ditayangkan." },
+    DIPROSES: { label: "Diproses", className: "bg-amber-50 text-amber-700 border-amber-200", hint: "Konten sedang ditinjau & dijadwalkan di BeCampaign." },
+    TAYANG: { label: "Tayang", className: "bg-blue-50 text-blue-700 border-blue-200", hint: "Konten sudah tayang di kanal BeCampaign." },
+  };
+
+  const formatWita = (date: Date) =>
+    `${date.toLocaleString("id-ID", {
+      timeZone: "Asia/Makassar",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    })} WITA`;
+
+  const handlePublishBeCampaign = () => {
+    setIsPublishing(true);
+    setTimeout(() => {
+      const now = new Date();
+      setBeCampaign({
+        contentId: Math.floor(200 + Math.random() * 800),
+        publishedAt: now,
+        lastSyncedAt: now,
+        status: "BARU",
+      });
+      setIsPublishing(false);
+      setShowPublishModal(false);
+      toast.success("Konten berhasil dipublikasi & tersinkron ke BeCampaign.");
+    }, 1600);
+  };
+
+  const handleSyncBeCampaign = () => {
+    if (!beCampaign || isSyncingBeCampaign) return;
+    setIsSyncingBeCampaign(true);
+    setTimeout(() => {
+      setBeCampaign(prev => {
+        if (!prev) return prev;
+        const next: BeCampaignStatus = prev.status === "BARU" ? "DIPROSES" : "TAYANG";
+        return { ...prev, status: next, lastSyncedAt: new Date() };
+      });
+      setIsSyncingBeCampaign(false);
+      toast.success("Status BeCampaign berhasil disinkronkan.");
+    }, 1200);
+  };
 
   // Modal State
   const [selectedAnalysis, setSelectedAnalysis] = useState<string | null>(null);
@@ -653,6 +711,95 @@ export default function CampaignWorkspacePage() {
                           </Button>
                         </div>
                       </div>
+
+                      {/* BeCampaign Publish / Sync Status Card */}
+                      {beCampaign ? (
+                        <div className="bg-white border border-slate-200/90 rounded-xl p-4 flex flex-col gap-3.5 shadow-sm hover:shadow-md transition-all duration-200">
+                          {/* Card Header */}
+                          <div className="flex items-center justify-between">
+                            <span className="text-[12px] font-black text-slate-700 tracking-[0.14em] uppercase">
+                              BECAMPAIGN
+                            </span>
+                            <span className={cn(
+                              "text-[11px] font-extrabold px-3 py-0.5 rounded-full uppercase tracking-wider transition-all duration-300",
+                              beCampaign.status === "BARU" 
+                                ? "bg-emerald-50 text-emerald-700 border border-emerald-200/70"
+                                : beCampaign.status === "DIPROSES"
+                                ? "bg-amber-50 text-amber-700 border border-amber-200/70"
+                                : "bg-blue-50 text-blue-700 border border-blue-200/70"
+                            )}>
+                              {BECAMPAIGN_STATUS_META[beCampaign.status].label}
+                            </span>
+                          </div>
+
+                          {/* Data Rows */}
+                          <div className="flex flex-col gap-2.5 pt-0.5 text-xs">
+                            <div className="flex items-center justify-between gap-4">
+                              <span className="text-slate-500 font-medium">Content ID</span>
+                              <span className="font-bold text-slate-900 tracking-tight">{beCampaign.contentId}</span>
+                            </div>
+
+                            <div className="flex items-start justify-between gap-4">
+                              <span className="text-slate-500 font-medium shrink-0 pt-0.5">Dipublikasi</span>
+                              <span className="font-bold text-slate-900 text-right leading-relaxed max-w-[170px]">
+                                {formatWita(beCampaign.publishedAt)}
+                              </span>
+                            </div>
+
+                            <div className="flex items-start justify-between gap-4">
+                              <span className="text-slate-500 font-medium shrink-0 pt-0.5">Sinkron terakhir</span>
+                              <span className="font-bold text-slate-900 text-right leading-relaxed max-w-[170px]">
+                                {formatWita(beCampaign.lastSyncedAt)}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Sync Button */}
+                          <div className="pt-1">
+                            <button
+                              type="button"
+                              onClick={handleSyncBeCampaign}
+                              disabled={isSyncingBeCampaign}
+                              className="w-full h-10 border border-slate-200/90 hover:border-slate-300 bg-white hover:bg-slate-50/80 active:scale-[0.99] rounded-lg flex items-center justify-center gap-2 text-slate-800 text-xs font-bold transition-all disabled:opacity-60 disabled:cursor-not-allowed group shadow-none"
+                            >
+                              <RefreshCw className={cn(
+                                "h-4 w-4 text-emerald-600 transition-transform duration-500 group-hover:rotate-45",
+                                isSyncingBeCampaign && "animate-spin text-emerald-600"
+                              )} />
+                              <span>{isSyncingBeCampaign ? "Menyinkronkan..." : "Sync Status"}</span>
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="bg-slate-50/70 border border-dashed border-slate-300 rounded-xl p-4 flex flex-col gap-3 transition-all hover:bg-slate-50 hover:border-slate-400/80 group">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <div className="w-6 h-6 rounded-md bg-slate-200 text-slate-700 flex items-center justify-center shrink-0">
+                                <Globe className="h-3.5 w-3.5" />
+                              </div>
+                              <span className="text-[12px] font-black text-slate-800 tracking-[0.14em] uppercase">
+                                BECAMPAIGN
+                              </span>
+                            </div>
+                            <span className="text-[10px] font-bold bg-slate-200/80 text-slate-600 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                              Belum Publish
+                            </span>
+                          </div>
+
+                          <p className="text-xs text-slate-500 leading-relaxed">
+                            Publikasikan konten poster safety alert ini ke portal BeCampaign secara terpusat.
+                          </p>
+
+                          <button
+                            type="button"
+                            onClick={() => setShowPublishModal(true)}
+                            className="w-full h-9 bg-slate-900 hover:bg-slate-800 active:scale-[0.99] text-white text-xs font-bold rounded-lg flex items-center justify-center gap-2 transition-all shadow-none mt-0.5"
+                          >
+                            <UploadCloud className="h-4 w-4 text-slate-300 group-hover:scale-110 transition-transform" />
+                            <span>Publish ke BeCampaign</span>
+                          </button>
+                        </div>
+                      )}
                     </>
                   ) : isGenerated ? (
                     <>
@@ -1811,6 +1958,89 @@ export default function CampaignWorkspacePage() {
                 className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-none px-6"
               >
                 Sahkan Konten
+              </Button>
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Publish to BeCampaign Confirmation Dialog */}
+      <Dialog open={showPublishModal} onOpenChange={(open) => { if (!isPublishing) setShowPublishModal(open); }}>
+        <DialogContent className="max-w-[460px] p-0 overflow-hidden border border-slate-200 shadow-2xl rounded-2xl bg-white">
+          <div className="p-6">
+            <DialogHeader className="mb-3 text-left">
+              <div className="flex items-center justify-between mb-2">
+                <div className="h-10 w-10 rounded-xl bg-slate-900 text-white flex items-center justify-center shrink-0 shadow-sm">
+                  <UploadCloud className="h-5 w-5 text-white" />
+                </div>
+                <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full">
+                  Konfirmasi Publikasi
+                </span>
+              </div>
+              <DialogTitle className="text-lg font-black text-slate-900 tracking-tight">
+                Publish ke BeCampaign?
+              </DialogTitle>
+              <DialogDescription className="text-xs text-slate-600 mt-1 leading-relaxed text-left">
+                Konten safety alert yang telah disahkan akan dikirim ke sistem BeCampaign pusat. Status penayangan dan audiens dapat dipantau langsung dari dashboard ini.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="bg-slate-50/80 border border-slate-200/90 rounded-xl my-4 divide-y divide-slate-200/80 text-xs overflow-hidden">
+              <div className="px-4 py-2.5 bg-slate-50">
+                <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Judul Konten</div>
+                <div className="text-xs font-bold text-slate-800 leading-snug line-clamp-2">{PRESET_ALERTS[0].title}</div>
+              </div>
+              <div className="grid grid-cols-2 divide-x divide-slate-200/80 bg-white">
+                <div className="px-4 py-2.5">
+                  <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">No. Alert</div>
+                  <div className="text-xs font-bold text-slate-800 font-mono">{PRESET_ALERTS[0].code}</div>
+                </div>
+                <div className="px-4 py-2.5">
+                  <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Kategori</div>
+                  <div className="text-xs font-bold text-red-600 font-semibold">{PRESET_ALERTS[0].category}</div>
+                </div>
+              </div>
+              <div className="px-4 py-2.5 flex items-center justify-between bg-slate-50/50">
+                <div>
+                  <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Lampiran Poster</div>
+                  <div className="text-[11px] font-semibold text-slate-700">Safety Alert 1 Halaman · Format Visual HD</div>
+                </div>
+                <span className="text-[9px] font-black text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
+                  <Lock className="h-2.5 w-2.5" /> Disahkan
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-2.5 text-[11px] text-slate-500 bg-blue-50/60 border border-blue-100 rounded-lg p-2.5 leading-relaxed mb-6">
+              <Info className="h-4 w-4 mt-0.5 shrink-0 text-blue-500" />
+              <span>Setelah dipublikasikan, sistem akan membuat <strong>Content ID</strong> resmi serta mencatat timestamp sinkronisasi pertama kali.</span>
+            </div>
+
+            <DialogFooter className="gap-2 sm:gap-2">
+              <Button
+                variant="outline"
+                disabled={isPublishing}
+                onClick={() => setShowPublishModal(false)}
+                className="h-10 text-xs font-bold text-slate-600 border-slate-200 hover:bg-slate-100 rounded-lg px-4"
+              >
+                Batal
+              </Button>
+              <Button
+                onClick={handlePublishBeCampaign}
+                disabled={isPublishing}
+                className="h-10 text-xs font-bold bg-slate-900 hover:bg-slate-800 active:scale-[0.98] text-white shadow-none rounded-lg px-5 gap-2 min-w-[170px] transition-all"
+              >
+                {isPublishing ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin text-slate-300" />
+                    <span>Mempublikasi ke Portal...</span>
+                  </>
+                ) : (
+                  <>
+                    <UploadCloud className="h-4 w-4 text-slate-300" />
+                    <span>Publish Sekarang</span>
+                  </>
+                )}
               </Button>
             </DialogFooter>
           </div>
