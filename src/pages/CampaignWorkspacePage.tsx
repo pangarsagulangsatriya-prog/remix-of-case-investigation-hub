@@ -62,6 +62,9 @@ export default function CampaignWorkspacePage() {
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [showQBModal, setShowQBModal] = useState(false);
+  const [qbCreated, setQbCreated] = useState<boolean>(() => {
+    try { return localStorage.getItem(`qb-created-${campaignId}`) === "1"; } catch { return false; }
+  });
   
   // Captcha & Checklist Verification State
   const [captchaCode, setCaptchaCode] = useState("8K4M");
@@ -635,196 +638,125 @@ export default function CampaignWorkspacePage() {
                 <div className="px-5 pb-5 flex flex-col gap-4">
                   {isApproved ? (
                     <>
-                      <div className="bg-slate-50 border border-slate-100 rounded-md p-4">
-                        <div className="flex items-start gap-3">
-                          <Lock className="h-4 w-4 text-slate-400 mt-0.5 shrink-0" />
-                          <div>
-                            <h4 className="text-xs font-bold text-slate-800 mb-1">Konten telah disahkan</h4>
-                            <p className="text-[11px] text-slate-500 leading-relaxed">Versi ini telah dikunci sebagai konten final.</p>
-                          </div>
-                        </div>
+                      <div className="flex items-center gap-2 text-[11px] text-slate-500">
+                        <Lock className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                        <span className="font-semibold text-slate-700">Disahkan</span>
+                        <span className="text-slate-300">·</span>
+                        <span>Versi final</span>
                       </div>
-                      
+
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold h-10 shadow-none rounded-md">
                             <Download className="mr-2 h-4 w-4" /> Download Konten
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="center" className="w-[280px] p-2">
-                          <DropdownMenuItem onClick={() => toast.success("Mendownload format JPEG...")} className="flex items-start gap-3 p-3 cursor-pointer rounded-md focus:bg-slate-50">
-                            <Image className="h-5 w-5 text-blue-500 shrink-0 mt-0.5" />
-                            <div>
-                              <div className="text-xs font-bold text-slate-800 mb-0.5">Download sebagai JPEG</div>
-                              <div className="text-[10px] text-slate-500">Format file .jpg</div>
-                            </div>
+                        <DropdownMenuContent align="center" className="w-[240px] p-1.5">
+                          <DropdownMenuItem onClick={() => toast.success("Mendownload format JPEG...")} className="flex items-center gap-3 px-3 py-2 cursor-pointer rounded-md focus:bg-slate-50">
+                            <Image className="h-4 w-4 text-blue-500 shrink-0" />
+                            <span className="text-xs font-semibold text-slate-800">JPEG</span>
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => toast.success("Mendownload format PNG...")} className="flex items-start gap-3 p-3 cursor-pointer rounded-md focus:bg-slate-50 mt-1">
-                            <Image className="h-5 w-5 text-emerald-500 shrink-0 mt-0.5" />
-                            <div>
-                              <div className="text-xs font-bold text-slate-800 mb-0.5">Download sebagai PNG</div>
-                              <div className="text-[10px] text-slate-500">Format file .png</div>
-                            </div>
+                          <DropdownMenuItem onClick={() => toast.success("Mendownload format PNG...")} className="flex items-center gap-3 px-3 py-2 cursor-pointer rounded-md focus:bg-slate-50">
+                            <Image className="h-4 w-4 text-emerald-500 shrink-0" />
+                            <span className="text-xs font-semibold text-slate-800">PNG</span>
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
 
-                      {/* WhatsApp Broadcast Summary Card */}
-                      <div className="bg-emerald-50/80 border border-emerald-200/90 rounded-md p-3.5 flex flex-col gap-2.5 shadow-sm">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 rounded bg-[#25D366] text-white flex items-center justify-center shrink-0 shadow-sm">
-                              <MessageSquare className="h-3.5 w-3.5 fill-current" />
+                      {/* Distribusi & Turunan */}
+                      <div className="flex flex-col gap-1.5">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.14em]">Distribusi & Turunan</span>
+                        <div className="rounded-lg border border-slate-200 bg-white divide-y divide-slate-100 overflow-hidden">
+                          {/* Broadcast P5M */}
+                          <div className="group flex items-center gap-2.5 px-3 py-2.5 hover:bg-slate-50 transition-colors">
+                            <div className="h-7 w-7 rounded-md bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                              <MessageSquare className="h-3.5 w-3.5" />
                             </div>
-                            <div>
-                              <span className="text-[10px] font-black text-emerald-950 uppercase tracking-wider block leading-tight">
-                                Broadcast P5M
-                              </span>
-                              <span className="text-[9px] text-emerald-700 font-semibold">
-                                WhatsApp Summary Siap
-                              </span>
+                            <div className="min-w-0 flex-1">
+                              <div className="text-xs font-semibold text-slate-800 leading-tight">Broadcast P5M</div>
+                              <div className="flex items-center gap-1 text-[10px] text-slate-500 mt-0.5">
+                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Siap kirim
+                              </div>
                             </div>
-                          </div>
-                          <span className="text-[8px] font-bold bg-emerald-200/80 text-emerald-900 px-1.5 py-0.5 rounded tracking-wide uppercase">
-                            Siap Kirim
-                          </span>
-                        </div>
-
-                        <p className="text-[11px] text-slate-600 leading-relaxed line-clamp-2">
-                          Ringkasan otomatis untuk sosialisasi P5M, safety briefing, dan grup koordinasi lapangan.
-                        </p>
-
-                        <div className="grid grid-cols-2 gap-2 pt-0.5">
-                          <Button
-                            variant="outline"
-                            onClick={() => setShowWhatsAppDrawer(true)}
-                            className="w-full h-8 text-[11px] font-bold border-emerald-300 text-emerald-900 hover:bg-emerald-100/70 rounded-md gap-1"
-                          >
-                            <Eye className="h-3 w-3 text-emerald-700" />
-                            Preview
-                          </Button>
-                          <Button
-                            onClick={() => {
-                              const text = buildWhatsAppMessage(PRESET_ALERTS[0], true);
-                              navigator.clipboard.writeText(text);
-                              toast.success("Pesan WhatsApp berhasil disalin ke clipboard!");
-                            }}
-                            className="w-full h-8 text-[11px] font-bold bg-[#25D366] hover:bg-[#1ebd59] text-white shadow-none rounded-md gap-1"
-                          >
-                            <Copy className="h-3 w-3" />
-                            Salin Pesan
-                          </Button>
-                        </div>
-                      </div>
-
-                      {/* BeCampaign Publish / Sync Status Card */}
-                      {beCampaign ? (
-                        <div className="bg-white border border-slate-200/90 rounded-xl p-4 flex flex-col gap-3 shadow-sm hover:shadow-md transition-all duration-200 animate-in fade-in slide-in-from-bottom-1 duration-300">
-                          {/* Card Header */}
-                          <div className="flex items-center justify-between">
-                            <span className="text-[12px] font-black text-slate-700 tracking-[0.14em] uppercase">
-                              BECAMPAIGN
-                            </span>
-                            <span className="text-[11px] font-extrabold px-3 py-0.5 rounded-full uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200/70">
-                              BARU
-                            </span>
+                            <button
+                              type="button"
+                              title="Preview"
+                              onClick={() => setShowWhatsAppDrawer(true)}
+                              className="h-7 w-7 rounded-md border border-slate-200 text-slate-500 hover:text-slate-900 hover:border-slate-400 flex items-center justify-center transition-colors"
+                            >
+                              <Eye className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              title="Salin pesan"
+                              onClick={() => {
+                                const text = buildWhatsAppMessage(PRESET_ALERTS[0], true);
+                                navigator.clipboard.writeText(text);
+                                toast.success("Pesan disalin");
+                              }}
+                              className="h-7 w-7 rounded-md border border-slate-200 text-slate-500 hover:text-slate-900 hover:border-slate-400 flex items-center justify-center transition-colors"
+                            >
+                              <Copy className="h-3.5 w-3.5" />
+                            </button>
                           </div>
 
-                          {/* Success Status Banner */}
-                          <div className="flex items-center gap-2 bg-emerald-50/70 border border-emerald-100 rounded-lg px-2.5 py-1.5 text-emerald-800">
-                            <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
-                            <span className="text-xs font-bold leading-none">Berhasil dipublish</span>
-                          </div>
-
-                          {/* Publisher & Date Info */}
-                          <div className="flex flex-col gap-2.5 pt-0.5 text-xs">
-                            {/* Published By */}
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="text-slate-500 font-medium">Dipublish oleh</span>
-                              <div className="flex items-center gap-1.5">
-                                <div className="h-5 w-5 rounded-full bg-slate-900 text-white flex items-center justify-center text-[9px] font-extrabold shrink-0 shadow-sm">
-                                  {beCampaign.publishedBy.initials}
+                          {/* BeCampaign */}
+                          <div className="flex items-center gap-2.5 px-3 py-2.5 hover:bg-slate-50 transition-colors animate-in fade-in duration-300">
+                            <div className="h-7 w-7 rounded-md bg-slate-100 text-slate-600 flex items-center justify-center shrink-0">
+                              <Globe className="h-3.5 w-3.5" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="text-xs font-semibold text-slate-800 leading-tight">BeCampaign</div>
+                              {beCampaign ? (
+                                <div className="flex items-center gap-1 text-[10px] text-emerald-700 mt-0.5 min-w-0">
+                                  <CheckCircle2 className="h-3 w-3 shrink-0" />
+                                  <span className="truncate">Dipublish · {beCampaign.publishedBy.name} ({beCampaign.publishedBy.initials}) · {formatWita(beCampaign.publishedAt)}</span>
                                 </div>
-                                <span className="font-bold text-slate-900">{beCampaign.publishedBy.name}</span>
-                              </div>
+                              ) : (
+                                <div className="flex items-center gap-1 text-[10px] text-slate-500 mt-0.5">
+                                  <span className="h-1.5 w-1.5 rounded-full bg-slate-300" /> Belum publish
+                                </div>
+                              )}
                             </div>
-
-                            {/* Published Date */}
-                            <div className="flex items-start justify-between gap-2">
-                              <span className="text-slate-500 font-medium shrink-0 pt-0.5">Tanggal rilis</span>
-                              <div className="flex items-center gap-1.5 text-right">
-                                <Clock className="h-3 w-3 text-slate-400 shrink-0 mt-0.5" />
-                                <span className="font-bold text-slate-900 leading-snug">
-                                  {formatWita(beCampaign.publishedAt)}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="bg-slate-50/70 border border-dashed border-slate-300 rounded-xl p-4 flex flex-col gap-3 transition-all hover:bg-slate-50 hover:border-slate-400/80 group">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <div className="w-6 h-6 rounded-md bg-slate-200 text-slate-700 flex items-center justify-center shrink-0">
-                                <Globe className="h-3.5 w-3.5" />
-                              </div>
-                              <span className="text-[12px] font-black text-slate-800 tracking-[0.14em] uppercase">
-                                BECAMPAIGN
-                              </span>
-                            </div>
-                            <span className="text-[10px] font-bold bg-slate-200/80 text-slate-600 px-2 py-0.5 rounded-full uppercase tracking-wider">
-                              Belum Publish
-                            </span>
+                            {!beCampaign && (
+                              <button
+                                type="button"
+                                onClick={() => setShowPublishModal(true)}
+                                className="h-7 px-2.5 rounded-md border border-slate-300 text-[11px] font-semibold text-slate-800 hover:bg-slate-900 hover:text-white hover:border-slate-900 active:scale-[0.97] flex items-center gap-1 transition-all"
+                              >
+                                <UploadCloud className="h-3 w-3" /> Publish
+                              </button>
+                            )}
                           </div>
 
-                          <p className="text-xs text-slate-500 leading-relaxed">
-                            Publikasikan konten poster safety alert ini ke portal BeCampaign secara terpusat.
-                          </p>
-
-                          <button
-                            type="button"
-                            onClick={() => setShowPublishModal(true)}
-                            className="w-full h-9 bg-slate-900 hover:bg-slate-800 active:scale-[0.99] text-white text-xs font-bold rounded-lg flex items-center justify-center gap-2 transition-all shadow-none mt-0.5"
-                          >
-                            <UploadCloud className="h-4 w-4 text-slate-300 group-hover:scale-110 transition-transform" />
-                            <span>Publish ke BeCampaign</span>
-                          </button>
-                        </div>
-                      )}
-
-                      {/* Question Bank Trigger Card */}
-                      <div className="bg-indigo-50/70 border border-indigo-200/90 rounded-xl p-3.5 flex flex-col gap-2.5 shadow-sm">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 rounded bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+                          {/* Question Bank */}
+                          <div className="flex items-center gap-2.5 px-3 py-2.5 hover:bg-slate-50 transition-colors">
+                            <div className="h-7 w-7 rounded-md bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
                               <FileSearch className="h-3.5 w-3.5" />
                             </div>
-                            <div>
-                              <span className="text-[10px] font-black text-indigo-950 uppercase tracking-wider block leading-tight">
-                                QUESTION BANK
-                              </span>
-                              <span className="text-[9px] text-indigo-700 font-semibold">
-                                Bank Soal Investigasi
-                              </span>
+                            <div className="min-w-0 flex-1">
+                              <div className="text-xs font-semibold text-slate-800 leading-tight">Question Bank</div>
+                              {qbCreated ? (
+                                <div className="flex items-center gap-1 text-[10px] text-emerald-700 mt-0.5">
+                                  <CheckCircle2 className="h-3 w-3 shrink-0" /> Sudah dibuat
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-1 text-[10px] text-slate-500 mt-0.5">
+                                  <span className="h-1.5 w-1.5 rounded-full bg-slate-300" /> Belum dibuat
+                                </div>
+                              )}
                             </div>
+                            <button
+                              type="button"
+                              onClick={() => qbCreated
+                                ? navigate('/question-bank?fromCampaign=SA-004%2FIX%202026&title=' + encodeURIComponent(PRESET_ALERTS[0].title) + '&autoGenerate=true')
+                                : setShowQBModal(true)}
+                              className="h-7 px-2.5 rounded-md border border-slate-300 text-[11px] font-semibold text-slate-800 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 active:scale-[0.97] flex items-center gap-1 transition-all"
+                            >
+                              {qbCreated ? "Buka" : "Buat"}
+                            </button>
                           </div>
-                          <span className="text-[8px] font-bold bg-indigo-200/80 text-indigo-900 px-1.5 py-0.5 rounded tracking-wide uppercase">
-                            Siap Buat
-                          </span>
                         </div>
-
-                        <p className="text-[11px] text-slate-600 leading-relaxed">
-                          Jadikan materi dan rekomendasi perbaikan campaign ini sebagai bank soal pemahaman pekerja.
-                        </p>
-
-                        <button
-                          type="button"
-                          onClick={() => setShowQBModal(true)}
-                          className="w-full h-8 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white text-xs font-bold rounded-lg flex items-center justify-center gap-2 transition-all shadow-none"
-                        >
-                          <Brain className="h-3.5 w-3.5" />
-                          <span>Jadikan Question Bank</span>
-                        </button>
                       </div>
                     </>
                   ) : isGenerated ? (
@@ -2168,75 +2100,45 @@ export default function CampaignWorkspacePage() {
 
       {/* Question Bank Confirmation Dialog */}
       <Dialog open={showQBModal} onOpenChange={setShowQBModal}>
-        <DialogContent className="max-w-[460px] p-0 overflow-hidden border border-slate-200 shadow-2xl rounded-2xl bg-white">
-          <div className="p-6">
-            <DialogHeader className="mb-3 text-left">
-              <div className="flex items-center justify-between mb-2">
-                <div className="h-10 w-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-sm">
-                  <FileSearch className="h-5 w-5 text-white" />
-                </div>
-                <span className="text-[10px] font-extrabold uppercase tracking-widest text-indigo-600 bg-indigo-50 border border-indigo-200 px-2.5 py-1 rounded-full">
-                  Question Bank
-                </span>
-              </div>
-              <DialogTitle className="text-lg font-black text-slate-900 tracking-tight">
-                Jadikan Question Bank?
+        <DialogContent className="max-w-[400px] p-0 overflow-hidden border border-slate-200 shadow-xl rounded-xl bg-white">
+          <div className="p-5">
+            <DialogHeader className="text-left space-y-1">
+              <DialogTitle className="text-base font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                <FileSearch className="h-4 w-4 text-indigo-600" />
+                Buat Question Bank
               </DialogTitle>
-              <DialogDescription className="text-xs text-slate-600 mt-1 leading-relaxed text-left">
-                Materi analisis, fakta kronologis, dan rekomendasi perbaikan dari Campaign ini akan ditransfer ke modul Question Bank untuk dibuatkan bank soal evaluasi secara otomatis.
+              <DialogDescription className="text-xs text-slate-500">
+                Soal dibuat otomatis dari dokumen campaign ini.
               </DialogDescription>
             </DialogHeader>
 
-            {/* Content Preview Summary */}
-            <div className="bg-slate-50/80 border border-slate-200/90 rounded-xl my-4 divide-y divide-slate-200/80 text-xs overflow-hidden">
-              <div className="px-4 py-2.5 bg-slate-50">
-                <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Judul Konten Sumber</div>
-                <div className="text-xs font-bold text-slate-800 leading-snug line-clamp-2">{PRESET_ALERTS[0].title}</div>
-              </div>
-              <div className="grid grid-cols-2 divide-x divide-slate-200/80 bg-white">
-                <div className="px-4 py-2.5">
-                  <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">No. Alert</div>
-                  <div className="text-xs font-bold text-slate-800 font-mono">{PRESET_ALERTS[0].code}</div>
-                </div>
-                <div className="px-4 py-2.5">
-                  <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Kategori</div>
-                  <div className="text-xs font-bold text-red-600 font-semibold">{PRESET_ALERTS[0].category}</div>
-                </div>
-              </div>
-              <div className="px-4 py-2.5 flex items-center justify-between bg-slate-50/50">
-                <div>
-                  <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Dokumen Ditransfer</div>
-                  <div className="text-[11px] font-semibold text-indigo-900">LPI_SA-004_Track_Dozer_Amblas.pdf</div>
-                </div>
-                <span className="text-[9px] font-black text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full uppercase tracking-wider">
-                  Auto Generate
-                </span>
+            <div className="mt-4 flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5">
+              <FileText className="h-4 w-4 text-slate-400 shrink-0" />
+              <div className="min-w-0 flex-1">
+                <div className="text-xs font-semibold text-slate-800 truncate">LPI_SA-004_Track_Dozer_Amblas.pdf</div>
+                <div className="text-[10px] text-slate-500 font-mono">{PRESET_ALERTS[0].code}</div>
               </div>
             </div>
 
-            <div className="flex items-start gap-2.5 text-[11px] text-slate-500 bg-indigo-50/60 border border-indigo-100 rounded-lg p-2.5 leading-relaxed mb-6">
-              <Info className="h-4 w-4 mt-0.5 shrink-0 text-indigo-500" />
-              <span>Setelah dikonfirmasi, sistem akan langsung membuka modul Question Bank dan men-generate bank soal tanpa perlu upload PDF atau menekan tombol generate lagi.</span>
-            </div>
-
-            <DialogFooter className="gap-2 sm:gap-2">
+            <DialogFooter className="mt-5 gap-2 sm:gap-2">
               <Button
                 variant="outline"
                 onClick={() => setShowQBModal(false)}
-                className="h-10 text-xs font-bold text-slate-600 border-slate-200 hover:bg-slate-100 rounded-lg px-4"
+                className="h-9 text-xs font-semibold text-slate-600 border-slate-300 hover:bg-slate-100 rounded-md px-4 shadow-none"
               >
                 Batal
               </Button>
               <Button
                 onClick={() => {
                   setShowQBModal(false);
-                  toast.success("Mengarahkan ke Question Bank & memulai generate soal...");
+                  setQbCreated(true);
+                  try { localStorage.setItem(`qb-created-${campaignId}`, "1"); } catch {}
                   navigate('/question-bank?fromCampaign=SA-004%2FIX%202026&title=' + encodeURIComponent(PRESET_ALERTS[0].title) + '&autoGenerate=true');
                 }}
-                className="h-10 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white shadow-none rounded-lg px-5 gap-2 min-w-[170px] transition-all"
+                className="h-9 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white shadow-none rounded-md px-4 gap-1.5 transition-all"
               >
-                <Brain className="h-4 w-4 text-indigo-200" />
-                <span>Buat Question Bank</span>
+                <Brain className="h-3.5 w-3.5" />
+                Buat
               </Button>
             </DialogFooter>
           </div>
