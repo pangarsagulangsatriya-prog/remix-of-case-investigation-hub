@@ -51,6 +51,8 @@ export default function CampaignWorkspacePage() {
 
   // BeCampaign Publish State
   const [beCampaign, setBeCampaign] = useState<{
+    title: string;
+    notes?: string;
     publishedAt: Date;
     publishedBy: {
       name: string;
@@ -61,6 +63,10 @@ export default function CampaignWorkspacePage() {
   } | null>(null);
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [publishTitle, setPublishTitle] = useState(PRESET_ALERTS[0].title);
+  const [publishNotes, setPublishNotes] = useState("");
+  const [confirmCheckVisual, setConfirmCheckVisual] = useState(false);
+  const [confirmCheckTarget, setConfirmCheckTarget] = useState(false);
 
   const formatWita = (date: Date) =>
     `${date.toLocaleString("id-ID", {
@@ -73,10 +79,13 @@ export default function CampaignWorkspacePage() {
     })} WITA`;
 
   const handlePublishBeCampaign = () => {
+    if (!publishTitle.trim() || !confirmCheckVisual || !confirmCheckTarget) return;
     setIsPublishing(true);
     setTimeout(() => {
       const now = new Date();
       setBeCampaign({
+        title: publishTitle.trim(),
+        notes: publishNotes.trim() || undefined,
         publishedAt: now,
         publishedBy: {
           name: "Suparli",
@@ -717,6 +726,14 @@ export default function CampaignWorkspacePage() {
 
                           {/* Publisher & Date Info */}
                           <div className="flex flex-col gap-2.5 pt-0.5 text-xs">
+                            {/* Published Title */}
+                            <div className="flex flex-col gap-1 border-b border-slate-100 pb-2">
+                              <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Judul Konten</span>
+                              <span className="font-bold text-slate-900 leading-snug line-clamp-2">
+                                {beCampaign.title}
+                              </span>
+                            </div>
+
                             {/* Published By */}
                             <div className="flex items-center justify-between gap-2">
                               <span className="text-slate-500 font-medium">Dipublish oleh</span>
@@ -738,6 +755,12 @@ export default function CampaignWorkspacePage() {
                                 </span>
                               </div>
                             </div>
+
+                            {beCampaign.notes && (
+                              <div className="mt-1 p-2 bg-slate-50 border border-slate-200/70 rounded-md text-[11px] text-slate-600 italic leading-relaxed">
+                                "{beCampaign.notes}"
+                              </div>
+                            )}
                           </div>
                         </div>
                       ) : (
@@ -1935,8 +1958,20 @@ export default function CampaignWorkspacePage() {
       </Dialog>
 
       {/* Publish to BeCampaign Confirmation Dialog */}
-      <Dialog open={showPublishModal} onOpenChange={(open) => { if (!isPublishing) setShowPublishModal(open); }}>
-        <DialogContent className="max-w-[460px] p-0 overflow-hidden border border-slate-200 shadow-2xl rounded-2xl bg-white">
+      <Dialog 
+        open={showPublishModal} 
+        onOpenChange={(open) => { 
+          if (!isPublishing) {
+            setShowPublishModal(open);
+            if (open) {
+              setPublishTitle(PRESET_ALERTS[0].title);
+              setConfirmCheckVisual(false);
+              setConfirmCheckTarget(false);
+            }
+          }
+        }}
+      >
+        <DialogContent className="max-w-[480px] p-0 overflow-hidden border border-slate-200 shadow-2xl rounded-2xl bg-white">
           <div className="p-6">
             <DialogHeader className="mb-3 text-left">
               <div className="flex items-center justify-between mb-2">
@@ -1951,37 +1986,85 @@ export default function CampaignWorkspacePage() {
                 Publish ke BeCampaign?
               </DialogTitle>
               <DialogDescription className="text-xs text-slate-600 mt-1 leading-relaxed text-left">
-                Konten safety alert yang telah disahkan akan langsung dipublikasikan ke portal BeCampaign.
+                Lengkapi informasi publikasi dan centang checklist verifikasi sebelum menyiarkan konten.
               </DialogDescription>
             </DialogHeader>
 
-            <div className="bg-slate-50/80 border border-slate-200/90 rounded-xl my-4 divide-y divide-slate-200/80 text-xs overflow-hidden">
-              <div className="px-4 py-2.5 bg-slate-50">
-                <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Judul Konten</div>
-                <div className="text-xs font-bold text-slate-800 leading-snug line-clamp-2">{PRESET_ALERTS[0].title}</div>
+            {/* Form Fields: Judul & Catatan */}
+            <div className="space-y-3.5 my-4">
+              {/* Field 1: Judul Konten */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider flex items-center justify-between">
+                  <span>Judul Konten / Kampanye <span className="text-red-500">*</span></span>
+                  <span className="text-[10px] text-slate-400 font-normal">Wajib diisi</span>
+                </label>
+                <Input
+                  value={publishTitle}
+                  onChange={(e) => setPublishTitle(e.target.value)}
+                  placeholder="Ketik judul publikasi kampanye..."
+                  className="h-9 text-xs font-semibold text-slate-900 border-slate-300 focus:border-slate-900 focus:ring-0 rounded-lg shadow-none"
+                />
               </div>
-              <div className="grid grid-cols-2 divide-x divide-slate-200/80 bg-white">
-                <div className="px-4 py-2.5">
-                  <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">No. Alert</div>
-                  <div className="text-xs font-bold text-slate-800 font-mono">{PRESET_ALERTS[0].code}</div>
-                </div>
-                <div className="px-4 py-2.5">
-                  <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Kategori</div>
-                  <div className="text-xs font-bold text-red-600 font-semibold">{PRESET_ALERTS[0].category}</div>
-                </div>
+
+              {/* Field 2: Catatan Tambahan / Pesan Pengantar */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider flex items-center justify-between">
+                  <span>Catatan Rilis / Instruksi <span className="text-slate-400 font-normal">(Opsional)</span></span>
+                </label>
+                <textarea
+                  value={publishNotes}
+                  onChange={(e) => setPublishNotes(e.target.value)}
+                  placeholder="Tulis catatan rilis atau instruksi sosialisasi untuk BeCampaign..."
+                  rows={2}
+                  className="w-full text-xs font-medium text-slate-800 border border-slate-300 focus:border-slate-900 rounded-lg p-2.5 outline-none resize-none shadow-none leading-relaxed"
+                />
               </div>
-              <div className="px-4 py-2.5 flex items-center justify-between bg-slate-50/50">
+
+              {/* Info Ringkas: No. Alert & Kategori */}
+              <div className="grid grid-cols-2 gap-2 bg-slate-50 border border-slate-200/80 rounded-lg p-2.5 text-xs">
                 <div>
-                  <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Lampiran Poster</div>
-                  <div className="text-[11px] font-semibold text-slate-700">Safety Alert 1 Halaman · Format Visual HD</div>
+                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">No. Alert</span>
+                  <span className="font-bold text-slate-800 font-mono">{PRESET_ALERTS[0].code}</span>
                 </div>
-                <span className="text-[9px] font-black text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
-                  <Lock className="h-2.5 w-2.5" /> Disahkan
+                <div>
+                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Kategori & Lampiran</span>
+                  <span className="font-bold text-red-600 block">{PRESET_ALERTS[0].category} · Poster HD</span>
+                </div>
+              </div>
+
+              {/* Checklist Persetujuan / Verifikasi */}
+              <div className="bg-slate-50 border border-slate-200/90 rounded-xl p-3.5 flex flex-col gap-2.5">
+                <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest block">
+                  Checklist Verifikasi <span className="text-red-500">*</span>
                 </span>
+
+                <label className="flex items-start gap-2.5 cursor-pointer select-none group">
+                  <input
+                    type="checkbox"
+                    checked={confirmCheckVisual}
+                    onChange={(e) => setConfirmCheckVisual(e.target.checked)}
+                    className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-0 mt-0.5 cursor-pointer shrink-0 accent-slate-900"
+                  />
+                  <span className="text-xs text-slate-700 group-hover:text-slate-900 leading-snug">
+                    Visual poster & tindakan perbaikan telah diperiksa dan disahkan.
+                  </span>
+                </label>
+
+                <label className="flex items-start gap-2.5 cursor-pointer select-none group">
+                  <input
+                    type="checkbox"
+                    checked={confirmCheckTarget}
+                    onChange={(e) => setConfirmCheckTarget(e.target.checked)}
+                    className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-0 mt-0.5 cursor-pointer shrink-0 accent-slate-900"
+                  />
+                  <span className="text-xs text-slate-700 group-hover:text-slate-900 leading-snug">
+                    Konten siap dipublikasikan dan ditayangkan di kanal BeCampaign.
+                  </span>
+                </label>
               </div>
             </div>
 
-            <DialogFooter className="gap-2 sm:gap-2">
+            <DialogFooter className="gap-2 sm:gap-2 pt-1">
               <Button
                 variant="outline"
                 disabled={isPublishing}
@@ -1992,8 +2075,8 @@ export default function CampaignWorkspacePage() {
               </Button>
               <Button
                 onClick={handlePublishBeCampaign}
-                disabled={isPublishing}
-                className="h-10 text-xs font-bold bg-slate-900 hover:bg-slate-800 active:scale-[0.98] text-white shadow-none rounded-lg px-5 gap-2 min-w-[170px] transition-all"
+                disabled={isPublishing || !publishTitle.trim() || !confirmCheckVisual || !confirmCheckTarget}
+                className="h-10 text-xs font-bold bg-slate-900 hover:bg-slate-800 active:scale-[0.98] text-white shadow-none rounded-lg px-5 gap-2 min-w-[170px] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {isPublishing ? (
                   <>
