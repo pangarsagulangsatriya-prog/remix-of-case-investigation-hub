@@ -16,12 +16,9 @@ import {
   Search,
   ChevronDown,
   Brain,
-  Sparkles,
   Copy,
-  LayoutList,
-  Code2,
-  Check,
-  ExternalLink
+  Megaphone,
+  Layers
 } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -42,6 +39,9 @@ type SearchState = 'idle' | 'loading' | 'success' | 'not_found' | 'no_pdf';
 
 interface LibraryItem {
   id: string;
+  title: string;
+  sourceType: 'case_campaign' | 'upload_manual';
+  sourceName?: string;
   filename: string;
   pages: number;
   sizeMB: number;
@@ -50,8 +50,6 @@ interface LibraryItem {
   uploadedAt: string;
   updatedAt?: string;
   content?: string;
-  isCampaignSource?: boolean;
-  campaignCode?: string;
 }
 
 const CAMPAIGN_MOCK_QUESTIONS = `# Question Bank - Safety Alert Campaign
@@ -104,68 +102,15 @@ ANSWER: A`;
 
 const MOCK_GENERATED_MARKDOWN = `# Question Bank\n\nSource: {SOURCE_NAME}\n\nApa sikap yang harus dimiliki dalam menerapkan kaidah teknik pertambangan dengan tenaga teknis yang kompeten dan peralatan yang layak?\nA) Menunggu alat rusak baru melapor\nB) Bekerja secepat mungkin tanpa memeriksa alat\nC) Memastikan kesiapan alat dan kompetensi diri sebelum mulai bekerja\nD) Memakai alat seadanya asal bisa jalan\nANSWER: C\n\nBerikut adalah nilai perusahaan PT Berau Coal, kecuali?\nA) Inovatif\nB) Progresif\nC) Kepercayaan\nD) Amanah\nANSWER: D\n\nBerikut merupakan Nilai Perusahaan pada Kebijakan Teknik Pertambangan yang Baik, kecuali?\nA) Integritas\nB) Progresif\nC) Kepercayaan\nD) Inovatif\nANSWER: A\n\nDalam briefing pagi, seorang pengawas melihat anak buahnya tidak fokus dan tampak bingung terhadap metode kerja hari itu. Ia tergoda untuk langsung mulai kegiatan agar tidak membuang waktu. Bagaimana sikap pengawas yang mencerminkan nilai “kepercayaan” dan mendukung budaya keselamatan?\nA) Langsung menjalankan pekerjaan karena teknis sudah dijelaskan kemarin\nB) Menugaskan pekerja senior sebagai pendamping tanpa evaluasi tambahan\nC) Mengulang penjelasan metode kerja, membuka ruang tanya jawab, dan memastikan semua memahami\nD) Mendorong semua langsung bekerja lalu memberi evaluasi di akhir hari\nANSWER: C\n\nDalam menjalankan misi perusahaan, bagaimana sebaiknya sikap seorang karyawan terhadap keselamatan dan lingkungan?\nA) Fokus pada target produksi terlebih dahulu\nB) Menunggu instruksi atasan baru peduli\nC) Aktif menjaga keselamatan dan kelestarian lingkungan dalam setiap pekerjaan\nD) Hanya peduli jika ada inspeksi\nANSWER: C\n\nDalam proses reklamasi, PT Berau Coal berkomitmen mengembalikan lahan bekas tambang menjadi aman dan produktif. Sikap apa yang tepat sebagai karyawan terhadap proses ini?\nA) Serahkan saja ke bagian lingkungan\nB) Ikut terlibat dan peduli terhadap hasil reklamasi\nC) Tidak perlu ikut campur karena bukan tugas saya\nD) Hanya peduli kalau ada pelatihan\nANSWER: B\n\nGambar di bawah ini menunjukkan salah satu komitmen PT BC dalam melestarikan lingkungan yang disebut Revegetasi.\nA) Salah\nB) Benar\nANSWER: B\n\nJika Anda adalah bagian dari tim inovasi, nilai perusahaan apa yang harus Anda tanamkan dalam bekerja?\nA) Menjalankan tugas seadanya\nB) Menghindari perubahan yang tidak familiar\nC) Terbuka terhadap ide baru dan berani mencoba pendekatan baru\nD) Menunggu perintah atasan\nANSWER: C\n\nKonservasi batubara tidak termasuk dalam bagian kaidah teknik pertambangan yang baik.\nA) BENAR\nB) SALAH\nANSWER: B\n\nMengapa konservasi batubara penting dalam operasional pertambangan?\nA) Agar bisa dipakai untuk proyek jangka pendek\nB) Supaya tambang terlihat bersih\nC) Untuk memastikan sumber daya alam tidak terbuang sia-sia\nD) Untuk meningkatkan jam kerja karyawan\nANSWER: C\n\nMengapa pengelolaan lingkungan hidup termasuk dalam kaidah teknik pertambangan yang baik?\nA) Karena bisa menghindari denda\nB) Karena hanya bagian dari syarat dokumen\nC) Karena menjaga lingkungan adalah bagian dari tanggung jawab sosial kita\nD) Supaya cepat mendapat sertifikasi\nANSWER: C\n\nMengapa penting bagi PT Berau Coal untuk memiliki visi “menunjang masa depan cemerlang melalui pengalih ragam energi”?\nA) Agar perusahaan terlihat modern\nB) Karena tuntutan pemerintah\nC) Karena tanggung jawab jangka panjang terhadap generasi mendatang\nD) Supaya bisa bersaing dengan perusahaan asing\nANSWER: C\n\n1. Teknis Pertambangan Batubara, 2. Keselamatan Pertambangan Batubara, 3. Pengelolaan Lingungan Hidup Pertambangan Batubara, 4. Konservasi Pertambangan Batubara, dan 5. Standarisasi dan Usaha Jasa Pertambangan Batubara. merupakan poin dari?\nA) Tujuan Spesifik PT. BC\nB) Tekad PT. BC\nC) Prioritas Pelaksanaan Kaidah Teknik Pertambangan yang Baik\nD) Komitmen PT. BC\nANSWER: C\n\nMisi PT BC adalah Mengelola sumber daya alam menjadi sumber energi dengan standar operasional yang mengutamakan keselamatan, kelestarian lingkungan dan kesejahteraan masyarakat.\nA) BENAR\nB) SALAH\nANSWER: A\n\nPT Berau Coal berkomitmen untuk menggunakan mitra kerja yang mematuhi seluruh standar dan regulasi pertambangan.\nA) BENAR\nB) SALAH\nANSWER: A\n\nSaat melakukan inspeksi area tambang, pengawas menemukan limbah padat yang belum ditangani sesuai prosedur 3R (Reduce, Reuse, Recycle). Namun, pengawas merasa ini bukan area yang menjadi tanggung jawab langsungnya. Apa tindakan terbaik yang mencerminkan sikap progresif dan bertanggung jawab sebagai pengawas?\nA) Membuat catatan internal pribadi untuk disampaikan nanti jika ditanya\nB) Menunggu evaluasi bulanan untuk memasukkannya sebagai temuan\nC) Melaporkan kondisi tersebut segera dan mendorong perbaikan langsung sesuai prosedur\nD) Membiarkan karena bukan tanggung jawab divisi yang diawasi langsung\nANSWER: C\n\nSalah satu tujuan dari kaidah teknik pertambangan yang baik adalah menciptakan budaya keselamatan tambang yang produktif dan efisien.\nA) BENAR\nB) SALAH\nANSWER: A\n\nSeorang pengawas mengetahui bahwa salah satu mitra kerja di lapangan menggunakan peralatan yang tidak sesuai standar keselamatan. Namun, karena pekerjaan sedang dikejar target, beberapa staf lain menyarankan untuk membiarkan sementara waktu. Apa sikap yang seharusnya diambil oleh pengawas sesuai nilai perusahaan dan komitmen kaidah teknik pertambangan yang baik?\nA) Menyampaikan ke atasan tapi membiarkan pekerjaan tetap berjalan\nB) Menghentikan sementara pekerjaan dan memastikan peralatan diganti sesuai standar\nC) Memberikan toleransi karena mitra kerja sudah berpengalaman\nD) Menegur secara lisan saja agar tidak menimbulkan konflik\nANSWER: B\n\nSetelah melakukan pengecekan area pascatambang, pengawas menemukan bahwa reklamasi yang dilakukan belum sesuai standar, tetapi sudah dilaporkan sebagai “selesai” dalam sistem. Apa sikap pengawas yang menunjukkan integritas serta penerapan siklus Plan-Do-Check-Action (PDCA)?\nA) Menyampaikan laporan tambahan secara informal agar tidak mempermalukan tim\nB) Meminta admin memperbaiki data tanpa melakukan koreksi lapangan\nC) Menindaklanjuti temuan, mengkaji akar masalah, dan menyusun rencana perbaikan reklamasi\nD) Mengabaikan karena laporan sudah dikunci dan divalidasi sebelumnya\nANSWER: C\n\nSiklus PDCA (Plan-Do-Check-Action) diterapkan dalam sistem Be GeMS. Sikap apa yang perlu dimiliki agar siklus ini berjalan efektif?\nA) Cuek selama hasil kerja selesai\nB) Fokus pada tugas individu saja\nC) Terbuka terhadap evaluasi dan siap memperbaiki kesalahan\nD) Takut jika ada kesalahan ditemukan\nANSWER: C\n\nVisi dari PT Berau Coal adalah?\nA) Menunjang perwujudan masa depan cemerlang melalui peran aktifnya sebagai pengalih ragam energi yang eksponensial\nB) Mengelola sumber daya alam menjadi sumber energi dengan standar operasional yang mengutamakan keselamatan, kelestarian lingkungan dan kesejahteraan masyarakat.\nC) Mendorong Batasan-Batasan yang Ada Saat Ini dan Kemudian Menciptakan Terobosan baru Melalui Sumber Daya Manusia dan Teknologi\nD) Menjadi perusahaan tambah terbaik di Kalimantan Timur\nANSWER: A`;
 
-interface ParsedQuestion {
-  sectionTitle?: string;
-  questionNumber: number;
-  questionText: string;
-  options: { label: string; text: string }[];
-  answer: string;
-}
-
-function parseMarkdownQuestions(md: string): { meta: Record<string, string>; questions: ParsedQuestion[] } {
-  const meta: Record<string, string> = {};
-  const questions: ParsedQuestion[] = [];
-  if (!md) return { meta, questions };
-  
-  const lines = md.split('\n');
-  let currentSection = '';
-  let currentQText = '';
-  let currentOptions: { label: string; text: string }[] = [];
-  let currentAnswer = '';
-  let qCounter = 0;
-
-  for (let i = 0; i < lines.length; i++) {
-    const rawLine = lines[i];
-    const line = rawLine.trim();
-
-    if (line.startsWith('Source:')) meta.source = line.replace('Source:', '').trim();
-    else if (line.startsWith('Incident Code:')) meta.incidentCode = line.replace('Incident Code:', '').trim();
-    else if (line.startsWith('Incident Title:')) meta.incidentTitle = line.replace('Incident Title:', '').trim();
-    else if (line.startsWith('Location:')) meta.location = line.replace('Location:', '').trim();
-    else if (line.startsWith('## ')) {
-      currentSection = line.replace('## ', '').trim();
-    } else if (/^[A-D]\)/.test(line)) {
-      const match = line.match(/^([A-D])\)\s*(.+)$/);
-      if (match) {
-        currentOptions.push({ label: match[1], text: match[2] });
-      }
-    } else if (line.startsWith('ANSWER:')) {
-      currentAnswer = line.replace('ANSWER:', '').trim();
-      if (currentQText && currentOptions.length > 0) {
-        qCounter++;
-        questions.push({
-          sectionTitle: currentSection,
-          questionNumber: qCounter,
-          questionText: currentQText,
-          options: [...currentOptions],
-          answer: currentAnswer
-        });
-      }
-      currentQText = '';
-      currentOptions = [];
-      currentAnswer = '';
-    } else if (line && !line.startsWith('#') && !line.includes(':')) {
-      currentQText = currentQText ? `${currentQText} ${line}` : line;
-    }
-  }
-
-  return { meta, questions };
-}
 
 const INITIAL_LIBRARY: LibraryItem[] = [
+  // --- Case & Campaign ---
   {
-    id: 'doc-campaign-sa004',
-    filename: 'LPI_SA-004_Track_Dozer_Amblas.pdf',
+    id: 'campaign-sa004',
+    title: 'Track Dozer Amblas Saat Brushing di Titik Lembek',
+    sourceType: 'case_campaign',
+    sourceName: 'Campaign · SA-004/IX/2026',
+    filename: 'Campaign SA-004/IX/2026',
     pages: 14,
     sizeMB: 3.4,
     status: 'Question Bank Ready',
@@ -173,11 +118,28 @@ const INITIAL_LIBRARY: LibraryItem[] = [
     uploadedAt: '20 Oct 2026 · 14:15 WIB',
     updatedAt: '20 Oct 2026 · 14:15 WIB',
     content: CAMPAIGN_MOCK_QUESTIONS,
-    isCampaignSource: true,
-    campaignCode: 'SA-004/IX/2026'
   },
   {
-    id: 'doc-1',
+    id: 'case-inc-081',
+    title: 'Insiden Reversing Unit Hauler di Disposal Pit J',
+    sourceType: 'case_campaign',
+    sourceName: 'Case · INC-2026-081',
+    filename: 'Case INC-2026-081',
+    pages: 20,
+    sizeMB: 4.1,
+    status: 'Question Bank Ready',
+    questionCount: 12,
+    uploadedAt: '15 Oct 2026 · 11:30 WIB',
+    updatedAt: '15 Oct 2026 · 14:00 WIB',
+    content: MOCK_GENERATED_MARKDOWN.replace('{SOURCE_NAME}', 'Case INC-2026-081 - Reversing Hauler'),
+  },
+
+  // --- Dokumen Upload Manual ---
+  {
+    id: 'doc-upload-1',
+    title: 'LPI_Pit_J_Agustus_2026.pdf',
+    sourceType: 'upload_manual',
+    sourceName: 'Dokumen Upload',
     filename: 'LPI_Pit_J_Agustus_2026.pdf',
     pages: 24,
     sizeMB: 4.8,
@@ -188,34 +150,37 @@ const INITIAL_LIBRARY: LibraryItem[] = [
     content: MOCK_GENERATED_MARKDOWN.replace('{SOURCE_NAME}', 'LPI_Pit_J_Agustus_2026.pdf')
   },
   {
-    id: 'doc-2',
+    id: 'doc-upload-2',
+    title: 'LPI_Dumping_Area_Incident.pdf',
+    sourceType: 'upload_manual',
+    sourceName: 'Dokumen Upload',
     filename: 'LPI_Dumping_Area_Incident.pdf',
     pages: 18,
     sizeMB: 3.2,
     status: 'Question Bank Ready',
     questionCount: 21,
     uploadedAt: '06 Oct 2026 · 14:00 WIB',
-    updatedAt: '06 Oct 2026 · 16:34 WIB',
-    content: '# Question Bank\n\nSource: LPI_Dumping_Area_Incident.pdf\n\n## Kejadian\n\nQuestion 1\nA) A\nB) B\nANSWER: A\n\nQuestion 2\nA) A\nB) B\nANSWER: B'
+    content: `# Question Bank
+
+Source: LPI_Dumping_Area_Incident.pdf
+
+Apa langkah pencegahan amblas pada area dumping?
+A) Penimbunan tanpa pemadatan
+B) Pemadatan bertahap dan pemasangan rambu batas bibir dumping
+C) Membiarkan genangan air
+D) Melewati batas patok merah
+ANSWER: B`
   },
   {
-    id: 'doc-3',
+    id: 'doc-upload-3',
+    title: 'LPI_Haul_Road_324.pdf',
+    sourceType: 'upload_manual',
+    sourceName: 'Dokumen Upload',
     filename: 'LPI_Haul_Road_324.pdf',
     pages: 13,
     sizeMB: 2.1,
     status: 'Not Generated',
     uploadedAt: '06 Oct 2026 · 09:15 WIB'
-  },
-  {
-    id: 'doc-4',
-    filename: 'LPI_Workshop_Inspection.pdf',
-    pages: 31,
-    sizeMB: 6.5,
-    status: 'Question Bank Ready',
-    questionCount: 18,
-    uploadedAt: '03 Oct 2026 · 10:00 WIB',
-    updatedAt: '03 Oct 2026 · 13:42 WIB',
-    content: '# Question Bank\n\nSource: LPI_Workshop_Inspection.pdf\n\n## Inspeksi\n\nBagian mana yang diinspeksi?\nA) Atap\nB) Lantai\nANSWER: A'
   }
 ];
 
@@ -226,13 +191,13 @@ export default function QuestionBankPage() {
   
   // Right Panel State
   const [pageState, setPageState] = useState<PageState>('QUESTION_READY');
-  const [viewMode, setViewMode] = useState<'cards' | 'markdown'>('cards');
   
   // Left Panel - Demo 1 (Library) State
   const [demo1Tab, setDemo1Tab] = useState<'upload' | 'library'>('library');
   const [libraryItems, setLibraryItems] = useState<LibraryItem[]>(INITIAL_LIBRARY);
-  const [activeLibraryId, setActiveLibraryId] = useState<string | null>('doc-campaign-sa004');
+  const [activeLibraryId, setActiveLibraryId] = useState<string | null>('campaign-sa004');
   const [librarySearch, setLibrarySearch] = useState('');
+  const [sourceFilter, setSourceFilter] = useState<'all' | 'case_campaign' | 'upload_manual'>('all');
   const [duplicateFile, setDuplicateFile] = useState<LibraryItem | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -246,19 +211,20 @@ export default function QuestionBankPage() {
   useEffect(() => {
     if (fromCampaign && !campaignHandledRef.current) {
       campaignHandledRef.current = true;
-      const campaignDocId = 'doc-campaign-sa004';
-      const campaignFilename = 'LPI_SA-004_Track_Dozer_Amblas.pdf';
+      const campaignDocId = 'campaign-sa004';
+      const campaignTitle = searchParams.get('title') || 'Track Dozer Amblas Saat Brushing di Titik Lembek';
       const dateStr = new Date().toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).replace(',', ' ·') + ' WIB';
 
       const campaignItem: LibraryItem = {
         id: campaignDocId,
-        filename: campaignFilename,
+        title: campaignTitle,
+        sourceType: 'case_campaign',
+        sourceName: `Campaign · ${fromCampaign}`,
+        filename: `Campaign ${fromCampaign}`,
         pages: 14,
         sizeMB: 3.4,
         status: 'Not Generated',
         uploadedAt: dateStr,
-        isCampaignSource: true,
-        campaignCode: fromCampaign
       };
 
       setLibraryItems(prev => [campaignItem, ...prev.filter(p => p.id !== campaignDocId)]);
@@ -331,14 +297,25 @@ export default function QuestionBankPage() {
   const activeItem = useMemo(() => libraryItems.find(i => i.id === activeLibraryId) || null, [libraryItems, activeLibraryId]);
   
   const hasValidSource = (demoMode === 'upload' && activeLibraryId !== null) || (demoMode === 'search' && searchState === 'success');
-  const activeSourceName = demoMode === 'upload' ? activeItem?.filename : searchResult?.filename;
+  const activeSourceName = demoMode === 'upload' ? (activeItem?.title || activeItem?.filename) : searchResult?.filename;
 
-  // Search filter
+    // Source filtering & search
+  const countAll = libraryItems.length;
+  const countCaseCampaign = libraryItems.filter(i => i.sourceType === 'case_campaign').length;
+  const countUploadManual = libraryItems.filter(i => i.sourceType === 'upload_manual').length;
+
   const filteredLibrary = useMemo(() => {
-    if (!librarySearch.trim()) return libraryItems;
-    const q = librarySearch.toLowerCase();
-    return libraryItems.filter(i => i.filename.toLowerCase().includes(q));
-  }, [libraryItems, librarySearch]);
+    return libraryItems.filter(item => {
+      if (sourceFilter === 'case_campaign' && item.sourceType !== 'case_campaign') return false;
+      if (sourceFilter === 'upload_manual' && item.sourceType !== 'upload_manual') return false;
+      if (!librarySearch.trim()) return true;
+      const q = librarySearch.toLowerCase();
+      const matchTitle = item.title?.toLowerCase().includes(q);
+      const matchSource = item.sourceName?.toLowerCase().includes(q);
+      const matchFile = item.filename?.toLowerCase().includes(q);
+      return matchTitle || matchSource || matchFile;
+    });
+  }, [libraryItems, sourceFilter, librarySearch]);
 
   // --- Demo 1 Library & Upload Handlers ---
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -369,6 +346,9 @@ export default function QuestionBankPage() {
       const dateStr = new Date().toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).replace(',', ' ·') + ' WIB';
       const newItem: LibraryItem = {
         id: `doc-${Date.now()}`,
+        title: file.name,
+        sourceType: 'upload_manual',
+        sourceName: 'Dokumen Upload',
         filename: file.name,
         pages: Math.floor(Math.random() * 30) + 5,
         sizeMB: Number((file.size / 1024 / 1024).toFixed(1)),
@@ -545,7 +525,6 @@ export default function QuestionBankPage() {
   };
 
   const currentQuestionCount = demoMode === 'upload' ? (activeItem?.questionCount || 0) : (markdownText.match(/ANSWER:/g) || []).length;
-  const parsedData = useMemo(() => parseMarkdownQuestions(markdownText), [markdownText]);
 
   return (
     <SidebarProvider>
@@ -706,21 +685,55 @@ export default function QuestionBankPage() {
                         </div>
                       ) : (
                         <div className="flex flex-col h-full animate-in fade-in duration-200">
-                          <div className="mb-4 space-y-4">
-                            <p className="text-[12px] text-slate-500">
-                              Dokumen LPI yang pernah digunakan untuk Question Bank.
-                            </p>
+                          <div className="mb-3 space-y-2.5">
                             <div className="relative">
                               <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                               <Input 
-                                placeholder="Search documents..." 
+                                placeholder="Cari case, campaign, atau file..." 
                                 value={librarySearch} 
                                 onChange={e => setLibrarySearch(e.target.value)} 
                                 className="h-9 text-xs pl-9 bg-slate-50 border-slate-200" 
                               />
                             </div>
-                            <div className="flex items-center justify-between">
-                              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Recently Updated</div>
+
+                            {/* 2-way Source Filter Segment */}
+                            <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-lg border border-slate-200 text-[11px] font-bold">
+                              <button
+                                type="button"
+                                onClick={() => setSourceFilter('all')}
+                                className={cn(
+                                  "flex-1 py-1 rounded-md transition-all text-center",
+                                  sourceFilter === 'all'
+                                    ? "bg-white text-slate-900 shadow-2xs border border-slate-200"
+                                    : "text-slate-500 hover:text-slate-900"
+                                )}
+                              >
+                                Semua ({countAll})
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setSourceFilter('case_campaign')}
+                                className={cn(
+                                  "flex-1 py-1 rounded-md transition-all text-center",
+                                  sourceFilter === 'case_campaign'
+                                    ? "bg-white text-indigo-950 shadow-2xs border border-slate-200"
+                                    : "text-slate-500 hover:text-slate-900"
+                                )}
+                              >
+                                Case & Campaign ({countCaseCampaign})
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setSourceFilter('upload_manual')}
+                                className={cn(
+                                  "flex-1 py-1 rounded-md transition-all text-center",
+                                  sourceFilter === 'upload_manual'
+                                    ? "bg-white text-slate-900 shadow-2xs border border-slate-200"
+                                    : "text-slate-500 hover:text-slate-900"
+                                )}
+                              >
+                                Upload ({countUploadManual})
+                              </button>
                             </div>
                           </div>
                           
@@ -735,6 +748,7 @@ export default function QuestionBankPage() {
                             ) : (
                               filteredLibrary.map(item => {
                                 const isActive = activeLibraryId === item.id;
+                                const isCaseOrCampaign = item.sourceType === 'case_campaign';
                                 return (
                                   <div 
                                     key={item.id} 
@@ -751,37 +765,44 @@ export default function QuestionBankPage() {
                                         "w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 transition-colors",
                                         isActive 
                                           ? "bg-indigo-600 text-white shadow-xs" 
-                                          : "bg-slate-100 text-slate-500 group-hover:bg-slate-200 group-hover:text-slate-800"
+                                          : isCaseOrCampaign
+                                            ? "bg-indigo-50 text-indigo-700 border border-indigo-200/60"
+                                            : "bg-slate-100 text-slate-500 group-hover:bg-slate-200 group-hover:text-slate-800"
                                       )}>
-                                        <FileText className="w-4 h-4" />
+                                        {isCaseOrCampaign ? (
+                                          <Megaphone className="w-4 h-4" />
+                                        ) : (
+                                          <FileText className="w-4 h-4" />
+                                        )}
                                       </div>
 
                                       <div className="flex-1 min-w-0">
-                                        <div className="flex items-center justify-between gap-1.5">
-                                          <div className="text-[12px] font-bold text-slate-900 truncate" title={item.filename}>
-                                            {item.filename}
+                                        <div className="flex items-start justify-between gap-1.5">
+                                          <div className="text-[12px] font-bold text-slate-900 leading-snug line-clamp-2" title={item.title}>
+                                            {item.title}
                                           </div>
                                           {isActive && (
-                                            <span className="w-1.5 h-1.5 rounded-full bg-indigo-600 shrink-0" />
+                                            <span className="w-1.5 h-1.5 rounded-full bg-indigo-600 shrink-0 mt-1" />
                                           )}
                                         </div>
 
-                                        {item.isCampaignSource && (
-                                          <div className="mt-1 inline-flex items-center gap-1.5 text-[9.5px] font-bold text-indigo-700 bg-indigo-50/90 border border-indigo-200/90 px-2 py-0.5 rounded uppercase tracking-wider">
-                                            <Sparkles className="w-2.5 h-2.5 text-indigo-600 shrink-0" />
-                                            <span>From Campaign</span>
-                                            {item.campaignCode && (
-                                              <span className="text-indigo-400 font-normal">· {item.campaignCode}</span>
-                                            )}
-                                          </div>
-                                        )}
-
-                                        <div className="text-[11px] text-slate-500 mt-1 flex items-center gap-2">
-                                          <span>{item.pages} halaman</span>
-                                          <span className="text-slate-300">·</span>
-                                          <span>{item.sizeMB} MB</span>
+                                        <div className="mt-1 flex items-center gap-1.5 flex-wrap">
+                                          {isCaseOrCampaign ? (
+                                            <span className="inline-flex items-center gap-1 text-[9.5px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200/90 px-1.5 py-0.5 rounded uppercase tracking-wider">
+                                              Case & Campaign
+                                            </span>
+                                          ) : (
+                                            <span className="inline-flex items-center gap-1 text-[9.5px] font-medium text-slate-600 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded uppercase tracking-wider">
+                                              Dokumen Upload
+                                            </span>
+                                          )}
+                                          {item.sourceName && (
+                                            <span className="text-[10px] text-slate-400 font-mono truncate">
+                                              · {item.sourceName}
+                                            </span>
+                                          )}
                                         </div>
-                                        
+
                                         <div className="mt-2.5 flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
                                           {item.status === 'Question Bank Ready' ? (
                                             <div className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200/80">
@@ -953,53 +974,26 @@ export default function QuestionBankPage() {
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-bold text-slate-900 truncate">
-                          {activeSourceName || 'Question Bank'}
+                          {activeItem?.title || activeSourceName || 'Question Bank'}
                         </span>
-                        {activeItem?.isCampaignSource && (
-                          <span className="text-[9.5px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200/90 px-2 py-0.5 rounded uppercase tracking-wider shrink-0 flex items-center gap-1">
-                            <Sparkles className="w-2.5 h-2.5 text-indigo-600" />
-                            From Campaign
+                        {activeItem?.sourceType === 'case_campaign' ? (
+                          <span className="text-[9.5px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200/90 px-1.5 py-0.5 rounded uppercase tracking-wider shrink-0">
+                            Case & Campaign
+                          </span>
+                        ) : (
+                          <span className="text-[9.5px] font-medium text-slate-600 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded uppercase tracking-wider shrink-0">
+                            Dokumen Upload
                           </span>
                         )}
                       </div>
-                      <div className="text-[10px] text-slate-400 font-mono leading-none mt-0.5">
-                        {activeItem?.isCampaignSource ? (activeItem.campaignCode || 'SA-004/IX/2026') : 'LPI Investigation Assessment'}
+                      <div className="text-[10px] text-slate-400 font-mono leading-none mt-0.5 truncate">
+                        {activeItem?.sourceName || (activeItem?.filename ? `File: ${activeItem.filename}` : 'Investigation Question Bank')}
                       </div>
                     </div>
                   </div>
                   
                   {pageState === 'QUESTION_READY' && (
                     <div className="flex items-center gap-2 shrink-0">
-                      {/* View Mode Toggle: Kartu Soal vs Markdown */}
-                      <div className="bg-slate-100 p-0.5 rounded-lg border border-slate-200 flex items-center text-xs">
-                        <button
-                          type="button"
-                          onClick={() => setViewMode('cards')}
-                          className={cn(
-                            "px-2.5 py-1 rounded-md text-[11px] font-bold flex items-center gap-1.5 transition-all",
-                            viewMode === 'cards'
-                              ? "bg-white text-slate-900 shadow-xs border border-slate-200/80"
-                              : "text-slate-500 hover:text-slate-800"
-                          )}
-                        >
-                          <LayoutList className="w-3.5 h-3.5" />
-                          <span>Kartu Soal</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setViewMode('markdown')}
-                          className={cn(
-                            "px-2.5 py-1 rounded-md text-[11px] font-bold flex items-center gap-1.5 transition-all",
-                            viewMode === 'markdown'
-                              ? "bg-white text-slate-900 shadow-xs border border-slate-200/80"
-                              : "text-slate-500 hover:text-slate-800"
-                          )}
-                        >
-                          <Code2 className="w-3.5 h-3.5" />
-                          <span>Markdown</span>
-                        </button>
-                      </div>
-
                       {/* Question Count Pill */}
                       <div className="text-[11px] font-bold text-slate-700 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-md">
                         {currentQuestionCount} Soal
@@ -1040,7 +1034,6 @@ export default function QuestionBankPage() {
                     </div>
                   )}
                 </div>
-
                 {/* Content Right */}
                 <div className="flex-1 relative overflow-hidden bg-white">
                   
@@ -1127,155 +1120,36 @@ export default function QuestionBankPage() {
                     </div>
                   )}
 
-                  {/* STATE: QUESTION READY */}
+                  {/* STATE: QUESTION READY - Minimal Markdown Editor */}
                   {pageState === 'QUESTION_READY' && (
-                    <div className="absolute inset-0 flex flex-col bg-slate-50/50">
-                      {viewMode === 'cards' ? (
-                        /* VISUAL CARDS VIEW */
-                        <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-4 max-w-4xl mx-auto w-full">
-                          {/* Incident Header Summary Card */}
-                          {(parsedData.meta.incidentTitle || parsedData.meta.source) && (
-                            <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs">
-                              <div className="flex items-start justify-between gap-3">
-                                <div>
-                                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
-                                    Materi Investigasi Acuan
-                                  </div>
-                                  <h3 className="text-sm font-bold text-slate-900 leading-snug">
-                                    {parsedData.meta.incidentTitle || activeSourceName}
-                                  </h3>
-                                  <div className="flex items-center gap-2 mt-2 text-xs text-slate-500 font-mono">
-                                    {parsedData.meta.incidentCode && (
-                                      <span className="bg-slate-100 px-2 py-0.5 rounded text-slate-700 font-semibold">{parsedData.meta.incidentCode}</span>
-                                    )}
-                                    {parsedData.meta.location && (
-                                      <span>Lokasi: {parsedData.meta.location}</span>
-                                    )}
-                                  </div>
-                                </div>
-                                {activeItem?.isCampaignSource && (
-                                  <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200/90 px-2 py-0.5 rounded uppercase tracking-wider shrink-0 flex items-center gap-1">
-                                    <Sparkles className="w-2.5 h-2.5 text-indigo-600" />
-                                    From Campaign
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* List of Parsed Questions */}
-                          {parsedData.questions.length === 0 ? (
-                            <div className="bg-white border border-slate-200 rounded-xl p-8 text-center text-slate-500 text-xs">
-                              Belum ada pertanyaan terstruktur. Beralih ke mode <strong>Markdown</strong> untuk melihat konten mentah.
-                            </div>
-                          ) : (
-                            parsedData.questions.map((q) => (
-                              <div
-                                key={q.questionNumber}
-                                className="bg-white border border-slate-200/90 rounded-xl p-5 shadow-2xs transition-all hover:border-slate-300"
-                              >
-                                {/* Question Header */}
-                                <div className="flex items-center justify-between gap-2 mb-2.5 pb-2.5 border-b border-slate-100">
-                                  <div className="flex items-center gap-2">
-                                    <span className="px-2 py-0.5 rounded bg-slate-900 text-white text-[10px] font-extrabold uppercase tracking-wider">
-                                      Soal {q.questionNumber}
-                                    </span>
-                                    {q.sectionTitle && (
-                                      <span className="text-[11px] font-semibold text-slate-500">
-                                        {q.sectionTitle}
-                                      </span>
-                                    )}
-                                  </div>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      const text = `${q.questionText}\n` + q.options.map(o => `${o.label}) ${o.text}`).join('\n') + `\nANSWER: ${q.answer}`;
-                                      navigator.clipboard.writeText(text);
-                                      toast.success(`Soal #${q.questionNumber} disalin!`);
-                                    }}
-                                    className="text-slate-400 hover:text-slate-700 p-1 rounded hover:bg-slate-100 transition-colors"
-                                    title="Salin soal ini"
-                                  >
-                                    <Copy className="w-3.5 h-3.5" />
-                                  </button>
-                                </div>
-
-                                {/* Question Prompt */}
-                                <h4 className="text-xs md:text-[13px] font-bold text-slate-900 leading-relaxed mb-3.5">
-                                  {q.questionText}
-                                </h4>
-
-                                {/* Options */}
-                                <div className="space-y-2">
-                                  {q.options.map((opt) => {
-                                    const isCorrect = opt.label.toUpperCase() === q.answer.toUpperCase();
-                                    return (
-                                      <div
-                                        key={opt.label}
-                                        className={cn(
-                                          "flex items-start gap-2.5 p-2.5 rounded-lg border text-xs leading-relaxed transition-all",
-                                          isCorrect
-                                            ? "bg-emerald-50/70 border-emerald-300 text-emerald-950 font-medium"
-                                            : "bg-slate-50/40 border-slate-200 text-slate-700"
-                                        )}
-                                      >
-                                        <span className={cn(
-                                          "w-5 h-5 rounded-md flex items-center justify-center font-bold text-[11px] shrink-0 mt-0.5",
-                                          isCorrect
-                                            ? "bg-emerald-600 text-white shadow-2xs"
-                                            : "bg-slate-200/80 text-slate-700"
-                                        )}>
-                                          {opt.label}
-                                        </span>
-                                        <div className="flex-1 min-w-0 pt-0.5">
-                                          {opt.text}
-                                        </div>
-                                        {isCorrect && (
-                                          <span className="shrink-0 text-[10px] font-bold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-full flex items-center gap-1 uppercase tracking-wider">
-                                            <Check className="w-3 h-3 text-emerald-600" />
-                                            Kunci Jawaban
-                                          </span>
-                                        )}
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              </div>
-                            ))
-                          )}
+                    <div className="absolute inset-0 flex flex-col bg-white">
+                      <div className="flex items-center justify-between px-4 py-2 border-b border-slate-200 bg-slate-50/60 shrink-0">
+                        <div className="flex items-center gap-1">
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-500 hover:text-slate-900 hover:bg-slate-200/70">
+                            <Undo className="w-3.5 h-3.5" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-500 hover:text-slate-900 hover:bg-slate-200/70">
+                            <Redo className="w-3.5 h-3.5" />
+                          </Button>
                         </div>
-                      ) : (
-                        /* RAW MARKDOWN EDITOR VIEW */
-                        <div className="flex-1 flex flex-col bg-white">
-                          <div className="flex items-center justify-between px-4 py-2 border-b border-slate-200 bg-slate-50/60 shrink-0">
-                            <div className="flex items-center gap-1">
-                              <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-500 hover:text-slate-900 hover:bg-slate-200/70">
-                                <Undo className="w-3.5 h-3.5" />
-                              </Button>
-                              <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-500 hover:text-slate-900 hover:bg-slate-200/70">
-                                <Redo className="w-3.5 h-3.5" />
-                              </Button>
-                            </div>
-                            <div className="text-[11px] text-slate-400 font-mono">
-                              Editor Markdown • Format GIFT / Quiz AI
-                            </div>
-                          </div>
-                          <Textarea 
-                            value={markdownText}
-                            onChange={handleTextChange}
-                            className="flex-1 w-full resize-none border-0 p-6 md:p-8 focus-visible:ring-0 text-[12.5px] md:text-[13px] leading-relaxed text-slate-800 font-mono custom-scrollbar rounded-none bg-white shadow-none outline-none"
-                            placeholder="Ketik markdown di sini..."
-                            spellCheck={false}
-                          />
-                          <div className="h-7 px-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between text-[10.5px] text-slate-500 font-mono shrink-0">
-                            <span>Baris: {markdownText.split('\n').length} • Karakter: {markdownText.length}</span>
-                            <span className="flex items-center gap-1 text-emerald-600 font-semibold">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                              Tersimpan otomatis
-                            </span>
-                          </div>
+                        <div className="text-[11px] text-slate-400 font-mono">
+                          Editor Markdown • Format GIFT / Quiz AI
                         </div>
-                      )}
+                      </div>
+                      <Textarea 
+                        value={markdownText}
+                        onChange={handleTextChange}
+                        className="flex-1 w-full resize-none border-0 p-6 md:p-8 focus-visible:ring-0 text-[13px] md:text-[13.5px] leading-relaxed text-slate-800 font-mono custom-scrollbar rounded-none bg-white shadow-none outline-none"
+                        placeholder="Ketik markdown di sini..."
+                        spellCheck={false}
+                      />
+                      <div className="h-7 px-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between text-[10.5px] text-slate-500 font-mono shrink-0">
+                        <span>Baris: {markdownText ? markdownText.split('\n').length : 0} • Karakter: {markdownText.length}</span>
+                        <span className="flex items-center gap-1.5 text-emerald-600 font-semibold">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                          Tersimpan otomatis
+                        </span>
+                      </div>
                     </div>
                   )}
 
