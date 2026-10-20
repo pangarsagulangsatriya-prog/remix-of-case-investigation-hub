@@ -188,7 +188,13 @@ export default function QuestionBankPage() {
       setDemo1Tab('library');
       setDemoMode('upload');
 
-      if (autoGenerate) {
+      if (autoGenerate && searchParams.get('ready') === 'true') {
+        const qCountReady = (CAMPAIGN_MOCK_QUESTIONS.match(/ANSWER:/g) || []).length;
+        setLibraryItems(prev => prev.map(item => item.id === campaignDocId ? { ...item, status: 'Question Bank Ready', content: CAMPAIGN_MOCK_QUESTIONS, questionCount: qCountReady, updatedAt: dateStr } : item));
+        setMarkdownText(CAMPAIGN_MOCK_QUESTIONS);
+        setPageState('QUESTION_READY');
+        setSaveStatus('Saved');
+      } else if (autoGenerate) {
         setPageState('GENERATING');
         setGenerationStep(0);
 

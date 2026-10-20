@@ -106,6 +106,39 @@ export default function CampaignWorkspacePage() {
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [showQBModal, setShowQBModal] = useState(false);
+  const [isCreatingQB, setIsCreatingQB] = useState(false);
+  const [qbSuccess, setQbSuccess] = useState(false);
+  const [qbCaptchaCode, setQbCaptchaCode] = useState("9B4K");
+  const [userQbCaptchaInput, setUserQbCaptchaInput] = useState("");
+  const [confirmQbCheckVisual, setConfirmQbCheckVisual] = useState(false);
+  const [confirmQbCheckTarget, setConfirmQbCheckTarget] = useState(false);
+
+  const generateNewQbCaptcha = () => {
+    const chars = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
+    let code = "";
+    for (let i = 0; i < 4; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setQbCaptchaCode(code);
+    setUserQbCaptchaInput("");
+  };
+
+  const isQbCaptchaValid = userQbCaptchaInput.trim().toUpperCase() === qbCaptchaCode.toUpperCase();
+  const isQbAllowed = isQbCaptchaValid && confirmQbCheckVisual && confirmQbCheckTarget;
+
+  const handleCreateQB = () => {
+    if (!isQbAllowed || isCreatingQB) return;
+    setIsCreatingQB(true);
+    setTimeout(() => {
+      setIsCreatingQB(false);
+      setQbSuccess(true);
+      setQbCreated(true);
+      try {
+        localStorage.setItem(`qb-created-${campaignId}`, "1");
+      } catch {}
+      toast.success("Question Bank berhasil dibuat!");
+    }, 2400);
+  };
   const [qbCreated, setQbCreated] = useState<boolean>(() => {
     try { return localStorage.getItem(`qb-created-${campaignId}`) === "1"; } catch { return false; }
   });
@@ -708,7 +741,6 @@ export default function CampaignWorkspacePage() {
                       </DropdownMenu>
 
                       {/* Distribusi & Turunan */}
-                      {/* Distribusi & Turunan */}
                       <div className="flex flex-col gap-1.5">
                         <span className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.14em]">Distribusi & Turunan</span>
                         <div className="rounded-md border border-slate-300 bg-white divide-y divide-slate-200 overflow-hidden">
@@ -752,7 +784,18 @@ export default function CampaignWorkspacePage() {
                                   onClick={() => navigate('/question-bank?fromCampaign=SA-004%2FIX%202026&title=' + encodeURIComponent(PRESET_ALERTS[0].title) + '&autoGenerate=true')}
                                 />
                               ) : (
-                                <RowAction icon={Sparkles} label="Buat Question Bank" onClick={() => setShowQBModal(true)} />
+                                <RowAction
+                                  icon={Sparkles}
+                                  label="Buat Question Bank"
+                                  onClick={() => {
+                                    setQbSuccess(false);
+                                    setIsCreatingQB(false);
+                                    setConfirmQbCheckVisual(false);
+                                    setConfirmQbCheckTarget(false);
+                                    generateNewQbCaptcha();
+                                    setShowQBModal(true);
+                                  }}
+                                />
                               )
                             }
                           />
@@ -2099,48 +2142,238 @@ export default function CampaignWorkspacePage() {
       </Dialog>
 
       {/* Question Bank Confirmation Dialog */}
-      <Dialog open={showQBModal} onOpenChange={setShowQBModal}>
-        <DialogContent className="max-w-[400px] p-0 overflow-hidden border border-slate-200 shadow-xl rounded-xl bg-white">
-          <div className="p-5">
-            <DialogHeader className="text-left space-y-1">
-              <DialogTitle className="text-base font-bold text-slate-900 tracking-tight flex items-center gap-2">
-                <FileSearch className="h-4 w-4 text-indigo-600" />
-                Buat Question Bank
+      <Dialog
+        open={showQBModal}
+        onOpenChange={(open) => {
+          if (!isCreatingQB) {
+            setShowQBModal(open);
+            if (open) {
+              setQbSuccess(false);
+              setConfirmQbCheckVisual(false);
+              setConfirmQbCheckTarget(false);
+              generateNewQbCaptcha();
+            }
+          }
+        }}
+      >
+        <DialogContent className="max-w-[480px] p-0 overflow-hidden border border-slate-200 shadow-2xl rounded-2xl bg-white">
+          <div className="p-6">
+            <DialogHeader className="mb-3 text-left">
+              <div className="flex items-center justify-between mb-2">
+                <div className="h-10 w-10 rounded-xl bg-slate-900 text-white flex items-center justify-center shrink-0 shadow-sm">
+                  <FileSearch className="h-5 w-5 text-white" />
+                </div>
+                <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full">
+                  Konfirmasi Question Bank
+                </span>
+              </div>
+              <DialogTitle className="text-lg font-black text-slate-900 tracking-tight">
+                Buat Question Bank?
               </DialogTitle>
-              <DialogDescription className="text-xs text-slate-500">
-                Soal dibuat otomatis dari dokumen campaign ini.
+              <DialogDescription className="text-xs text-slate-600 mt-1 leading-relaxed text-left">
+                Lengkapi informasi publikasi dan centang checklist verifikasi sebelum membuat bank soal.
               </DialogDescription>
             </DialogHeader>
 
-            <div className="mt-4 flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5">
-              <FileText className="h-4 w-4 text-slate-400 shrink-0" />
-              <div className="min-w-0 flex-1">
-                <div className="text-xs font-semibold text-slate-800 truncate">LPI_SA-004_Track_Dozer_Amblas.pdf</div>
-                <div className="text-[10px] text-slate-500 font-mono">{PRESET_ALERTS[0].code}</div>
-              </div>
-            </div>
+            {qbSuccess ? (
+              /* Success State with Prominent Hyperlink */
+              <div className="my-4 flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-200">
+                <div className="bg-emerald-50/90 border border-emerald-200/90 rounded-xl p-4 flex flex-col gap-2.5">
+                  <div className="flex items-start gap-2.5 text-emerald-900">
+                    <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
+                    <div>
+                      <div className="text-sm font-bold leading-tight">Question Bank Berhasil Dibuat!</div>
+                      <div className="text-[11px] text-emerald-700 mt-1 leading-relaxed">
+                        Bank soal evaluasi pemahaman pekerja telah selesai di-generate dari konten investigasi kasus ini.
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
-            <DialogFooter className="mt-5 gap-2 sm:gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setShowQBModal(false)}
-                className="h-9 text-xs font-semibold text-slate-600 border-slate-300 hover:bg-slate-100 rounded-md px-4 shadow-none"
-              >
-                Batal
-              </Button>
-              <Button
-                onClick={() => {
-                  setShowQBModal(false);
-                  setQbCreated(true);
-                  try { localStorage.setItem(`qb-created-${campaignId}`, "1"); } catch {}
-                  navigate('/question-bank?fromCampaign=SA-004%2FIX%202026&title=' + encodeURIComponent(PRESET_ALERTS[0].title) + '&autoGenerate=true');
-                }}
-                className="h-9 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white shadow-none rounded-md px-4 gap-1.5 transition-all"
-              >
-                <Brain className="h-3.5 w-3.5" />
-                Buat
-              </Button>
-            </DialogFooter>
+                <div className="p-4 bg-slate-50 border border-slate-200/90 rounded-xl flex flex-col gap-2">
+                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                    Akses Halaman Question Bank
+                  </span>
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    Klik tautan hyperlink di bawah untuk langsung menuju dan meninjau bank soal:
+                  </p>
+                  <a
+                    href={`/question-bank?fromCampaign=SA-004%2FIX%202026&title=${encodeURIComponent(PRESET_ALERTS[0].title)}&autoGenerate=true&ready=true`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setShowQBModal(false);
+                      navigate(`/question-bank?fromCampaign=SA-004%2FIX%202026&title=${encodeURIComponent(PRESET_ALERTS[0].title)}&autoGenerate=true&ready=true`);
+                    }}
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-800 underline underline-offset-4 cursor-pointer mt-0.5 transition-colors"
+                  >
+                    <span>Buka Halaman Question Bank (LPI_SA-004_Track_Dozer_Amblas.pdf)</span>
+                    <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+                  </a>
+                </div>
+
+                <DialogFooter className="gap-2 sm:gap-2 pt-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowQBModal(false)}
+                    className="h-10 text-xs font-bold text-slate-600 border-slate-200 hover:bg-slate-100 rounded-lg px-4"
+                  >
+                    Tutup
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setShowQBModal(false);
+                      navigate(`/question-bank?fromCampaign=SA-004%2FIX%202026&title=${encodeURIComponent(PRESET_ALERTS[0].title)}&autoGenerate=true&ready=true`);
+                    }}
+                    className="h-10 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white shadow-none rounded-lg px-5 gap-2 transition-all"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    <span>Buka Sekarang</span>
+                  </Button>
+                </DialogFooter>
+              </div>
+            ) : (
+              <>
+                {/* Content Preview Summary */}
+                <div className="bg-slate-50/80 border border-slate-200/90 rounded-xl my-4 divide-y divide-slate-200/80 text-xs overflow-hidden">
+                  <div className="px-4 py-2.5 bg-slate-50">
+                    <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Judul Konten</div>
+                    <div className="text-xs font-bold text-slate-800 leading-snug line-clamp-2">{PRESET_ALERTS[0].title}</div>
+                  </div>
+                  <div className="grid grid-cols-2 divide-x divide-slate-200/80 bg-white">
+                    <div className="px-4 py-2.5">
+                      <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">No. Alert</div>
+                      <div className="text-xs font-bold text-slate-800 font-mono">{PRESET_ALERTS[0].code}</div>
+                    </div>
+                    <div className="px-4 py-2.5">
+                      <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Kategori</div>
+                      <div className="text-xs font-bold text-red-600 font-semibold">{PRESET_ALERTS[0].category}</div>
+                    </div>
+                  </div>
+                  <div className="px-4 py-2.5 flex items-center justify-between bg-slate-50/50">
+                    <div>
+                      <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Lampiran Dokumen</div>
+                      <div className="text-[11px] font-semibold text-slate-700">LPI_SA-004_Track_Dozer_Amblas.pdf</div>
+                    </div>
+                    <span className="text-[9px] font-black text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
+                      <Lock className="h-2.5 w-2.5" /> Disahkan
+                    </span>
+                  </div>
+                </div>
+
+                {/* Verification Section: Checklist & Captcha */}
+                <div className="space-y-3.5 my-4">
+                  {/* Checklist Persetujuan / Verifikasi */}
+                  <div className="bg-slate-50 border border-slate-200/90 rounded-xl p-3.5 flex flex-col gap-2.5">
+                    <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest block">
+                      Checklist Verifikasi <span className="text-red-500">*</span>
+                    </span>
+
+                    <label className="flex items-start gap-2.5 cursor-pointer select-none group">
+                      <input
+                        type="checkbox"
+                        checked={confirmQbCheckVisual}
+                        onChange={(e) => setConfirmQbCheckVisual(e.target.checked)}
+                        className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-0 mt-0.5 cursor-pointer shrink-0 accent-slate-900"
+                      />
+                      <span className="text-xs text-slate-700 group-hover:text-slate-900 leading-snug">
+                        Visual poster & tindakan perbaikan telah diperiksa dan disahkan.
+                      </span>
+                    </label>
+
+                    <label className="flex items-start gap-2.5 cursor-pointer select-none group">
+                      <input
+                        type="checkbox"
+                        checked={confirmQbCheckTarget}
+                        onChange={(e) => setConfirmQbCheckTarget(e.target.checked)}
+                        className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-0 mt-0.5 cursor-pointer shrink-0 accent-slate-900"
+                      />
+                      <span className="text-xs text-slate-700 group-hover:text-slate-900 leading-snug">
+                        Konten siap di-generate menjadi bank soal evaluasi di Question Bank.
+                      </span>
+                    </label>
+                  </div>
+
+                  {/* Captcha Verification Box */}
+                  <div className="bg-white border border-slate-200/90 rounded-xl p-3.5 flex flex-col gap-2.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">
+                        Kode Verifikasi (Captcha) <span className="text-red-500">*</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={generateNewQbCaptcha}
+                        className="text-[10px] font-bold text-slate-500 hover:text-slate-900 flex items-center gap-1 transition-colors"
+                        title="Ganti kode captcha"
+                      >
+                        <RefreshCw className="h-3 w-3" />
+                        <span>Ganti kode</span>
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-2.5">
+                      {/* Captcha Visual Badge */}
+                      <div className="h-9 px-3.5 rounded-lg bg-slate-900 text-emerald-400 font-mono text-sm font-black tracking-[0.25em] flex items-center justify-center select-none shadow-inner border border-slate-800">
+                        {qbCaptchaCode}
+                      </div>
+
+                      {/* Input Captcha */}
+                      <div className="flex-1">
+                        <Input
+                          value={userQbCaptchaInput}
+                          onChange={(e) => setUserQbCaptchaInput(e.target.value.toUpperCase())}
+                          placeholder={`Ketik "${qbCaptchaCode}" di sini...`}
+                          maxLength={6}
+                          className={cn(
+                            "h-9 text-xs font-bold uppercase tracking-wider rounded-lg shadow-none outline-none transition-all",
+                            isQbCaptchaValid
+                              ? "border-emerald-500 text-emerald-900 bg-emerald-50/40 focus:border-emerald-600"
+                              : "border-slate-300 text-slate-900 focus:border-slate-900"
+                          )}
+                        />
+                      </div>
+                    </div>
+
+                    <p className="text-[10px] text-slate-400 leading-tight">
+                      {isQbCaptchaValid ? (
+                        <span className="text-emerald-600 font-semibold flex items-center gap-1">
+                          <CheckCircle2 className="h-3 w-3" /> Kode verifikasi sesuai.
+                        </span>
+                      ) : (
+                        "Masukkan kode di atas untuk mengonfirmasi pembuatan Question Bank."
+                      )}
+                    </p>
+                  </div>
+                </div>
+
+                <DialogFooter className="gap-2 sm:gap-2 pt-1">
+                  <Button
+                    variant="outline"
+                    disabled={isCreatingQB}
+                    onClick={() => setShowQBModal(false)}
+                    className="h-10 text-xs font-bold text-slate-600 border-slate-200 hover:bg-slate-100 rounded-lg px-4"
+                  >
+                    Batal
+                  </Button>
+                  <Button
+                    onClick={handleCreateQB}
+                    disabled={isCreatingQB || !isQbAllowed}
+                    className="h-10 text-xs font-bold bg-slate-900 hover:bg-slate-800 active:scale-[0.98] text-white shadow-none rounded-lg px-5 gap-2 min-w-[170px] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {isCreatingQB ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin text-slate-300" />
+                        <span>Membuat Question Bank...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Brain className="h-4 w-4 text-slate-300" />
+                        <span>Buat Sekarang</span>
+                      </>
+                    )}
+                  </Button>
+                </DialogFooter>
+              </>
+            )}
           </div>
         </DialogContent>
       </Dialog>
