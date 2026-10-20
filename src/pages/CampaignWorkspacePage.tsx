@@ -8,7 +8,8 @@ import {
   ChevronDown, ChevronRight, History, BarChart3, Info, ExternalLink, Play, 
   Database, Brain, Send, Bot, FileText, Search, Trash2, Edit3, User, Link2, 
   Sparkle, PanelLeft, PanelLeftClose, PanelRight, X, Pencil, List, BookOpen, PlayCircle, ChevronLeft, Download, Check, Lock, Monitor, Image, Minus, Plus,
-  Printer, AlertTriangle, Copy, MessageSquare, RefreshCw, UploadCloud, Globe, FileSearch
+  Printer, AlertTriangle, Copy, MessageSquare, RefreshCw, UploadCloud, Globe, FileSearch,
+  Activity
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SafetyAlertPoster } from "@/components/workspace/SafetyAlertPoster";
@@ -848,71 +849,89 @@ export default function CampaignWorkspacePage() {
               </div>
             )}
 
-            {/* Metadata */}
-            <div className="border-b border-slate-100">
+            {/* Metadata Section */}
+            <div className="border-b border-slate-200/80 bg-white">
               <button 
+                type="button"
                 onClick={() => setShowMetadata(!showMetadata)}
-                className="w-full flex items-center justify-between p-5 hover:bg-slate-50 transition-colors"
+                className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-slate-50/80 transition-colors text-left group"
               >
                 <div className="flex items-center gap-2">
-                  <Info className="h-4 w-4 text-slate-700" />
-                  <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">Metadata</span>
+                  <Info className="h-4 w-4 text-slate-500 group-hover:text-slate-800 transition-colors" />
+                  <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Metadata Insiden</span>
                 </div>
-                {showMetadata ? <ChevronDown className="h-4 w-4 text-slate-400" /> : <ChevronRight className="h-4 w-4 text-slate-400" />}
+                <ChevronDown className={cn("h-4 w-4 text-slate-400 group-hover:text-slate-600 transition-transform duration-200", !showMetadata && "-rotate-90")} />
               </button>
               
               {showMetadata && (
-                <div className="px-5 pb-5 flex flex-col gap-3">
-                  
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-[9px] text-slate-500 font-semibold uppercase tracking-wider">Kategori</span>
-                    <span className="text-xs font-medium text-slate-800">Near Miss - Dozer Amblas</span>
-                  </div>
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-[9px] text-slate-500 font-semibold uppercase tracking-wider">Perusahaan</span>
-                    <span className="text-xs font-medium text-slate-800">PT Bandang Mining Coal</span>
-                  </div>
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-[9px] text-slate-500 font-semibold uppercase tracking-wider">Waktu Insiden</span>
-                    <span className="text-xs font-medium text-slate-800">31 Agu 2026, 13:50 WITA</span>
-                  </div>
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-[9px] text-slate-500 font-semibold uppercase tracking-wider">Waktu Pelaporan</span>
-                    <span className="text-xs font-medium text-slate-800">31 Agu 2026, 16:00 WITA</span>
-                  </div>
-                  
-                  <div className="pt-2">
-                    <button 
-                      onClick={() => setShowDataInputModal(true)}
-                      className="w-full text-left bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 rounded-md p-3 flex items-center justify-between group transition-all shadow-none"
-                    >
-                      <div className="flex items-center gap-2">
-                        <Database className="h-4 w-4 text-slate-400 group-hover:text-slate-600 transition-colors" />
-                        <span className="text-xs font-bold text-slate-700">Data Input</span>
+                <div className="px-5 pb-5 flex flex-col gap-3 animate-in fade-in-50 duration-150">
+                  {/* Structured metadata card */}
+                  <div className="bg-slate-50/70 border border-slate-200/80 rounded-lg p-3 space-y-2.5">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[9.5px] text-slate-400 font-bold uppercase tracking-wider">Kategori</span>
+                      <span className="text-xs font-semibold text-slate-800">Near Miss - Dozer Amblas</span>
+                    </div>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[9.5px] text-slate-400 font-bold uppercase tracking-wider">Perusahaan</span>
+                      <span className="text-xs font-semibold text-slate-800">PT Bandang Mining Coal</span>
+                    </div>
+                    <div className="pt-2 border-t border-slate-200/60 grid grid-cols-1 gap-2">
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-[9.5px] text-slate-400 font-bold uppercase tracking-wider">Waktu Insiden</span>
+                        <span className="text-xs font-semibold text-slate-800 font-mono">31 Agu 2026, 13:50 WITA</span>
                       </div>
-                      <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-slate-500 transition-colors" />
-                    </button>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-[9.5px] text-slate-400 font-bold uppercase tracking-wider">Waktu Pelaporan</span>
+                        <span className="text-xs font-semibold text-slate-800 font-mono">31 Agu 2026, 16:00 WITA</span>
+                      </div>
+                    </div>
                   </div>
+                  
+                  {/* Data Input Action Card - Simplified */}
+                  <button 
+                    type="button"
+                    onClick={() => setShowDataInputModal(true)}
+                    className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg border border-slate-200/90 hover:border-slate-300 hover:bg-slate-50/80 bg-white text-xs font-semibold text-slate-700 group transition-all duration-150 active:scale-[0.99] shadow-2xs cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <Database className="h-4 w-4 text-slate-500 group-hover:text-slate-800 transition-colors shrink-0" />
+                      <span className="text-xs font-bold text-slate-800 group-hover:text-slate-900 truncate">
+                        Data Input Acuan
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200/70 font-mono">
+                        {dataAnalisis.length}
+                      </span>
+                      <ChevronRight className="h-3.5 w-3.5 text-slate-400 group-hover:text-slate-700 group-hover:translate-x-0.5 transition-all" />
+                    </div>
+                  </button>
                 </div>
               )}
             </div>
 
-            
-            {/* Riwayat Perubahan */}
-            <div className="border-b border-slate-100 bg-white">
-              <div className="px-5 pt-5 pb-3 flex items-center gap-2">
-                <History className="h-4 w-4 text-slate-700" />
-                <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">Riwayat</span>
+            {/* Riwayat Perubahan - Simplified */}
+            <div className="border-b border-slate-200/80 bg-white">
+              <div className="px-5 pt-4 pb-2.5 flex items-center justify-between">
+                <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Riwayat</span>
+                <span className="text-[10px] font-bold text-slate-500 bg-slate-100 border border-slate-200/70 px-2 py-0.5 rounded-full font-mono">
+                  {auditLogs.length} aktivitas
+                </span>
               </div>
               <div className="px-5 pb-5">
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start gap-2 h-9 text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 border-slate-200 shadow-none"
+                <button 
+                  type="button"
                   onClick={() => setIsAuditDrawerOpen(true)}
+                  className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg border border-slate-200/90 hover:border-slate-300 hover:bg-slate-50/80 bg-white text-xs font-semibold text-slate-700 group transition-all duration-150 active:scale-[0.99] shadow-2xs cursor-pointer"
                 >
-                  <History className="h-4 w-4 text-slate-500" />
-                  Lihat {auditLogs.length} aktivitas
-                </Button>
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <History className="h-4 w-4 text-slate-500 group-hover:text-slate-800 transition-colors shrink-0" />
+                    <span className="text-xs font-bold text-slate-800 group-hover:text-slate-900 truncate">
+                      Lihat Log Perubahan
+                    </span>
+                  </div>
+                  <ChevronRight className="h-3.5 w-3.5 text-slate-400 group-hover:text-slate-700 group-hover:translate-x-0.5 transition-all shrink-0" />
+                </button>
               </div>
             </div>
           </div>
