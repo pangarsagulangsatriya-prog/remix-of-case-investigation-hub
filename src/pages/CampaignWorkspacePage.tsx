@@ -22,6 +22,50 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 import { toast } from "sonner";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+
+function RowAction({ icon: Icon, label, onClick }: { icon: React.ComponentType<{ className?: string }>; label: string; onClick: () => void }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          aria-label={label}
+          onClick={onClick}
+          className="h-7 w-7 rounded-md text-slate-500 hover:text-slate-900 hover:bg-slate-100 active:scale-90 flex items-center justify-center transition-all duration-150 outline-none focus-visible:outline-none focus-visible:bg-slate-100 focus-visible:text-slate-900"
+        >
+          <Icon className="h-4 w-4" />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="top" className="text-[11px] px-2 py-1">{label}</TooltipContent>
+    </Tooltip>
+  );
+}
+
+function DistRow({ icon: Icon, title, statusText, statusTitle, done, actions }: {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  statusText: string;
+  statusTitle?: string;
+  done: boolean;
+  actions?: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center gap-2.5 px-3 h-12 hover:bg-slate-50 transition-colors">
+      <div className="h-7 w-7 rounded-md bg-slate-100 text-slate-600 flex items-center justify-center shrink-0">
+        <Icon className="h-4 w-4" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="text-xs font-semibold text-slate-900 leading-tight">{title}</div>
+        <div className="flex items-center gap-1.5 text-[11px] text-slate-500 mt-0.5 min-w-0" title={statusTitle}>
+          <span className={cn("h-1.5 w-1.5 rounded-full shrink-0 transition-colors duration-300", done ? "bg-emerald-500" : "bg-slate-300")} />
+          <span className="truncate">{statusText}</span>
+        </div>
+      </div>
+      <div className="flex items-center gap-0.5 shrink-0">{actions}</div>
+    </div>
+  );
+}
 
 export default function CampaignWorkspacePage() {
   const { campaignId } = useParams();
@@ -664,98 +708,54 @@ export default function CampaignWorkspacePage() {
                       </DropdownMenu>
 
                       {/* Distribusi & Turunan */}
+                      {/* Distribusi & Turunan */}
                       <div className="flex flex-col gap-1.5">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.14em]">Distribusi & Turunan</span>
-                        <div className="rounded-lg border border-slate-200 bg-white divide-y divide-slate-100 overflow-hidden">
-                          {/* Broadcast P5M */}
-                          <div className="group flex items-center gap-2.5 px-3 py-2.5 hover:bg-slate-50 transition-colors">
-                            <div className="h-7 w-7 rounded-md bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                              <MessageSquare className="h-3.5 w-3.5" />
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <div className="text-xs font-semibold text-slate-800 leading-tight">Broadcast P5M</div>
-                              <div className="flex items-center gap-1 text-[10px] text-slate-500 mt-0.5">
-                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Siap kirim
-                              </div>
-                            </div>
-                            <button
-                              type="button"
-                              title="Preview"
-                              onClick={() => setShowWhatsAppDrawer(true)}
-                              className="h-7 w-7 rounded-md border border-slate-200 text-slate-500 hover:text-slate-900 hover:border-slate-400 flex items-center justify-center transition-colors"
-                            >
-                              <Eye className="h-3.5 w-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              title="Salin pesan"
-                              onClick={() => {
-                                const text = buildWhatsAppMessage(PRESET_ALERTS[0], true);
-                                navigator.clipboard.writeText(text);
-                                toast.success("Pesan disalin");
-                              }}
-                              className="h-7 w-7 rounded-md border border-slate-200 text-slate-500 hover:text-slate-900 hover:border-slate-400 flex items-center justify-center transition-colors"
-                            >
-                              <Copy className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
-
-                          {/* BeCampaign */}
-                          <div className="flex items-center gap-2.5 px-3 py-2.5 hover:bg-slate-50 transition-colors animate-in fade-in duration-300">
-                            <div className="h-7 w-7 rounded-md bg-slate-100 text-slate-600 flex items-center justify-center shrink-0">
-                              <Globe className="h-3.5 w-3.5" />
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <div className="text-xs font-semibold text-slate-800 leading-tight">BeCampaign</div>
-                              {beCampaign ? (
-                                <div className="flex items-center gap-1 text-[10px] text-emerald-700 mt-0.5 min-w-0">
-                                  <CheckCircle2 className="h-3 w-3 shrink-0" />
-                                  <span className="truncate">Dipublish · {beCampaign.publishedBy.name} ({beCampaign.publishedBy.initials}) · {formatWita(beCampaign.publishedAt)}</span>
-                                </div>
+                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.14em]">Distribusi & Turunan</span>
+                        <div className="rounded-md border border-slate-300 bg-white divide-y divide-slate-200 overflow-hidden">
+                          <DistRow
+                            icon={MessageSquare}
+                            title="Broadcast P5M"
+                            done
+                            statusText="Siap kirim"
+                            actions={
+                              <>
+                                <RowAction icon={Eye} label="Preview pesan" onClick={() => setShowWhatsAppDrawer(true)} />
+                                <RowAction
+                                  icon={Copy}
+                                  label="Salin pesan"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(buildWhatsAppMessage(PRESET_ALERTS[0], true));
+                                    toast.success("Pesan disalin");
+                                  }}
+                                />
+                              </>
+                            }
+                          />
+                          <DistRow
+                            icon={Globe}
+                            title="BeCampaign"
+                            done={!!beCampaign}
+                            statusText={beCampaign ? `Dipublish · ${beCampaign.publishedBy.name}` : "Belum publish"}
+                            statusTitle={beCampaign ? `${beCampaign.publishedBy.name} (${beCampaign.publishedBy.initials}) · ${formatWita(beCampaign.publishedAt)}` : undefined}
+                            actions={!beCampaign && <RowAction icon={UploadCloud} label="Publish ke BeCampaign" onClick={() => setShowPublishModal(true)} />}
+                          />
+                          <DistRow
+                            icon={FileSearch}
+                            title="Question Bank"
+                            done={qbCreated}
+                            statusText={qbCreated ? "Sudah dibuat" : "Belum dibuat"}
+                            actions={
+                              qbCreated ? (
+                                <RowAction
+                                  icon={ExternalLink}
+                                  label="Buka Question Bank"
+                                  onClick={() => navigate('/question-bank?fromCampaign=SA-004%2FIX%202026&title=' + encodeURIComponent(PRESET_ALERTS[0].title) + '&autoGenerate=true')}
+                                />
                               ) : (
-                                <div className="flex items-center gap-1 text-[10px] text-slate-500 mt-0.5">
-                                  <span className="h-1.5 w-1.5 rounded-full bg-slate-300" /> Belum publish
-                                </div>
-                              )}
-                            </div>
-                            {!beCampaign && (
-                              <button
-                                type="button"
-                                onClick={() => setShowPublishModal(true)}
-                                className="h-7 px-2.5 rounded-md border border-slate-300 text-[11px] font-semibold text-slate-800 hover:bg-slate-900 hover:text-white hover:border-slate-900 active:scale-[0.97] flex items-center gap-1 transition-all"
-                              >
-                                <UploadCloud className="h-3 w-3" /> Publish
-                              </button>
-                            )}
-                          </div>
-
-                          {/* Question Bank */}
-                          <div className="flex items-center gap-2.5 px-3 py-2.5 hover:bg-slate-50 transition-colors">
-                            <div className="h-7 w-7 rounded-md bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
-                              <FileSearch className="h-3.5 w-3.5" />
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <div className="text-xs font-semibold text-slate-800 leading-tight">Question Bank</div>
-                              {qbCreated ? (
-                                <div className="flex items-center gap-1 text-[10px] text-emerald-700 mt-0.5">
-                                  <CheckCircle2 className="h-3 w-3 shrink-0" /> Sudah dibuat
-                                </div>
-                              ) : (
-                                <div className="flex items-center gap-1 text-[10px] text-slate-500 mt-0.5">
-                                  <span className="h-1.5 w-1.5 rounded-full bg-slate-300" /> Belum dibuat
-                                </div>
-                              )}
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => qbCreated
-                                ? navigate('/question-bank?fromCampaign=SA-004%2FIX%202026&title=' + encodeURIComponent(PRESET_ALERTS[0].title) + '&autoGenerate=true')
-                                : setShowQBModal(true)}
-                              className="h-7 px-2.5 rounded-md border border-slate-300 text-[11px] font-semibold text-slate-800 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 active:scale-[0.97] flex items-center gap-1 transition-all"
-                            >
-                              {qbCreated ? "Buka" : "Buat"}
-                            </button>
-                          </div>
+                                <RowAction icon={Sparkles} label="Buat Question Bank" onClick={() => setShowQBModal(true)} />
+                              )
+                            }
+                          />
                         </div>
                       </div>
                     </>
